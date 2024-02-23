@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-python3 tools/scripts/reg_gen.py src/rtl/adams_bridge_reg.rdl
+python3 tools/scripts/reg_gen.py src/adamsbridge_top/rtl/adamsbridge_reg.rdl
