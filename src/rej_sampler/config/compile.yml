@@ -1,0 +1,33 @@
+---
+provides: [rej_sampler]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/rej_sampler_ctrl.sv
+      - $COMPILE_ROOT/rtl/rej_sampler.sv
+    tops: [rej_sampler_ctrl]
+---
+provides: [rej_sampler_tb]
+schema_version: 2.4.0
+requires:
+  - rej_sampler
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/rej_sampler_tb.sv
+    tops: [rej_sampler_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/rej_sampler.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'

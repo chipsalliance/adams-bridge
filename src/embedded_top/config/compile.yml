@@ -1,0 +1,37 @@
+---
+provides: [abr_defines]
+schema_version: 2.4.0
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/config_defines.svh
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/config_defines.svh
+---
+provides: [embedded_top]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+  - rej_bounded
+  - rej_sampler
+  - exp_mask
+  - sample_in_ball
+  - sha3
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/embedded_top.sv
+    tops: [embedded_top]
+  rtl_lint:
+    waiver_files: []
+    options: []
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'

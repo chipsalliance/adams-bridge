@@ -1,0 +1,48 @@
+---
+provides: [sha3_pkg]
+schema_version: 2.4.0
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sha3_pkg.sv
+---
+provides: [sha3]
+schema_version: 2.4.0
+requires:
+  - sha3_pkg
+  - abr_libs
+  - abr_prim
+  - abr_defines
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/keccak_round.sv
+      - $COMPILE_ROOT/rtl/keccak_2share.sv
+      - $COMPILE_ROOT/rtl/sha3pad.sv
+      - $COMPILE_ROOT/rtl/sha3.sv
+    tops: [sha3]
+  rtl_lint:
+    directories: []
+---
+provides: [sha3_tb]
+schema_version: 2.4.0
+requires:
+  - sha3
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/sha3_tb_pkg.sv
+      - $COMPILE_ROOT/tb/sha3_tb.sv
+    tops: [sha3_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying SHA3 vector generator to ${pwd}" && cp $COMPILE_ROOT/tb/sha3.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'

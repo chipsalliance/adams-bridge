@@ -1,0 +1,33 @@
+---
+provides: [rej_bounded]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/rej_bounded_ctrl.sv
+      - $COMPILE_ROOT/rtl/rej_bounded2.sv
+    tops: [rej_bounded_ctrl]
+---
+provides: [rej_bounded_tb]
+schema_version: 2.4.0
+requires:
+  - rej_bounded
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/rej_bounded_tb.sv
+    tops: [rej_bounded_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/rej_bounded.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'

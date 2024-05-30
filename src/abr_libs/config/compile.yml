@@ -1,0 +1,26 @@
+---
+provides: [abr_libs]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_sva.svh
+      - $COMPILE_ROOT/rtl/abr_macros.svh
+      - $COMPILE_ROOT/rtl/abr_sram.sv
+      - $COMPILE_ROOT/rtl/abr_icg.sv
+      - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
+      - $COMPILE_ROOT/rtl/abr_piso.sv
+      - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_sva.svh
+      - $COMPILE_ROOT/rtl/abr_macros.svh
+      - $COMPILE_ROOT/rtl/abr_sram.sv
+      - $COMPILE_ROOT/rtl/abr_icg.sv
+      - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
+      - $COMPILE_ROOT/rtl/abr_piso.sv
+      - $COMPILE_ROOT/rtl/abr_sample_buffer.sv

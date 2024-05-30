@@ -1,0 +1,51 @@
+---
+provides: [sample_in_ball_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sample_in_ball_pkg.sv
+      - $COMPILE_ROOT/rtl/sib_mem.sv
+  tb:
+    directories: 
+      - $COMPILE_ROOT/rtl
+    files:
+      - $COMPILE_ROOT/rtl/sample_in_ball_pkg.sv
+      - $COMPILE_ROOT/rtl/sib_mem.sv
+---
+provides: [sample_in_ball]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+  - sample_in_ball_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sample_in_ball_ctrl.sv
+      - $COMPILE_ROOT/rtl/sample_in_ball_shuffler.sv
+      - $COMPILE_ROOT/rtl/sample_in_ball.sv
+    tops: [sample_in_ball_ctrl]
+---
+provides: [sample_in_ball_tb]
+schema_version: 2.4.0
+requires:
+  - sample_in_ball
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/sample_in_ball_tb.sv
+    tops: [sample_in_ball_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/sample_in_ball.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'

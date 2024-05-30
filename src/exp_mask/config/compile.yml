@@ -1,0 +1,33 @@
+---
+provides: [exp_mask]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/exp_mask_ctrl.sv
+      - $COMPILE_ROOT/rtl/exp_mask.sv
+    tops: [exp_mask_ctrl]
+---
+provides: [exp_mask_tb]
+schema_version: 2.4.0
+requires:
+  - exp_mask
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/exp_mask_tb.sv
+    tops: [exp_mask_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/exp_mask.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
