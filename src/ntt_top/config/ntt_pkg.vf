@@ -1,0 +1,2 @@
++incdir+${CALIPTRA_ROOT}/src/ntt/rtl
+${CALIPTRA_ROOT}/src/ntt/rtl/ntt_defines_pkg.sv

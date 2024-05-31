@@ -1,0 +1,85 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [ntt_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/ntt_defines_pkg.sv
+---
+provides: [butterfly_top_tb]  
+schema_version: 2.4.0
+requires: 
+  # - ecc_top
+  - ntt_top
+  - ntt_pkg
+  # - ecc_pkg
+  - keyvault
+  - caliptra_top_defines
+  # - ecc_coverage
+targets:
+  tb:
+    directories: 
+      - $COMPILE_ROOT/tb
+    files:
+      - $COMPILE_ROOT/tb/butterfly_top_tb.sv
+    tops: [butterfly_top_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/zeta.txt . && cp $COMPILE_ROOT/tb/zeta_inv.hex . && cp $COMPILE_ROOT/tb/ntt_stage2.hex . && cp $COMPILE_ROOT/tb/ntt_stage2_out.hex .'
+---
+provides: [ntt_top]
+schema_version: 2.4.0
+requires:
+  - libs
+  - hmac_drbg
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/ntt_butterfly2x2.sv
+      - $COMPILE_ROOT/rtl/ntt_butterfly.sv
+      - $COMPILE_ROOT/rtl/ecc_ram_tdp_file.sv
+      - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
+      - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/ntt_adder.sv
+      - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
+      - $COMPILE_ROOT/rtl/ntt_div2.sv
+      - $COMPILE_ROOT/rtl/ntt_buffer.sv
+      - $COMPILE_ROOT/rtl/ntt_twiddle_lookup.sv
+      - $COMPILE_ROOT/rtl/ntt_ctrl.sv
+      - $COMPILE_ROOT/rtl/ntt_top.sv
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/ntt_wrapper.sv
+      
+    tops: [ntt_top]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/ntt/config/design_lint/ntt_top/sglint_waivers
+    # black_box:
+    #   - ecc_reg
+---
+provides: [ntt_top_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+  - caliptra_top_defines
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_top_tb.sv
+    tops: [ntt_top_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
+
