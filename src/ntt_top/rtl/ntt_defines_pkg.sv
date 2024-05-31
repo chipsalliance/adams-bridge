@@ -34,11 +34,11 @@ localparam MEM_DATA_WIDTH = 4*REG_SIZE;
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
 //TODO: tb has issue with enums in top level ports. For now, using this workaround
 //Need to try something like bundling enable and mode into a struct to support enum.
-localparam ct=0,
-           gs=1,
-           pwm=2,
-           pwa=3,
-           pws=4;
+localparam ct =3'd0,
+           gs =3'd1,
+           pwm=3'd2,
+           pwa=3'd3,
+           pws=3'd4;
  
 typedef logic [2:0] mode_t;
 

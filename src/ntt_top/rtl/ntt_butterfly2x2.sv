@@ -226,6 +226,7 @@ module ntt_butterfly2x2
                 pwm: ready_reg <= accumulate ? {5'h0, enable, ready_reg[PWM_LATENCY-1:1]} : {6'h0, enable, ready_reg[PWM_LATENCY-2:1]};
                 pwa: ready_reg <= {9'h0, enable};
                 pws: ready_reg <= {9'h0, enable};
+                default: ready_reg <= 'h0;
             endcase
         end
     end

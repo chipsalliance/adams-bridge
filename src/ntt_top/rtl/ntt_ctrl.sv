@@ -59,7 +59,7 @@ module ntt_ctrl
     output logic bf_enable,
     output logic buf_wren,
     output logic buf_rden,
-    output logic [DILITHIUM_LOGN-1:0] twiddle_addr,
+    output logic [6:0] twiddle_addr,
 
     output logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr,
     output logic [MEM_ADDR_WIDTH-1:0] mem_wr_addr,
@@ -123,7 +123,7 @@ logic [MEM_ADDR_WIDTH-1:0] pw_rd_addr_nxt, pw_wr_addr_nxt;
 //Twiddle ROM wires
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg;
 logic twiddle_mode, rst_twiddle_addr;
-logic [DILITHIUM_LOGN-1:0] twiddle_end_addr, twiddle_addr_reg, twiddle_offset;
+logic [6:0] twiddle_end_addr, twiddle_addr_reg, twiddle_offset;
 
 //FSM round signals
 logic [$clog2(NTT_NUM_ROUNDS):0] num_rounds;

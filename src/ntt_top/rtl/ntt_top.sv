@@ -110,7 +110,7 @@ module ntt_top
 
     //Internal
     logic ntt_busy;
-    logic [DILITHIUM_LOGN-1:0] twiddle_addr;
+    logic [6:0] twiddle_addr;
     logic buf_wren;
     logic buf_rden;
     logic buf_wr_rst_count, buf_rd_rst_count;
@@ -218,7 +218,7 @@ module ntt_top
 
     //Twiddle lookup
     ntt_twiddle_lookup #(
-        .ADDR_WIDTH(DILITHIUM_LOGN),
+        .ADDR_WIDTH(7),
         .DATA_WIDTH(NTT_REG_SIZE)
     ) w_rom (
         .mode(mode),

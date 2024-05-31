@@ -24,7 +24,7 @@
 module ntt_twiddle_lookup 
     import ntt_defines_pkg::*;
 #(
-    parameter ADDR_WIDTH = 8,
+    parameter ADDR_WIDTH = 7,
     parameter DATA_WIDTH = 23
 )
 (
