@@ -25,10 +25,13 @@
 
 package ntt_defines_pkg;
 
-localparam REG_SIZE = 24;
-localparam NTT_REG_SIZE = REG_SIZE-1;
-localparam MEM_ADDR_WIDTH = 15;
-localparam MEM_DATA_WIDTH = 4*REG_SIZE;
+parameter REG_SIZE = 24;
+parameter NTT_REG_SIZE = REG_SIZE-1;
+// parameter MEM_DEPTH = 32768;
+// parameter MEM_DEPTH = 256;
+parameter MEM_ADDR_WIDTH = 15;
+parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH;
+parameter MEM_DATA_WIDTH = 4*REG_SIZE;
 
 
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;

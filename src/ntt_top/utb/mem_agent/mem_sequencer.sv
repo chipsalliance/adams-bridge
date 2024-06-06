@@ -1,0 +1,1 @@
+typedef uvm_sequencer#(mem_txn) mem_sequencer;

@@ -12,6 +12,11 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/ntt_defines_pkg.sv
+  tb:
+    directories: 
+      - $COMPILE_ROOT/rtl
+    files:
+      - $COMPILE_ROOT/rtl/ntt_defines_pkg.sv
 ---
 provides: [butterfly_top_tb]  
 schema_version: 2.4.0
@@ -81,5 +86,44 @@ targets:
       - $COMPILE_ROOT/tb/ntt_top_tb.sv
     tops: [ntt_top_tb]
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
+    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/zeta.txt . && cp $COMPILE_ROOT/tb/zeta_inv.hex . && cp $COMPILE_ROOT/tb/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/pwm_iter2.hex .'
 
+---
+provides: [ntt_utb]  
+schema_version: 2.4.0
+requires:
+  - libs
+  - hmac_drbg
+  - uvm_lib
+  - ntt_top
+  - caliptra_top_defines
+  - ntt_pkg
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/utb]
+    files:
+      - $COMPILE_ROOT/utb/ntt_utb_top/ntt_utb_defines.sv
+      - $COMPILE_ROOT/utb/interfaces/ntt_if.sv
+      - $COMPILE_ROOT/utb/interfaces/mem_if.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_txn.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_agent_config.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_sequencer.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_driver.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_mon.sv
+      - $COMPILE_ROOT/utb/mem_agent/mem_agent.sv
+      - $COMPILE_ROOT/utb/ntt_agent/ntt_txn.sv
+      - $COMPILE_ROOT/utb/ntt_agent/ntt_sequencer.sv
+      - $COMPILE_ROOT/utb/ntt_agent/ntt_driver.sv
+      - $COMPILE_ROOT/utb/ntt_agent/ntt_mon.sv
+      - $COMPILE_ROOT/utb/ntt_agent/ntt_agent.sv
+      - $COMPILE_ROOT/utb/scoreboard/ntt_sb.sv
+      - $COMPILE_ROOT/utb/env/ntt_env.sv
+      - $COMPILE_ROOT/utb/sequences/ntt_seq/ntt_base_seq.sv
+      - $COMPILE_ROOT/utb/sequences/ntt_seq/ntt_fwd_seq.sv
+      - $COMPILE_ROOT/utb/sequences/ntt_seq/ntt_inv_seq.sv
+      - $COMPILE_ROOT/utb/sequences/ntt_seq_lib.sv
+      - $COMPILE_ROOT/utb/sequences/mem_seq_lib.sv
+      - $COMPILE_ROOT/utb/sequences/ntt_virtual_seq.sv
+      - $COMPILE_ROOT/utb/tests/ntt_base_test.sv
+      - $COMPILE_ROOT/utb/ntt_utb_top/ntt_utb_top.sv
+    tops: [ntt_utb_top]

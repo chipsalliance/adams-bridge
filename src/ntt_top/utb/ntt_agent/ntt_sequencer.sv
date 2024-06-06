@@ -1,0 +1,1 @@
+typedef uvm_sequencer#(ntt_txn) ntt_sequencer;
