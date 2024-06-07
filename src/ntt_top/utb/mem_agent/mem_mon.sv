@@ -4,7 +4,6 @@ class mem_mon extends uvm_monitor;
 
     uvm_analysis_port#(mem_txn) mem_ap;
     virtual mem_if mem_vif;
-    // string mem_path;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -13,13 +12,6 @@ class mem_mon extends uvm_monitor;
 
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
-        // if (!uvm_config_db#(virtual mem_if)::get(this, "", "mem_vif", mem_vif)) begin
-        //     `uvm_fatal("NOVIF", "MEM virtual interface not gotten by its monitor")
-        // end
-
-        // // Set the interface memory path based on configuration
-        // assert( uvm_config_db#( string)::get( this, "", "mem_path", mem_path));
-        // mem_vif.mem_path = mem_path;
     endfunction: build_phase
 
     task run_phase(uvm_phase phase);
@@ -57,7 +49,7 @@ class mem_mon extends uvm_monitor;
         end
     endtask: mem_TB_update_check
 
-    // TODO: hook the reset port at the top level.
+    
     task mem_port0_read_write_decoder (inout logic readFollowUp, inout mem_txn mem_txn_i_pending);
         mem_txn mem_txn_i;
         logic [3:0] mem_states;
@@ -246,5 +238,3 @@ class mem_mon extends uvm_monitor;
     endtask: mem_port1_read_write_decoder
 
 endclass
-
-//*Error* Error occurred during elaboration. For more details, see the file '/home/pure_scratch/caliptra/users/users/ekarabulut/workspaces/ws2-d389cec408c5f61ab99684c723b3c5e1/ekarabulut/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/ntt_utb/simv.ntt_utb.daidir/elabcomLog/compiler.log'.

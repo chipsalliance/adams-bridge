@@ -2,7 +2,6 @@ class mem_driver extends uvm_driver#(mem_txn);
     `uvm_component_utils(mem_driver)
 
     virtual mem_if mem_vif;
-    // string mem_path;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);

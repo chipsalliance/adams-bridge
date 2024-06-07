@@ -5,9 +5,6 @@ module ntt_utb_top#(
     parameter RADIX = 23,
     parameter DILITHIUM_Q = 23'd8380417,
     parameter DILITHIUM_N = 256
-    // parameter MEM_DEPTH = 32768, //32 KB
-    // parameter MEM_DEPTH = 256, 
-    // parameter MEM_ADDR_WIDTH = $clog2(MEM_DEPTH)
 );
 
     // Clock and reset
@@ -207,16 +204,8 @@ module ntt_utb_top#(
         uvm_config_db#(virtual mem_if)::set(null, "*", "ntt_mem_vif", ntt_mem_if_i);
         uvm_config_db#(virtual mem_if)::set(null, "*", "pwm_a_mem_vif", pwm_a_mem_if_i);
         uvm_config_db#(virtual mem_if)::set(null, "*", "pwm_b_mem_vif", pwm_b_mem_if_i);
-        // run_test("ntt_base_test");
         run_test();
     end
 
-    // // task to load memory
-    // task load_mem(bit [MEM_ADDR_WIDTH-1:0] addr, bit data[], int size);
-    //     int i;
-    //     for(i=0; i<size; i++) begin
-    //         dut.ntt_mem.mem[addr+i] = data[i];
-    //     end
-    // endtask
 
 endmodule: ntt_utb_top

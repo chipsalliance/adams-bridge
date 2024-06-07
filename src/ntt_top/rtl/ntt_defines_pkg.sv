@@ -27,8 +27,6 @@ package ntt_defines_pkg;
 
 parameter REG_SIZE = 24;
 parameter NTT_REG_SIZE = REG_SIZE-1;
-// parameter MEM_DEPTH = 32768;
-// parameter MEM_DEPTH = 256;
 parameter MEM_ADDR_WIDTH = 15;
 parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH;
 parameter MEM_DATA_WIDTH = 4*REG_SIZE;

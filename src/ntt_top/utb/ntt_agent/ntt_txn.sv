@@ -42,15 +42,6 @@ class ntt_txn extends uvm_sequence_item;
        super.new(name);
     endfunction: new
 
-    // function void post_randomize();
-    //     //-- load source data to memory at src_base_addr
-    //     fork
-    //         begin
-    //             top.load_mem(src_base_addr, src_data, src_data.size());
-    //         end
-    //     join_none
-    // endfunction: post_randomize
-
     `uvm_object_utils_begin(ntt_txn)
         `uvm_field_int(zeroize, UVM_ALL_ON)
         `uvm_field_int(mode, UVM_ALL_ON)

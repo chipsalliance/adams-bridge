@@ -107,7 +107,7 @@ class ntt_sb extends uvm_scoreboard;
             ntt_lock = 1'b0;
         end
         
-        `uvm_info("ntt_sb", $sformatf("ntt_input_txn: %s", ntt_input_txn.sprint()), UVM_LOW)
+        `uvm_info("ntt_sb", $sformatf("ntt_input_txn: %s", ntt_input_txn.sprint()), UVM_MEDIUM)
     endfunction
 
     virtual function void write_ntt_mem_txn(mem_txn txn);
@@ -144,9 +144,6 @@ class ntt_sb extends uvm_scoreboard;
                 mem_to_model[i] = mem_txn_i.artificialMemory[i];
             end
             `uvm_info("ntt_sb", "DRIVER UPDATED memory content contents:", UVM_LOW)
-            // for (int i = 0; i < MEM_DEPTH; i++) begin
-            //     `uvm_info("ntt_sb", $sformatf("mem_from_DUT[%0d] = %h", i, mem_from_DUT[i]), UVM_LOW)
-            // end
         end
 
         if (mem_txn_i.mem_port0_req.rd_wr_en == RW_WRITE) begin
@@ -174,8 +171,6 @@ class ntt_sb extends uvm_scoreboard;
                     NTT_coeffs[4*cnt+1] = input_memory[i][47:24];   // 2nd coefficient
                     NTT_coeffs[4*cnt+2] = input_memory[i][71:48];   // 3rd coefficient
                     NTT_coeffs[4*cnt+3] = input_memory[i][95:72];   // 4th coefficient
-                    // `uvm_info("EXTRACT_256_COEFFS", $sformatf("Stage -1 or 3: Addr=%0d, Coeff[4*%0d + 0]=%0h, Coeff[4*%0d + 1]=%0h, Coeff[4*%0d + 2]=%0h, Coeff[4*%0d + 3]=%0h",
-                    //         i, cnt, NTT_coeffs[4*cnt+0], cnt, NTT_coeffs[4*cnt+1], cnt, NTT_coeffs[4*cnt+2], cnt, NTT_coeffs[4*cnt+3]), UVM_LOW)
                     cnt++;
                 end
             end
@@ -186,8 +181,6 @@ class ntt_sb extends uvm_scoreboard;
                     NTT_coeffs[cnt+64] = input_memory[base_addr+i][47:24];     // 65th coefficient
                     NTT_coeffs[cnt+128] = input_memory[base_addr+i][71:48];    // 129th coefficient
                     NTT_coeffs[cnt+192] = input_memory[base_addr+i][95:72];    // 193th coefficient
-                    // `uvm_info("EXTRACT_256_COEFFS", $sformatf("Stage 0: Addr=%0d, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h",
-                    //         base_addr+i, cnt, NTT_coeffs[cnt+0], cnt+64, NTT_coeffs[cnt+64], cnt+128, NTT_coeffs[cnt+128], cnt+192, NTT_coeffs[cnt+192]), UVM_LOW)
                     cnt++;
                 end
             end
@@ -201,8 +194,6 @@ class ntt_sb extends uvm_scoreboard;
                         NTT_coeffs[coeff_index+16] = input_memory[index][47:24]; // 2nd coefficient
                         NTT_coeffs[coeff_index+32] = input_memory[index][71:48]; // 3rd coefficient
                         NTT_coeffs[coeff_index+48] = input_memory[index][95:72]; // 4th coefficient
-                        // `uvm_info("EXTRACT_256_COEFFS", $sformatf("Stage 1: Addr=%0d, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h",
-                        //         index, coeff_index, NTT_coeffs[coeff_index], coeff_index+16, NTT_coeffs[coeff_index+16], coeff_index+32, NTT_coeffs[coeff_index+32], coeff_index+48, NTT_coeffs[coeff_index+48]), UVM_LOW)
                     end
                 end
             end
@@ -216,8 +207,6 @@ class ntt_sb extends uvm_scoreboard;
                         NTT_coeffs[coeff_index+4] = input_memory[index][47:24];  // 2nd coefficient
                         NTT_coeffs[coeff_index+8] = input_memory[index][71:48];  // 3rd coefficient
                         NTT_coeffs[coeff_index+12] = input_memory[index][95:72]; // 4th coefficient
-                        // `uvm_info("EXTRACT_256_COEFFS", $sformatf("Stage 2: Addr=%0d, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h, Coeff[%0d]=%0h",
-                        //         index, coeff_index, NTT_coeffs[coeff_index], coeff_index+4, NTT_coeffs[coeff_index+4], coeff_index+8, NTT_coeffs[coeff_index+8], coeff_index+12, NTT_coeffs[coeff_index+12]), UVM_LOW)
                     end
                 end
             end
@@ -367,9 +356,6 @@ class ntt_sb extends uvm_scoreboard;
                 match = 0;
                 `uvm_error("ntt_sb", $sformatf("Mismatch at index %0d: model_NTT_output[%0d] = %h, organized_DUT_mem[%0d] = %h", i, i, model_NTT_output[i], i, DUT_NTT_output[i]));
             end
-            // else begin
-            //     `uvm_info("ntt_sb", $sformatf("Match at index %0d: model_NTT_output[%0d] = %h, organized_DUT_mem[%0d] = %h", i, i, model_NTT_output[i], i, DUT_NTT_output[i]), UVM_LOW);
-            // end
         end
 
         if (match) begin
@@ -385,10 +371,6 @@ class ntt_sb extends uvm_scoreboard;
         bit match = 1;
     
         // Compare ntt_model_outputs with organized DUT memory
-        // for (int i = 0; i < 4; i++) begin
-        /*
-         * Unfortunately, the last stage done is asserted after NTT is done
-        */
         for (int i = 0; i < 3; i++) begin
             for (int j = 0; j < DILITHIUM_N; j++) begin
                 if (model_stage_memory[i][j] != ntt_memory_for_stages[i][j]) begin
@@ -396,10 +378,6 @@ class ntt_sb extends uvm_scoreboard;
                     `uvm_error("ntt_sb", $sformatf("Mismatch at index %0d of stage %0d: model_NTT_output[%0d] = %h, DUT_NTT_output[%0d] = %h",
                                                 j, (i+1)*2, j, model_stage_memory[i][j], j, ntt_memory_for_stages[i][j]));
                 end
-                // else begin
-                //     `uvm_info("ntt_sb", $sformatf("Match at index %0d of stage %0d: model_NTT_output[%0d] = %h, DUT_NTT_output[%0d] = %h",
-                //                                 j, (i+1)*2, j, model_stage_memory[i][j], j, ntt_memory_for_stages[i][j]), UVM_LOW);
-                // end
             end
         end
     
@@ -670,66 +648,6 @@ class ntt_sb extends uvm_scoreboard;
             end
         end
     endfunction
-    
-    
-    // // Function to extract 256 coefficients from the input memory starting at src_base_addr
-    // function void extract_256_coeffs(
-    //     input bit [MEM_DATA_WIDTH-1:0] input_memory [0:MEM_DEPTH-1], 
-    //     input logic [MEM_ADDR_WIDTH-1:0] base_addr,
-    //     input int stage_idx,
-    //     output bit [REG_SIZE-1:0] NTT_coeffs [0:DILITHIUM_N-1]
-    // );
-    //     int cnt;
-    //     begin
-    //         cnt = 0;
-    //         if (stage_idx == -1 || stage_idx == 3) begin
-    //             // Organize memory into 24-bit coefficients
-    //             for (int i = base_addr; i < base_addr+64; i++) begin
-    //                 NTT_coeffs[4*cnt+0] = input_memory[i][23:0];    // 1st coefficient
-    //                 NTT_coeffs[4*cnt+1] = input_memory[i][47:24];   // 2nd coefficient
-    //                 NTT_coeffs[4*cnt+2] = input_memory[i][71:48];   // 3rd coefficient
-    //                 NTT_coeffs[4*cnt+3] = input_memory[i][95:72];   // 4th coefficient
-    //                 cnt++;
-    //             end
-    //         end
-    //         else if (stage_idx == 0) begin
-    //             // Organize memory into 24-bit coefficients with offsets of 64
-    //             for (int i = 0; i < 64; i++) begin
-    //                 NTT_coeffs[cnt+0] = input_memory[base_addr+i][23:0];       // 1st coefficient
-    //                 NTT_coeffs[cnt+64] = input_memory[base_addr+i][47:24];     // 65th coefficient
-    //                 NTT_coeffs[cnt+128] = input_memory[base_addr+i][71:48];    // 129th coefficient
-    //                 NTT_coeffs[cnt+192] = input_memory[base_addr+i][95:72];    // 193th coefficient
-    //                 cnt++;
-    //             end
-    //         end
-    //         else if (stage_idx == 1) begin
-    //             // Organize memory into 24-bit coefficients with the described offset pattern for addr_offset == 32
-    //             for (int base = 0; base < 16; base++) begin
-    //                 for (int i = 0; i < 4; i++) begin
-    //                     int index = base_addr + base*4 + i;
-    //                     int coeff_index = base + i*64;
-    //                     NTT_coeffs[coeff_index] = input_memory[index][23:0];    // 1st coefficient
-    //                     NTT_coeffs[coeff_index+16] = input_memory[index][47:24]; // 2nd coefficient
-    //                     NTT_coeffs[coeff_index+32] = input_memory[index][71:48]; // 3rd coefficient
-    //                     NTT_coeffs[coeff_index+48] = input_memory[index][95:72]; // 4th coefficient
-    //                 end
-    //             end
-    //         end
-    //         else if (stage_idx == 2) begin
-    //             // Organize memory into 24-bit coefficients with the described offset pattern for addr_offset == 16
-    //             for (int i = 0; i < 4; i++) begin
-    //                 for (int j = 0; j < 16; j++) begin
-    //                     int index = base_addr + i * 16 + j;
-    //                     int coeff_index = i + j * 16;
-    //                     NTT_coeffs[coeff_index] = input_memory[index][23:0];       // 1st coefficient
-    //                     NTT_coeffs[coeff_index+4] = input_memory[index][47:24];  // 2nd coefficient
-    //                     NTT_coeffs[coeff_index+8] = input_memory[index][71:48];  // 3rd coefficient
-    //                     NTT_coeffs[coeff_index+12] = input_memory[index][95:72]; // 4th coefficient
-    //                 end
-    //             end
-    //         end
-    //     end
-    // endfunction
 
 
 endclass: ntt_sb

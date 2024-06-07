@@ -1,5 +1,5 @@
-// import ntt_utb_defines::*;
 import ntt_defines_pkg::*;
+
 interface ntt_if(input bit clk);
 
     logic                           reset_n;

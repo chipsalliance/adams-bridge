@@ -21,8 +21,6 @@ class ntt_fwd_seq extends ntt_base_seq;
         }) else begin
             `uvm_error("RANDOMIZE_FAIL", "Randomization failed for ntt_txn_i")
         end
-        // Print the randomized values for debugging
-        // `uvm_info("ntt_simple_seq", $sformatf("Randomized ntt_txn_i: %p", ntt_txn_i), UVM_LOW)
         finish_item(ntt_txn_i);
     endtask: body
 

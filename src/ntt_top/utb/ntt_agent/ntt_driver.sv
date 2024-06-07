@@ -13,7 +13,6 @@ class ntt_driver extends uvm_driver#(ntt_txn);
 
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
-        // assert( uvm_config_db#( virtual ntt_if )::get( this, "", "ntt_if", ntt_vif));
     endfunction: build_phase
 
     task run_phase(uvm_phase phase);
@@ -29,7 +28,6 @@ class ntt_driver extends uvm_driver#(ntt_txn);
             @ntt_vif.ntt_m_cb;
             seq_item_port.try_next_item(ntt_txn_i);            
             if(ntt_txn_i  != null ) begin
-                // `uvm_info("TXN", $sformatf(" NTT_INPUT_TXN %0d : \n %s", txn_count++, ntt_txn_i.convert2string()), UVM_NONE)
                 ntt_vif.ntt_m_cb.zeroize             <= ntt_txn_i.zeroize;
                 ntt_vif.ntt_m_cb.mode                <= ntt_txn_i.mode;
                 ntt_vif.ntt_m_cb.ntt_enable          <= ntt_txn_i.ntt_enable;

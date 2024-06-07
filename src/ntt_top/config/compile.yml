@@ -86,7 +86,7 @@ targets:
       - $COMPILE_ROOT/tb/ntt_top_tb.sv
     tops: [ntt_top_tb]
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/zeta.txt . && cp $COMPILE_ROOT/tb/zeta_inv.hex . && cp $COMPILE_ROOT/tb/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/pwm_iter2.hex .'
+    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
 
 ---
 provides: [ntt_utb]  

@@ -13,10 +13,6 @@ class ntt_virtual_seq extends uvm_sequence#(uvm_sequence_item);
     endfunction: new
 
     task body();
-        // Instantiate the memory init sequence and NTT sequence      
-        // mem_seq_i = mem_init_seq::type_id::create(.name("mem_seq_i"));
-        // ntt_seq_i = ntt_base_seq::type_id::create(.name("ntt_seq_i"));
-
         fork
             begin
                 mem_seq_i.start(mem_seqr);

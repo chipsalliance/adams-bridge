@@ -1,5 +1,3 @@
-// import ntt_utb_defines::*;
-// import ntt_defines_pkg::*;
 
 interface mem_if(input bit clk);
     

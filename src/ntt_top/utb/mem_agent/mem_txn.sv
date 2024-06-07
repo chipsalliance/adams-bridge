@@ -13,7 +13,6 @@ class mem_txn extends uvm_sequence_item;
     rand  bit [MEM_DATA_WIDTH-1:0] p0_write_data;
     rand  bit [MEM_DATA_WIDTH-1:0] p1_read_data;
     rand  bit [MEM_DATA_WIDTH-1:0] p1_write_data;
-    //rand  bit [NTT_COEFF_WIDTH-1:0] coefficients[NUM_OF_COEFF-1:0];
     rand bit update_mem;
     rand bit [MEM_DATA_WIDTH-1:0]    artificialMemory [];
 
@@ -48,16 +47,9 @@ class mem_txn extends uvm_sequence_item;
         `uvm_field_int(p1_read_data, UVM_ALL_ON)
         `uvm_field_int(p1_write_data, UVM_ALL_ON)
         `uvm_field_int(update_mem, UVM_ALL_ON)
-        //`uvm_field_array_int(coefficients, UVM_ALL_ON)
         `uvm_field_array_int(artificialMemory, UVM_ALL_ON)
     `uvm_object_utils_end
 
-    // function void post_randomize();
-    //     int coeff;
-    //     foreach (artificialMemory[i]) begin
-    //         coeff = i * 4;
-    //         artificialMemory[i] = {24'(coeff + 3), 24'(coeff + 2), 24'(coeff + 1), 24'(coeff)};
-    //     end
-    // endfunction: post_randomize
+
 
 endclass: mem_txn

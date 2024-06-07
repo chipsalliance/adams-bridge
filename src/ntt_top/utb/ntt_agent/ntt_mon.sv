@@ -16,8 +16,6 @@ class ntt_mon extends uvm_monitor;
     // Build phase to get the virtual interface
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
-        // Get the virtual interface from the UVM configuration database
-        // assert( uvm_config_db#( virtual ntt_if )::get( this, "", "ntt_vif", ntt_vif));
     endfunction: build_phase
 
     // Run phase to monitor the DUT signals and send transactions to the scoreboard

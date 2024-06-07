@@ -56,7 +56,6 @@ class ntt_base_test extends uvm_test;
     task run_phase(uvm_phase phase);
 
         mem_init_seq_i = mem_init_seq::type_id::create(.name("mem_init_seq_i"));
-        //ntt_fwd_seq_i = ntt_fwd_seq::type_id::create(.name("ntt_fwd_seq_i"));
         ntt_inv_seq_i = ntt_inv_seq::type_id::create(.name("ntt_inv_seq_i"));
         ntt_virtual_seq_i = ntt_virtual_seq::type_id::create(.name("ntt_virtual_seq_i"));
 
