@@ -13,5 +13,8 @@
 # limitations under the License.
 #
 ---
-seed: 1
-testname: ntt_base_test
+tests:
+  - name: ntt_combined_test
+    seed: 1
+  - name: ntt_base_test
+    seed: 1

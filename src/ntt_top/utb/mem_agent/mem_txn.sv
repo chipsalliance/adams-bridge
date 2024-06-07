@@ -26,15 +26,15 @@ class mem_txn extends uvm_sequence_item;
        artificialMemory = new[MEM_DEPTH];
     endfunction: new
 
-    // Constraint for artificialMemory
-    // constraint artificialMemory_c {
-    //     foreach (artificialMemory[i]) {
-    //         (artificialMemory[i][23:0] < DILITHIUM_Q) &&
-    //         (artificialMemory[i][47:24] < DILITHIUM_Q) &&
-    //         (artificialMemory[i][71:48] < DILITHIUM_Q) &&
-    //         (artificialMemory[i][95:72] < DILITHIUM_Q);
-    //     }
-    // }
+    //Constraint for artificialMemory
+    constraint artificialMemory_c {
+        foreach (artificialMemory[i]) {
+            (artificialMemory[i][23:0] < DILITHIUM_Q) &&
+            (artificialMemory[i][47:24] < DILITHIUM_Q) &&
+            (artificialMemory[i][71:48] < DILITHIUM_Q) &&
+            (artificialMemory[i][95:72] < DILITHIUM_Q);
+        }
+    }
 
 
     `uvm_object_utils_begin(mem_txn)
@@ -52,12 +52,12 @@ class mem_txn extends uvm_sequence_item;
         `uvm_field_array_int(artificialMemory, UVM_ALL_ON)
     `uvm_object_utils_end
 
-    function void post_randomize();
-        int coeff;
-        foreach (artificialMemory[i]) begin
-            coeff = i * 4;
-            artificialMemory[i] = {24'(coeff + 3), 24'(coeff + 2), 24'(coeff + 1), 24'(coeff)};
-        end
-    endfunction: post_randomize
+    // function void post_randomize();
+    //     int coeff;
+    //     foreach (artificialMemory[i]) begin
+    //         coeff = i * 4;
+    //         artificialMemory[i] = {24'(coeff + 3), 24'(coeff + 2), 24'(coeff + 1), 24'(coeff)};
+    //     end
+    // endfunction: post_randomize
 
 endclass: mem_txn

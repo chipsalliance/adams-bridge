@@ -1,17 +1,20 @@
-class ntt_base_test extends uvm_test;
+class ntt_combined_test extends uvm_test;
 
-    `uvm_component_utils(ntt_base_test)
+    `uvm_component_utils(ntt_combined_test)
 
     ntt_env             ntt_env_i;
     mem_init_seq        mem_init_seq_i;
     ntt_fwd_seq         ntt_fwd_seq_i;
     ntt_inv_seq         ntt_inv_seq_i;
-    ntt_virtual_seq     ntt_virtual_seq_i;
 
     virtual ntt_if ntt_vif;
     virtual mem_if ntt_mem_vif;
     virtual mem_if pwm_a_mem_vif;
     virtual mem_if pwm_b_mem_vif;
+
+
+    // Shared variable to store ntt_mem_base_addr
+    ntt_mem_addr_t shared_ntt_mem_base_addr;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -35,6 +38,7 @@ class ntt_base_test extends uvm_test;
             `uvm_fatal("NOVIF", "PWM B Memory virtual interface is not gotten by the test");
         end
 
+
     endfunction: build_phase
 
     function void connect_phase(uvm_phase phase);
@@ -54,37 +58,34 @@ class ntt_base_test extends uvm_test;
     endfunction: connect_phase
 
     task run_phase(uvm_phase phase);
-
+        `uvm_info("NTT_COMBINED_TEST", "Running ntt_combined_test", UVM_LOW)
         mem_init_seq_i = mem_init_seq::type_id::create(.name("mem_init_seq_i"));
-        //ntt_fwd_seq_i = ntt_fwd_seq::type_id::create(.name("ntt_fwd_seq_i"));
+        ntt_fwd_seq_i = ntt_fwd_seq::type_id::create(.name("ntt_fwd_seq_i"));
         ntt_inv_seq_i = ntt_inv_seq::type_id::create(.name("ntt_inv_seq_i"));
-        ntt_virtual_seq_i = ntt_virtual_seq::type_id::create(.name("ntt_virtual_seq_i"));
 
         phase.raise_objection(this);
         
         //-- Wait for DUT reset completion.
         #150ns;
 
-        
+        // Start the memory initialization sequence
+        mem_init_seq_i.start(ntt_env_i.ntt_mem_i.mem_sqcr_i);
 
-        // Set the sequencers
-        ntt_virtual_seq_i.mem_seqr = ntt_env_i.ntt_mem_i.mem_sqcr_i;
-        ntt_virtual_seq_i.ntt_seqr = ntt_env_i.ntt_agent_i.ntt_sqcr_i;
+        // Start the forward NTT sequence
+        ntt_fwd_seq_i.start(ntt_env_i.ntt_agent_i.ntt_sqcr_i);
+        shared_ntt_mem_base_addr = ntt_fwd_seq_i.ntt_txn_i.ntt_mem_base_addr; // Store the ntt_mem_base_addr
 
-        // Set the sequences
-        ntt_virtual_seq_i.mem_seq_i = mem_init_seq_i;
-        //ntt_virtual_seq_i.ntt_seq_i = ntt_fwd_seq_i;
-        ntt_virtual_seq_i.ntt_seq_i = ntt_inv_seq_i;
-
-        // Start the virtual sequence
-        ntt_virtual_seq_i.start(null);
+        @ (posedge ntt_vif.ntt_done); // Wait for done signal from the DUT
+        #100ns;
+        ntt_inv_seq_i.ntt_mem_base_addr = shared_ntt_mem_base_addr; // Pass the shared ntt_mem_base_addr to the inverse sequence
+        ntt_inv_seq_i.ntt_mem_base_addr.src_base_addr = shared_ntt_mem_base_addr.dest_base_addr;
+        ntt_inv_seq_i.use_shared_addr = 1; // Set the flag to control address assignment
+        ntt_inv_seq_i.start(ntt_env_i.ntt_agent_i.ntt_sqcr_i); // Start the inverse sequence
 
         //-- wait for end
-        #1400ns ;
+        #1400ns;
 
         phase.drop_objection(this);
-    
     endtask
 
-
-endclass: ntt_base_test
+endclass: ntt_combined_test

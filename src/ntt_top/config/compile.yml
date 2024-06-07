@@ -125,5 +125,6 @@ targets:
       - $COMPILE_ROOT/utb/sequences/mem_seq_lib.sv
       - $COMPILE_ROOT/utb/sequences/ntt_virtual_seq.sv
       - $COMPILE_ROOT/utb/tests/ntt_base_test.sv
+      - $COMPILE_ROOT/utb/tests/ntt_combined_test.sv
       - $COMPILE_ROOT/utb/ntt_utb_top/ntt_utb_top.sv
     tops: [ntt_utb_top]

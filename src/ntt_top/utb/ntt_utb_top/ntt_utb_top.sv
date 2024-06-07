@@ -34,7 +34,10 @@ module ntt_utb_top#(
     //Port a signal that indicates NTT completes its stages
     localparam int DELAY_CYCLES = 2;
     logic [DELAY_CYCLES-1:0] stage_done_array;
+    logic delayed_done;
+    logic wired_ntt_done;
     assign ntt_if_i.stage_done = stage_done_array[DELAY_CYCLES-1];
+    assign ntt_if_i.ntt_done = delayed_done;
 
     
 
@@ -175,12 +178,13 @@ module ntt_utb_top#(
         .pwm_b_rd_req(pwm_b_mem_if_i.mem_port1_req),
         .pwm_a_rd_data(pwm_a_mem_if_i.p1_read_data),
         .pwm_b_rd_data(ntt_if_i.sampler_mode ? ntt_if_i.sampler_data : pwm_a_mem_if_i.p1_read_data),
-        .ntt_done(ntt_if_i.ntt_done)
+        .ntt_done(wired_ntt_done)
     );
 
 
     always_ff @(posedge clk) begin
         stage_done_array <= {stage_done_array[DELAY_CYCLES-2:0], ntt_top_inst0.ntt_ctrl_inst0.stage_done};
+        delayed_done <= wired_ntt_done;
     end
 
     always begin
@@ -203,7 +207,8 @@ module ntt_utb_top#(
         uvm_config_db#(virtual mem_if)::set(null, "*", "ntt_mem_vif", ntt_mem_if_i);
         uvm_config_db#(virtual mem_if)::set(null, "*", "pwm_a_mem_vif", pwm_a_mem_if_i);
         uvm_config_db#(virtual mem_if)::set(null, "*", "pwm_b_mem_vif", pwm_b_mem_if_i);
-        run_test("ntt_base_test");
+        // run_test("ntt_base_test");
+        run_test();
     end
 
     // // task to load memory
