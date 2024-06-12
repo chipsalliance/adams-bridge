@@ -230,8 +230,8 @@ task init_sim;
         ntt_mem_base_addr_tb.dest_base_addr = 'h0;
 
         pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-        pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
-        pwo_mem_base_addr_tb.pw_base_addr_c = 'h0;
+        pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+        pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
 
         //NTT ctrl
         bf_ready_tb = 1'b0;

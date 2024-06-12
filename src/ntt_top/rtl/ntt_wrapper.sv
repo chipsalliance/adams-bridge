@@ -175,7 +175,6 @@ module ntt_wrapper
         .pwo_mem_base_addr(pwo_mem_base_addr),
         .accumulate(accumulate),
         .sampler_valid(sampler_valid),
-        .sampler_mode(sampler_mode),
         //NTT mem IF
         .mem_wr_req(mem_wr_req),
         .mem_rd_req(mem_rd_req),

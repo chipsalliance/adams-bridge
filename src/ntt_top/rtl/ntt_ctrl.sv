@@ -43,7 +43,6 @@ module ntt_ctrl
     input wire butterfly_ready,
     input wire buf0_valid,
     input wire sampler_valid,
-    input wire sampler_mode,
     input wire accumulate,
     //NTT/INTT base addr
     // input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
@@ -118,7 +117,7 @@ logic wr_addr_wraparound;
 //PWO wires
 logic incr_pw_rd_addr, incr_pw_wr_addr; //TODO: need both?
 logic rst_pw_addr;
-logic [MEM_ADDR_WIDTH-1:0] pw_rd_addr_nxt, pw_wr_addr_nxt;
+logic [MEM_ADDR_WIDTH-1:0] pw_rd_addr, pw_wr_addr, pw_rd_addr_nxt, pw_wr_addr_nxt;
 
 //Twiddle ROM wires
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg;
@@ -254,9 +253,8 @@ always_comb begin
     wr_addr_wraparound = mem_wr_addr_nxt > mem_wr_base_addr + MEM_LAST_ADDR;
 
     //PWO addresses
-    pw_rd_addr_nxt     = pw_mem_rd_addr_a + PWO_READ_ADDR_STEP; //step = 1
-    pw_wr_addr_nxt     = pw_mem_wr_addr_c + PWO_WRITE_ADDR_STEP; //step = 1
-    
+    pw_rd_addr_nxt        = pw_rd_addr + PWO_READ_ADDR_STEP;
+    pw_wr_addr_nxt        = pw_wr_addr + PWO_WRITE_ADDR_STEP;
 end
 
 //Read addr
@@ -294,33 +292,32 @@ end
 //PWO addr
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        pw_mem_rd_addr_a <= 'h0;
-        pw_mem_rd_addr_b <= 'h0;
-        pw_mem_rd_addr_c <= 'h0;
-        pw_mem_wr_addr_c <= 'h0;
+        pw_rd_addr <= 'h0;
+        pw_wr_addr <= 'h0;
     end
     else if (zeroize) begin
-        pw_mem_rd_addr_a <= 'h0;
-        pw_mem_rd_addr_b <= 'h0;
-        pw_mem_rd_addr_c <= 'h0;
-        pw_mem_wr_addr_c <= 'h0;
+        pw_rd_addr <= 'h0;
+        pw_wr_addr <= 'h0;
     end
     else if (rst_pw_addr) begin
-        pw_mem_rd_addr_a <= pw_base_addr_a;
-        pw_mem_rd_addr_b <= pw_base_addr_b;
-        pw_mem_rd_addr_c <= pw_base_addr_c;
-        pw_mem_wr_addr_c <= pw_base_addr_c;
+        pw_rd_addr <= 'h0;
+        pw_wr_addr <= 'h0;
     end
     else begin
         if (incr_pw_rd_addr) begin
-            pw_mem_rd_addr_a <= pw_rd_addr_nxt; //addr in sync with b
-            pw_mem_rd_addr_b <= pw_rd_addr_nxt; //addr in sync with a
-            pw_mem_rd_addr_c <= accumulate ? pw_rd_addr_nxt : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
+            pw_rd_addr <= pw_rd_addr_nxt;
         end
         if (incr_pw_wr_addr) begin
-            pw_mem_wr_addr_c <= pw_wr_addr_nxt;
+            pw_wr_addr <= pw_wr_addr_nxt;
         end
     end
+end
+
+always_comb begin
+    pw_mem_rd_addr_a = pw_base_addr_a + pw_rd_addr;
+    pw_mem_rd_addr_b = pw_base_addr_b + pw_rd_addr;    
+    pw_mem_rd_addr_c = accumulate ? pw_base_addr_c + pw_rd_addr : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
+    pw_mem_wr_addr_c = pw_base_addr_c + pw_wr_addr;
 end
 
 //------------------------------------------
@@ -542,8 +539,8 @@ always_comb begin
             bf_enable_fsm           = pwo_mode ? sampler_valid : 1'b1;
             incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs}; //1'b1;
             rd_addr_step            = ct_mode ? NTT_READ_ADDR_STEP : INTT_READ_ADDR_STEP;
-            incr_pw_rd_addr         = sampler_mode ? sampler_valid : pwo_mode; //TODO: 0 if sampler is driving inputs to BFU. So, we do need a signal to indicate sampler mode. Maybe high level ctrl has a way to incr addr on its own?
-            pw_rden                 = sampler_mode ? sampler_valid : pwo_mode; //TODO: see above
+            incr_pw_rd_addr         = sampler_valid & pwo_mode;
+            pw_rden                 = sampler_valid & pwo_mode;
         end
         EXEC_WAIT: begin
             read_fsm_state_ns       = arc_EXEC_WAIT_RD_STAGE ? RD_STAGE : arc_EXEC_WAIT_RD_EXEC ? RD_EXEC : EXEC_WAIT;
@@ -554,8 +551,8 @@ always_comb begin
             bf_enable_fsm           = pwo_mode ? sampler_valid : (buf_count <= 3);
             incr_twiddle_addr_fsm   = (ct_mode | gs_mode);
             rd_addr_step            = NTT_READ_ADDR_STEP;
-            incr_pw_rd_addr         = (pwo_mode & sampler_valid & sampler_mode);
-            pw_rden                 = (pwo_mode & sampler_valid & sampler_mode);
+            incr_pw_rd_addr         = (pwo_mode & sampler_valid);
+            pw_rden                 = (pwo_mode & sampler_valid);
         end
         default: begin
             read_fsm_state_ns       = RD_IDLE;

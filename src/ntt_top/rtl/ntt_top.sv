@@ -71,7 +71,6 @@ module ntt_top
 
     //Sampler IF
     input wire sampler_valid,
-    input wire sampler_mode, //If set, ntt_ctrl need not incr pwm addr - TODO: need it?
 
     //Memory if
     //Reuse between pwm c, ntt
@@ -172,9 +171,9 @@ module ntt_top
     assign pwm_rd_data_a         = pwo_mode ? pwm_a_rd_data : 'h0; //TODO: clean up mux. Just connect input directly to logic
 
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
-    assign pwm_b_rd_req.rd_wr_en = sampler_mode ? RW_IDLE : pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign pwm_b_rd_req.addr     = sampler_mode ? 'h0  : pwo_mode ? pw_mem_rd_addr_b : 'h0;
-    assign pwm_rd_data_b         = (sampler_mode || pwo_mode) ? pwm_b_rd_data : 'h0; //TODO: clean up mux
+    assign pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? pw_mem_rd_addr_b : 'h0;
+    assign pwm_rd_data_b         = (sampler_valid & pwo_mode) ? pwm_b_rd_data : 'h0;
 
     
     ntt_ctrl #(
@@ -189,7 +188,6 @@ module ntt_top
         .butterfly_ready(bf_ready),
         .buf0_valid(buf0_valid),
         .sampler_valid(sampler_valid),
-        .sampler_mode(sampler_mode),
 
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
