@@ -6,10 +6,12 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/config_defines.svh
+      - $COMPILE_ROOT/rtl/adamsbridge_reg_pkg.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/config_defines.svh
+      - $COMPILE_ROOT/rtl/adamsbridge_reg_pkg.sv
 ---
 provides: [embedded_top]
 schema_version: 2.4.0
@@ -26,6 +28,7 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/embedded_top.sv
+      - $COMPILE_ROOT/rtl/adamsbridge_reg.sv
     tops: [embedded_top]
   rtl_lint:
     waiver_files: []

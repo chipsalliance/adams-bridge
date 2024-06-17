@@ -18,16 +18,31 @@
 module embedded_top
   import sha3_pkg::*;
   import abr_prim_alert_pkg::*;
+  import adamsbridge_reg_pkg::*;
   #(
   //top level params
+    parameter AHB_ADDR_WIDTH = 32,
+    parameter AHB_DATA_WIDTH = 32,
+    parameter CLIENT_DATA_WIDTH = 32
   )
   (
   input logic clk,
-  input logic rst_b
+  input logic rst_b,
 
-  //input
+  //ahb input
+  input logic  [AHB_ADDR_WIDTH-1:0] haddr_i,
+  input logic  [AHB_DATA_WIDTH-1:0] hwdata_i,
+  input logic                       hsel_i,
+  input logic                       hwrite_i,
+  input logic                       hready_i,
+  input logic  [1:0]                htrans_i,
+  input logic  [2:0]                hsize_i,
 
-  //output
+  //ahb output
+  output logic                      hresp_o,
+  output logic                      hreadyout_o,
+  output logic [AHB_DATA_WIDTH-1:0] hrdata_o
+
 
   );
 
@@ -114,6 +129,146 @@ module embedded_top
   logic [1:0][7:2]                               sib_mem_addr;
   logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_wrdata;
   logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_rddata;
+
+  logic zeroize_reg;
+
+  //gasket to assemble reg requests
+  logic abr_reg_dv;
+  logic [CLIENT_DATA_WIDTH-1:0] abr_reg_rdata;
+  logic [AHB_ADDR_WIDTH-1:0]    abr_reg_addr;
+  logic [AHB_DATA_WIDTH-1:0]    abr_reg_wdata;
+  logic                         abr_reg_write;
+
+  logic abr_reg_err, abr_reg_read_err, abr_reg_write_err;
+
+  adamsbridge_reg__in_t abr_reg_hwif_in;
+  adamsbridge_reg__out_t abr_reg_hwif_out;
+
+  ahb_slv_sif #(
+    .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
+    .AHB_DATA_WIDTH(AHB_DATA_WIDTH),
+    .CLIENT_DATA_WIDTH(CLIENT_DATA_WIDTH)
+)
+  abr_ahb_slv_inst (
+    //AMBA AHB Lite INF
+    .hclk(clk),
+    .hreset_n(rst_b),
+    .haddr_i(haddr_i),
+    .hwdata_i(hwdata_i),
+    .hsel_i(hsel_i),
+    .hwrite_i(hwrite_i),
+    .hready_i(hready_i),
+    .htrans_i(htrans_i),
+    .hsize_i(hsize_i),
+
+    .hresp_o(hresp_o),
+    .hreadyout_o(hreadyout_o),
+    .hrdata_o(hrdata_o),
+
+    //COMPONENT INF
+    .dv(abr_reg_dv),
+    .hld('0),
+    .err(abr_reg_err),
+    .write(abr_reg_write),
+    .wdata(abr_reg_wdata),
+    .addr(abr_reg_addr[AHB_ADDR_WIDTH-1:0]),
+
+    .rdata(abr_reg_rdata)
+);
+
+always_comb abr_reg_err = abr_reg_read_err | abr_reg_write_err;
+
+adamsbridge_reg adamsbridge_reg_inst (
+  .clk(clk),
+  .rst(rst_b),
+
+  .s_cpuif_req(abr_reg_dv),
+  .s_cpuif_req_is_wr(abr_reg_write),
+  .s_cpuif_addr(abr_reg_addr[ADAMSBRIDGE_REG_ADDR_WIDTH-1:0]),
+  .s_cpuif_wr_data(abr_reg_wdata),
+  .s_cpuif_wr_biten('1),
+  .s_cpuif_req_stall_wr(),
+  .s_cpuif_req_stall_rd(),
+  .s_cpuif_rd_ack(),
+  .s_cpuif_rd_err(abr_reg_read_err),
+  .s_cpuif_rd_data(abr_reg_rdata),
+  .s_cpuif_wr_ack(),
+  .s_cpuif_wr_err(abr_reg_write_err),
+
+  .hwif_in(abr_reg_hwif_in),
+  .hwif_out(abr_reg_hwif_out)
+);
+
+//HWIF to reg block
+always_comb abr_reg_hwif_in.reset_b = rst_b;
+always_comb abr_reg_hwif_in.hard_reset_b = rst_b;
+always_comb abr_reg_hwif_in.adamsbridge_ready = '1;
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_CTRL.CTRL.hwclr = zeroize_reg;
+
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_NAME[0].NAME.next = '0;
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_NAME[1].NAME.next = '0;
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_VERSION[0].VERSION.next = '0;
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_VERSION[1].VERSION.next = '0;
+
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_STATUS.READY.next = '1;
+always_comb abr_reg_hwif_in.ADAMSBRIDGE_STATUS.VALID.next = '0;
+
+always_comb abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0;
+always_comb abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = '0;
+
+always_comb zeroize_reg = abr_reg_hwif_out.ADAMSBRIDGE_CTRL.ZEROIZE.value;
+
+always_comb begin // adamsbridge reg writing
+  for (int dword=0; dword < 1216; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.hwclr = zeroize_reg;
+  end 
+
+  for (int dword=0; dword < 1216; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 648; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 8; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 16; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 1149; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.we = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 8; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_SIGN_RND[dword].SIGN_RND.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 16; dword++)begin 
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.we = '0;       
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.next = '0;
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize_reg;
+  end
+
+  for (int dword=0; dword < 16; dword++)begin
+      abr_reg_hwif_in.ADAMSBRIDGE_IV[dword].IV.hwclr = zeroize_reg;
+  end
+end
 
 //SHA3 instance
 //TIE OFFS FIXME TODO
@@ -309,7 +464,7 @@ module embedded_top
   sib_mem_inst
   (
     .clk_i(clk),
-
+    .zeroize(zeroize),
     .cs_i('1),
     .we_i(sib_mem_we),
     .addr_i(sib_mem_addr),
