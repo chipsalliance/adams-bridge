@@ -450,8 +450,10 @@ module adamsbridge_reg (
 
     // Field: adamsbridge_reg.ADAMSBRIDGE_CTRL.CTRL
     always_comb begin
-        automatic logic [1:0] next_c = field_storage.ADAMSBRIDGE_CTRL.CTRL.value;
-        automatic logic load_next_c = '0;
+        automatic logic [1:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ADAMSBRIDGE_CTRL.CTRL.value;
+        load_next_c = '0;
         if(decoded_reg_strb.ADAMSBRIDGE_CTRL && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
             next_c = (field_storage.ADAMSBRIDGE_CTRL.CTRL.value & ~decoded_wr_biten[1:0]) | (decoded_wr_data[1:0] & decoded_wr_biten[1:0]);
             load_next_c = '1;
@@ -472,8 +474,10 @@ module adamsbridge_reg (
     assign hwif_out.ADAMSBRIDGE_CTRL.CTRL.value = field_storage.ADAMSBRIDGE_CTRL.CTRL.value;
     // Field: adamsbridge_reg.ADAMSBRIDGE_CTRL.ZEROIZE
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value;
+        load_next_c = '0;
         if(decoded_reg_strb.ADAMSBRIDGE_CTRL && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value & ~decoded_wr_biten[2:2]) | (decoded_wr_data[2:2] & decoded_wr_biten[2:2]);
             load_next_c = '1;
@@ -495,8 +499,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<16; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_IV[].IV
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_IV[i0].IV.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_IV[i0].IV.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_IV[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_IV[i0].IV.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -519,8 +525,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<8; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_SEED[].SEED
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_SEED[i0].SEED.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_SEED[i0].SEED.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_SEED[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_SEED[i0].SEED.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -546,8 +554,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<8; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_SIGN_RND[].SIGN_RND
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_SIGN_RND[i0].SIGN_RND.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_SIGN_RND[i0].SIGN_RND.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_SIGN_RND[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_SIGN_RND[i0].SIGN_RND.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -570,8 +580,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<16; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_MSG[].MSG
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_MSG[i0].MSG.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_MSG[i0].MSG.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_MSG[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_MSG[i0].MSG.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -597,8 +609,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<16; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_VERIFY_RES[].VERIFY_RES
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value;
+            load_next_c = '0;
             if(hwif_in.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.we) begin // HW Write - we
                 next_c = hwif_in.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.next;
                 load_next_c = '1;
@@ -621,8 +635,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<1216; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_PRIVKEY_OUT[].PRIVKEY_OUT
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value;
+            load_next_c = '0;
             if(hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.we) begin // HW Write - we
                 next_c = hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.next;
                 load_next_c = '1;
@@ -644,8 +660,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<1216; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_PRIVKEY_IN[].PRIVKEY_IN
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_IN[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -671,8 +689,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<648; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_PUBKEY[].PUBKEY
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -698,8 +718,10 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<1149; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_SIGNATURE[].SIGNATURE
         always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value;
-            automatic logic load_next_c = '0;
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value;
+            load_next_c = '0;
             if(decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
                 next_c = (field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
@@ -724,8 +746,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.global_intr_en_r.error_en
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.global_intr_en_r.error_en.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.global_intr_en_r.error_en.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.global_intr_en_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.global_intr_en_r.error_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
@@ -742,8 +766,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.global_intr_en_r.notif_en
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.global_intr_en_r.notif_en.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.global_intr_en_r.notif_en.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.global_intr_en_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.global_intr_en_r.notif_en.value & ~decoded_wr_biten[1:1]) | (decoded_wr_data[1:1] & decoded_wr_biten[1:1]);
             load_next_c = '1;
@@ -760,8 +786,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.error_intr_en_r.error_internal_en
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.error_intr_en_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
@@ -778,8 +806,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.notif_intr_en_r.notif_cmd_done_en
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.notif_intr_en_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
@@ -796,8 +826,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.error_global_intr_r.agg_sts
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.error_global_intr_r.agg_sts.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_global_intr_r.agg_sts.value;
+        load_next_c = '0;
         
         // HW Write
         next_c = hwif_out.intr_block_rf.error_internal_intr_r.intr;
@@ -816,8 +848,10 @@ module adamsbridge_reg (
         |(field_storage.intr_block_rf.error_global_intr_r.agg_sts.value & field_storage.intr_block_rf.global_intr_en_r.error_en.value);
     // Field: adamsbridge_reg.intr_block_rf.notif_global_intr_r.agg_sts
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value;
+        load_next_c = '0;
         
         // HW Write
         next_c = hwif_out.intr_block_rf.notif_internal_intr_r.intr;
@@ -836,8 +870,10 @@ module adamsbridge_reg (
         |(field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value & field_storage.intr_block_rf.global_intr_en_r.notif_en.value);
     // Field: adamsbridge_reg.intr_block_rf.error_internal_intr_r.error_internal_sts
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value;
+        load_next_c = '0;
         if(field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value != '0) begin // stickybit
             next_c = field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value | field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value;
             load_next_c = '1;
@@ -862,8 +898,10 @@ module adamsbridge_reg (
         |(field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value & field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value);
     // Field: adamsbridge_reg.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value;
+        load_next_c = '0;
         if(field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value != '0) begin // stickybit
             next_c = field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value | field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value;
             load_next_c = '1;
@@ -888,8 +926,10 @@ module adamsbridge_reg (
         |(field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value & field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value);
     // Field: adamsbridge_reg.intr_block_rf.error_intr_trig_r.error_internal_trig
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.error_intr_trig_r && decoded_req_is_wr) begin // SW write 1 set
             next_c = field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
@@ -909,8 +949,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.notif_intr_trig_r && decoded_req_is_wr) begin // SW write 1 set
             next_c = field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
@@ -930,8 +972,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.error_internal_intr_count_r.cnt
     always_comb begin
-        automatic logic [31:0] next_c = field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value;
-        automatic logic load_next_c = '0;
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
             load_next_c = '1;
@@ -962,8 +1006,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.notif_cmd_done_intr_count_r.cnt
     always_comb begin
-        automatic logic [31:0] next_c = field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value;
-        automatic logic load_next_c = '0;
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value;
+        load_next_c = '0;
         if(decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && decoded_req_is_wr) begin // SW write
             next_c = (field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
             load_next_c = '1;
@@ -994,8 +1040,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.error_internal_intr_count_incr_r.pulse
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value;
+        load_next_c = '0;
         if(field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value) begin // HW Write - we
             next_c = field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value;
             load_next_c = '1;
@@ -1023,8 +1071,10 @@ module adamsbridge_reg (
     end
     // Field: adamsbridge_reg.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse
     always_comb begin
-        automatic logic [0:0] next_c = field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value;
-        automatic logic load_next_c = '0;
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value;
+        load_next_c = '0;
         if(field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value) begin // HW Write - we
             next_c = field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value;
             load_next_c = '1;
@@ -1128,4 +1178,7 @@ module adamsbridge_reg (
     assign cpuif_rd_ack = readback_done;
     assign cpuif_rd_data = readback_data;
     assign cpuif_rd_err = readback_err;
+
+`CALIPTRA_ASSERT_KNOWN(ERR_HWIF_IN, hwif_in, clk, !hwif_in.hard_reset_b)
+
 endmodule

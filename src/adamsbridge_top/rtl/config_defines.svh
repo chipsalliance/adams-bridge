@@ -15,6 +15,53 @@
 `ifndef ABR_CFG_SV
 `define ABR_CFG_SV
 
-`define ABR_ICG           abr_clk_gate
-  
+  `define ABR_ICG           abr_clk_gate
+
+  parameter DILITHIUM_Q = 8380417;
+  parameter DILITHIUM_Q_W = $clog2(DILITHIUM_Q) + 1;
+  parameter DILITHIUM_N = 256;
+
+//SHA3 Configuration
+// Keccak Rounds per clock
+  parameter RoundsPerClock = 2;
+// Do not enable masking //TODO
+  parameter Sha3EnMasking = 0;
+  parameter Sha3Share = (Sha3EnMasking) ? 2 : 1;
+
+//Sampler Configurations
+//Rej Sampler
+  parameter REJS_NUM_SAMPLERS     = 5;
+  parameter REJS_SAMPLE_W         = 24;
+  parameter REJS_VLD_SAMPLES      = 4;
+  parameter REJS_PISO_BUFFER_W    = 1440;
+  parameter REJS_PISO_INPUT_RATE  = 1344;
+  parameter REJS_PISO_OUTPUT_RATE = 120;
+
+//Rej Bounded
+  parameter REJB_NUM_SAMPLERS     = 8;
+  parameter REJB_SAMPLE_W         = 4;
+  parameter REJB_VLD_SAMPLES      = 4;
+  parameter REJB_VLD_SAMPLES_W    = 24;
+  parameter REJB_VALUE            = 15;
+  parameter REJB_VLD_SAMPLE_W     = $clog2(REJB_VALUE);
+  parameter REJB_PISO_BUFFER_W    = 1334;
+  parameter REJB_PISO_INPUT_RATE  = 1088;
+  parameter REJB_PISO_OUTPUT_RATE = 32;
+
+//Exp Mask
+  parameter EXP_NUM_SAMPLERS     = 4;
+  parameter EXP_SAMPLE_W         = 20;
+  parameter EXP_VLD_SAMPLES      = 4;
+  parameter EXP_VLD_SAMPLE_W     = 23;
+  parameter EXP_PISO_BUFFER_W    = 1152;
+  parameter EXP_PISO_INPUT_RATE  = 1088;
+  parameter EXP_PISO_OUTPUT_RATE = 80;
+
+//Sample In Ball
+  parameter SIB_NUM_SAMPLERS     = 4;
+  parameter SIB_SAMPLE_W         = 8;
+  parameter SIB_TAU              = 60;
+  parameter SIB_PISO_BUFFER_W    = 1344;
+  parameter SIB_PISO_INPUT_RATE  = 1088;
+  parameter SIB_PISO_OUTPUT_RATE = 32;
 `endif

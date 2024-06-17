@@ -282,7 +282,6 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__out_t [1149-1:0]ADAMSBRIDGE_SIGNATURE;
         adamsbridge_reg__intr_block_t__out_t intr_block_rf;
     } adamsbridge_reg__out_t;
-endpackage
 
     localparam ADAMSBRIDGE_REG_ADDR_WIDTH = 32'd15;
 

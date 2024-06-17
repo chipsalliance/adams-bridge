@@ -3,377 +3,799 @@
 package adamsbridge_reg_uvm;
     `include "uvm_macros.svh"
     import uvm_pkg::*;
-    
+    `include "adamsbridge_reg_covergroups.svh"
     // Reg - adamsbridge_reg::ADAMSBRIDGE_NAME
     class adamsbridge_reg__ADAMSBRIDGE_NAME extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_NAME_bit_cg NAME_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_NAME_fld_cg fld_cg;
         rand uvm_reg_field NAME;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_NAME");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.NAME = new("NAME");
             this.NAME.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(NAME_bit_cg[bt]) NAME_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_NAME
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_VERSION
     class adamsbridge_reg__ADAMSBRIDGE_VERSION extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_VERSION_bit_cg VERSION_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_VERSION_fld_cg fld_cg;
         rand uvm_reg_field VERSION;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_VERSION");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.VERSION = new("VERSION");
             this.VERSION.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(VERSION_bit_cg[bt]) VERSION_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_VERSION
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_CTRL
     class adamsbridge_reg__ADAMSBRIDGE_CTRL extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_CTRL_bit_cg CTRL_bit_cg[2];
+        adamsbridge_reg__ADAMSBRIDGE_CTRL_bit_cg ZEROIZE_bit_cg[1];
+        adamsbridge_reg__ADAMSBRIDGE_CTRL_fld_cg fld_cg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_CTRL");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.CTRL = new("CTRL");
             this.CTRL.configure(this, 2, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
             this.ZEROIZE.configure(this, 1, 2, "WO", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(CTRL_bit_cg[bt]) CTRL_bit_cg[bt] = new();
+                foreach(ZEROIZE_bit_cg[bt]) ZEROIZE_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_CTRL
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_STATUS
     class adamsbridge_reg__ADAMSBRIDGE_STATUS extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_STATUS_bit_cg READY_bit_cg[1];
+        adamsbridge_reg__ADAMSBRIDGE_STATUS_bit_cg VALID_bit_cg[1];
+        adamsbridge_reg__ADAMSBRIDGE_STATUS_fld_cg fld_cg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_STATUS");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.READY = new("READY");
             this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
             this.VALID = new("VALID");
             this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
+                foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_STATUS
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_IV
     class adamsbridge_reg__ADAMSBRIDGE_IV extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_IV_bit_cg IV_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_IV_fld_cg fld_cg;
         rand uvm_reg_field IV;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_IV");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.IV = new("IV");
             this.IV.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(IV_bit_cg[bt]) IV_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_IV
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_SEED
     class adamsbridge_reg__ADAMSBRIDGE_SEED extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_SEED_bit_cg SEED_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_SEED_fld_cg fld_cg;
         rand uvm_reg_field SEED;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_SEED");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.SEED = new("SEED");
             this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(SEED_bit_cg[bt]) SEED_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_SEED
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_SIGN_RND
     class adamsbridge_reg__ADAMSBRIDGE_SIGN_RND extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_SIGN_RND_bit_cg SIGN_RND_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_SIGN_RND_fld_cg fld_cg;
         rand uvm_reg_field SIGN_RND;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_SIGN_RND");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.SIGN_RND = new("SIGN_RND");
             this.SIGN_RND.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(SIGN_RND_bit_cg[bt]) SIGN_RND_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_SIGN_RND
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_MSG
     class adamsbridge_reg__ADAMSBRIDGE_MSG extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_MSG_bit_cg MSG_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_MSG_fld_cg fld_cg;
         rand uvm_reg_field MSG;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_MSG");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.MSG = new("MSG");
             this.MSG.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(MSG_bit_cg[bt]) MSG_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_MSG
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_VERIFY_RES
     class adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES_bit_cg VERIFY_RES_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES_fld_cg fld_cg;
         rand uvm_reg_field VERIFY_RES;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.VERIFY_RES = new("VERIFY_RES");
             this.VERIFY_RES.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(VERIFY_RES_bit_cg[bt]) VERIFY_RES_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_OUT
     class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT_bit_cg PRIVKEY_OUT_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT_fld_cg fld_cg;
         rand uvm_reg_field PRIVKEY_OUT;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.PRIVKEY_OUT = new("PRIVKEY_OUT");
             this.PRIVKEY_OUT.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(PRIVKEY_OUT_bit_cg[bt]) PRIVKEY_OUT_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_IN
     class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN_bit_cg PRIVKEY_IN_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN_fld_cg fld_cg;
         rand uvm_reg_field PRIVKEY_IN;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.PRIVKEY_IN = new("PRIVKEY_IN");
             this.PRIVKEY_IN.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(PRIVKEY_IN_bit_cg[bt]) PRIVKEY_IN_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_PUBKEY
     class adamsbridge_reg__ADAMSBRIDGE_PUBKEY extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_PUBKEY_bit_cg PUBKEY_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_PUBKEY_fld_cg fld_cg;
         rand uvm_reg_field PUBKEY;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PUBKEY");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.PUBKEY = new("PUBKEY");
             this.PUBKEY.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(PUBKEY_bit_cg[bt]) PUBKEY_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_PUBKEY
 
     // Reg - adamsbridge_reg::ADAMSBRIDGE_SIGNATURE
     class adamsbridge_reg__ADAMSBRIDGE_SIGNATURE extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE_bit_cg SIGNATURE_bit_cg[32];
+        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE_fld_cg fld_cg;
         rand uvm_reg_field SIGNATURE;
 
         function new(string name = "adamsbridge_reg__ADAMSBRIDGE_SIGNATURE");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.SIGNATURE = new("SIGNATURE");
             this.SIGNATURE.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(SIGNATURE_bit_cg[bt]) SIGNATURE_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_SIGNATURE
 
     // Reg - adamsbridge_reg::intr_block_t::global_intr_en_t
     class adamsbridge_reg__intr_block_t__global_intr_en_t extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__global_intr_en_t_bit_cg error_en_bit_cg[1];
+        adamsbridge_reg__intr_block_t__global_intr_en_t_bit_cg notif_en_bit_cg[1];
+        adamsbridge_reg__intr_block_t__global_intr_en_t_fld_cg fld_cg;
         rand uvm_reg_field error_en;
         rand uvm_reg_field notif_en;
 
         function new(string name = "adamsbridge_reg__intr_block_t__global_intr_en_t");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.error_en = new("error_en");
             this.error_en.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
             this.notif_en = new("notif_en");
             this.notif_en.configure(this, 1, 1, "RW", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(error_en_bit_cg[bt]) error_en_bit_cg[bt] = new();
+                foreach(notif_en_bit_cg[bt]) notif_en_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__global_intr_en_t
 
     // Reg - adamsbridge_reg::intr_block_t::error_intr_en_t
     class adamsbridge_reg__intr_block_t__error_intr_en_t extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__error_intr_en_t_bit_cg error_internal_en_bit_cg[1];
+        adamsbridge_reg__intr_block_t__error_intr_en_t_fld_cg fld_cg;
         rand uvm_reg_field error_internal_en;
 
         function new(string name = "adamsbridge_reg__intr_block_t__error_intr_en_t");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.error_internal_en = new("error_internal_en");
             this.error_internal_en.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(error_internal_en_bit_cg[bt]) error_internal_en_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__error_intr_en_t
 
     // Reg - adamsbridge_reg::intr_block_t::notif_intr_en_t
     class adamsbridge_reg__intr_block_t__notif_intr_en_t extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__notif_intr_en_t_bit_cg notif_cmd_done_en_bit_cg[1];
+        adamsbridge_reg__intr_block_t__notif_intr_en_t_fld_cg fld_cg;
         rand uvm_reg_field notif_cmd_done_en;
 
         function new(string name = "adamsbridge_reg__intr_block_t__notif_intr_en_t");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.notif_cmd_done_en = new("notif_cmd_done_en");
             this.notif_cmd_done_en.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(notif_cmd_done_en_bit_cg[bt]) notif_cmd_done_en_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__notif_intr_en_t
 
     // Reg - adamsbridge_reg::intr_block_t::global_intr_t_agg_sts_dd3dcf0a
     class adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_bit_cg agg_sts_bit_cg[1];
+        adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_fld_cg fld_cg;
         rand uvm_reg_field agg_sts;
 
         function new(string name = "adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.agg_sts = new("agg_sts");
             this.agg_sts.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(agg_sts_bit_cg[bt]) agg_sts_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a
 
     // Reg - adamsbridge_reg::intr_block_t::global_intr_t_agg_sts_e6399b4a
     class adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_bit_cg agg_sts_bit_cg[1];
+        adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_fld_cg fld_cg;
         rand uvm_reg_field agg_sts;
 
         function new(string name = "adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.agg_sts = new("agg_sts");
             this.agg_sts.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(agg_sts_bit_cg[bt]) agg_sts_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a
 
     // Reg - adamsbridge_reg::intr_block_t::error_intr_t_error_internal_sts_83adab02
     class adamsbridge_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02 extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_bit_cg error_internal_sts_bit_cg[1];
+        adamsbridge_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_fld_cg fld_cg;
         rand uvm_reg_field error_internal_sts;
 
         function new(string name = "adamsbridge_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.error_internal_sts = new("error_internal_sts");
             this.error_internal_sts.configure(this, 1, 0, "W1C", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(error_internal_sts_bit_cg[bt]) error_internal_sts_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02
 
     // Reg - adamsbridge_reg::intr_block_t::notif_intr_t_notif_cmd_done_sts_1c68637e
     class adamsbridge_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_bit_cg notif_cmd_done_sts_bit_cg[1];
+        adamsbridge_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_fld_cg fld_cg;
         rand uvm_reg_field notif_cmd_done_sts;
 
         function new(string name = "adamsbridge_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.notif_cmd_done_sts = new("notif_cmd_done_sts");
             this.notif_cmd_done_sts.configure(this, 1, 0, "W1C", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(notif_cmd_done_sts_bit_cg[bt]) notif_cmd_done_sts_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e
 
     // Reg - adamsbridge_reg::intr_block_t::error_intr_trig_t
     class adamsbridge_reg__intr_block_t__error_intr_trig_t extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__error_intr_trig_t_bit_cg error_internal_trig_bit_cg[1];
+        adamsbridge_reg__intr_block_t__error_intr_trig_t_fld_cg fld_cg;
         rand uvm_reg_field error_internal_trig;
 
         function new(string name = "adamsbridge_reg__intr_block_t__error_intr_trig_t");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.error_internal_trig = new("error_internal_trig");
             this.error_internal_trig.configure(this, 1, 0, "W1S", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(error_internal_trig_bit_cg[bt]) error_internal_trig_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__error_intr_trig_t
 
     // Reg - adamsbridge_reg::intr_block_t::notif_intr_trig_t
     class adamsbridge_reg__intr_block_t__notif_intr_trig_t extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__notif_intr_trig_t_bit_cg notif_cmd_done_trig_bit_cg[1];
+        adamsbridge_reg__intr_block_t__notif_intr_trig_t_fld_cg fld_cg;
         rand uvm_reg_field notif_cmd_done_trig;
 
         function new(string name = "adamsbridge_reg__intr_block_t__notif_intr_trig_t");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.notif_cmd_done_trig = new("notif_cmd_done_trig");
             this.notif_cmd_done_trig.configure(this, 1, 0, "W1S", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(notif_cmd_done_trig_bit_cg[bt]) notif_cmd_done_trig_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__notif_intr_trig_t
 
     // Reg - adamsbridge_reg::intr_block_t::intr_count_t_cnt_60ddff93
     class adamsbridge_reg__intr_block_t__intr_count_t_cnt_60ddff93 extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__intr_count_t_cnt_60ddff93_bit_cg cnt_bit_cg[32];
+        adamsbridge_reg__intr_block_t__intr_count_t_cnt_60ddff93_fld_cg fld_cg;
         rand uvm_reg_field cnt;
 
         function new(string name = "adamsbridge_reg__intr_block_t__intr_count_t_cnt_60ddff93");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.cnt = new("cnt");
             this.cnt.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(cnt_bit_cg[bt]) cnt_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__intr_count_t_cnt_60ddff93
 
     // Reg - adamsbridge_reg::intr_block_t::intr_count_t_cnt_be67d6d5
     class adamsbridge_reg__intr_block_t__intr_count_t_cnt_be67d6d5 extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__intr_count_t_cnt_be67d6d5_bit_cg cnt_bit_cg[32];
+        adamsbridge_reg__intr_block_t__intr_count_t_cnt_be67d6d5_fld_cg fld_cg;
         rand uvm_reg_field cnt;
 
         function new(string name = "adamsbridge_reg__intr_block_t__intr_count_t_cnt_be67d6d5");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.cnt = new("cnt");
             this.cnt.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(cnt_bit_cg[bt]) cnt_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__intr_count_t_cnt_be67d6d5
 
     // Reg - adamsbridge_reg::intr_block_t::intr_count_incr_t_pulse_15e6ed7e
     class adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_bit_cg pulse_bit_cg[1];
+        adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_fld_cg fld_cg;
         rand uvm_reg_field pulse;
 
         function new(string name = "adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.pulse = new("pulse");
             this.pulse.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(pulse_bit_cg[bt]) pulse_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e
 
     // Reg - adamsbridge_reg::intr_block_t::intr_count_incr_t_pulse_6173128e
     class adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_6173128e extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_bit_cg pulse_bit_cg[1];
+        adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_fld_cg fld_cg;
         rand uvm_reg_field pulse;
 
         function new(string name = "adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_6173128e");
-            super.new(name, 32, UVM_NO_COVERAGE);
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
 
         virtual function void build();
             this.pulse = new("pulse");
             this.pulse.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(pulse_bit_cg[bt]) pulse_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
         endfunction : build
     endclass : adamsbridge_reg__intr_block_t__intr_count_incr_t_pulse_6173128e
 
@@ -584,4 +1006,5 @@ package adamsbridge_reg_uvm;
         endfunction : build
     endclass : adamsbridge_reg
 
+    `include "adamsbridge_reg_sample.svh"
 endpackage: adamsbridge_reg_uvm
