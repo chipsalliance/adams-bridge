@@ -14,6 +14,12 @@ targets:
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -24,3 +30,32 @@ targets:
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+
+---
+provides: [masking_tb]
+schema_version: 2.4.0
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/abr_masked_A2B_conv_tb.sv
+      - $COMPILE_ROOT/tb/abr_masked_N_bit_Boolean_adder_tb.sv
+      - $COMPILE_ROOT/tb/abr_masked_B2A_conv_tb.sv
+      - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_tb.sv
+      
+    tops: [abr_masked_N_bit_mult_tb]
