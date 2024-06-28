@@ -1,0 +1,2 @@
++incdir+${CALIPTRA_ROOT}/src/makehint/rtl
+${CALIPTRA_ROOT}/src/makehint/rtl/makehint_defines_pkg.sv

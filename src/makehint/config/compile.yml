@@ -1,0 +1,53 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [makehint_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/makehint_defines_pkg.sv
+---
+provides: [makehint]
+schema_version: 2.4.0
+requires:
+  - libs
+  - abr_defines
+  - abr_libs
+  - hmac_drbg
+  - makehint_pkg
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/hintgen.sv
+      - $COMPILE_ROOT/rtl/makehint.sv
+      - $COMPILE_ROOT/rtl/makehint_sample_buffer.sv
+      
+    tops: [makehint]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/makehint/config/design_lint/makehint/sglint_waivers
+---
+provides: [makehint_tb]  
+schema_version: 2.4.0
+requires: 
+  - makehint
+  - caliptra_top_defines
+  - makehint_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/makehint_tb.sv
+    tops: [makehint_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying r hex to $PWD" && cp $COMPILE_ROOT/tb/r.hex . && cp $COMPILE_ROOT/tb/z.hex .'
+
