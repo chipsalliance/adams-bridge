@@ -1,0 +1,65 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [decompose_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/decompose_defines_pkg.sv
+  # tb:
+  #   directories: 
+  #     - $COMPILE_ROOT/rtl
+  #   files:
+  #     - $COMPILE_ROOT/rtl/ecc_defines_pkg.sv
+---
+provides: [decompose]
+schema_version: 2.4.0
+requires:
+  - libs
+  - hmac_drbg
+  # - makehint_pkg
+  - ntt_pkg
+  - decompose_pkg
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/decompose.sv
+      - $COMPILE_ROOT/rtl/decompose_r1_lut.sv
+      - $COMPILE_ROOT/rtl/decompose_w1_mem.sv
+      - $COMPILE_ROOT/rtl/decompose_mod_2gamma2.sv
+      - $COMPILE_ROOT/rtl/decompose_ctrl.sv
+      - $COMPILE_ROOT/rtl/decompose_w1_encode.sv
+  # tb:
+  #   directories: [$COMPILE_ROOT/tb]
+  #   files:
+  #     - $COMPILE_ROOT/tb/ntt_top_tb.sv
+      
+    tops: [decompose]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/decompose/config/design_lint/decompose/sglint_waivers
+---
+provides: [decompose_tb]  
+schema_version: 2.4.0
+requires: 
+  - decompose
+  - caliptra_top_defines
+  - decompose_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/decompose_tb.sv
+    tops: [decompose_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying decompose hex to $PWD" && cp $COMPILE_ROOT/tb/test_vector.hex . '
+

@@ -1,0 +1,2 @@
++incdir+${CALIPTRA_ROOT}/src/decompose/rtl
+${CALIPTRA_ROOT}/src/decompose/rtl/decompose_defines_pkg.sv
