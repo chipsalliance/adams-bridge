@@ -1,0 +1,52 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [norm_check_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/norm_check_defines_pkg.sv
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/norm_check_defines_pkg.sv
+---
+provides: [norm_check]
+schema_version: 2.4.0
+requires:
+  - libs
+  - hmac_drbg
+  - norm_check_pkg
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/norm_check.sv
+      - $COMPILE_ROOT/rtl/norm_check_ctrl.sv
+      - $COMPILE_ROOT/rtl/norm_check_top.sv
+    tops: [norm_check]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/norm_check/config/design_lint/norm_check/sglint_waivers
+---
+provides: [norm_check_tb]
+schema_version: 2.4.0
+requires: 
+  - norm_check
+  - caliptra_top_defines
+  - norm_check_pkg
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/norm_check_tb.sv
+    tops: [norm_check_tb]
