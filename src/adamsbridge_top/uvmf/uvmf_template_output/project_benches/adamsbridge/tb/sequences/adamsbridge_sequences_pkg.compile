@@ -1,0 +1,6 @@
+needs:
+  - $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.compile
+  - ../../../../verification_ip/environment_packages/adamsbridge_env_pkg/adamsbridge_env_pkg.compile
+  - ../parameters/adamsbridge_parameters_pkg.compile
+src:
+  - adamsbridge_sequences_pkg.sv
