@@ -1,0 +1,56 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [skdecode_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/skdecode_defines_pkg.sv
+---
+provides: [skdecode]
+schema_version: 2.4.0
+requires:
+  - libs
+  - hmac_drbg
+  # - makehint_pkg
+  - ntt_pkg
+  - skdecode_pkg
+  # - decompose_pkg
+  - ntt_top
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/skdecode_top.sv
+      - $COMPILE_ROOT/rtl/skdecode_ctrl.sv
+      - $COMPILE_ROOT/rtl/skdecode_s1s2_unpack.sv
+      - $COMPILE_ROOT/rtl/skdecode_t0_unpack.sv
+      - $COMPILE_ROOT/rtl/skdecode_defines_pkg.sv
+      
+    tops: [skdecode]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/sk_decode/config/design_lint/skdecode/sglint_waivers
+---
+provides: [skdecode_tb]
+schema_version: 2.4.0
+requires:
+  - skdecode
+  - caliptra_top_defines
+  - skdecode_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/skdecode_tb.sv
+    tops: [skdecode_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying s1 bytes hex to $PWD" && cp $COMPILE_ROOT/tb/s1_bytes.hex . && cp $COMPILE_ROOT/tb/s2_bytes.hex . && cp $COMPILE_ROOT/tb/t0_bytes.hex . && cp $COMPILE_ROOT/tb/s1_out.hex . && cp $COMPILE_ROOT/tb/s2_out.hex . && cp $COMPILE_ROOT/tb/t0_out.hex .'
