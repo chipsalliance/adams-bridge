@@ -29,6 +29,7 @@ targets:
 provides: [sha3_tb]
 schema_version: 2.4.0
 requires:
+  - sampler_pkg
   - sha3
 targets:
   rtl:

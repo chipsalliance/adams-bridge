@@ -16,9 +16,13 @@
 `include "config_defines.svh"
 
 module adamsbridge_top
-  import sha3_pkg::*;
   import abr_prim_alert_pkg::*;
   import adamsbridge_reg_pkg::*;
+  import abr_params_pkg::*;
+  import abr_seq_pkg::*;
+  import sampler_pkg::*;
+  import sha3_pkg::*;
+  import ntt_defines_pkg::*;
   #(
   //top level params
     parameter AHB_ADDR_WIDTH = 32,
@@ -46,91 +50,49 @@ module adamsbridge_top
 
   );
 
+  localparam DATA_WIDTH = 32;
+
 //Signal Declarations
-  logic zeroize;
-
-  logic                    msg_start;
-  logic                    msg_valid;
-  logic [MsgStrbW-1:0]     msg_strobe;
-  logic [MsgWidth-1:0]     msg_data[Sha3Share];
-  logic                    sha3_msg_rdy;
-  logic                    sha3_start;
-  logic                    sha3_process;
-  logic                    sha3_run;
-
-  abr_prim_mubi_pkg::mubi4_t    sha3_done;
-  abr_prim_mubi_pkg::mubi4_t    sha3_absorbed;
-
-  logic sha3_squeezing;
-
-  logic sha3_block_processed;
-
-  sha3_pkg::sha3_st_e sha3_fsm;
-  sha3_pkg::err_t sha3_err;
-
-  sha3_pkg::sha3_mode_e mode;
-  sha3_pkg::keccak_strength_e strength;
-
-  logic sha3_state_vld;
-  logic [sha3_pkg::StateW-1:0] sha3_state[Sha3Share];
-
-  logic sha3_state_error;
-  logic sha3_count_error;
-  logic sha3_rst_storage_err;
-
-  //rej sampler
-  logic                                            sha3_rejs_dv;
-  logic                                            rejs_sha3_hold;
-  logic [REJS_PISO_INPUT_RATE-1:0]                 sha3_rejs_data;
-
-  logic                                            rejs_piso_dv;
-  logic                                            rejs_piso_hold;
-  logic [REJS_NUM_SAMPLERS-1:0][REJS_SAMPLE_W-1:0] rejs_piso_data;
-
-  logic                                            rejs_dv_o;
-  logic [REJS_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0]  rejs_data_o;
-
-  //rej bounded
-  logic                                               sha3_rejb_dv;
-  logic                                               rejb_sha3_hold;
-  logic [REJB_PISO_INPUT_RATE-1:0]                    sha3_rejb_data;
-
-  logic                                               rejb_piso_dv;
-  logic                                               rejb_piso_hold;
-  logic [REJB_NUM_SAMPLERS-1:0][REJB_SAMPLE_W-1:0]    rejb_piso_data;
-
-  logic                                               rejb_dv_o;
-  logic [REJB_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0]     rejb_data_o;
-
-  //exp mask
-  logic                                             sha3_exp_dv;
-  logic                                             exp_sha3_hold;
-  logic [EXP_PISO_INPUT_RATE-1:0]                   sha3_exp_data;
-
-  logic                                             exp_piso_dv;
-  logic                                             exp_piso_hold;
-  logic [EXP_NUM_SAMPLERS-1:0][EXP_SAMPLE_W-1:0]    exp_piso_data;
-
-  logic                                             exp_dv_o;
-  logic [EXP_VLD_SAMPLES-1:0][EXP_VLD_SAMPLE_W-1:0] exp_data_o;
-
-  //sample in ball
-  logic                                          sha3_sib_dv;
-  logic                                          sib_sha3_hold;
-  logic [SIB_PISO_INPUT_RATE-1:0]                sha3_sib_data;
-
-  logic                                          sib_piso_dv;
-  logic                                          sib_piso_hold;
-  logic [SIB_NUM_SAMPLERS-1:0][SIB_SAMPLE_W-1:0] sib_piso_data;
-
-  logic                                          sib_done;
-
-  logic [1:0]                                    sib_mem_we;
-  logic [1:0][7:2]                               sib_mem_addr;
-  logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_wrdata;
-  logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_rddata;
-
   logic zeroize_reg;
+  logic [1:0] cmd_reg;
+
+  abr_sampler_mode_e         sampler_mode;
+  logic                      sha3_start;
+  logic                      msg_start;
+  logic                      msg_valid;
+  logic                      msg_rdy;
+  logic [MsgStrbW-1:0]       msg_strobe;
+  logic [MsgWidth-1:0]       msg_data[Sha3Share];
+  logic                      sampler_start;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr;
+
+  logic                        sampler_busy;
+  logic                        sampler_state_dv;
+  logic [sha3_pkg::StateW-1:0] sampler_state_data[Sha3Share];
+
+  logic sampler_mem_dv;
+  logic [ABR_MEM_DATA_WIDTH-1:0] sampler_mem_data;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] sampler_mem_addr;
+
+  logic                                        sampler_ntt_dv;
+  logic [COEFF_PER_CLK-1:0][DILITHIUM_Q_W-1:0] sampler_ntt_data;
+
+  abr_ntt_mode_e ntt_mode;
+  mode_t mode;
+  logic accumulate;
+  logic ntt_enable;
+  ntt_mem_addr_t ntt_mem_base_addr;
+  pwo_mem_addr_t pwo_mem_base_addr;
+  mem_if_t mem_wr_req;
+  mem_if_t mem_rd_req;
+  logic [ABR_MEM_DATA_WIDTH-1:0] mem_wr_data;
+  logic [ABR_MEM_DATA_WIDTH-1:0] mem_rd_data;
+  mem_if_t pwm_a_rd_req;
+  mem_if_t pwm_b_rd_req;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
+  logic ntt_done;
+  logic ntt_busy;
 
   //gasket to assemble reg requests
   logic abr_reg_dv;
@@ -144,7 +106,7 @@ module adamsbridge_top
   adamsbridge_reg__in_t abr_reg_hwif_in;
   adamsbridge_reg__out_t abr_reg_hwif_out;
 
-  ahb_slv_sif #(
+  abr_ahb_slv_sif #(
     .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
     .AHB_DATA_WIDTH(AHB_DATA_WIDTH),
     .CLIENT_DATA_WIDTH(CLIENT_DATA_WIDTH)
@@ -199,315 +161,274 @@ adamsbridge_reg adamsbridge_reg_inst (
   .hwif_out(abr_reg_hwif_out)
 );
 
-//HWIF to reg block
-always_comb abr_reg_hwif_in.reset_b = rst_b;
-always_comb abr_reg_hwif_in.hard_reset_b = rst_b;
-always_comb abr_reg_hwif_in.adamsbridge_ready = '1;
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_CTRL.CTRL.hwclr = zeroize_reg;
+abr_ctrl abr_control_inst
+(
+  .clk(clk),
+  .rst_b(rst_b),
+  .zeroize(zeroize_reg),
 
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_NAME[0].NAME.next = '0;
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_NAME[1].NAME.next = '0;
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_VERSION[0].VERSION.next = '0;
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_VERSION[1].VERSION.next = '0;
+  //control interface
+  .abr_reg_hwif_in_o(abr_reg_hwif_in),
+  .abr_reg_hwif_out_i(abr_reg_hwif_out),
 
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_STATUS.READY.next = '1;
-always_comb abr_reg_hwif_in.ADAMSBRIDGE_STATUS.VALID.next = '0;
+  //sampler interface
+  .sampler_mode_o(sampler_mode),
+  .sha3_start_o(sha3_start), //start the sha3 engine
+  .msg_start_o(msg_start), //start a new message
+  .msg_valid_o(msg_valid), //msg interface valid
+  .msg_rdy_i(msg_rdy),  //msg interface rdy (~hold)
+  .msg_strobe_o(msg_strobe), //msg byte enables
+  .msg_data_o(msg_data),
 
-always_comb abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0;
-always_comb abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = '0;
+  .sampler_start_o(sampler_start),
+  .dest_base_addr_o(dest_base_addr),
 
-always_comb zeroize_reg = abr_reg_hwif_out.ADAMSBRIDGE_CTRL.ZEROIZE.value;
+  .sampler_state_dv_i(sampler_state_dv),
+  .sampler_state_data_i(sampler_state_data),
+  .sampler_busy_i(sampler_busy),
 
-always_comb begin // adamsbridge reg writing
-  for (int dword=0; dword < 1216; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN[dword].PRIVKEY_IN.hwclr = zeroize_reg;
-  end 
+  //ntt interface
+  .ntt_enable_o(ntt_enable),
+  .ntt_mode_o(ntt_mode),
+  .ntt_mem_base_addr_o(ntt_mem_base_addr),
+  .pwo_mem_base_addr_o(pwo_mem_base_addr),
+  .ntt_busy_i(ntt_busy)
+);
 
-  for (int dword=0; dword < 1216; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[dword].PRIVKEY_OUT.hwclr = zeroize_reg;
-  end
+sampler_top sampler_top_inst
+(
+  .clk(clk),
+  .rst_b(rst_b),
+  .zeroize(zeroize_reg),
 
-  for (int dword=0; dword < 648; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.hwclr = zeroize_reg;
-  end
+  .sampler_mode_i(sampler_mode),
+  .sha3_start_i(sha3_start), //start the sha3 engine
+  .msg_start_i(msg_start), //start a new message
+  .msg_valid_i(msg_valid), //msg interface valid
+  .msg_rdy_o(msg_rdy),  //msg interface rdy (~hold)
+  .msg_strobe_i(msg_strobe), //msg byte enables
+  .msg_data_i(msg_data), //msg data
 
-  for (int dword=0; dword < 8; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.hwclr = zeroize_reg;
-  end
+  .sampler_start_i(sampler_start),
+  .dest_base_addr_i(dest_base_addr),
 
-  for (int dword=0; dword < 16; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_MSG[dword].MSG.hwclr = zeroize_reg;
-  end
+  .sampler_busy_o(sampler_busy),
 
-  for (int dword=0; dword < 1149; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.we = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].SIGNATURE.hwclr = zeroize_reg;
-  end
+  .sampler_ntt_dv_o(sampler_ntt_dv),
+  .sampler_ntt_data_o(sampler_ntt_data),
 
-  for (int dword=0; dword < 8; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_SIGN_RND[dword].SIGN_RND.hwclr = zeroize_reg;
-  end
+  .sampler_mem_dv_o(sampler_mem_dv),
+  .sampler_mem_data_o(sampler_mem_data),
+  .sampler_mem_addr_o(sampler_mem_addr),
 
-  for (int dword=0; dword < 16; dword++)begin 
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.we = '0;       
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize_reg;
-  end
+  .sampler_state_dv_o(sampler_state_dv),
+  .sampler_state_data_o(sampler_state_data)
+);
 
-  for (int dword=0; dword < 16; dword++)begin
-      abr_reg_hwif_in.ADAMSBRIDGE_IV[dword].IV.hwclr = zeroize_reg;
-  end
+logic sampler_valid;
+
+//NTT
+//gasket here, create common interfaces?
+always_comb begin
+  mode = '0;
+  accumulate = '0;
+  sampler_valid = 0;
+
+  unique case (ntt_mode) inside
+    ABR_NTT_NONE: begin
+    end
+    ABR_NTT: begin
+      mode = ct;
+    end
+    ABR_INTT: begin
+      mode = gs;
+    end
+    ABR_PWM: begin
+      mode = pwm;
+      sampler_valid = sampler_ntt_dv;
+    end
+    ABR_PWM_ACCUM: begin
+      mode = pwm;
+      accumulate = 1;
+      sampler_valid = sampler_ntt_dv;
+    end
+    ABR_PWA: begin
+      mode = pwa;
+      sampler_valid = 1;
+    end
+    default: begin
+    end
+  endcase 
 end
 
-//SHA3 instance
-//TIE OFFS FIXME TODO
-  always_comb msg_start = '0;
-  always_comb msg_valid = '0;
-  always_comb msg_strobe = '0;
-  always_comb msg_data[0] = '0;
-  always_comb sha3_start = '0;
-  always_comb sha3_process = '0;
-  always_comb sha3_run = '0;
-  always_comb sha3_done = abr_prim_mubi_pkg::MuBi4False;
-  always_comb mode = sha3_pkg::Shake;
-  always_comb strength = sha3_pkg::L256;
-  always_comb zeroize = '0;
+ntt_top #(
+  .REG_SIZE(REG_SIZE),
+  .DILITHIUM_Q(DILITHIUM_Q),
+  .DILITHIUM_N(DILITHIUM_N),
+  .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
+)
+ntt_top_inst0 (
+  .clk(clk),
+  .reset_n(rst_b),
+  .zeroize(zeroize_reg),
 
-  sha3 #(
-    .RoundsPerClock(RoundsPerClock),
-    .EnMasking (Sha3EnMasking)
-  ) sha3_inst (
-    .clk_i (clk),
-    .rst_b (rst_b),
+  .mode(mode),
+  .ntt_enable(ntt_enable),
+  .ntt_mem_base_addr(ntt_mem_base_addr),
+  .pwo_mem_base_addr(pwo_mem_base_addr),
+  .accumulate(accumulate),
+  .sampler_valid(sampler_valid),
+  //NTT mem IF
+  .mem_wr_req(mem_wr_req),
+  .mem_rd_req(mem_rd_req),
+  .mem_wr_data(mem_wr_data),
+  .mem_rd_data(mem_rd_data),
+  //PWM mem IF
+  .pwm_a_rd_req(pwm_a_rd_req),
+  .pwm_b_rd_req(pwm_b_rd_req),
+  .pwm_a_rd_data(pwm_a_rd_data),
+  .pwm_b_rd_data(sampler_ntt_dv ? sampler_ntt_data : pwm_b_rd_data),
+  .ntt_busy(ntt_busy),
+  .ntt_done(ntt_done)
+);
 
-    // MSG_FIFO interface
-    .msg_start_i (msg_start),
-    .msg_valid_i (msg_valid),
-    .msg_data_i  (msg_data),
-    .msg_strb_i  (msg_strobe),
-    .msg_ready_o (sha3_msg_rdy),
+//MUX memory accesses
+logic [1:0] abr_mem0_cs;
+logic [1:0] abr_mem0_we;
+logic [1:0][ABR_MEM_ADDR_WIDTH-2:0] abr_mem0_addr;
+logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem0_wdata;
+logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem0_rdata;
 
-    // Entropy interface - not using
-    .rand_valid_i    (1'b0),
-    .rand_early_i    (1'b0),
-    .rand_data_i     ('0),
-    .rand_aux_i      ('0),
-    .rand_consumed_o (),
+logic [1:0] abr_mem1_cs;
+logic [1:0] abr_mem1_we;
+logic [1:0][ABR_MEM_ADDR_WIDTH-2:0] abr_mem1_addr;
+logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem1_wdata;
+logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem1_rdata;
 
-    // N, S: Used in cSHAKE mode
-    .ns_data_i       ('0), // ns_prefix),
+//FIXME common memory ports to make muxing easier
+//this is really ugly - settle memory architecture and do this better
+logic sampler_mem0_cs, sampler_mem1_cs;
+logic [1:0] ntt_mem0_cs, ntt_mem1_cs;
+logic [1:0] pwo_mem0_cs, pwo_mem1_cs;
+logic [1:0] ntt_mem0_cs_f, ntt_mem1_cs_f;
+logic [1:0] pwo_mem0_cs_f, pwo_mem1_cs_f;
+ 
+always_ff @(posedge clk or negedge rst_b) begin : read_mux_flops
+  if (!rst_b) begin
+    ntt_mem0_cs_f <= 0;
+    ntt_mem1_cs_f <= 0;
+    pwo_mem0_cs_f <= 0;
+    pwo_mem1_cs_f <= 0;
+  end
+  else begin
+    ntt_mem0_cs_f <= ntt_mem0_cs;
+    ntt_mem1_cs_f <= ntt_mem1_cs;
+    pwo_mem0_cs_f <= pwo_mem0_cs;
+    pwo_mem1_cs_f <= pwo_mem1_cs;
+  end
+end  
 
-    // Configurations
-    .mode_i     (mode), 
-    .strength_i (strength), 
+always_comb sampler_mem0_cs = (sampler_mem_dv & ~sampler_mem_addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb sampler_mem1_cs = (sampler_mem_dv &  sampler_mem_addr[ABR_MEM_ADDR_WIDTH-1]);
 
-    // Controls (CMD register)
-    .start_i    (sha3_start       ),
-    .process_i  (sha3_process     ),
-    .run_i      (sha3_run         ), // For squeeze
-    .done_i     (sha3_done        ),
+always_comb ntt_mem0_cs[0] = ((mem_wr_req.rd_wr_en != RW_IDLE) & ~mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb ntt_mem0_cs[1] = ((mem_rd_req.rd_wr_en != RW_IDLE) & ~mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb ntt_mem1_cs[0] = ((mem_wr_req.rd_wr_en != RW_IDLE) &  mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb ntt_mem1_cs[1] = ((mem_rd_req.rd_wr_en != RW_IDLE) &  mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
 
-    .absorbed_o (sha3_absorbed),
-    .squeezing_o (sha3_squeezing),
-
-    .block_processed_o (sha3_block_processed),
-
-    .sha3_fsm_o (sha3_fsm),
-
-    .state_valid_o (sha3_state_vld),
-    .state_o       (sha3_state),
-
-    .error_o (sha3_err),
-    .sparse_fsm_error_o (sha3_state_error),
-    .count_error_o  (sha3_count_error),
-    .keccak_storage_rst_error_o (sha3_rst_storage_err)
-  );
-
-  //control logic to steer sha3 output to appropriate sampler
-  always_comb sha3_rejs_dv = sha3_state_vld & 1'b1; //TODO controller or singular PISO
-  always_comb sha3_rejb_dv = sha3_state_vld & 1'b1; //TODO controller or singular PISO
-  always_comb sha3_exp_dv = sha3_state_vld & 1'b1; //TODO controller or singular PISO
-  always_comb sha3_sib_dv = sha3_state_vld & 1'b1; //TODO controller or singular PISO
-
-  always_comb sha3_rejs_data = sha3_state[0][REJS_PISO_INPUT_RATE-1:0];
-  always_comb sha3_rejb_data = sha3_state[0][REJB_PISO_INPUT_RATE-1:0];
-  always_comb sha3_exp_data = sha3_state[0][EXP_PISO_INPUT_RATE-1:0];
-  always_comb sha3_sib_data = sha3_state[0][SIB_PISO_INPUT_RATE-1:0];
-
-//rej sampler
-  abr_piso #(
-    .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(REJS_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE)
-  ) rej_sampler_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize),
-    .valid_i(sha3_rejs_dv),
-    .hold_o(rejs_sha3_hold),
-    .data_i(sha3_rejs_data),
-    .valid_o(rejs_piso_dv),
-    .hold_i(rejs_piso_hold),
-    .data_o(rejs_piso_data)
-  );
-
-  rej_sampler_ctrl#(
-    .REJ_NUM_SAMPLERS(REJS_NUM_SAMPLERS),
-    .REJ_SAMPLE_W(REJS_SAMPLE_W),
-    .REJ_VLD_SAMPLES(REJS_VLD_SAMPLES),
-    .REJ_VALUE(DILITHIUM_Q)
-  ) rej_sampler_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize), 
-    //input data
-    .data_valid_i(rejs_piso_dv),
-    .data_hold_o(rejs_piso_hold),
-    .data_i(rejs_piso_data),
-
-    //output data
-    .data_valid_o(rejs_dv_o),
-    .data_o(rejs_data_o)
-  );
-
-//rej bounded
-  abr_piso #(
-    .PISO_BUFFER_W(REJB_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(REJB_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(REJB_PISO_OUTPUT_RATE)
-  ) rej_bounded_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize),
-    .valid_i(sha3_rejb_dv),
-    .hold_o(rejb_sha3_hold),
-    .data_i(sha3_rejb_data),
-    .valid_o(rejb_piso_dv),
-    .hold_i(rejb_piso_hold),
-    .data_o(rejb_piso_data)
- );
-
-  rej_bounded_ctrl #(
-    .REJ_NUM_SAMPLERS(REJB_NUM_SAMPLERS),
-    .REJ_SAMPLE_W(REJB_SAMPLE_W),
-    .REJ_VLD_SAMPLES(REJB_VLD_SAMPLES),
-    .REJ_VALUE(REJB_VALUE)
-  ) rej_bounded_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize), 
-    //input data
-    .data_valid_i(rejb_piso_dv),
-    .data_hold_o(rejb_piso_hold),
-    .data_i(rejb_piso_data),
-
-    //output data
-    .data_valid_o(rejb_dv_o),
-    .data_o(rejb_data_o)
-  );
-
-//exp mask
-  abr_piso #(
-    .PISO_BUFFER_W(EXP_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(EXP_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(EXP_PISO_OUTPUT_RATE)
-  ) exp_mask_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize),
-    .valid_i(sha3_exp_dv),
-    .hold_o(exp_sha3_hold),
-    .data_i(sha3_exp_data),
-    .valid_o(exp_piso_dv),
-    .hold_i(exp_piso_hold),
-    .data_o(exp_piso_data)
- );
+always_comb pwo_mem0_cs[0] = ((pwm_a_rd_req.rd_wr_en != RW_IDLE) & ~pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb pwo_mem0_cs[1] = ((pwm_b_rd_req.rd_wr_en != RW_IDLE) & ~pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb pwo_mem1_cs[0] = ((pwm_a_rd_req.rd_wr_en != RW_IDLE) &  pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
+always_comb pwo_mem1_cs[1] = ((pwm_b_rd_req.rd_wr_en != RW_IDLE) &  pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
 
 
-  exp_mask_ctrl #(
-    .EXP_NUM_SAMPLERS(EXP_NUM_SAMPLERS),
-    .EXP_SAMPLE_W(EXP_SAMPLE_W),
-    .EXP_VLD_SAMPLES(EXP_VLD_SAMPLES),
-    .EXP_VLD_SAMPLE_W(EXP_VLD_SAMPLE_W)
-  ) exp_mask_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize), 
-    //input data
-    .data_valid_i(exp_piso_dv),
-    .data_hold_o(exp_piso_hold),
-    .data_i(exp_piso_data),
+always_comb mem_rd_data = ({ABR_MEM_DATA_WIDTH{ntt_mem0_cs_f[1]}} & abr_mem0_rdata[1]) | 
+                          ({ABR_MEM_DATA_WIDTH{ntt_mem1_cs_f[1]}} & abr_mem1_rdata[1]);
+always_comb pwm_a_rd_data = ({ABR_MEM_DATA_WIDTH{pwo_mem0_cs_f[0]}} & abr_mem0_rdata[1]) | 
+                            ({ABR_MEM_DATA_WIDTH{pwo_mem1_cs_f[0]}} & abr_mem1_rdata[1]);
+always_comb pwm_b_rd_data = ({ABR_MEM_DATA_WIDTH{pwo_mem0_cs_f[1]}} & abr_mem0_rdata[1]) | 
+                            ({ABR_MEM_DATA_WIDTH{pwo_mem1_cs_f[1]}} & abr_mem1_rdata[1]);
 
-    //output data
-    .data_valid_o(exp_dv_o),
-    .data_o(exp_data_o)
-  );
+//memory 0 port 0
+always_comb begin
+  abr_mem0_cs[0] = sampler_mem0_cs | ntt_mem0_cs[0] | pwo_mem0_cs[0];
+  abr_mem0_we[0] = sampler_mem0_cs | 
+                   ((mem_wr_req.rd_wr_en == RW_WRITE) & ntt_mem0_cs[0]);
+  abr_mem0_addr[0] = ({ABR_MEM_ADDR_WIDTH-1{sampler_mem0_cs}} & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-2:0]) | 
+                     ({ABR_MEM_ADDR_WIDTH-1{ntt_mem0_cs[0]}} & mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
+                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem0_cs[0]}} & pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
+  abr_mem0_wdata[0] = ({ABR_MEM_DATA_WIDTH{sampler_mem0_cs}} & sampler_mem_data) |
+                      ({ABR_MEM_DATA_WIDTH{ntt_mem0_cs[0]}} & mem_wr_data);
+end
 
-//sample in ball
-  sib_mem
-  #(
-    .DATA_WIDTH((DILITHIUM_Q_W-1)*4),
-    .DEPTH     (DILITHIUM_N/4  ),
-    .NUM_PORTS (2              )
-  )
-  sib_mem_inst
-  (
-    .clk_i(clk),
-    .zeroize(zeroize),
-    .cs_i('1),
-    .we_i(sib_mem_we),
-    .addr_i(sib_mem_addr),
-    .wdata_i(sib_mem_wrdata),
+//memory 0 port 1
+always_comb begin
+  abr_mem0_cs[1] = ntt_mem0_cs[1] | pwo_mem0_cs[1];
+  abr_mem0_we[1] = 0;
+  abr_mem0_addr[1] = ({ABR_MEM_ADDR_WIDTH-1{ntt_mem0_cs[1]}} & mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
+                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem0_cs[1]}} & pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
+  abr_mem0_wdata[1] = 0;
+end
 
-    .rdata_o(sib_mem_rddata)
-  );
+abr_sram
+#(
+  .DEPTH(ABR_MEM_INST_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH),
+  .NUM_PORTS(2)
+) abr_sram_inst0
+(
+  .clk_i(clk),
+  .cs_i(abr_mem0_cs),
+  .we_i(abr_mem0_we),
+  .addr_i(abr_mem0_addr),
+  .wdata_i(abr_mem0_wdata),
+  .rdata_o(abr_mem0_rdata)
+);
 
-  abr_piso #(
-    .PISO_BUFFER_W(SIB_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(SIB_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(SIB_PISO_OUTPUT_RATE)
-  ) sib_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize),
-    .valid_i(sha3_sib_dv),
-    .hold_o(sib_sha3_hold),
-    .data_i(sha3_sib_data),
-    .valid_o(sib_piso_dv),
-    .hold_i(sib_piso_hold),
-    .data_o(sib_piso_data)
-  );
+//memory 1 port 0
+always_comb begin
+  abr_mem1_cs[0] = sampler_mem1_cs | ntt_mem1_cs[0] | pwo_mem1_cs[0];
+  abr_mem1_we[0] = sampler_mem1_cs | 
+                   ((mem_wr_req.rd_wr_en == RW_WRITE) & ntt_mem1_cs[0]);
+  abr_mem1_addr[0] = ({ABR_MEM_ADDR_WIDTH-1{sampler_mem1_cs}} & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-2:0]) | 
+                     ({ABR_MEM_ADDR_WIDTH-1{ntt_mem1_cs[0]}} & mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
+                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem1_cs[0]}} & pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
+  abr_mem1_wdata[0] = ({ABR_MEM_DATA_WIDTH{sampler_mem1_cs}} & sampler_mem_data) |
+                      ({ABR_MEM_DATA_WIDTH{ntt_mem1_cs[0]}} & mem_wr_data);
+end
 
-  sample_in_ball_ctrl #(
-    .SIB_NUM_SAMPLERS(SIB_NUM_SAMPLERS),
-    .SIB_SAMPLE_W(SIB_SAMPLE_W),
-    .SIB_TAU(SIB_TAU)
-  ) sib_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize), 
-    //input data
-    .data_valid_i(sib_piso_dv),
-    .data_hold_o(sib_piso_hold),
-    .data_i(sib_piso_data),
-    .sib_done_o(sib_done),
+//memory 1 port 1
+always_comb begin
+  abr_mem1_cs[1] = ntt_mem1_cs[1] | pwo_mem1_cs[1];
+  abr_mem1_we[1] = 0;
+  abr_mem1_addr[1] = ({ABR_MEM_ADDR_WIDTH-1{ntt_mem1_cs[1]}} & mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
+                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem1_cs[1]}} & pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
+  abr_mem1_wdata[1] = 0;
+end
 
-    //memory_if
-    .we_o(sib_mem_we),
-    .addr_o(sib_mem_addr),
-    .wrdata_o(sib_mem_wrdata),
-    .rddata_i(sib_mem_rddata)
-  );
+abr_sram
+#(
+  .DEPTH(ABR_MEM_INST_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH),
+  .NUM_PORTS(2)
+) abr_sram_inst1
+(
+  .clk_i(clk),
+  .cs_i(abr_mem1_cs),
+  .we_i(abr_mem1_we),
+  .addr_i(abr_mem1_addr),
+  .wdata_i(abr_mem1_wdata),
+  .rdata_o(abr_mem1_rdata)
+);
+
+`ABR_ASSERT_MUTEX(ERR_MEM0_0_ACCESS_MUTEX, {sampler_mem0_cs,ntt_mem0_cs[0],pwo_mem0_cs[0]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM0_1_ACCESS_MUTEX, {ntt_mem0_cs[1],pwo_mem0_cs[1]}, clk, !rst_b)  
+`ABR_ASSERT_MUTEX(ERR_MEM1_0_ACCESS_MUTEX, {sampler_mem1_cs,ntt_mem1_cs[0],pwo_mem1_cs[0]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM1_1_ACCESS_MUTEX, {ntt_mem1_cs[1],pwo_mem1_cs[1]}, clk, !rst_b)
+
+`ABR_ASSERT_KNOWN(ERR_MEM0_0_WDATA_X, {abr_mem0_wdata[0]}, clk, !rst_b, (abr_mem0_cs[0] &  abr_mem0_we[0]))
+`ABR_ASSERT_KNOWN(ERR_MEM0_1_WDATA_X, {abr_mem0_wdata[1]}, clk, !rst_b, (abr_mem0_cs[1] &  abr_mem0_we[1]))
+`ABR_ASSERT_KNOWN(ERR_MEM1_0_WDATA_X, {abr_mem1_wdata[0]}, clk, !rst_b, (abr_mem1_cs[0] &  abr_mem1_we[0]))
+`ABR_ASSERT_KNOWN(ERR_MEM1_1_WDATA_X, {abr_mem1_wdata[1]}, clk, !rst_b, (abr_mem1_cs[1] &  abr_mem1_we[1]))
 
 endmodule

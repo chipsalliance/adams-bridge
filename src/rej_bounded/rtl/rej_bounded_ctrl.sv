@@ -14,7 +14,7 @@
 
 
 module rej_bounded_ctrl
-  //    import ::*;
+  import abr_params_pkg::*;
   #(
    parameter REJ_NUM_SAMPLERS = 8
   ,parameter REJ_SAMPLE_W     = 4

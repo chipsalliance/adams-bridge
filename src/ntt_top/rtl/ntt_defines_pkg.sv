@@ -24,11 +24,11 @@
 `define ABR_NTT_DEFINES
 
 package ntt_defines_pkg;
+    import abr_params_pkg::*;
 
 parameter REG_SIZE = 24;
 parameter NTT_REG_SIZE = REG_SIZE-1;
-parameter MEM_ADDR_WIDTH = 15;
-parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH;
+parameter MEM_DEPTH = 2**ABR_MEM_ADDR_WIDTH;
 parameter MEM_DATA_WIDTH = 4*REG_SIZE;
 
 
@@ -47,7 +47,7 @@ typedef enum logic [1:0] {RW_IDLE = 2'b00, RW_READ = 2'b01, RW_WRITE = 2'b10} me
 
 typedef struct packed {
     mem_rw_mode_e rd_wr_en;
-    logic [MEM_ADDR_WIDTH-1:0] addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] addr;
 } mem_if_t;
 
 //NTT ports
@@ -70,15 +70,15 @@ typedef struct packed {
 } bf_uvo_t;
 
 typedef struct packed {
-    logic [MEM_ADDR_WIDTH-1:0] src_base_addr;
-    logic [MEM_ADDR_WIDTH-1:0] interim_base_addr;
-    logic [MEM_ADDR_WIDTH-1:0] dest_base_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] interim_base_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr;
 } ntt_mem_addr_t;
 
 typedef struct packed {
-    logic [MEM_ADDR_WIDTH-1:0] pw_base_addr_a;
-    logic [MEM_ADDR_WIDTH-1:0] pw_base_addr_b;
-    logic [MEM_ADDR_WIDTH-1:0] pw_base_addr_c;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_a;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_b;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_c;
 } pwo_mem_addr_t;
 
 //PWO ports

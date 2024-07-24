@@ -22,6 +22,7 @@
 import "DPI-C" function string getenv(input string env_name);
 
 module rej_bounded_tb
+  //import sampler_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb

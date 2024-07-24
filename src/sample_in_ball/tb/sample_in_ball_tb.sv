@@ -21,9 +21,9 @@
 
 import "DPI-C" function string getenv(input string env_name);
 
-`include "config_defines.svh"
-
 module sample_in_ball_tb
+  import sampler_pkg::*;
+  import abr_params_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb
@@ -70,6 +70,7 @@ module sample_in_ball_tb
 
   logic                                          sib_done;
   //memory if 
+  logic [1:0]                                    cs;
   logic [1:0]                                    we;
   logic [1:0][7:2]                               addr;
   logic [1:0][3:0][DILITHIUM_Q_W-2:0]            wrdata;
@@ -114,7 +115,7 @@ module sample_in_ball_tb
       .clk_i(clk_i),
       .zeroize(zeroize),
 
-      .cs_i('1),
+      .cs_i(cs),
       .we_i(we),
       .addr_i(addr),
       .wdata_i(wrdata),
@@ -156,6 +157,7 @@ module sample_in_ball_tb
   .sib_done_o(sib_done),
 
   //memory_if
+  .cs_o(cs),
   .we_o(we),
   .addr_o(addr),
   .wrdata_o(wrdata),
@@ -206,7 +208,8 @@ module sample_in_ball_tb
       reset_n_tb = 1;
       zeroize = 1;
 
-      repeat (2) @(posedge clk_tb);
+      repeat (1) @(posedge clk_tb);
+      zeroize = 0;
 
       $display("");
     end

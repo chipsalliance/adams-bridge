@@ -14,6 +14,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
@@ -30,6 +32,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv

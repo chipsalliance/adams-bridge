@@ -31,7 +31,6 @@ module ntt_ctrl
     parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q+1)/2,
     parameter DILITHIUM_N = 256,
     parameter DILITHIUM_LOGN = 8,
-    parameter MEM_LAST_ADDR = 63,
     parameter MEM_ADDR_WIDTH = 15
 )
 (
@@ -74,6 +73,7 @@ module ntt_ctrl
     output logic [MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c,
     output logic pw_rden,
     output logic pw_wren,
+    output logic busy,
     output logic done
 );
 
@@ -87,6 +87,7 @@ localparam INTT_WRITE_ADDR_STEP = 16;
 localparam PWO_READ_ADDR_STEP   = 1;
 localparam PWO_WRITE_ADDR_STEP  = 1;
 
+localparam [MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 //FSM states
 ntt_read_state_t read_fsm_state_ps, read_fsm_state_ns;
 ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
@@ -109,7 +110,8 @@ logic [MEM_ADDR_WIDTH-1:0] pw_base_addr_a, pw_base_addr_b, pw_base_addr_c;
 logic incr_mem_rd_addr;
 logic incr_mem_wr_addr;
 logic rst_rd_addr, rst_wr_addr; //TODO: need both?
-logic [MEM_ADDR_WIDTH:0] mem_rd_addr_nxt, mem_wr_addr_nxt, mem_rd_base_addr, mem_wr_base_addr; //One extra bit in addr to roll over addr, so we can wraparound in the addr range
+logic [MEM_ADDR_WIDTH:0] mem_rd_addr_nxt, mem_wr_addr_nxt; //One extra bit in addr to roll over addr, so we can wraparound in the addr range
+logic [MEM_ADDR_WIDTH-1:0] mem_rd_base_addr, mem_wr_base_addr; 
 logic [4:0] rd_addr_step, wr_addr_step;
 logic rd_addr_wraparound;
 logic wr_addr_wraparound;
@@ -249,8 +251,8 @@ always_comb begin
     mem_wr_base_addr   = rounds_count[0] ? dest_base_addr : interim_base_addr;
     mem_rd_addr_nxt    = mem_rd_addr + rd_addr_step;
     mem_wr_addr_nxt    = mem_wr_addr + wr_addr_step;
-    rd_addr_wraparound = mem_rd_addr_nxt > mem_rd_base_addr + MEM_LAST_ADDR;
-    wr_addr_wraparound = mem_wr_addr_nxt > mem_wr_base_addr + MEM_LAST_ADDR;
+    rd_addr_wraparound = mem_rd_addr_nxt > {1'b0,mem_rd_base_addr} + MEM_LAST_ADDR;
+    wr_addr_wraparound = mem_wr_addr_nxt > {1'b0,mem_wr_base_addr} + MEM_LAST_ADDR;
 
     //PWO addresses
     pw_rd_addr_nxt        = pw_rd_addr + PWO_READ_ADDR_STEP;
@@ -269,7 +271,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         mem_rd_addr <= mem_rd_base_addr;
     end
     else if (incr_mem_rd_addr) begin
-        mem_rd_addr <= rd_addr_wraparound ? (mem_rd_addr_nxt - (mem_rd_base_addr + MEM_LAST_ADDR)) + mem_rd_base_addr : mem_rd_addr_nxt;
+        mem_rd_addr <= rd_addr_wraparound ? MEM_ADDR_WIDTH'(mem_rd_addr_nxt - MEM_LAST_ADDR) : mem_rd_addr_nxt[MEM_ADDR_WIDTH-1:0];
     end
 end
 
@@ -285,7 +287,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         mem_wr_addr <= mem_wr_base_addr;
     end
     else if (incr_mem_wr_addr) begin
-        mem_wr_addr <= wr_addr_wraparound ? (mem_wr_addr_nxt - (mem_wr_base_addr + MEM_LAST_ADDR)) + mem_wr_base_addr : mem_wr_addr_nxt;
+        mem_wr_addr <= wr_addr_wraparound ? MEM_ADDR_WIDTH'(mem_wr_addr_nxt - MEM_LAST_ADDR) : mem_wr_addr_nxt[MEM_ADDR_WIDTH-1:0];
     end
 end
 
@@ -375,6 +377,7 @@ assign twiddle_addr = twiddle_addr_reg + twiddle_offset;
 //------------------------------------------
 //Busy logic
 //------------------------------------------
+assign busy = ntt_busy | pwo_busy;
 assign ntt_busy = (read_fsm_state_ps != RD_IDLE) && (write_fsm_state_ps != WR_IDLE) && (ct_mode | gs_mode);
 assign pwo_busy = (read_fsm_state_ps != RD_IDLE) && (write_fsm_state_ps != WR_IDLE) && pwo_mode;
 

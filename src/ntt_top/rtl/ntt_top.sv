@@ -86,6 +86,7 @@ module ntt_top
     //Reuse between pwm mem data or sampler data (mux should be outside)
     input wire [MEM_DATA_WIDTH-1:0] pwm_b_rd_data,
 
+    output logic ntt_busy,
     output logic ntt_done
 
 );
@@ -108,7 +109,6 @@ module ntt_top
     logic bf_ready;
 
     //Internal
-    logic ntt_busy;
     logic [6:0] twiddle_addr;
     logic buf_wren;
     logic buf_rden;
@@ -211,6 +211,7 @@ module ntt_top
         .pw_mem_wr_addr_c(pw_mem_wr_addr_c),
         .pw_rden(pw_rden),
         .pw_wren(pw_wren),
+        .busy(ntt_busy),
         .done(ntt_done)
     );
 

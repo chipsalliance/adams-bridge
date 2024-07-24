@@ -1,0 +1,32 @@
+---
+provides: [sampler_pkg]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sampler_pkg.sv
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sampler_pkg.sv
+---
+provides: [sampler_top]
+schema_version: 2.4.0
+requires:
+  - sampler_pkg
+  - abr_defines
+  - abr_libs
+  - rej_bounded
+  - rej_sampler
+  - exp_mask
+  - sample_in_ball
+  - sha3
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sampler_top.sv
+    tops: [sampler_top]

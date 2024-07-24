@@ -25,6 +25,7 @@ module sha3_tb
   import sha3_pkg::*;
   import sha3_tb_pkg::*;
   import abr_prim_alert_pkg::*;
+  import sampler_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb
@@ -175,6 +176,7 @@ module sha3_tb
     .sha3_fsm_o (sha3_fsm),
 
     .state_valid_o (sha3_state_vld),
+    .state_valid_hold_i('0),
     .state_o       (sha3_state),
 
     .error_o (sha3_err),
@@ -469,7 +471,7 @@ module sha3_tb
 
       mode <= test_vector_q[0].mode;
       strength <= test_vector_q[0].strength;
-
+      
       //start keccak
       @(posedge clk_tb);
       sha3_start <= 1;
@@ -499,6 +501,7 @@ module sha3_tb
       wait (sha3_state_vld == 1'b1);
       
       //check absorb
+      @(negedge clk_tb);
       check_results(1'b0, 0);
 
       //Do a squeeze for Shake
@@ -511,6 +514,7 @@ module sha3_tb
         wait (sha3_state_vld == 1'b1);
 
         //check squeeze
+        @(negedge clk_tb);
         check_results(1'b1);
       end
 

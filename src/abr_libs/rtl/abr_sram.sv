@@ -16,34 +16,36 @@ module abr_sram #(
      parameter DEPTH      = 64
     ,parameter DATA_WIDTH = 32
     ,parameter ADDR_WIDTH = $clog2(DEPTH)
+    ,parameter NUM_PORTS = 1
 
     )
     (
-    input  logic                       clk_i,
+    input  logic                                      clk_i,
 
-    input  logic                       cs_i,
-    input  logic                       we_i,
-    input  logic [ADDR_WIDTH-1:0]      addr_i,
-    input  logic [DATA_WIDTH-1:0]      wdata_i,
-    output logic [DATA_WIDTH-1:0]      rdata_o
+    input  logic [NUM_PORTS-1:0]                      cs_i,
+    input  logic [NUM_PORTS-1:0]                      we_i,
+    input  logic [NUM_PORTS-1:0][ADDR_WIDTH-1:0]      addr_i,
+    input  logic [NUM_PORTS-1:0][DATA_WIDTH-1:0]      wdata_i,
+    output logic [NUM_PORTS-1:0][DATA_WIDTH-1:0]      rdata_o
     );
 
-    localparam NUM_BYTES = DATA_WIDTH/8 + ((DATA_WIDTH % 8) ? 1 : 0);
-
     //storage element
-    logic [7:0] ram [DEPTH][NUM_BYTES-1:0];
+    logic [DEPTH-1:0][DATA_WIDTH-1:0] ram;
 
     always @(posedge clk_i) begin
-        if (cs_i & we_i) begin
-            for (int i = 0; i < NUM_BYTES; i++) begin
-                ram[addr_i][i] <= wdata_i[i*8 +: 8];
+        for (int port = 0; port < NUM_PORTS; port++) begin
+            if (cs_i[port] & we_i[port]) begin
+                    ram[addr_i[port]] <= wdata_i[port];
             end
         end
-        if (cs_i & ~we_i) begin
-            for (int i = 0; i < NUM_BYTES; i++) begin
-                rdata_o[i*8 +: 8] <= ram[addr_i][i];
+    end
+
+    always @(posedge clk_i) begin
+        for (int port = 0; port < NUM_PORTS; port++) begin
+            if (cs_i[port] & ~we_i[port]) begin
+                rdata_o[port] <= ram[addr_i[port]];
             end
-        end
+        end 
     end
 
 endmodule

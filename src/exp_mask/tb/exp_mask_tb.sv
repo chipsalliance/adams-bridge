@@ -24,6 +24,8 @@ import "DPI-C" function string getenv(input string env_name);
 `include "config_defines.svh"
 
 module exp_mask_tb
+  import sampler_pkg::*;
+  import abr_params_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb

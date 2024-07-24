@@ -14,7 +14,8 @@
 
 
 module sample_in_ball_ctrl
-      import sib_pkg::*;
+  import sib_pkg::*;
+  import abr_params_pkg::*;
   #(
    parameter SIB_NUM_SAMPLERS = 4
   ,parameter SIB_SAMPLE_W     = 8
@@ -34,6 +35,7 @@ module sample_in_ball_ctrl
   output logic                                          sib_done_o,
 
   //memory if 
+  output logic [1:0]                         cs_o,
   output logic [1:0]                         we_o,
   output logic [1:0][7:2]                    addr_o,
   output logic [1:0][3:0][DILITHIUM_Q_W-1:0] wrdata_o,
@@ -233,6 +235,7 @@ module sample_in_ball_ctrl
     .sign_i(sign_buffer[0]),
 
     //memory if 
+    .cs_o(cs_o),
     .we_o(we_o),
     .addr_o(addr_o),
     .wrdata_o(wrdata_o),

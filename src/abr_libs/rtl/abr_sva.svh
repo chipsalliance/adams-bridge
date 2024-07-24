@@ -32,29 +32,29 @@
 `endif
 
 // Assert a concurrent property directly.
-`define ABR_ASSERT(assert_name, prop, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST)  \
+`define ABR_ASSERT(assert_name, prop, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST, en = 1)  \
 `ifdef ABR_ASSERT_ON                                                           \
-  assert_name: assert property (@(posedge clk) disable iff (rst !== 0) (prop))    \
+  assert_name: assert property (@(posedge clk) disable iff ((rst !== 0) | (en === 0)) (prop))    \
     else begin                                                                 \
         `ABR_ASSERT_RPT(`STRINGIFY(assert_name))                                   \
     end                                                                        \
 `endif
 
 // Assert a concurrent property NEVER happens
-`define ABR_ASSERT_NEVER(assert_name, prop, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST) \
+`define ABR_ASSERT_NEVER(assert_name, prop, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST, en = 1) \
 `ifdef ABR_ASSERT_ON                                                            \
-  assert_name: assert property (@(posedge clk) disable iff (rst !== 0) not (prop)) \
+  assert_name: assert property (@(posedge clk) disable iff ((rst !== 0) | (en === 0)) not (prop)) \
     else begin                                                                  \
         `ABR_ASSERT_RPT(`STRINGIFY(assert_name))                                    \
     end                                                                         \
 `endif
 
 // Assert that signal is not x
-`define ABR_ASSERT_KNOWN(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST) \
-  `ABR_ASSERT(assert_name, !$isunknown(sig), clk, rst)
+`define ABR_ASSERT_KNOWN(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST, en = 1) \
+  `ABR_ASSERT(assert_name, !$isunknown(sig), clk, rst, en)
 
 // Assert that a vector of signals is mutually exclusive
-`define ABR_ASSERT_MUTEX(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST) \
-    `ABR_ASSERT(assert_name, $onehot0(sig), clk, rst)
+`define ABR_ASSERT_MUTEX(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST, en = 1) \
+    `ABR_ASSERT(assert_name, $onehot0(sig), clk, rst, en)
 
 `endif

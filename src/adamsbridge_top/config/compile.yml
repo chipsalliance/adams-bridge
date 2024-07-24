@@ -6,11 +6,13 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/config_defines.svh
+      - $COMPILE_ROOT/rtl/adamsbridge_params_pkg.sv
       - $COMPILE_ROOT/rtl/adamsbridge_reg_pkg.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/config_defines.svh
+      - $COMPILE_ROOT/rtl/adamsbridge_params_pkg.sv
       - $COMPILE_ROOT/rtl/adamsbridge_reg_pkg.sv
 ---
 provides: [adamsbridge_top]
@@ -18,23 +20,46 @@ schema_version: 2.4.0
 requires:
   - abr_defines
   - abr_libs
-  - rej_bounded
-  - rej_sampler
-  - exp_mask
-  - sample_in_ball
-  - sha3
+  - sampler_top
+  - ntt_top
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
+      - $COMPILE_ROOT/rtl/abr_seq_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_seq.sv
+      - $COMPILE_ROOT/rtl/abr_ctrl.sv
       - $COMPILE_ROOT/rtl/adamsbridge_top.sv
       - $COMPILE_ROOT/rtl/adamsbridge_reg.sv
     tops: [adamsbridge_top]
   rtl_lint:
-    waiver_files: []
+  rtl_lint:
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/adamsbridge_top/config/design_lint/sglint_waivers
     options: []
 global:
   tool:
     vcs:
       default:
         - '-assert svaext'
+---
+provides: [adamsbridge_top_tb]
+schema_version: 2.4.0
+requires:
+  - adamsbridge_top
+  - abr_defines
+  - abr_libs
+  - sampler_top
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/adamsbridge_top_tb.sv
+    tops: [adamsbridge_top_tb]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'

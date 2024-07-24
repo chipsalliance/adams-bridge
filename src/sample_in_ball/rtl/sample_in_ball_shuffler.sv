@@ -18,7 +18,7 @@
 //For sign value of 1, the value Q-1 is written to Index j, else 1 is written to Index j
 
 module sample_in_ball_shuffler
-  //    import ::*;
+  import abr_params_pkg::*;
   #(
      parameter SIB_SAMPLE_W = 8
   )
@@ -34,8 +34,9 @@ module sample_in_ball_shuffler
     input  logic                         sign_i,
 
     //memory if 
-    output logic [1:0]                        we_o,
-    output logic [1:0][7:2]                   addr_o,
+    output logic [1:0]                         cs_o,
+    output logic [1:0]                         we_o,
+    output logic [1:0][7:2]                    addr_o,
     output logic [1:0][3:0][DILITHIUM_Q_W-2:0] wrdata_o,
     input  logic [1:0][3:0][DILITHIUM_Q_W-2:0] rddata_i
 
@@ -108,7 +109,7 @@ module sample_in_ball_shuffler
     endcase
   end
 
-
+  always_comb cs_o = {2{valid_i}};
   always_comb we_o[0] = read_valid & ~addr_match;
   always_comb we_o[1] = read_valid;
 

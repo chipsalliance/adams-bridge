@@ -11,18 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+`ifndef ABR_AHB_DEFINES_PKG
+`define ABR_AHB_DEFINES_PKG
 
-`ifndef ABR_SIB_PKG
-`define ABR_SIB_PKG
+package abr_ahb_defines_pkg;
 
-package sib_pkg;
-
-  typedef enum logic [1:0] {
-    SIB_IDLE         = 2'b00,
-    SIB_SIGN_BUFFER  = 2'b01,
-    SIB_ACTIVE       = 2'b10,
-    SIB_DONE         = 2'b11
-} sib_fsm_state_e;
+  parameter ABR_H_OKAY=1'b0;
+  parameter ABR_H_ERROR=1'b1;
 
 endpackage
+
 `endif

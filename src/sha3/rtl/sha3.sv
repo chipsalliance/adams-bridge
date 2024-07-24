@@ -66,6 +66,7 @@ module sha3
   // In invalid state, the output `state` will be zero to prevent information
   // leakage.
   output logic              state_valid_o,
+  input  logic              state_valid_hold_i,
   output logic [StateW-1:0] state_o [Share],
 
   // error_o value is pushed to Error FIFO at KMAC/SHA3 top and reported to SW
@@ -177,6 +178,13 @@ module sha3
     end
   end
 
+  always_ff  @(posedge clk_i or negedge rst_b) begin
+    if      (!rst_b)                                    state_valid <= 1'b0;
+    else if ((st_d == StSqueeze_sparse) & ~state_valid) state_valid <= 1'b1;
+    else if (state_valid_hold_i)                        state_valid <= state_valid;
+    else                                                state_valid <= 1'b0;
+  end
+
   assign block_processed_o = keccak_complete;
 
   // State connection
@@ -184,6 +192,8 @@ module sha3
   assign state_o = state_guarded;
 
   assign sha3_fsm_o = sparse2logic(st);
+
+
 
   ///////////////////
   // State Machine //
@@ -209,9 +219,6 @@ module sha3
     keccak_done = abr_prim_mubi_pkg::MuBi4False;
 
     squeezing = 1'b 0;
-
-    state_valid = 1'b 0;
-    mux_sel = MuxGuard ;
 
     sha3_state_error = 1'b 0;
 
@@ -239,8 +246,6 @@ module sha3
       end
 
       StSqueeze_sparse: begin
-        state_valid = 1'b 1;
-        mux_sel = MuxRelease; // Expose state to register interface
 
         squeezing = 1'b 1;
 
@@ -289,6 +294,11 @@ module sha3
   //////////////
 
   // State --> Digest output
+  always_comb begin
+    if (state_valid) mux_sel = MuxRelease; // Expose state to register interfac
+    else mux_sel = MuxGuard ;
+  end
+
   always_comb begin : state_guarded_mux
     unique case (mux_sel)
       MuxGuard:   state_guarded = '{default: '0};

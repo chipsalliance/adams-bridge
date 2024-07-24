@@ -16,6 +16,7 @@ provides: [rej_sampler_tb]
 schema_version: 2.4.0
 requires:
   - rej_sampler
+  - sampler_pkg
 targets:
   tb:
     directories: [$COMPILE_ROOT/tb]
