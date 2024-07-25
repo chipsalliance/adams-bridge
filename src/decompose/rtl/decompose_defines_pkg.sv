@@ -26,6 +26,10 @@ package decompose_defines_pkg;
     typedef enum logic {DCMP_RD_IDLE, DCMP_RD_MEM} dcmp_read_state_e;
     typedef enum logic {DCMP_WR_IDLE, DCMP_WR_MEM} dcmp_write_state_e;
 
+    localparam sign_op = 'h0,
+               verify_op = 'h1;
+
+    typedef logic dcmp_mode_t;
 endpackage
 
 `endif

@@ -99,3 +99,4 @@ ${CALIPTRA_ROOT}/src/makehint/rtl/sample_buffer.sv
 ${CALIPTRA_ROOT}/src/makehint/rtl/hintgen.sv
 ${CALIPTRA_ROOT}/src/makehint/rtl/makehint.sv
 ${CALIPTRA_ROOT}/src/decompose/rtl/decompose_ctrl.sv
+${CALIPTRA_ROOT}/src/decompose/rtl/decompose_usehint.sv

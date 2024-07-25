@@ -34,6 +34,7 @@
 
 module decompose 
     import ntt_defines_pkg::*; //TODO: move all global params to config defines/ABR pkg?
+    import decompose_defines_pkg::*;
     #(
         parameter DILITHIUM_Q = 23'd8380417,
         parameter GAMMA2 = (DILITHIUM_Q-1)/32,
@@ -46,8 +47,10 @@ module decompose
         input wire zeroize,
 
         input wire decompose_enable,
+        input dcmp_mode_t dcmp_mode,
         input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
 
         //Input from keccak to w1_encode
         input wire keccak_done,
@@ -57,6 +60,10 @@ module decompose
         output mem_if_t mem_wr_req,
         input wire [(4*REG_SIZE)-1:0] mem_rd_data,
         output logic [(4*REG_SIZE)-1:0] mem_wr_data,
+
+        //Output to memory - h (sigDecode)
+        output mem_if_t mem_hint_rd_req,
+        input wire [(4*REG_SIZE)-1:0] mem_hint_rd_data,
 
         //Output to z mem - z != 0
         output mem_if_t z_mem_wr_req,
@@ -75,16 +82,35 @@ module decompose
     );
 
     //Coefficient wires
-    logic [3:0][3:0] r1, r1_reg;
+    logic [3:0][3:0] r1, r1_reg, r1_usehint, r1_mux;
     logic [3:0] r_corner, r_corner_reg;
     logic [3:0][19:0] r0_mod_2gamma2;
-    logic [3:0][REG_SIZE-2:0] r0_mod_q, r0; //23-bit value
-    logic [(4*REG_SIZE)-1:0] mem_rd_data_reg;
+    logic [3:0][REG_SIZE-2:0] r0_mod_q, r0, r0_reg; //23-bit value
+    logic [(4*REG_SIZE)-1:0] mem_rd_data_reg, mem_hint_rd_data_reg;
+    mem_if_t mem_wr_req_int;
 
     //Control wires
-    logic mod_enable;
+    logic mod_enable, enable_reg, enable_d2;
     logic [3:0] mod_ready;
-    // logic r1_valid;
+    logic verify;
+    logic [3:0] usehint_ready;
+
+    always_comb verify = (dcmp_mode == verify_op);
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            enable_reg <= 'b0;
+            enable_d2  <= 'b0;
+        end
+        else if (zeroize) begin
+            enable_reg <= 'b0;
+            enable_d2  <= 'b0;
+        end
+        else begin
+            enable_reg <= mod_enable;
+            enable_d2  <= enable_reg;
+        end
+    end
 
     decompose_ctrl
     #(
@@ -99,7 +125,7 @@ module decompose
         .dest_base_addr(dest_base_addr),
         .r0_ready(&mod_ready), //all redux units must be ready at the same time
         .mem_rd_req(mem_rd_req),
-        .mem_wr_req(mem_wr_req), //TODO: flop?
+        .mem_wr_req(mem_wr_req_int), //TODO: flop?
         .mod_enable(mod_enable),
         .decompose_done(decompose_done)
     );
@@ -127,7 +153,7 @@ module decompose
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .add_en_i(mod_enable),
+                .add_en_i(enable_reg),
                 .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .res_o(r0_mod_2gamma2[i]),
                 .ready_o(mod_ready[i])
@@ -146,19 +172,25 @@ module decompose
     //Delay flops
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            r_corner_reg    <= 'h0;
-            mem_rd_data_reg <= 'h0;
-            r1_reg          <= 'h0;
+            r_corner_reg         <= 'h0;
+            mem_rd_data_reg      <= 'h0;
+            r0_reg               <= 'h0;
+            r1_reg               <= 'h0;
+            mem_hint_rd_data_reg <= 'h0;
         end
         else if (zeroize) begin
-            r_corner_reg    <= 'h0;
-            mem_rd_data_reg <= 'h0;
-            r1_reg          <= 'h0;
+            r_corner_reg         <= 'h0;
+            mem_rd_data_reg      <= 'h0;
+            r0_reg               <= 'h0;
+            r1_reg               <= 'h0;
+            mem_hint_rd_data_reg <= 'h0;
         end
         else begin
-            r_corner_reg    <= r_corner;
-            mem_rd_data_reg <= mem_rd_data;
-            r1_reg          <= r1;
+            r_corner_reg         <= r_corner;
+            mem_rd_data_reg      <= mem_rd_data;
+            r0_reg               <= r0;
+            r1_reg               <= r1;
+            mem_hint_rd_data_reg <= mem_hint_rd_data;
         end
     end
 
@@ -166,21 +198,50 @@ module decompose
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
                 r0[i] = r_corner_reg[i] ? mem_rd_data_reg[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] : r0_mod_q[i];
-                mem_wr_data[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] = {1'b0, r0[i]};
+                mem_wr_data[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] = verify ? 'h0 : {1'b0, r0_reg[i]};
             end
         end
     endgenerate
 
-    assign z_mem_wr_req.rd_wr_en    = mem_wr_req.rd_wr_en;
-    assign z_mem_wr_req.addr        = mem_wr_req.addr - dest_base_addr; //TODO: clean up
+    generate
+        for (genvar i = 0; i < 4; i++) begin
+            decompose_usehint #(
+                .REG_SIZE(REG_SIZE-1)
+            )
+            usehint_inst (
+                .clk(clk),
+                .reset_n(reset_n),
+                .zeroize(zeroize),
+                .usehint_enable(enable_d2),
+                .w0_i(r0[i]),
+                .w1_i(r1_reg[i]),
+                .hint_i(mem_hint_rd_data_reg[i*REG_SIZE]), //LSB is the hint, rest are 0s
+                .w1_o(r1_usehint[i]),
+                .ready_o(usehint_ready[i])
+                
+            );
+        end
+    endgenerate
+
+    always_comb begin
+        z_mem_wr_req.rd_wr_en    = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
+        z_mem_wr_req.addr        = verify ? 'h0 : mem_wr_req_int.addr - dest_base_addr;
+        r1_mux                   = verify & (&usehint_ready) ? r1_usehint : r1_reg;
+
+        mem_wr_req.addr          = verify ? 'h0 : mem_wr_req_int.addr;
+        mem_wr_req.rd_wr_en      = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
+
+        mem_hint_rd_req.addr     = verify ? (mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
+        mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
+    end
 
     //w1 Encode
     decompose_w1_encode w1_enc_inst (
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),
-        .w1_encode_enable(&mod_ready), //(r1_valid),
-        .r1_i(r1_reg),
+        .w1_encode_enable(verify ? &usehint_ready : &mod_ready),
+        .r1_i(r1_mux),
         .w1_o(w1_o),
         .buffer_en(buffer_en),
         .keccak_en(keccak_en),

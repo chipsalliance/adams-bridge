@@ -46,12 +46,14 @@ reg           reset_n_tb;
 reg           cptra_pwrgood_tb;
 reg           zeroize_tb;
 reg           en_tb;
-reg [4*REG_SIZE-1:0] coeff_tb, mem_wr_data_o;
+reg [4*REG_SIZE-1:0] coeff_tb, mem_wr_data_o, hint_tb;
 reg [MEM_ADDR_WIDTH-1:0] src_base_tb, dest_base_tb;
 reg r0_rdy_tb;
-logic [255:0][REG_SIZE-1:0] coeff_array, coeff_high, coeff_low;
+logic [255:0][REG_SIZE-1:0] coeff_array, coeff_high, coeff_low, coeff_high_usehint, coeff_high_final, hint_array;
 logic [3:0][3:0] coeff_high_tb;
 logic kdone_tb;
+logic verify_tb;
+logic mode_tb;
 decompose dut(
     .clk(clk_tb),
     .reset_n(reset_n_tb),
@@ -59,8 +61,12 @@ decompose dut(
     .decompose_enable(en_tb),
     .src_base_addr(src_base_tb),
     .dest_base_addr(dest_base_tb),
+    .hint_src_base_addr(src_base_tb),
     .mem_rd_req(),
     .mem_wr_req(),
+    .mem_hint_rd_req(),
+    .mem_hint_rd_data(hint_tb),
+    .dcmp_mode(mode_tb),
     .mem_rd_data(coeff_tb),
     .mem_wr_data(mem_wr_data_o),
     .z_mem_wr_req(),
@@ -108,11 +114,14 @@ task init_sim;
         zeroize_tb = 0;
         en_tb = 0;
         coeff_tb = 0;
+        hint_tb = 0;
         src_base_tb = 'h0;
         dest_base_tb = 'h0;
         r0_rdy_tb = 'b0;
         coeff_high_tb = 'h0;
         kdone_tb = 'b0;
+        verify_tb = 'b0;
+        mode_tb = 'h0;
     end
 endtask
 
@@ -168,7 +177,8 @@ task ctrl_test;
 endtask
 
 task read_test_vectors();
-    string fname = "test_vector.hex";
+    // string fname = "test_vector.hex";
+    string fname = "dcmp_usehint_test_vector.hex";
     integer file;
     string line;
     integer i, ret;
@@ -179,14 +189,16 @@ task read_test_vectors();
     
     while (!$feof(file)) begin
         if($fgets(line,file)) begin
-            ret = $sscanf(line, "%h %h %h", coeff_array[i], coeff_high[i], coeff_low[i]);
+            ret = $sscanf(line, "%h %h %h %h %h %h", coeff_array[i], coeff_high[i], coeff_low[i], coeff_high_usehint[i], coeff_high_final[i], hint_array[i]);
             i = i+1;
         end
     end
     $fclose(file);
 endtask
 
-task dcmp_test;
+task dcmp_test(logic vfy);
+    logic error_flag;
+
     $display("Reading hex file\n");
     read_test_vectors();
 
@@ -197,26 +209,69 @@ task dcmp_test;
     en_tb = 1'b0;
     src_base_tb = 'h0;
     dest_base_tb = 'h40;
+    error_flag = 'b0;
+
+    @(posedge clk_tb); //Emulate mem reads by waiting a cycle
+
     fork
-        
     begin
         for (int poly = 0; poly < 1; poly++) begin
             $display("Starting Poly %0d", poly);
             for (int i = 0; i < 256; i=i+4) begin
                 coeff_tb <= {coeff_array[i+3], coeff_array[i+2], coeff_array[i+1], coeff_array[i]}; //{{1'b0,(REG_SIZE-1)'($random)}, {1'b0,(REG_SIZE-1)'($random)}, {1'b0,(REG_SIZE-1)'($random)}, {1'b0,(REG_SIZE-1)'($random)}};
+                hint_tb <= {hint_array[i+3], hint_array[i+2], hint_array[i+1], hint_array[i]};
                 @(posedge clk_tb);
             end
         end
         @(posedge clk_tb);
     end
     begin
-        @(posedge clk_tb); //wait for mod_ready to go high
+        // @(posedge clk_tb); //wait for mod_ready to go high
+        //Check decompose outputs w0 and w1
         while(dut.mod_ready != 'hf) @(posedge clk_tb);
         for(int i = 0; i < 256; i = i+4) begin
-            if (dut.r1_reg[i%4] != coeff_high[i])
-                $error("r1 does not match. Expected = %h, observed = %h\n", coeff_high[i], dut.r1_reg[i%4]);
-            if (mem_wr_data_o != {coeff_low[i+3], coeff_low[i+2], coeff_low[i+1], coeff_low[i]})
-                $error("r0 does not match. Expected = %h %h %h %h, observed = %h %h %h %h\n", coeff_low[i+3], coeff_low[i+2], coeff_low[i+1], coeff_low[i], dut.r0[3], dut.r0[2], dut.r0[1], dut.r0[0]);
+            if ({REG_SIZE'(dut.r1_reg[i%4]), REG_SIZE'(dut.r1_reg[i%4+1]), REG_SIZE'(dut.r1_reg[i%4+2]), REG_SIZE'(dut.r1_reg[i%4+3])} != {coeff_high[i], coeff_high[i+1], coeff_high[i+2], coeff_high[i+3]}) begin
+                $error("r1 does not match. Expected = %h %h %h %h, observed = %h %h %h %h at index %0d\n", coeff_high[i], coeff_high[i+1], coeff_high[i+2], coeff_high[i+3], dut.r1_reg[i%4], dut.r1_reg[i%4+1], dut.r1_reg[i%4+2], dut.r1_reg[i%4+3], i);
+                error_flag = 'b1;
+            end
+            if (~vfy) begin
+                // if (mem_wr_data_o != {coeff_low[i+3], coeff_low[i+2], coeff_low[i+1], coeff_low[i]}) begin
+                if ({REG_SIZE'(dut.r0[i%4+3]), REG_SIZE'(dut.r0[i%4+2]), REG_SIZE'(dut.r0[i%4+1]), REG_SIZE'(dut.r0[i%4])}!= {coeff_low[i+3], coeff_low[i+2], coeff_low[i+1], coeff_low[i]}) begin
+                    $error("r0 does not match. Expected = %h %h %h %h, observed = %h %h %h %h at index %0d\n", coeff_low[i+3], coeff_low[i+2], coeff_low[i+1], coeff_low[i], dut.r0[3], dut.r0[2], dut.r0[1], dut.r0[0], i);
+                    error_flag = 'b1;
+                end
+            end
+            @(posedge clk_tb);
+        end
+    end
+    begin
+        //Check final output (with or without usehint)
+        if (vfy) begin
+            while(dut.usehint_ready != 'hf) @(posedge clk_tb);
+            for(int i = 0; i < 256; i = i+4) begin
+                    if ({REG_SIZE'(dut.r1_mux[i%4]), REG_SIZE'(dut.r1_mux[i%4+1]), REG_SIZE'(dut.r1_mux[i%4+2]), REG_SIZE'(dut.r1_mux[i%4+3])} != {coeff_high_final[i], coeff_high_final[i+1], coeff_high_final[i+2], coeff_high_final[i+3]}) begin
+                        $error("r1 final does not match in verify mode. Expected = %h %h %h %h, observed = %h %h %h %h at index %0d\n", coeff_high_final[i], coeff_high_final[i+1], coeff_high_final[i+2], coeff_high_final[i+3], dut.r1_mux[i%4], dut.r1_mux[i%4+1], dut.r1_mux[i%4+2], dut.r1_mux[i%4+3],i);
+                        error_flag = 'b1;
+                    end
+                    @(posedge clk_tb);
+            end
+        end
+        else begin
+            while(dut.mod_ready != 'hf) @(posedge clk_tb);
+            for(int i = 0; i < 256; i = i+4) begin
+                if ({REG_SIZE'(dut.r1_mux[i%4]), REG_SIZE'(dut.r1_mux[i%4+1]), REG_SIZE'(dut.r1_mux[i%4+2]), REG_SIZE'(dut.r1_mux[i%4+3])} != {coeff_high[i], coeff_high[i+1], coeff_high[i+2], coeff_high[i+3]}) begin
+                    $error("r1 final does not match in sign mode. Expected = %h %h %h %h, observed = %h %h %h %h at index %0d\n", coeff_high[i], coeff_high[i+1], coeff_high[i+2], coeff_high[i+3], dut.r1_mux[i%4], dut.r1_mux[i%4+1],dut.r1_mux[i%4+2],dut.r1_mux[i%4+3],i);
+                    error_flag = 'b1;
+                end
+                @(posedge clk_tb);
+            end
+            //TODO: enable below check. genblk needs naming for this to work
+            // if (vfy) begin
+            //     if (dut.usehint_inst[i].w1_mux[i%4] != coeff_high_usehint[i]) begin
+            //         $error("r1 usehint does not match. Expected = %h, observed = %h at index %0d\n", coeff_high_usehint[i], dut.r1_usehint[i%4], i);
+            //         error_flag = 'b1;
+            //     end
+            // end
             @(posedge clk_tb);
         end
     end
@@ -229,7 +284,20 @@ task dcmp_test;
     kdone_tb = 'b1; //emulate keccak done
     @(posedge clk_tb);
     kdone_tb = 'b0;
-    $display("Test done\n");
+    if (error_flag) begin
+        if (vfy)
+            $display("Decompose + usehint failed\n");
+        else if (~vfy)
+            $display("Decompose failed\n");
+    end
+    else begin
+        if (vfy) $display("Decompose + usehint success\n");
+        else $display("Decompose success\n");
+    end
+    
+    coeff_tb = 'h0;
+    hint_tb = 'h0;
+
 endtask 
 
 task encode_test;
@@ -264,7 +332,12 @@ initial begin
     // sample_buffer_test();
     // r1_lut_test();
     // ctrl_test();
-    dcmp_test();
+    $display("Signing decompose\n");
+    mode_tb = sign_op;
+    dcmp_test(0);
+    $display("Verify decompose\n");
+    mode_tb = verify_op;
+    dcmp_test(1);
     // encode_test();
     repeat(1000) @(posedge clk_tb);
     $finish;
