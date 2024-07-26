@@ -1,0 +1,50 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [sigdecode_z_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sigdecode_z_defines_pkg.sv
+---
+provides: [sigdecode_z]
+schema_version: 2.4.0
+requires:
+  - libs
+  - ntt_pkg
+  - sigdecode_z_pkg
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sigdecode_z_top.sv
+      - $COMPILE_ROOT/rtl/sigdecode_z_unit.sv
+      - $COMPILE_ROOT/rtl/sigdecode_z_defines_pkg.sv
+      
+    tops: [sigdecode_z_top]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/sig_decode_z/config/design_lint/sig_decode_z/sglint_waivers
+---
+provides: [sigdecode_z_tb]
+schema_version: 2.4.0
+requires:
+  - sigdecode_z
+  - caliptra_top_defines
+  - sigdecode_z_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/sigdecode_z_tb.sv
+    tops: [sigdecode_z_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying s1 bytes hex to $PWD" && cp $COMPILE_ROOT/tb/polyz_unpack.py .'
