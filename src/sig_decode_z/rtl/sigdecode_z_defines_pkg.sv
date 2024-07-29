@@ -23,8 +23,9 @@
 
 package sigdecode_z_defines_pkg;
     import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
 
-    parameter API_ADDR_WIDTH = 15;
+    parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;
     parameter DILITHIUM_L = 7;
 
     typedef struct packed {

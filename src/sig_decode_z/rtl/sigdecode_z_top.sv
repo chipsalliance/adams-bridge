@@ -27,10 +27,11 @@
 //======================================================================
 
 module sigdecode_z_top
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     import sigdecode_z_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
+        parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
         parameter REG_SIZE = 24,
         parameter GAMMA1 = 19
     )

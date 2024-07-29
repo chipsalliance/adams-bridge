@@ -23,6 +23,7 @@
 `include "caliptra_reg_defines.svh"
 
 module sigencode_z_tb
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     import sigencode_z_defines_pkg::*;
 #(
