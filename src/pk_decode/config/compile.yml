@@ -1,0 +1,37 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [pkdecode]
+schema_version: 2.4.0
+requires:
+  - libs
+  - ntt_pkg
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/pkdecode.sv
+      
+    tops: [pkdecode]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/pk_decode/config/design_lint/pkdecode/sglint_waivers
+---
+provides: [pkdecode_tb]
+schema_version: 2.4.0
+requires:
+  - pkdecode
+  - caliptra_top_defines
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/pkdecode_tb.sv
+    tops: [pkdecode_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying python model to $PWD" && cp $COMPILE_ROOT/tb/unpack_pk.py .'
