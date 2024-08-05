@@ -204,7 +204,7 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Private key field"; hwclr;} PRIVKEY_OUT[32] = 32'b0;
     
-    } ADAMSBRIDGE_PRIVKEY_OUT[1216] @0x00000300;
+    } ADAMSBRIDGE_PRIVKEY_OUT[1224] @0x00000300;
 
     /* ---- ADAMSBRIDGE Component Private Key IN---- */
     reg {
@@ -220,7 +220,7 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Private key field"; swwe = adamsbridge_ready; hwclr;} PRIVKEY_IN[32] = 32'b0;
     
-    } ADAMSBRIDGE_PRIVKEY_IN[1216] @0x00001600;
+    } ADAMSBRIDGE_PRIVKEY_IN[1224] @0x00001600;
 
 
     /* ---- ADAMSBRIDGE Component Public Key ---- */
@@ -238,7 +238,7 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Public key field"; swwe = adamsbridge_ready; hwclr;} PUBKEY[32] = 32'b0;
     
-    } ADAMSBRIDGE_PUBKEY[648] @0x00002900;
+    } ADAMSBRIDGE_PUBKEY[648] @0x00002920;
     
 
     /* ---- ADAMSBRIDGE Component Signature ---- */

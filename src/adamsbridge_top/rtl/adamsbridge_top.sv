@@ -19,7 +19,7 @@ module adamsbridge_top
   import abr_prim_alert_pkg::*;
   import adamsbridge_reg_pkg::*;
   import abr_params_pkg::*;
-  import abr_seq_pkg::*;
+  import abr_ctrl_pkg::*;
   import sampler_pkg::*;
   import sha3_pkg::*;
   import ntt_defines_pkg::*;
@@ -74,25 +74,26 @@ module adamsbridge_top
   logic [ABR_MEM_DATA_WIDTH-1:0] sampler_mem_data;
   logic [ABR_MEM_ADDR_WIDTH-1:0] sampler_mem_addr;
 
-  logic                                        sampler_ntt_dv;
+  logic [1:0]                                  sampler_ntt_dv;
+  logic [1:0]                                  sampler_valid;
   logic [COEFF_PER_CLK-1:0][DILITHIUM_Q_W-1:0] sampler_ntt_data;
 
-  abr_ntt_mode_e ntt_mode;
-  mode_t mode;
-  logic accumulate;
-  logic ntt_enable;
-  ntt_mem_addr_t ntt_mem_base_addr;
-  pwo_mem_addr_t pwo_mem_base_addr;
-  mem_if_t mem_wr_req;
-  mem_if_t mem_rd_req;
-  logic [ABR_MEM_DATA_WIDTH-1:0] mem_wr_data;
-  logic [ABR_MEM_DATA_WIDTH-1:0] mem_rd_data;
-  mem_if_t pwm_a_rd_req;
-  mem_if_t pwm_b_rd_req;
-  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
-  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
-  logic ntt_done;
-  logic ntt_busy;
+  abr_ntt_mode_e [1:0] ntt_mode;
+  mode_t [1:0] mode;
+  logic [1:0] accumulate;
+  logic [1:0] ntt_enable;
+  ntt_mem_addr_t [1:0] ntt_mem_base_addr;
+  pwo_mem_addr_t [1:0] pwo_mem_base_addr;
+  mem_if_t [1:0] mem_wr_req;
+  mem_if_t [1:0] mem_rd_req;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] mem_wr_data;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] mem_rd_data;
+  mem_if_t [1:0] pwm_a_rd_req;
+  mem_if_t [1:0] pwm_b_rd_req;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
+  logic [1:0] ntt_done;
+  logic [1:0] ntt_busy;
 
   //gasket to assemble reg requests
   logic abr_reg_dv;
@@ -214,7 +215,7 @@ sampler_top sampler_top_inst
 
   .sampler_busy_o(sampler_busy),
 
-  .sampler_ntt_dv_o(sampler_ntt_dv),
+  .sampler_ntt_dv_o(sampler_ntt_dv[0]),
   .sampler_ntt_data_o(sampler_ntt_data),
 
   .sampler_mem_dv_o(sampler_mem_dv),
@@ -225,210 +226,260 @@ sampler_top sampler_top_inst
   .sampler_state_data_o(sampler_state_data)
 );
 
-logic sampler_valid;
+assign sampler_ntt_dv[1] = 0; //no sampler interface to secondary ntt
 
-//NTT
-//gasket here, create common interfaces?
-always_comb begin
-  mode = '0;
-  accumulate = '0;
-  sampler_valid = 0;
+generate
+  for (genvar g_inst = 0; g_inst < 2; g_inst++) begin
+    //NTT
+    //gasket here, create common interfaces?
+    always_comb begin
+      mode[g_inst] = '0;
+      accumulate[g_inst] = '0;
+      sampler_valid[g_inst] = 0;
 
-  unique case (ntt_mode) inside
-    ABR_NTT_NONE: begin
+      unique case (ntt_mode[g_inst]) inside
+        ABR_NTT_NONE: begin
+        end
+        ABR_NTT: begin
+          mode[g_inst] = ct;
+        end
+        ABR_INTT: begin
+          mode[g_inst] = gs;
+        end
+        ABR_PWM_SMPL: begin
+          mode[g_inst] = pwm;
+          sampler_valid[g_inst] = sampler_ntt_dv[g_inst];
+        end
+        ABR_PWM_ACCUM_SMPL: begin
+          mode[g_inst] = pwm;
+          accumulate[g_inst] = 1;
+          sampler_valid[g_inst] = sampler_ntt_dv[g_inst];
+        end
+        ABR_PWM: begin
+          mode[g_inst] = pwm;
+          sampler_valid[g_inst] = 1;
+        end
+        ABR_PWM_ACCUM: begin
+          mode[g_inst] = pwm;
+          accumulate[g_inst] = 1;
+          sampler_valid[g_inst] = 1;
+        end
+        ABR_PWA: begin
+          mode[g_inst] = pwa;
+          sampler_valid[g_inst] = 1;
+        end
+        ABR_PWS: begin
+          mode[g_inst] = pws;
+          sampler_valid[g_inst] = 1;
+        end
+        default: begin
+        end
+      endcase 
     end
-    ABR_NTT: begin
-      mode = ct;
-    end
-    ABR_INTT: begin
-      mode = gs;
-    end
-    ABR_PWM: begin
-      mode = pwm;
-      sampler_valid = sampler_ntt_dv;
-    end
-    ABR_PWM_ACCUM: begin
-      mode = pwm;
-      accumulate = 1;
-      sampler_valid = sampler_ntt_dv;
-    end
-    ABR_PWA: begin
-      mode = pwa;
-      sampler_valid = 1;
-    end
-    default: begin
-    end
-  endcase 
-end
 
-ntt_top #(
-  .REG_SIZE(REG_SIZE),
-  .DILITHIUM_Q(DILITHIUM_Q),
-  .DILITHIUM_N(DILITHIUM_N),
-  .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
-)
-ntt_top_inst0 (
-  .clk(clk),
-  .reset_n(rst_b),
-  .zeroize(zeroize_reg),
+  ntt_top #(
+    .REG_SIZE(REG_SIZE),
+    .DILITHIUM_Q(DILITHIUM_Q),
+    .DILITHIUM_N(DILITHIUM_N),
+    .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
+  )
+  ntt_top_inst0 (
+    .clk(clk),
+    .reset_n(rst_b),
+    .zeroize(zeroize_reg),
 
-  .mode(mode),
-  .ntt_enable(ntt_enable),
-  .ntt_mem_base_addr(ntt_mem_base_addr),
-  .pwo_mem_base_addr(pwo_mem_base_addr),
-  .accumulate(accumulate),
-  .sampler_valid(sampler_valid),
-  //NTT mem IF
-  .mem_wr_req(mem_wr_req),
-  .mem_rd_req(mem_rd_req),
-  .mem_wr_data(mem_wr_data),
-  .mem_rd_data(mem_rd_data),
-  //PWM mem IF
-  .pwm_a_rd_req(pwm_a_rd_req),
-  .pwm_b_rd_req(pwm_b_rd_req),
-  .pwm_a_rd_data(pwm_a_rd_data),
-  .pwm_b_rd_data(sampler_ntt_dv ? sampler_ntt_data : pwm_b_rd_data),
-  .ntt_busy(ntt_busy),
-  .ntt_done(ntt_done)
-);
+    .mode(mode[g_inst]),
+    .ntt_enable(ntt_enable[g_inst]),
+    .ntt_mem_base_addr(ntt_mem_base_addr[g_inst]),
+    .pwo_mem_base_addr(pwo_mem_base_addr[g_inst]),
+    .accumulate(accumulate[g_inst]),
+    .sampler_valid(sampler_valid[g_inst]),
+    //NTT mem IF
+    .mem_wr_req(mem_wr_req[g_inst]),
+    .mem_rd_req(mem_rd_req[g_inst]),
+    .mem_wr_data(mem_wr_data[g_inst]),
+    .mem_rd_data(mem_rd_data[g_inst]),
+    //PWM mem IF
+    .pwm_a_rd_req(pwm_a_rd_req[g_inst]),
+    .pwm_b_rd_req(pwm_b_rd_req[g_inst]),
+    .pwm_a_rd_data(pwm_a_rd_data[g_inst]),
+    .pwm_b_rd_data(sampler_ntt_dv[g_inst] ? sampler_ntt_data : pwm_b_rd_data[g_inst]),
+    .ntt_busy(ntt_busy[g_inst]),
+    .ntt_done(ntt_done[g_inst])
+  );
+  end
+endgenerate
 
 //MUX memory accesses
-logic [1:0] abr_mem0_cs;
-logic [1:0] abr_mem0_we;
-logic [1:0][ABR_MEM_ADDR_WIDTH-2:0] abr_mem0_addr;
-logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem0_wdata;
-logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem0_rdata;
+logic [3:0] abr_mem_re;
+logic [3:0][ABR_MEM_ADDR_WIDTH-3:0] abr_mem_raddr;
+logic [3:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem_rdata;
+logic [3:0] abr_mem_we;
+logic [3:0][ABR_MEM_ADDR_WIDTH-3:0] abr_mem_waddr;
+logic [3:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem_wdata;
 
-logic [1:0] abr_mem1_cs;
-logic [1:0] abr_mem1_we;
-logic [1:0][ABR_MEM_ADDR_WIDTH-2:0] abr_mem1_addr;
-logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem1_wdata;
-logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem1_rdata;
 
 //FIXME common memory ports to make muxing easier
-//this is really ugly - settle memory architecture and do this better
-logic sampler_mem0_cs, sampler_mem1_cs;
-logic [1:0] ntt_mem0_cs, ntt_mem1_cs;
-logic [1:0] pwo_mem0_cs, pwo_mem1_cs;
-logic [1:0] ntt_mem0_cs_f, ntt_mem1_cs_f;
-logic [1:0] pwo_mem0_cs_f, pwo_mem1_cs_f;
- 
+//this is better - common interfaces will help clean this up further
+
+logic [3:0] sampler_mem_we;
+logic [1:0][3:0] ntt_mem_we;
+
+logic [1:0][3:0] ntt_mem_re;
+logic [1:0][3:0] pwo_a_mem_re;
+logic [1:0][3:0] pwo_b_mem_re;
+logic [1:0][3:0] ntt_mem_re_f;
+logic [1:0][3:0] pwo_a_mem_re_f;
+logic [1:0][3:0] pwo_b_mem_re_f;
+
+//Write Muxes
+always_comb begin
+  for (int i = 0; i < 4; i++) begin
+    sampler_mem_we[i] = sampler_mem_dv & (sampler_mem_addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    ntt_mem_we[0][i] = (mem_wr_req[0].rd_wr_en == RW_WRITE) & (mem_wr_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    ntt_mem_we[1][i] = (mem_wr_req[1].rd_wr_en == RW_WRITE) & (mem_wr_req[1].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+
+    abr_mem_we[i] = sampler_mem_we[i] | ntt_mem_we[0][i] | ntt_mem_we[1][i];
+    abr_mem_waddr[i] = ({ABR_MEM_ADDR_WIDTH-2{sampler_mem_we[i]}} & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-3:0]) |
+                       ({ABR_MEM_ADDR_WIDTH-2{ntt_mem_we[0][i]}}  & mem_wr_req[0].addr[ABR_MEM_ADDR_WIDTH-3:0]) |
+                       ({ABR_MEM_ADDR_WIDTH-2{ntt_mem_we[1][i]}}  & mem_wr_req[1].addr[ABR_MEM_ADDR_WIDTH-3:0]);
+    abr_mem_wdata[i] = ({ABR_MEM_DATA_WIDTH{sampler_mem_we[i]}}   & sampler_mem_data) |
+                       ({ABR_MEM_DATA_WIDTH{ntt_mem_we[0][i]}}    & mem_wr_data[0]) |
+                       ({ABR_MEM_DATA_WIDTH{ntt_mem_we[1][i]}}    & mem_wr_data[1]);
+  end
+end
+
+//Read Muxes
+always_comb begin
+  for (int i = 0; i < 4; i++) begin
+    ntt_mem_re[0][i]   = (mem_rd_req[0].rd_wr_en == RW_READ) & (mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    pwo_a_mem_re[0][i] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    pwo_b_mem_re[0][i] = ~sampler_ntt_dv & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+
+    ntt_mem_re[1][i]   = (mem_rd_req[1].rd_wr_en == RW_READ) & (mem_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    pwo_a_mem_re[1][i] = (pwm_a_rd_req[1].rd_wr_en == RW_READ) & (pwm_a_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+    pwo_b_mem_re[1][i] = (pwm_b_rd_req[1].rd_wr_en == RW_READ) & (pwm_b_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-2] == i[1:0]);
+
+    abr_mem_re[i] = ntt_mem_re[0][i] | pwo_a_mem_re[0][i] | pwo_b_mem_re[0][i] |
+                    ntt_mem_re[1][i] | pwo_a_mem_re[1][i] | pwo_b_mem_re[1][i];
+    abr_mem_raddr[i] = ({ABR_MEM_ADDR_WIDTH-2{ntt_mem_re[0][i]}}   & mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-3:0])   |
+                       ({ABR_MEM_ADDR_WIDTH-2{pwo_a_mem_re[0][i]}} & pwm_a_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-3:0]) |
+                       ({ABR_MEM_ADDR_WIDTH-2{pwo_b_mem_re[0][i]}} & pwm_b_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-3:0]) |
+                       ({ABR_MEM_ADDR_WIDTH-2{ntt_mem_re[1][i]}}   & mem_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-3:0])   |
+                       ({ABR_MEM_ADDR_WIDTH-2{pwo_a_mem_re[1][i]}} & pwm_a_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-3:0]) |
+                       ({ABR_MEM_ADDR_WIDTH-2{pwo_b_mem_re[1][i]}} & pwm_b_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-3:0]);
+  end
+end
+
+//Align read enables
 always_ff @(posedge clk or negedge rst_b) begin : read_mux_flops
   if (!rst_b) begin
-    ntt_mem0_cs_f <= 0;
-    ntt_mem1_cs_f <= 0;
-    pwo_mem0_cs_f <= 0;
-    pwo_mem1_cs_f <= 0;
+    ntt_mem_re_f <= 0;
+    pwo_a_mem_re_f <= 0;
+    pwo_b_mem_re_f <= 0;
   end
   else begin
-    ntt_mem0_cs_f <= ntt_mem0_cs;
-    ntt_mem1_cs_f <= ntt_mem1_cs;
-    pwo_mem0_cs_f <= pwo_mem0_cs;
-    pwo_mem1_cs_f <= pwo_mem1_cs;
+    ntt_mem_re_f <= ntt_mem_re;
+    pwo_a_mem_re_f<= pwo_a_mem_re;
+    pwo_b_mem_re_f <= pwo_b_mem_re;
   end
 end  
 
-always_comb sampler_mem0_cs = (sampler_mem_dv & ~sampler_mem_addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb sampler_mem1_cs = (sampler_mem_dv &  sampler_mem_addr[ABR_MEM_ADDR_WIDTH-1]);
-
-always_comb ntt_mem0_cs[0] = ((mem_wr_req.rd_wr_en != RW_IDLE) & ~mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb ntt_mem0_cs[1] = ((mem_rd_req.rd_wr_en != RW_IDLE) & ~mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb ntt_mem1_cs[0] = ((mem_wr_req.rd_wr_en != RW_IDLE) &  mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb ntt_mem1_cs[1] = ((mem_rd_req.rd_wr_en != RW_IDLE) &  mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-
-always_comb pwo_mem0_cs[0] = ((pwm_a_rd_req.rd_wr_en != RW_IDLE) & ~pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb pwo_mem0_cs[1] = ((pwm_b_rd_req.rd_wr_en != RW_IDLE) & ~pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb pwo_mem1_cs[0] = ((pwm_a_rd_req.rd_wr_en != RW_IDLE) &  pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-always_comb pwo_mem1_cs[1] = ((pwm_b_rd_req.rd_wr_en != RW_IDLE) &  pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-1]);
-
-
-always_comb mem_rd_data = ({ABR_MEM_DATA_WIDTH{ntt_mem0_cs_f[1]}} & abr_mem0_rdata[1]) | 
-                          ({ABR_MEM_DATA_WIDTH{ntt_mem1_cs_f[1]}} & abr_mem1_rdata[1]);
-always_comb pwm_a_rd_data = ({ABR_MEM_DATA_WIDTH{pwo_mem0_cs_f[0]}} & abr_mem0_rdata[1]) | 
-                            ({ABR_MEM_DATA_WIDTH{pwo_mem1_cs_f[0]}} & abr_mem1_rdata[1]);
-always_comb pwm_b_rd_data = ({ABR_MEM_DATA_WIDTH{pwo_mem0_cs_f[1]}} & abr_mem0_rdata[1]) | 
-                            ({ABR_MEM_DATA_WIDTH{pwo_mem1_cs_f[1]}} & abr_mem1_rdata[1]);
-
-//memory 0 port 0
+//Read data muxes
 always_comb begin
-  abr_mem0_cs[0] = sampler_mem0_cs | ntt_mem0_cs[0] | pwo_mem0_cs[0];
-  abr_mem0_we[0] = sampler_mem0_cs | 
-                   ((mem_wr_req.rd_wr_en == RW_WRITE) & ntt_mem0_cs[0]);
-  abr_mem0_addr[0] = ({ABR_MEM_ADDR_WIDTH-1{sampler_mem0_cs}} & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-2:0]) | 
-                     ({ABR_MEM_ADDR_WIDTH-1{ntt_mem0_cs[0]}} & mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
-                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem0_cs[0]}} & pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
-  abr_mem0_wdata[0] = ({ABR_MEM_DATA_WIDTH{sampler_mem0_cs}} & sampler_mem_data) |
-                      ({ABR_MEM_DATA_WIDTH{ntt_mem0_cs[0]}} & mem_wr_data);
+  mem_rd_data = 0;
+  pwm_a_rd_data = 0;
+  pwm_b_rd_data = 0;
+
+  for (int i = 0; i < 2; i++) begin
+    for (int j = 0; j < 4; j++) begin
+      mem_rd_data[i] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re_f[i][j]}} & abr_mem_rdata[j]);
+      pwm_a_rd_data[i] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re_f[i][j]}} & abr_mem_rdata[j]);
+      pwm_b_rd_data[i] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re_f[i][j]}} & abr_mem_rdata[j]);
+    end
+  end
 end
 
-//memory 0 port 1
-always_comb begin
-  abr_mem0_cs[1] = ntt_mem0_cs[1] | pwo_mem0_cs[1];
-  abr_mem0_we[1] = 0;
-  abr_mem0_addr[1] = ({ABR_MEM_ADDR_WIDTH-1{ntt_mem0_cs[1]}} & mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
-                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem0_cs[1]}} & pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
-  abr_mem0_wdata[1] = 0;
-end
-
-abr_sram
+abr_1r1w_ram
 #(
-  .DEPTH(ABR_MEM_INST_DEPTH),
-  .DATA_WIDTH(ABR_MEM_DATA_WIDTH),
-  .NUM_PORTS(2)
+  .DEPTH(ABR_MEM_INST0_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH)
 ) abr_sram_inst0
 (
   .clk_i(clk),
-  .cs_i(abr_mem0_cs),
-  .we_i(abr_mem0_we),
-  .addr_i(abr_mem0_addr),
-  .wdata_i(abr_mem0_wdata),
-  .rdata_o(abr_mem0_rdata)
+  .we_i(abr_mem_we[0]),
+  .waddr_i(abr_mem_waddr[0][ABR_MEM_INST0_ADDR_W-1:0]),
+  .wdata_i(abr_mem_wdata[0]),
+  .re_i(abr_mem_re[0]),
+  .raddr_i(abr_mem_raddr[0][ABR_MEM_INST0_ADDR_W-1:0]),
+  .rdata_o(abr_mem_rdata[0])
 );
 
-//memory 1 port 0
-always_comb begin
-  abr_mem1_cs[0] = sampler_mem1_cs | ntt_mem1_cs[0] | pwo_mem1_cs[0];
-  abr_mem1_we[0] = sampler_mem1_cs | 
-                   ((mem_wr_req.rd_wr_en == RW_WRITE) & ntt_mem1_cs[0]);
-  abr_mem1_addr[0] = ({ABR_MEM_ADDR_WIDTH-1{sampler_mem1_cs}} & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-2:0]) | 
-                     ({ABR_MEM_ADDR_WIDTH-1{ntt_mem1_cs[0]}} & mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
-                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem1_cs[0]}} & pwm_a_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
-  abr_mem1_wdata[0] = ({ABR_MEM_DATA_WIDTH{sampler_mem1_cs}} & sampler_mem_data) |
-                      ({ABR_MEM_DATA_WIDTH{ntt_mem1_cs[0]}} & mem_wr_data);
-end
-
-//memory 1 port 1
-always_comb begin
-  abr_mem1_cs[1] = ntt_mem1_cs[1] | pwo_mem1_cs[1];
-  abr_mem1_we[1] = 0;
-  abr_mem1_addr[1] = ({ABR_MEM_ADDR_WIDTH-1{ntt_mem1_cs[1]}} & mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]) |
-                     ({ABR_MEM_ADDR_WIDTH-1{pwo_mem1_cs[1]}} & pwm_b_rd_req.addr[ABR_MEM_ADDR_WIDTH-2:0]);
-  abr_mem1_wdata[1] = 0;
-end
-
-abr_sram
+abr_1r1w_ram
 #(
-  .DEPTH(ABR_MEM_INST_DEPTH),
-  .DATA_WIDTH(ABR_MEM_DATA_WIDTH),
-  .NUM_PORTS(2)
+  .DEPTH(ABR_MEM_INST1_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH)
 ) abr_sram_inst1
 (
   .clk_i(clk),
-  .cs_i(abr_mem1_cs),
-  .we_i(abr_mem1_we),
-  .addr_i(abr_mem1_addr),
-  .wdata_i(abr_mem1_wdata),
-  .rdata_o(abr_mem1_rdata)
+  .we_i(abr_mem_we[1]),
+  .waddr_i(abr_mem_waddr[1][ABR_MEM_INST1_ADDR_W-1:0]),
+  .wdata_i(abr_mem_wdata[1]),
+  .re_i(abr_mem_re[1]),
+  .raddr_i(abr_mem_raddr[1][ABR_MEM_INST1_ADDR_W-1:0]),
+  .rdata_o(abr_mem_rdata[1])
 );
 
-`ABR_ASSERT_MUTEX(ERR_MEM0_0_ACCESS_MUTEX, {sampler_mem0_cs,ntt_mem0_cs[0],pwo_mem0_cs[0]}, clk, !rst_b)
-`ABR_ASSERT_MUTEX(ERR_MEM0_1_ACCESS_MUTEX, {ntt_mem0_cs[1],pwo_mem0_cs[1]}, clk, !rst_b)  
-`ABR_ASSERT_MUTEX(ERR_MEM1_0_ACCESS_MUTEX, {sampler_mem1_cs,ntt_mem1_cs[0],pwo_mem1_cs[0]}, clk, !rst_b)
-`ABR_ASSERT_MUTEX(ERR_MEM1_1_ACCESS_MUTEX, {ntt_mem1_cs[1],pwo_mem1_cs[1]}, clk, !rst_b)
+abr_1r1w_ram
+#(
+  .DEPTH(ABR_MEM_INST2_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH)
+) abr_sram_inst2
+(
+  .clk_i(clk),
+  .we_i(abr_mem_we[2]),
+  .waddr_i(abr_mem_waddr[2][ABR_MEM_INST2_ADDR_W-1:0]),
+  .wdata_i(abr_mem_wdata[2]),
+  .re_i(abr_mem_re[2]),
+  .raddr_i(abr_mem_raddr[2][ABR_MEM_INST2_ADDR_W-1:0]),
+  .rdata_o(abr_mem_rdata[2])
+);
 
-`ABR_ASSERT_KNOWN(ERR_MEM0_0_WDATA_X, {abr_mem0_wdata[0]}, clk, !rst_b, (abr_mem0_cs[0] &  abr_mem0_we[0]))
-`ABR_ASSERT_KNOWN(ERR_MEM0_1_WDATA_X, {abr_mem0_wdata[1]}, clk, !rst_b, (abr_mem0_cs[1] &  abr_mem0_we[1]))
-`ABR_ASSERT_KNOWN(ERR_MEM1_0_WDATA_X, {abr_mem1_wdata[0]}, clk, !rst_b, (abr_mem1_cs[0] &  abr_mem1_we[0]))
-`ABR_ASSERT_KNOWN(ERR_MEM1_1_WDATA_X, {abr_mem1_wdata[1]}, clk, !rst_b, (abr_mem1_cs[1] &  abr_mem1_we[1]))
+abr_1r1w_ram
+#(
+  .DEPTH(ABR_MEM_INST3_DEPTH),
+  .DATA_WIDTH(ABR_MEM_DATA_WIDTH)
+) abr_sram_inst3
+(
+  .clk_i(clk),
+  .we_i(abr_mem_we[3]),
+  .waddr_i(abr_mem_waddr[3][ABR_MEM_INST3_ADDR_W-1:0]),
+  .wdata_i(abr_mem_wdata[3]),
+  .re_i(abr_mem_re[3]),
+  .raddr_i(abr_mem_raddr[3][ABR_MEM_INST3_ADDR_W-1:0]),
+  .rdata_o(abr_mem_rdata[3])
+);
+
+
+
+
+`ABR_ASSERT_MUTEX(ERR_MEM_0_RD_ACCESS_MUTEX, {ntt_mem_re[0][0],pwo_a_mem_re[0][0],pwo_b_mem_re[0][0],ntt_mem_re[1][0],pwo_a_mem_re[1][0],pwo_b_mem_re[1][0]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_1_RD_ACCESS_MUTEX, {ntt_mem_re[0][1],pwo_a_mem_re[0][1],pwo_b_mem_re[0][1],ntt_mem_re[1][1],pwo_a_mem_re[1][1],pwo_b_mem_re[1][1]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_2_RD_ACCESS_MUTEX, {ntt_mem_re[0][2],pwo_a_mem_re[0][2],pwo_b_mem_re[0][2],ntt_mem_re[1][2],pwo_a_mem_re[1][2],pwo_b_mem_re[1][2]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_3_RD_ACCESS_MUTEX, {ntt_mem_re[0][3],pwo_a_mem_re[0][3],pwo_b_mem_re[0][3],ntt_mem_re[1][3],pwo_a_mem_re[1][3],pwo_b_mem_re[1][3]}, clk, !rst_b)
+
+`ABR_ASSERT_MUTEX(ERR_MEM_0_WR_ACCESS_MUTEX, {sampler_mem_we[0],ntt_mem_we[0][0],ntt_mem_we[1][0]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_1_WR_ACCESS_MUTEX, {sampler_mem_we[1],ntt_mem_we[0][1],ntt_mem_we[1][1]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_2_WR_ACCESS_MUTEX, {sampler_mem_we[2],ntt_mem_we[0][2],ntt_mem_we[1][2]}, clk, !rst_b)
+`ABR_ASSERT_MUTEX(ERR_MEM_3_WR_ACCESS_MUTEX, {sampler_mem_we[3],ntt_mem_we[0][3],ntt_mem_we[1][3]}, clk, !rst_b)
+
+//`ABR_ASSERT_KNOWN(ERR_MEM_0_WDATA_X, {abr_mem_wdata[0]}, clk, !rst_b, abr_mem_we[0])
+//`ABR_ASSERT_KNOWN(ERR_MEM_1_WDATA_X, {abr_mem_wdata[1]}, clk, !rst_b, abr_mem_we[1])
+//`ABR_ASSERT_KNOWN(ERR_MEM_2_WDATA_X, {abr_mem_wdata[2]}, clk, !rst_b, abr_mem_we[2])
+//`ABR_ASSERT_KNOWN(ERR_MEM_3_WDATA_X, {abr_mem_wdata[3]}, clk, !rst_b, abr_mem_we[3])
+
+//`ABR_ASSERT_KNOWN(ERR_MEM_0_RDATA_X, {mem_rd_data}, clk, !rst_b)
+//`ABR_ASSERT_KNOWN(ERR_MEM_1_RDATA_X, {pwm_a_rd_data}, clk, !rst_b)
+//`ABR_ASSERT_KNOWN(ERR_MEM_2_RDATA_X, {pwm_b_rd_data}, clk, !rst_b)
 
 endmodule

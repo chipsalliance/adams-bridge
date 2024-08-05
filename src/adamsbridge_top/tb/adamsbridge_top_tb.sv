@@ -35,6 +35,7 @@ module adamsbridge_top_tb
   `ifndef VERILATOR
   int MAX_CYCLES;
   int VEC_CNT;
+  int TEST_CMD;
 
   initial begin
     // To use this from the command line, add "+MAX_CYCLES=<value>"
@@ -50,6 +51,12 @@ module adamsbridge_top_tb
     end else begin
       VEC_CNT = 10;
       $info("No argument provided for VEC_CNT, defaulting to %d", VEC_CNT);
+    end
+    if ($value$plusargs("TEST_CMD=%d", TEST_CMD)) begin
+      $info("Received argument +TEST_CMD, with value %d", TEST_CMD);
+    end else begin
+      TEST_CMD = 'd1;
+      $info("No argument provided for TEST_CMD, defaulting to %d", TEST_CMD);
     end
   end
   `else
@@ -248,7 +255,7 @@ module adamsbridge_top_tb
       init_sim();
       reset_dut();
 
-      write_single_word_ahb('h10, 'd1);
+      write_single_word_ahb('h10, TEST_CMD);
 
       $display("   -- Testbench for ADAMSBRIDGE done. --");
 

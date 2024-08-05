@@ -35,9 +35,18 @@ package abr_params_pkg;
   parameter COEFF_PER_CLK = 4;
 
 //Memory interface - FIXME calculate the width based on depth not the other way
-  parameter ABR_MEM_INST_DEPTH = 2432; //FIXME
+  parameter ABR_MEM_MAX_DEPTH = 2496; //FIXME
   parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * DILITHIUM_Q_W;
-  parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_INST_DEPTH) + 1; //FIXME added a bit for bank selecting
+  parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 2; //+ 2 bits for bank selection
+
+  parameter ABR_MEM_INST0_DEPTH = 2496;
+  parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
+  parameter ABR_MEM_INST1_DEPTH = 1088;
+  parameter ABR_MEM_INST1_ADDR_W = $clog2(ABR_MEM_INST1_DEPTH);
+  parameter ABR_MEM_INST2_DEPTH = 960;
+  parameter ABR_MEM_INST2_ADDR_W = $clog2(ABR_MEM_INST2_DEPTH);
+  parameter ABR_MEM_INST3_DEPTH = 576;
+  parameter ABR_MEM_INST3_ADDR_W = $clog2(ABR_MEM_INST3_DEPTH);
 
   parameter MEM_ADDR_WIDTH = 15;
   parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH;

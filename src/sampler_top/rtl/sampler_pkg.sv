@@ -73,16 +73,16 @@ package sampler_pkg;
   parameter SIB_PISO_OUTPUT_RATE = 32;
 
   //common structures
-  typedef enum logic [2:0] {
-    ABR_SAMPLER_NONE   = 3'b000,
+  typedef enum logic [3:0] {
+    ABR_SAMPLER_NONE,
     //SHA/SHAKE only modes
-    ABR_SHAKE256       = 3'b001,
-    ABR_SHAKE128       = 3'b010,
+    ABR_SHAKE256,
+    ABR_SHAKE128,
     //SAMPLER MODES
-    ABR_REJ_SAMPLER    = 3'b100,
-    ABR_EXP_MASK       = 3'b101,
-    ABR_REJ_BOUNDED    = 3'b110,
-    ABR_SAMPLE_IN_BALL = 3'b111
+    ABR_REJ_SAMPLER,
+    ABR_EXP_MASK,
+    ABR_REJ_BOUNDED,
+    ABR_SAMPLE_IN_BALL
   } abr_sampler_mode_e;
 
 endpackage

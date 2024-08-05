@@ -26,8 +26,9 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/abr_seq_pkg.sv
-      - $COMPILE_ROOT/rtl/abr_seq.sv
+      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_seq_prim.sv
+      - $COMPILE_ROOT/rtl/abr_seq_sec.sv
       - $COMPILE_ROOT/rtl/abr_ctrl.sv
       - $COMPILE_ROOT/rtl/adamsbridge_top.sv
       - $COMPILE_ROOT/rtl/adamsbridge_reg.sv
