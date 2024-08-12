@@ -20,7 +20,6 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module sigdecode_z_tb
     import abr_params_pkg::*;

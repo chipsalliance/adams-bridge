@@ -45,7 +45,7 @@ module skdecode_s1s2_unpack
     always_comb begin
         if (enable) begin
             error_o = 'b0;
-            eta_minus_data = DILITHIUM_ETA - data_i;
+            eta_minus_data = REG_SIZE'(DILITHIUM_ETA - data_i);
 
             unique case(data_i)
                 3'h0: data_o = 'h2;

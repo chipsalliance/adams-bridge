@@ -7,7 +7,6 @@
 provides: [skencode]
 schema_version: 2.4.0
 requires:
-  - libs
   - ntt_pkg
   - skdecode_pkg
   - abr_libs
@@ -27,7 +26,6 @@ provides: [skencode_tb]
 schema_version: 2.4.0
 requires:
   - skencode
-  - caliptra_top_defines
   - skdecode_pkg
 targets:
   rtl:

@@ -20,7 +20,6 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module skencode_tb
     import ntt_defines_pkg::*;

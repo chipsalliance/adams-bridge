@@ -51,7 +51,7 @@ module skdecode_t0_unpack
     logic sub_n;
 
     assign opa0 = (1 << (DILITHIUM_D-1));
-    assign opb0 = sub_i ? ~data_i : data_i;
+    assign opb0 = sub_i ? REG_SIZE'(~data_i) : REG_SIZE'(data_i);
 
     ntt_adder #(
         .RADIX(REG_SIZE)
@@ -106,7 +106,7 @@ module skdecode_t0_unpack
             valid_o <= enable;
     end
 
-    assign data_o = sub_n ? (carry0_reg ^ carry1) ? {1'b0, r1} : {1'b0, r0_reg}
-                          : (carry0_reg) ? r0_reg : r1;
+    assign data_o = sub_n ? (carry0_reg ^ carry1) ? (REG_SIZE+1)'(r1) : (REG_SIZE+1)'(r0_reg)
+                          : (carry0_reg) ? (REG_SIZE+1)'(r0_reg) : (REG_SIZE+1)'(r1);
 
 endmodule

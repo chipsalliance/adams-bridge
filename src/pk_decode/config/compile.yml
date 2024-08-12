@@ -7,7 +7,6 @@
 provides: [pkdecode]
 schema_version: 2.4.0
 requires:
-  - libs
   - ntt_pkg
   - abr_libs
 targets:

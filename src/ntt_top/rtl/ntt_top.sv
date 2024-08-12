@@ -30,6 +30,7 @@
 //======================================================================
 
 module ntt_top
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
@@ -93,12 +94,12 @@ module ntt_top
     //NTT mem signals
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
-    logic [MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
     // logic [(4*REG_SIZE)-1:0] mem_wr_data;
     
     //Read IF
     logic mem_rden;
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg;
 
     //Butterfly IF signals
@@ -125,12 +126,12 @@ module ntt_top
     logic pw_rden, pw_rden_dest_mem;
 
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
-    logic [MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
     logic [(4*REG_SIZE)-1:0] pwm_wr_data_reg;
 
     //ntt_ctrl output connections
-    logic [MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
-    logic [MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
 
     //pwm mem data_out connections
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a, pwm_rd_data_b, pwm_rd_data_c; 
@@ -177,7 +178,7 @@ module ntt_top
 
     
     ntt_ctrl #(
-        .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
+        .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
     )
     ntt_ctrl_inst0 (
         .clk(clk),

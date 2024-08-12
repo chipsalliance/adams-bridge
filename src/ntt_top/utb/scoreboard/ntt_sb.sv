@@ -1,5 +1,5 @@
 class ntt_sb extends uvm_scoreboard;
-
+    import abr_params_pkg::*;
     `uvm_component_utils(ntt_sb)
 
     uvm_analysis_imp_ntt_txn#(ntt_txn, ntt_sb) ntt_ap;
@@ -157,7 +157,7 @@ class ntt_sb extends uvm_scoreboard;
     // Function to extract 256 coefficients from the input memory starting at src_base_addr
     function void extract_256_coeffs(
         input bit [MEM_DATA_WIDTH-1:0] input_memory [0:MEM_DEPTH-1], 
-        input logic [MEM_ADDR_WIDTH-1:0] base_addr,
+        input logic [ABR_MEM_ADDR_WIDTH-1:0] base_addr,
         input int stage_idx,
         output bit [REG_SIZE-1:0] NTT_coeffs [0:DILITHIUM_N-1]
     );

@@ -51,7 +51,7 @@ module sigdecode_z_unit
 
     assign sub_i = 1'b1;
     assign opa0 = DILITHIUM_GAMMA1_RANGE;
-    assign opb0 = sub_i ? ~data_i : data_i;
+    assign opb0 = sub_i ? REG_SIZE'(~data_i) : REG_SIZE'(data_i);
 
     ntt_adder #(
         .RADIX(REG_SIZE)

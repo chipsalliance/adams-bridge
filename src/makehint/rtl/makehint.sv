@@ -34,14 +34,14 @@
 module makehint
     import ntt_defines_pkg::*;
     import makehint_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 24,
         parameter DILITHIUM_Q = 23'd8380417,
         parameter DILITHIUM_N = 256,
         parameter DILITHIUM_K = 8,
         parameter OMEGA = 75,
-        parameter BUFFER_DATA_W = 8,
-        parameter MEM_ADDR_WIDTH = 15
+        parameter BUFFER_DATA_W = 8
     )
     (
         input wire clk,
@@ -51,8 +51,8 @@ module makehint
         input wire makehint_enable,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
-        input wire [MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
 
         output logic invalid_h,
         output mem_if_t mem_rd_req,
@@ -60,7 +60,7 @@ module makehint
         output logic makehint_done,
         output logic reg_wren,
         output logic [3:0][7:0] reg_wrdata,
-        output logic [MEM_ADDR_WIDTH-1:0] reg_wr_addr
+        output logic [ABR_MEM_ADDR_WIDTH-1:0] reg_wr_addr
     );
 
     //Internal wires
@@ -82,7 +82,6 @@ module makehint
     logic [3:0][7:0] index;
     logic [7:0] index_count;
     logic incr_index, incr_index_d1, incr_index_d2;
-    logic [BUFFER_DATA_W-1:0] max_index_from_sampler;
 
     //Polynomial counter
     logic [$clog2(DILITHIUM_K)-1:0] poly_count;
@@ -91,7 +90,7 @@ module makehint
     logic poly_last, poly_last_reg;
 
     //Read addr counter
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt;
     logic incr_mem_rd_addr;
     logic rst_rd_addr;
     logic last_addr_read;
@@ -107,7 +106,7 @@ module makehint
     logic arc_MH_WAIT2_MH_FLUSH;
 
     //Hint sum
-    logic [10:0] hintsum, hintsum_reg;
+    logic [7:0] hintsum;
     logic busy_reg;
 
     //Busy flag
@@ -223,7 +222,7 @@ module makehint
         else if (zeroize)
             max_index_buffer <= 'h0;
         else if (poly_done)
-            max_index_buffer <= {/*hintsum*/max_index_from_sampler, max_index_buffer[DILITHIUM_K-1:1]}; //{sample_data[3], max_index_buffer[DILITHIUM_K-1:1]};
+            max_index_buffer <= {hintsum, max_index_buffer[DILITHIUM_K-1:1]};
     end
     assign max_index_buffer_data = max_index_buffer_rd ? (read_fsm_state_ps == MH_RD_IBUF_LOW) ? max_index_buffer[3:0] 
                                                         : (read_fsm_state_ps == MH_RD_IBUF_HIGH) ? max_index_buffer[7:4] : 'h0 : 'h0;
@@ -232,8 +231,6 @@ module makehint
     //Write from sample buffer for each dword captured per polynomial.
     //If last poly is done, flush buffer and write to reg API
     //After that, write the max_index_buffer contents to reg API - using delayed poly_last as the wren in this case
-    //TODO: might need a poly_last_d2 to write the upper 32bits of max_index_buffer - check!
-    //TODO: check timing on these
     assign reg_wren = sample_valid | flush_buffer | max_index_buffer_rd;
     assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : 'h0;
 
@@ -267,7 +264,7 @@ module makehint
             mem_rd_addr <= (poly_last && last_addr_read) ? 'h0 : mem_rd_addr + 'h1;
     end
 
-    assign last_addr_read = (mem_rd_addr == ((poly_count+1) * (DILITHIUM_N/4))-1); //TODO revisit
+    assign last_addr_read = (mem_rd_addr == ABR_MEM_ADDR_WIDTH'(((poly_count+1) * (DILITHIUM_N/4))-1));
 
     //----------------------------
     //Read fsm
@@ -290,11 +287,7 @@ module makehint
         arc_MH_RD_MEM_MH_WAIT1 = (read_fsm_state_ps == MH_RD_MEM) && last_addr_read;
         //When non-last poly is done, move to IDLE and wait for next enable. Opt - if we know all 8 poly will be back to back, we can remain in RD_MEM and wrap addr around + take new base addr if needed, calc hints and continue execution without waiting in IDLE for HLC to give enable
         arc_MH_WAIT2_MH_IDLE = (read_fsm_state_ps == MH_WAIT2) && !poly_last;
-        //When last poly is done, flush sample buffer - this will take 2 cyc to finish (possibly more or less? TODO: check if it's always 2 cyc or not!)
-        // arc_MH_WAIT_MH_FLUSH_SBUF_LOW = poly_last;
-
         //When non-last poly is done, go back to RD_MEM and continue executing
-        // arc_MH_WAIT_MH_RD_MEM = !poly_last;
         arc_MH_WAIT2_MH_FLUSH = (read_fsm_state_ps == MH_WAIT2) && (poly_count == DILITHIUM_K-1);
     end
 
@@ -383,8 +376,7 @@ module makehint
         .data_i(index),
         .buffer_full_o(),
         .data_valid_o(sample_valid),
-        .data_o(sample_data),
-        .max_index_o(max_index_from_sampler)
+        .data_o(sample_data)
     );
 
 

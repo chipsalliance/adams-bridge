@@ -179,7 +179,7 @@ module pkdecode
             API_rd_address <= '0;
         end
         else if (state == READ || state == READ_and_EXEC || state == READ_and_WRITE) begin
-            API_rd_address <= locked_src_addr + num_api_operands;
+            API_rd_address <= API_ADDR_WIDTH'(locked_src_addr + num_api_operands);
         end else begin
             API_rd_address <= '0;
         end

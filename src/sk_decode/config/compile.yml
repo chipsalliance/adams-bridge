@@ -16,12 +16,8 @@ targets:
 provides: [skdecode]
 schema_version: 2.4.0
 requires:
-  - libs
-  - hmac_drbg
-  # - makehint_pkg
   - ntt_pkg
   - skdecode_pkg
-  # - decompose_pkg
   - ntt_top
   - abr_libs
 targets:
@@ -44,7 +40,6 @@ provides: [skdecode_tb]
 schema_version: 2.4.0
 requires:
   - skdecode
-  - caliptra_top_defines
   - skdecode_pkg
 targets:
   rtl:

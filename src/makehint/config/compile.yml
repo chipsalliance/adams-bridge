@@ -16,10 +16,8 @@ targets:
 provides: [makehint]
 schema_version: 2.4.0
 requires:
-  - libs
   - abr_defines
   - abr_libs
-  - hmac_drbg
   - makehint_pkg
   - ntt_pkg
 targets:
@@ -40,7 +38,6 @@ provides: [makehint_tb]
 schema_version: 2.4.0
 requires: 
   - makehint
-  - caliptra_top_defines
   - makehint_pkg
 targets:
   rtl:

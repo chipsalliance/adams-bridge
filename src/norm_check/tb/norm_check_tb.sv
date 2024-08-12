@@ -22,7 +22,6 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module norm_check_tb
     import norm_check_defines_pkg::*;

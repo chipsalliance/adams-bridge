@@ -22,16 +22,15 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module decompose_tb
     import decompose_defines_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter NUM_WR = 4, //TODO: sample_buffer needs more writes than reads?
     parameter NUM_RD = 4,
     parameter BUFFER_DATA_W = 8,
-    parameter REG_SIZE = 24,
-    parameter MEM_ADDR_WIDTH = 15
+    parameter REG_SIZE = 24
 ) 
 ();
 
@@ -47,7 +46,7 @@ reg           cptra_pwrgood_tb;
 reg           zeroize_tb;
 reg           en_tb;
 reg [4*REG_SIZE-1:0] coeff_tb, mem_wr_data_o, hint_tb;
-reg [MEM_ADDR_WIDTH-1:0] src_base_tb, dest_base_tb;
+reg [ABR_MEM_ADDR_WIDTH-1:0] src_base_tb, dest_base_tb;
 reg r0_rdy_tb;
 logic [255:0][REG_SIZE-1:0] coeff_array, coeff_high, coeff_low, coeff_high_usehint, coeff_high_final, hint_array;
 logic [3:0][3:0] coeff_high_tb;

@@ -21,9 +21,7 @@ targets:
 provides: [decompose]
 schema_version: 2.4.0
 requires:
-  - libs
-  - hmac_drbg
-  # - makehint_pkg
+  - abr_defines
   - ntt_pkg
   - decompose_pkg
   - ntt_top
@@ -38,10 +36,6 @@ targets:
       - $COMPILE_ROOT/rtl/decompose_ctrl.sv
       - $COMPILE_ROOT/rtl/decompose_w1_encode.sv
       - $COMPILE_ROOT/rtl/decompose_usehint.sv
-  # tb:
-  #   directories: [$COMPILE_ROOT/tb]
-  #   files:
-  #     - $COMPILE_ROOT/tb/ntt_top_tb.sv
       
     tops: [decompose]
   rtl_lint:
@@ -53,7 +47,6 @@ provides: [decompose_tb]
 schema_version: 2.4.0
 requires: 
   - decompose
-  - caliptra_top_defines
   - decompose_pkg
 targets:
   rtl:

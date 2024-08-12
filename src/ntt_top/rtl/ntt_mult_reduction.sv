@@ -38,8 +38,11 @@ module ntt_mult_reduction #(
 
     logic [2*REG_SIZE-1:0] z;
     logic [2*REG_SIZE-1:0] z_f;
-    logic [REG_SIZE:0] c, d;
-    logic [REG_SIZE-1:0] e, f;
+    // logic [REG_SIZE:0] c,d;
+    logic [11:0] c;
+    logic [10:0] d;
+    logic [REG_SIZE-1:0] e;
+    logic [13:0] f;
     logic [REG_SIZE:0] g;
     logic [REG_SIZE:0] g_reduced;
     logic [REG_SIZE-1:0] res;
@@ -94,7 +97,7 @@ module ntt_mult_reduction #(
 
     //Calculate g, g_reduced, g_reduced_f
     //--------------------
-    always_comb g = (d[10:0] << 'd13);
+    always_comb g = (REG_SIZE+1)'(d[10:0] << 'd13);
 
     //Mod add
     ntt_add_sub_mod #(

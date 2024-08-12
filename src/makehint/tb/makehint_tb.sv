@@ -22,10 +22,10 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module makehint_tb
     import makehint_defines_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter NUM_WR = 4,
     parameter NUM_RD = 4,
@@ -63,8 +63,8 @@ makehint #(
     .makehint_enable(en_tb),
     .r(coeff_tb),
     .z(z_tb),
-    .mem_base_addr(15'h0),
-    .dest_base_addr(15'h0),
+    .mem_base_addr(ABR_MEM_ADDR_WIDTH'(0)),
+    .dest_base_addr(ABR_MEM_ADDR_WIDTH'(0)),
     .invalid_h(),
     .mem_rd_req(),
     .z_rd_req(),

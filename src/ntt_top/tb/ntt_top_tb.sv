@@ -22,7 +22,6 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module ntt_top_tb 
 

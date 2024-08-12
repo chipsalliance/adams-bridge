@@ -16,10 +16,10 @@ targets:
 provides: [sigdecode_z]
 schema_version: 2.4.0
 requires:
-  - libs
   - ntt_pkg
   - sigdecode_z_pkg
   - abr_libs
+  - ntt_top
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -38,7 +38,6 @@ provides: [sigdecode_z_tb]
 schema_version: 2.4.0
 requires:
   - sigdecode_z
-  - caliptra_top_defines
   - sigdecode_z_pkg
 targets:
   rtl:

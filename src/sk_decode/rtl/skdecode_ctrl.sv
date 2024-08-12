@@ -20,8 +20,8 @@
 module skdecode_ctrl
     import ntt_defines_pkg::*;
     import skdecode_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
         parameter DILITHIUM_L = 7,
         parameter DILITHIUM_K = 8,
         parameter DILITHIUM_N = 256
@@ -33,7 +33,7 @@ module skdecode_ctrl
 
         input wire skdecode_enable, //One enable for all of s0, s1, t0 unpack
         input wire [KEY_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire s1s2_valid,
         input wire t0_valid,
         input wire s1s2_error,
@@ -53,7 +53,7 @@ module skdecode_ctrl
     );
 
     //Memory interface wires
-    logic [MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
     logic [KEY_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
 
     logic incr_wr_addr, incr_skdec_count;

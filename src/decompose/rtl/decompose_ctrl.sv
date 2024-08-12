@@ -20,9 +20,9 @@
 module decompose_ctrl
     import ntt_defines_pkg::*;
     import decompose_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter DILITHIUM_N = 256,
-        parameter MEM_ADDR_WIDTH = 15,
         parameter DILITHIUM_K = 8
     )
     (
@@ -31,8 +31,8 @@ module decompose_ctrl
         input wire zeroize,
 
         input wire decompose_enable, //Assumes polynomials are stored in contiguous locations and 1 enable will trig all 8 at once
-        input wire [MEM_ADDR_WIDTH-1:0] src_base_addr, 
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr, 
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire r0_ready,
 
         output mem_if_t mem_rd_req,
@@ -42,8 +42,8 @@ module decompose_ctrl
     );
 
     //Internals
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr_nxt, mem_wr_addr_nxt;
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_wr_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr_nxt, mem_wr_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_wr_addr;
     logic incr_rd_addr, incr_wr_addr;
     logic rst_rd_addr, rst_wr_addr;
     logic last_poly_last_addr_rd; //TODO: confirm that decompose take 8 polys. If there's a case with 7 polys, need to change code

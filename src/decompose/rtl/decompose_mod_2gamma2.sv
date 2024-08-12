@@ -23,7 +23,8 @@ module decompose_mod_2gamma2
     #(
         parameter REG_SIZE = 23,
         parameter DILITHIUM_Q = 23'd8380417,
-        parameter GAMMA2 = (DILITHIUM_Q-1)/32
+        parameter GAMMA2 = (DILITHIUM_Q-1)/32,
+        localparam DILITHIUM_2GAMMA2_SIZE = $clog2(2*GAMMA2)
     )
     (
         // Clock and reset.
@@ -34,27 +35,27 @@ module decompose_mod_2gamma2
     // DATA PORT
     input  wire                 add_en_i,
     input  wire  [REG_SIZE-1:0] opa_i,
-    output logic [19:0]         res_o,
+    output logic [DILITHIUM_2GAMMA2_SIZE-1:0]         res_o,
     output logic                ready_o
 );
   
     logic [12:0] opa0;
-    logic [18:0] opb0;
-    logic [18:0] opb1;
-    logic [18:0] r0;
-    logic [18:0] r1;
+    logic [DILITHIUM_2GAMMA2_SIZE-1:0] opb0;
+    logic [DILITHIUM_2GAMMA2_SIZE-1:0] opb1;
+    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r0;
+    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r1;
     logic carry0; 
 
-    logic [18:0] r0_reg;
+    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r0_reg;
     logic carry0_reg;
 
     logic carry1;
 
-    assign opa0 = (opa_i[22:19] << 9);
-    assign opb0 = opa_i[18:0];
+    assign opa0 = 13'(opa_i[22:19] << 9);
+    assign opb0 = opa_i[DILITHIUM_2GAMMA2_SIZE-1:0];
 
     ntt_adder #(
-        .RADIX(19)
+        .RADIX(DILITHIUM_2GAMMA2_SIZE)
         ) 
         adder_inst_0(
         .a_i({6'h0,opa0}),
@@ -65,7 +66,7 @@ module decompose_mod_2gamma2
     );
 
     ntt_adder #(
-        .RADIX(19)
+        .RADIX(DILITHIUM_2GAMMA2_SIZE)
         ) 
         adder_inst_1(
         .a_i(r0_reg),
@@ -91,7 +92,7 @@ module decompose_mod_2gamma2
         else if (add_en_i) begin 
             r0_reg <= r0;
             carry0_reg <= carry0;
-            opb1 <= ~19'(2*GAMMA2);
+            opb1 <= ~DILITHIUM_2GAMMA2_SIZE'(2*GAMMA2);
         end
     end
 

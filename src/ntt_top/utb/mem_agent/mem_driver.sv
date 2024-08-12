@@ -1,4 +1,5 @@
 class mem_driver extends uvm_driver#(mem_txn);
+    import abr_params_pkg::*;
     `uvm_component_utils(mem_driver)
 
     virtual mem_if mem_vif;
@@ -14,14 +15,14 @@ class mem_driver extends uvm_driver#(mem_txn);
     task run_phase(uvm_phase phase);
 
         mem_txn mem_txn_i;
-        logic [MEM_ADDR_WIDTH-1:0] addr;
+        logic [ABR_MEM_ADDR_WIDTH-1:0] addr;
         forever begin
             @(negedge mem_vif.clk);
             seq_item_port.try_next_item(mem_txn_i);
             if (mem_txn_i != null) begin
                 if(mem_txn_i.update_mem  == 1 ) begin
                     mem_vif.update_mem      <= mem_txn_i.update_mem;
-                    for (int i = 0; i<(2**MEM_ADDR_WIDTH); i++ ) begin
+                    for (int i = 0; i<(2**ABR_MEM_ADDR_WIDTH); i++ ) begin
                         addr = i;
                         mem_vif.update_mem_task(addr, mem_txn_i.artificialMemory[addr]);
                     end

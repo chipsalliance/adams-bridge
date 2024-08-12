@@ -35,11 +35,11 @@
 module decompose 
     import ntt_defines_pkg::*; //TODO: move all global params to config defines/ABR pkg?
     import decompose_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter DILITHIUM_Q = 23'd8380417,
         parameter GAMMA2 = (DILITHIUM_Q-1)/32,
-        parameter Q_MINUS_2GAMMA2 = DILITHIUM_Q - (2*GAMMA2),
-        parameter MEM_ADDR_WIDTH = 15
+        parameter Q_MINUS_2GAMMA2 = DILITHIUM_Q - (2*GAMMA2)
     )
     (
         input wire clk,
@@ -48,9 +48,9 @@ module decompose
 
         input wire decompose_enable,
         input dcmp_mode_t dcmp_mode,
-        input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
 
         //Input from keccak to w1_encode
         input wire keccak_done,
@@ -84,7 +84,7 @@ module decompose
     //Coefficient wires
     logic [3:0][3:0] r1, r1_reg, r1_usehint, r1_mux;
     logic [3:0] r_corner, r_corner_reg;
-    logic [3:0][19:0] r0_mod_2gamma2;
+    logic [3:0][18:0] r0_mod_2gamma2;
     logic [3:0][REG_SIZE-2:0] r0_mod_q, r0, r0_reg; //23-bit value
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg, mem_hint_rd_data_reg;
     mem_if_t mem_wr_req_int;
@@ -113,9 +113,6 @@ module decompose
     end
 
     decompose_ctrl
-    #(
-        .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
-    )
     dcmp_ctrl_inst (
         .clk(clk),
         .reset_n(reset_n),
@@ -164,7 +161,7 @@ module decompose
     generate
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
-                r0_mod_q[i] = (r0_mod_2gamma2[i] <= GAMMA2) ? {3'b000, r0_mod_2gamma2[i]} : r0_mod_2gamma2[i] + Q_MINUS_2GAMMA2;
+                r0_mod_q[i] = (r0_mod_2gamma2[i] <= GAMMA2) ? {4'h0, r0_mod_2gamma2[i]} : (REG_SIZE-1)'(r0_mod_2gamma2[i] + Q_MINUS_2GAMMA2);
             end
         end
     endgenerate
@@ -197,7 +194,7 @@ module decompose
     generate
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
-                r0[i] = r_corner_reg[i] ? mem_rd_data_reg[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] : r0_mod_q[i];
+                r0[i] = r_corner_reg[i] ? mem_rd_data_reg[i*REG_SIZE+(REG_SIZE-2):i*REG_SIZE] : r0_mod_q[i];
                 mem_wr_data[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] = verify ? 'h0 : {1'b0, r0_reg[i]};
             end
         end
@@ -225,13 +222,13 @@ module decompose
 
     always_comb begin
         z_mem_wr_req.rd_wr_en    = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-        z_mem_wr_req.addr        = verify ? 'h0 : mem_wr_req_int.addr - dest_base_addr;
+        z_mem_wr_req.addr        = verify ? 'h0 : ABR_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                   = verify & (&usehint_ready) ? r1_usehint : r1_reg;
 
         mem_wr_req.addr          = verify ? 'h0 : mem_wr_req_int.addr;
         mem_wr_req.rd_wr_en      = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
 
-        mem_hint_rd_req.addr     = verify ? (mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
+        mem_hint_rd_req.addr     = verify ? ABR_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
         mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
     end
 

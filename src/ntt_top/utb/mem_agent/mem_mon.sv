@@ -1,5 +1,5 @@
 class mem_mon extends uvm_monitor;
-
+    import abr_params_pkg::*;
     `uvm_component_utils(mem_mon)
 
     uvm_analysis_port#(mem_txn) mem_ap;
@@ -42,7 +42,7 @@ class mem_mon extends uvm_monitor;
         if (mem_vif.update_mem) begin
             mem_txn_i = mem_txn::type_id::create("mem_txn_i");
             mem_txn_i.update_mem = mem_vif.update_mem;
-            for (int i = 0; i<(2**MEM_ADDR_WIDTH); i++ ) begin
+            for (int i = 0; i<(2**ABR_MEM_ADDR_WIDTH); i++ ) begin
                 mem_vif.read_mem(i, mem_txn_i.artificialMemory[i]);
             end
             mem_ap.write(mem_txn_i);

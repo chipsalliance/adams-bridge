@@ -32,8 +32,8 @@
 module skdecode_top
     import ntt_defines_pkg::*;
     import skdecode_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
         parameter DILITHIUM_ETA = 2,
         parameter DILITHIUM_D = 13,
         parameter ETA_SIZE = 3,
@@ -46,8 +46,8 @@ module skdecode_top
         input wire zeroize,
         
         input wire skdecode_enable,
-        input wire [MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [AHB_DATA_WIDTH-1:0] keymem_a_rd_data,
         input wire [AHB_DATA_WIDTH-1:0] keymem_b_rd_data,
 
@@ -88,7 +88,7 @@ module skdecode_top
     logic s1s2_buf_full;
 
     //Read address counters
-    logic [MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
 
 
     //IO flops
@@ -248,9 +248,7 @@ module skdecode_top
         .data_o(s1s2_buf_data)
     );
 
-    skdecode_ctrl #(
-        .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
-    )
+    skdecode_ctrl
     skdecode_ctrl_inst (
         .clk(clk),
         .reset_n(reset_n),

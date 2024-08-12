@@ -20,8 +20,6 @@ targets:
 provides: [norm_check]
 schema_version: 2.4.0
 requires:
-  - libs
-  - hmac_drbg
   - norm_check_pkg
   - ntt_pkg
 targets:
@@ -41,7 +39,6 @@ provides: [norm_check_tb]
 schema_version: 2.4.0
 requires: 
   - norm_check
-  - caliptra_top_defines
   - norm_check_pkg
   - ntt_pkg
 targets:

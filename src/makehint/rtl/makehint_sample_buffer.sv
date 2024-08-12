@@ -38,8 +38,7 @@ module makehint_sample_buffer
   output logic                                 buffer_full_o,
   //output data
   output logic                                 data_valid_o,
-  output logic [NUM_RD-1:0][BUFFER_DATA_W-1:0] data_o,
-  output logic [BUFFER_DATA_W-1:0] max_index_o
+  output logic [NUM_RD-1:0][BUFFER_DATA_W-1:0] data_o
 
   );
 
@@ -54,9 +53,6 @@ module makehint_sample_buffer
   logic [BUFFER_DEPTH-1:0] buffer_valid, buffer_valid_d, buffer_valid_shift;
   logic [BUFFER_DEPTH-1:0][BUFFER_DATA_W-1:0] buffer, buffer_d, buffer_shift;
   logic [$clog2(BUFFER_DEPTH):0] num_valid;
-
-  //Max index
-  logic [BUFFER_DATA_W-1:0] max_index;
 
   //Buffer is full when it can't take a full write cycle
   //Check for at least N entries available, where N is the difference between WR/RD bandwidth
@@ -92,7 +88,6 @@ module makehint_sample_buffer
         //concat the next valid sample
         buffer_wr_data[sample_wr_ptr] = data_i[sample][BUFFER_DATA_W-1:0];
         buffer_wr_valid[sample_wr_ptr] = 1'b1;
-        max_index = data_i[sample][BUFFER_DATA_W-1:0];
         //increment the write pointer
         sample_wr_ptr += 1;
       end
@@ -121,15 +116,12 @@ module makehint_sample_buffer
     if (!rst_b) begin
       buffer <= '0;
       buffer_valid <= '0;
-      max_index_o <= '0;
     end else if (zeroize) begin
       buffer <= '0;
       buffer_valid <= '0;
-      max_index_o <= '0;
     end else if (update_buffer) begin
       buffer <= buffer_d;
       buffer_valid <= buffer_valid_d;
-      max_index_o <= max_index;
     end 
   end
 
