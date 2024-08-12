@@ -1,0 +1,52 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [sigdecode_h_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sigdecode_h_defines_pkg.sv
+---
+provides: [sigdecode_h]
+schema_version: 2.4.0
+requires:
+  - libs
+  - abr_defines
+  - abr_libs
+  - hmac_drbg
+  - sigdecode_h_pkg
+  - ntt_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/sigdecode_h.sv
+      - $COMPILE_ROOT/rtl/sigdecode_h_ctrl.sv
+      
+    tops: [sigdecode_h]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/sigdecode_h/config/design_lint/sigdecode_h/sglint_waivers
+---
+provides: [sigdecode_h_tb]  
+schema_version: 2.4.0
+requires: 
+  - sigdecode_h
+  - caliptra_top_defines
+  - sigdecode_h_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/sigdecode_h_tb.sv
+    tops: [sigdecode_h_tb]
+  # sim:
+  #   pre_exec: 'echo "[PRE-EXEC] Copying r hex to $PWD" && cp $COMPILE_ROOT/tb/r.hex . && cp $COMPILE_ROOT/tb/z.hex .'
+
