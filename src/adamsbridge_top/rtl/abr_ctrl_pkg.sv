@@ -36,10 +36,13 @@ package abr_ctrl_pkg;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam SIGN_RND_NUM_DWORDS = 8;
     localparam PUBKEY_NUM_DWORDS = 648;
-    localparam SIGNATURE_NUM_DWORDS = 1149;
+    localparam SIGNATURE_H_NUM_DWORDS = 21;
+    localparam SIGNATURE_Z_NUM_DWORDS = 1120;
+    localparam SIGNATURE_C_NUM_DWORDS = 16;
+    localparam SIGNATURE_NUM_DWORDS = SIGNATURE_H_NUM_DWORDS + SIGNATURE_Z_NUM_DWORDS + SIGNATURE_C_NUM_DWORDS;
     localparam VERIFY_RES_NUM_DWORDS = 16;
     localparam IV_NUM_DWORDS = 16;
-    
+
     typedef struct packed {
         logic [3:0][63:0] roh;
         logic [3:0][63:0] K;
@@ -54,6 +57,17 @@ package abr_ctrl_pkg;
         logic [1223:0][31:0] raw;
     } abr_privkey_u;
 
+    typedef struct packed {
+        logic [SIGNATURE_H_NUM_DWORDS-1:0][31:0] h;
+        logic [SIGNATURE_Z_NUM_DWORDS-1:0][31:0] z;
+        logic [SIGNATURE_C_NUM_DWORDS-1:0][31:0] c;
+    } abr_signature_t;
+
+    typedef union packed {
+        abr_signature_t enc;
+        logic [SIGNATURE_NUM_DWORDS-1:0][31:0] raw;
+    } abr_signature_u;
+
     //FSM Controller for driving sampler 
     typedef enum logic [2:0] {
         ABR_CTRL_IDLE,
@@ -61,9 +75,9 @@ package abr_ctrl_pkg;
         ABR_CTRL_MSG_START,
         ABR_CTRL_MSG_LOAD,
         ABR_CTRL_MSG_WAIT,
-        ABR_CTRL_SAMPLER_START,
-        ABR_CTRL_NTT_START,
-        ABR_CTRL_DONE
+        ABR_CTRL_FUNC_START,
+        ABR_CTRL_DONE,
+        ABR_CTRL_ERROR
       } abr_ctrl_fsm_state_e;
 
     typedef enum logic[3:0] {
@@ -89,7 +103,8 @@ package abr_ctrl_pkg;
         ABR_PWR2RND,
         ABR_SIGENC,
         ABR_SIGDEC_H,
-        ABR_SIGDEC_Z
+        ABR_SIGDEC_Z,
+        ABR_DECOMP
     } abr_aux_mode_e;
 
 
@@ -134,10 +149,15 @@ package abr_ctrl_pkg;
     //Load Keccak with data but don't run it yet
     localparam abr_opcode_t ABR_UOP_LD_SHAKE256 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, sca_en:1'b0};
     localparam abr_opcode_t ABR_UOP_LD_SHAKE128 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE128, sca_en:1'b0};
+    //Run Keccak but don't load it
+    localparam abr_opcode_t ABR_UOP_RUN_SHAKE256 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_RUN_SHAKE128 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE128, sca_en:1'b0};
     // Aux functions
-    localparam abr_opcode_t ABR_UOP_SKDECODE = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_SKDECODE, sca_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_MAKEHINT = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_MAKEHINT, sca_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_NORMCHK  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_NORMCHK,  sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_DECOMP     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_DECOMP, sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_SKDECODE, sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SKENCODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_SKENCODE, sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MAKEHINT   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_MAKEHINT, sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_NORMCHK    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_NORMCHK,  sca_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGENCODE  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_SIGENC,  sca_en:1'b0};
 
 
@@ -150,6 +170,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_DEST_K_ROH_REG_ID = 'd2;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_DEST_MU_REG_ID    = 'd3;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_DEST_ROH_P_REG_ID = 'd4;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_DEST_SIG_C_REG_ID = 'd5;
+
     //SRC register IDs
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_MSG_ID         = 'd15;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_SEED_ID        = 'd16;
@@ -160,12 +182,13 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_MU_ID          = 'd21;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_TR_ID          = 'd22;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_ROH_P_KAPPA_ID = 'd23;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_SIG_C_REG_ID   = 'd24;
     
     // DILITHIUM MEMORY LOCATIONS
     //COEFF DEPTH is 256/4
     localparam ABR_COEFF_DEPTH = DILITHIUM_N/COEFF_PER_CLK;
     //MEMORY INST 0
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST0_BASE = 0 << (ABR_MEM_ADDR_WIDTH-2);
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST0_BASE = 0 << (ABR_MEM_ADDR_WIDTH-3);
     //S1 / NTT(S1)
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_0_BASE = ABR_INST0_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_1_BASE = ABR_S1_0_BASE + ABR_COEFF_DEPTH;
@@ -193,7 +216,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_T6_BASE = ABR_T5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_T7_BASE = ABR_T6_BASE + ABR_COEFF_DEPTH;
     // NTT(s1) for KEYGEN
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_0_NTT_BASE = ABR_T7_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_0_NTT_BASE = ABR_INST0_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_1_NTT_BASE = ABR_S1_0_NTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_2_NTT_BASE = ABR_S1_1_NTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_3_NTT_BASE = ABR_S1_2_NTT_BASE + ABR_COEFF_DEPTH;
@@ -201,7 +224,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_5_NTT_BASE = ABR_S1_4_NTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_6_NTT_BASE = ABR_S1_5_NTT_BASE + ABR_COEFF_DEPTH;
     //c.s1
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_0_BASE = ABR_S1_6_NTT_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_0_BASE = ABR_T7_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_1_BASE = ABR_CS1_0_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_2_BASE = ABR_CS1_1_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_3_BASE = ABR_CS1_2_BASE + ABR_COEFF_DEPTH;
@@ -209,13 +232,13 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_5_BASE = ABR_CS1_4_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS1_6_BASE = ABR_CS1_5_BASE + ABR_COEFF_DEPTH;
     // z
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_0_BASE = ABR_CS1_0_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_1_BASE = ABR_CS1_1_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_2_BASE = ABR_CS1_2_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_3_BASE = ABR_CS1_3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_4_BASE = ABR_CS1_4_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_5_BASE = ABR_CS1_5_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_6_BASE = ABR_CS1_6_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_0_BASE = ABR_T7_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_1_BASE = ABR_Z_0_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_2_BASE = ABR_Z_1_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_3_BASE = ABR_Z_2_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_4_BASE = ABR_Z_3_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_5_BASE = ABR_Z_4_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Z_6_BASE = ABR_Z_5_BASE + ABR_COEFF_DEPTH;
     //c.s2
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS2_0_BASE = ABR_CS1_6_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS2_1_BASE = ABR_CS2_0_BASE + ABR_COEFF_DEPTH;
@@ -225,24 +248,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS2_5_BASE = ABR_CS2_4_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS2_6_BASE = ABR_CS2_5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_CS2_7_BASE = ABR_CS2_6_BASE + ABR_COEFF_DEPTH;
-    // c.t0
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_0_BASE = ABR_CS2_0_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_1_BASE = ABR_CS2_1_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_2_BASE = ABR_CS2_2_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_3_BASE = ABR_CS2_3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_4_BASE = ABR_CS2_4_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_5_BASE = ABR_CS2_5_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_6_BASE = ABR_CS2_6_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_7_BASE = ABR_CS2_7_BASE;
-    //TEMP storage for NTT ops
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_TEMP0_BASE = ABR_CT_7_BASE + ABR_COEFF_DEPTH;
-
-    //MEMORY INST 1
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST1_BASE = 1 << (ABR_MEM_ADDR_WIDTH-2);
-    // NTT(C)
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_C_NTT_BASE = ABR_INST1_BASE;
     // R0
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_0_BASE = ABR_C_NTT_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_0_BASE = ABR_CS1_6_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_1_BASE = ABR_R0_0_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_2_BASE = ABR_R0_1_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_3_BASE = ABR_R0_2_BASE + ABR_COEFF_DEPTH;
@@ -250,8 +257,24 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_5_BASE = ABR_R0_4_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_6_BASE = ABR_R0_5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_R0_7_BASE = ABR_R0_6_BASE + ABR_COEFF_DEPTH;
+    //TEMP storage for NTT ops
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_TEMP0_BASE = ABR_CS2_7_BASE + ABR_COEFF_DEPTH;
+
+    //MEMORY INST 1
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST1_BASE = 1 << (ABR_MEM_ADDR_WIDTH-3);
+    // NTT(C)
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_C_NTT_BASE = ABR_INST1_BASE;
+    // c.t0
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_0_BASE = ABR_C_NTT_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_1_BASE = ABR_CT_0_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_2_BASE = ABR_CT_1_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_3_BASE = ABR_CT_2_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_4_BASE = ABR_CT_3_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_5_BASE = ABR_CT_4_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_6_BASE = ABR_CT_5_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_CT_7_BASE = ABR_CT_6_BASE + ABR_COEFF_DEPTH;
     //hint_r
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_0_BASE = ABR_R0_7_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_0_BASE = ABR_CT_7_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_1_BASE = ABR_HINT_R_0_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_2_BASE = ABR_HINT_R_1_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_3_BASE = ABR_HINT_R_2_BASE + ABR_COEFF_DEPTH;
@@ -260,12 +283,10 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_6_BASE = ABR_HINT_R_5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_HINT_R_7_BASE = ABR_HINT_R_6_BASE + ABR_COEFF_DEPTH;
 
-    //MEMORY INST 3
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-2);
-    //C
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_C_BASE = ABR_INST2_BASE;
+    //MEMORY INST 2
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-3);
     //Y
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Y_0_BASE = ABR_C_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_Y_0_BASE = ABR_INST2_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_Y_1_BASE = ABR_Y_0_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_Y_2_BASE = ABR_Y_1_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_Y_3_BASE = ABR_Y_2_BASE + ABR_COEFF_DEPTH;
@@ -291,7 +312,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_W0_7_BASE = ABR_W0_6_BASE + ABR_COEFF_DEPTH;
 
     //MEMORY INST 3
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST3_BASE = 3 << (ABR_MEM_ADDR_WIDTH-2);
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST3_BASE = 3 << (ABR_MEM_ADDR_WIDTH-3);
     // As / INTT(As) / Ay / W
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AS0_BASE = ABR_INST3_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AS1_BASE = ABR_AS0_BASE + ABR_COEFF_DEPTH;
@@ -311,6 +332,15 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AY6_BASE = ABR_AY5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AY7_BASE = ABR_AY6_BASE + ABR_COEFF_DEPTH;
 
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_0_BASE = ABR_INST3_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_1_BASE = ABR_W_0_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_2_BASE = ABR_W_1_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_3_BASE = ABR_W_2_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_4_BASE = ABR_W_3_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_5_BASE = ABR_W_4_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_6_BASE = ABR_W_5_BASE + ABR_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_W_7_BASE = ABR_W_6_BASE + ABR_COEFF_DEPTH;
+
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AS0_INTT_BASE = ABR_AS0_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AS1_INTT_BASE = ABR_AS0_INTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_AS2_INTT_BASE = ABR_AS1_INTT_BASE + ABR_COEFF_DEPTH;
@@ -322,36 +352,46 @@ package abr_ctrl_pkg;
 
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_TEMP3_BASE = ABR_AS7_INTT_BASE + ABR_COEFF_DEPTH;
     
+    //SIB MEMORY
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST4_BASE = 4 << (ABR_MEM_ADDR_WIDTH-3);
+    //C
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_C_BASE = ABR_INST4_BASE;
 
     // DILITHIUM Subroutine listing
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_RESET   = 'd0;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_KG_S    = DILITHIUM_RESET + 2; 
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_KG_E    = DILITHIUM_KG_S + 95;
-    //signing
+    //KG
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_RESET        = 'd0;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_KG_S         = DILITHIUM_RESET + 2;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_KG_JUMP_SIGN = DILITHIUM_KG_S + 97;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_KG_E         = DILITHIUM_KG_S + 99;
+    //Signing
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_S            = DILITHIUM_KG_E + 2;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_Y_CLR  = DILITHIUM_SIGN_S+ 5;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_Y_S     = DILITHIUM_SIGN_CHECK_Y_CLR + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_SET_Y        = DILITHIUM_SIGN_MAKE_Y_S+ 14;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_W_S     = DILITHIUM_SIGN_SET_Y + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_W0_CLR = DILITHIUM_SIGN_MAKE_W_S+ 65;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_W       = DILITHIUM_SIGN_CHECK_W0_CLR+ 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_W_S     = DILITHIUM_SIGN_MAKE_Y_S+ 14;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_SET_Y        = DILITHIUM_SIGN_MAKE_W_S+ 56;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_W0_CLR = DILITHIUM_SIGN_MAKE_W_S+ 57;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_W       = DILITHIUM_SIGN_MAKE_W_S+ 67;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_SET_W0       = DILITHIUM_SIGN_MAKE_W+ 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_C_CLR  = DILITHIUM_SIGN_SET_W0+ 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_MAKE_C       = DILITHIUM_SIGN_CHECK_C_CLR+ 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_SET_C        = DILITHIUM_SIGN_MAKE_C+ 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_SET_C        = DILITHIUM_SIGN_MAKE_C+ 2;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_E            = DILITHIUM_SIGN_SET_C + 1;
+    //Verify
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_VERIFY_S          = DILITHIUM_SIGN_E + 2;
+
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_ERROR             = '1;
 
     //Signing Sequencer Subroutine listing
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_INIT_S       = DILITHIUM_RESET + 2;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_C_VLD  = DILITHIUM_SIGN_INIT_S + 24;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_VALID_S      = DILITHIUM_SIGN_CHECK_C_VLD + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CLEAR_C      = DILITHIUM_SIGN_VALID_S + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_Y_VLD  = DILITHIUM_SIGN_VALID_S + 16;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CLEAR_Y      = DILITHIUM_SIGN_VALID_S + 24;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CHECK_W0_VLD = DILITHIUM_SIGN_VALID_S + 41;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CLEAR_W0     = DILITHIUM_SIGN_VALID_S + 50;
     localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_GEN_S        = DILITHIUM_SIGN_VALID_S + 79;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_CLEAR_C      = DILITHIUM_SIGN_GEN_S + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] DILITHIUM_SIGN_GEN_E        = DILITHIUM_SIGN_GEN_S + 3;
 
 
 endpackage

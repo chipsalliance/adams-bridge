@@ -16,9 +16,8 @@ targets:
 provides: [skdecode]
 schema_version: 2.4.0
 requires:
-  - ntt_pkg
+  - abr_defines
   - skdecode_pkg
-  - ntt_top
   - abr_libs
 targets:
   rtl:

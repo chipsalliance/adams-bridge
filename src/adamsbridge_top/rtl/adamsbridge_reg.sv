@@ -54,10 +54,27 @@ module adamsbridge_reg (
     assign s_cpuif_wr_err = cpuif_wr_err;
 
     logic cpuif_req_masked;
+    logic external_req;
+    logic external_pending;
+    logic external_wr_ack;
+    logic external_rd_ack;
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            external_pending <= '0;
+        end else begin
+            if(external_req & ~external_wr_ack & ~external_rd_ack) external_pending <= '1;
+            else if(external_wr_ack | external_rd_ack) external_pending <= '0;
+            assert(!external_wr_ack || (external_pending | external_req))
+                else $error("An external wr_ack strobe was asserted when no external request was active");
+            assert(!external_rd_ack || (external_pending | external_req))
+                else $error("An external rd_ack strobe was asserted when no external request was active");
+        end
+    end
 
     // Read & write latencies are balanced. Stalls not required
-    assign cpuif_req_stall_rd = '0;
-    assign cpuif_req_stall_wr = '0;
+    // except if external
+    assign cpuif_req_stall_rd = external_pending;
+    assign cpuif_req_stall_wr = external_pending;
     assign cpuif_req_masked = cpuif_req
                             & !(!cpuif_req_is_wr & cpuif_req_stall_rd)
                             & !(cpuif_req_is_wr & cpuif_req_stall_wr);
@@ -75,10 +92,10 @@ module adamsbridge_reg (
         logic [8-1:0]ADAMSBRIDGE_SIGN_RND;
         logic [16-1:0]ADAMSBRIDGE_MSG;
         logic [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        logic [1224-1:0]ADAMSBRIDGE_PRIVKEY_OUT;
-        logic [1224-1:0]ADAMSBRIDGE_PRIVKEY_IN;
         logic [648-1:0]ADAMSBRIDGE_PUBKEY;
-        logic [1149-1:0]ADAMSBRIDGE_SIGNATURE;
+        logic [1157-1:0]ADAMSBRIDGE_SIGNATURE;
+        logic ADAMSBRIDGE_PRIVKEY_OUT;
+        logic ADAMSBRIDGE_PRIVKEY_IN;
         struct packed{
             logic global_intr_en_r;
             logic error_intr_en_r;
@@ -96,12 +113,18 @@ module adamsbridge_reg (
         } intr_block_rf;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
+    logic decoded_strb_is_external;
+
+    logic [14:0] decoded_addr;
+
     logic decoded_req;
     logic decoded_req_is_wr;
     logic [31:0] decoded_wr_data;
     logic [31:0] decoded_wr_biten;
 
     always_comb begin
+        automatic logic is_external = '0;
+    
         for(int i0=0; i0<2; i0++) begin
             decoded_reg_strb.ADAMSBRIDGE_NAME[i0] = cpuif_req_masked & (cpuif_addr == 15'h0 + i0*15'h4);
         end
@@ -125,34 +148,38 @@ module adamsbridge_reg (
         for(int i0=0; i0<16; i0++) begin
             decoded_reg_strb.ADAMSBRIDGE_VERIFY_RES[i0] = cpuif_req_masked & (cpuif_addr == 15'h280 + i0*15'h4);
         end
-        for(int i0=0; i0<1224; i0++) begin
-            decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_OUT[i0] = cpuif_req_masked & (cpuif_addr == 15'h300 + i0*15'h4);
-        end
-        for(int i0=0; i0<1224; i0++) begin
-            decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_IN[i0] = cpuif_req_masked & (cpuif_addr == 15'h1600 + i0*15'h4);
-        end
         for(int i0=0; i0<648; i0++) begin
-            decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] = cpuif_req_masked & (cpuif_addr == 15'h2920 + i0*15'h4);
+            decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] = cpuif_req_masked & (cpuif_addr == 15'h2c0 + i0*15'h4);
         end
-        for(int i0=0; i0<1149; i0++) begin
-            decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] = cpuif_req_masked & (cpuif_addr == 15'h3400 + i0*15'h4);
+        for(int i0=0; i0<1157; i0++) begin
+            decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] = cpuif_req_masked & (cpuif_addr == 15'hce0 + i0*15'h4);
+            is_external |= cpuif_req_masked & (cpuif_addr == 15'hce0 + i0*15'h4);
         end
-        decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h4600);
-        decoded_reg_strb.intr_block_rf.error_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h4604);
-        decoded_reg_strb.intr_block_rf.notif_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h4608);
-        decoded_reg_strb.intr_block_rf.error_global_intr_r = cpuif_req_masked & (cpuif_addr == 15'h460c);
-        decoded_reg_strb.intr_block_rf.notif_global_intr_r = cpuif_req_masked & (cpuif_addr == 15'h4610);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_r = cpuif_req_masked & (cpuif_addr == 15'h4614);
-        decoded_reg_strb.intr_block_rf.notif_internal_intr_r = cpuif_req_masked & (cpuif_addr == 15'h4618);
-        decoded_reg_strb.intr_block_rf.error_intr_trig_r = cpuif_req_masked & (cpuif_addr == 15'h461c);
-        decoded_reg_strb.intr_block_rf.notif_intr_trig_r = cpuif_req_masked & (cpuif_addr == 15'h4620);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_count_r = cpuif_req_masked & (cpuif_addr == 15'h4700);
-        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r = cpuif_req_masked & (cpuif_addr == 15'h4780);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 15'h4800);
-        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 15'h4804);
+        decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_OUT = cpuif_req_masked & (cpuif_addr >= 15'h2000) & (cpuif_addr <= 15'h2000 + 15'h131f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 15'h2000) & (cpuif_addr <= 15'h2000 + 15'h131f);
+        decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 15'h4000) & (cpuif_addr <= 15'h4000 + 15'h131f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 15'h4000) & (cpuif_addr <= 15'h4000 + 15'h131f);
+        decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h6000);
+        decoded_reg_strb.intr_block_rf.error_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h6004);
+        decoded_reg_strb.intr_block_rf.notif_intr_en_r = cpuif_req_masked & (cpuif_addr == 15'h6008);
+        decoded_reg_strb.intr_block_rf.error_global_intr_r = cpuif_req_masked & (cpuif_addr == 15'h600c);
+        decoded_reg_strb.intr_block_rf.notif_global_intr_r = cpuif_req_masked & (cpuif_addr == 15'h6010);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_r = cpuif_req_masked & (cpuif_addr == 15'h6014);
+        decoded_reg_strb.intr_block_rf.notif_internal_intr_r = cpuif_req_masked & (cpuif_addr == 15'h6018);
+        decoded_reg_strb.intr_block_rf.error_intr_trig_r = cpuif_req_masked & (cpuif_addr == 15'h601c);
+        decoded_reg_strb.intr_block_rf.notif_intr_trig_r = cpuif_req_masked & (cpuif_addr == 15'h6020);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_count_r = cpuif_req_masked & (cpuif_addr == 15'h6100);
+        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r = cpuif_req_masked & (cpuif_addr == 15'h6180);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 15'h6200);
+        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 15'h6204);
+        decoded_strb_is_external = is_external;
+        external_req = is_external;
+    
     end
 
     // Pass down signals to next stage
+    assign decoded_addr = cpuif_addr;
+
     assign decoded_req = cpuif_req_masked;
     assign decoded_req_is_wr = cpuif_req_is_wr;
     assign decoded_wr_data = cpuif_wr_data;
@@ -164,7 +191,7 @@ module adamsbridge_reg (
     typedef struct packed{
         struct packed{
             struct packed{
-                logic [1:0] next;
+                logic [2:0] next;
                 logic load_next;
             } CTRL;
             struct packed{
@@ -206,26 +233,8 @@ module adamsbridge_reg (
             struct packed{
                 logic [31:0] next;
                 logic load_next;
-            } PRIVKEY_OUT;
-        } [1224-1:0]ADAMSBRIDGE_PRIVKEY_OUT;
-        struct packed{
-            struct packed{
-                logic [31:0] next;
-                logic load_next;
-            } PRIVKEY_IN;
-        } [1224-1:0]ADAMSBRIDGE_PRIVKEY_IN;
-        struct packed{
-            struct packed{
-                logic [31:0] next;
-                logic load_next;
             } PUBKEY;
         } [648-1:0]ADAMSBRIDGE_PUBKEY;
-        struct packed{
-            struct packed{
-                logic [31:0] next;
-                logic load_next;
-            } SIGNATURE;
-        } [1149-1:0]ADAMSBRIDGE_SIGNATURE;
         struct packed{
             struct packed{
                 struct packed{
@@ -324,7 +333,7 @@ module adamsbridge_reg (
     typedef struct packed{
         struct packed{
             struct packed{
-                logic [1:0] value;
+                logic [2:0] value;
             } CTRL;
             struct packed{
                 logic value;
@@ -358,23 +367,8 @@ module adamsbridge_reg (
         struct packed{
             struct packed{
                 logic [31:0] value;
-            } PRIVKEY_OUT;
-        } [1224-1:0]ADAMSBRIDGE_PRIVKEY_OUT;
-        struct packed{
-            struct packed{
-                logic [31:0] value;
-            } PRIVKEY_IN;
-        } [1224-1:0]ADAMSBRIDGE_PRIVKEY_IN;
-        struct packed{
-            struct packed{
-                logic [31:0] value;
             } PUBKEY;
         } [648-1:0]ADAMSBRIDGE_PUBKEY;
-        struct packed{
-            struct packed{
-                logic [31:0] value;
-            } SIGNATURE;
-        } [1149-1:0]ADAMSBRIDGE_SIGNATURE;
         struct packed{
             struct packed{
                 struct packed{
@@ -450,10 +444,10 @@ module adamsbridge_reg (
 
     // Field: adamsbridge_reg.ADAMSBRIDGE_CTRL.CTRL
     always_comb begin
-        automatic logic [1:0] next_c = field_storage.ADAMSBRIDGE_CTRL.CTRL.value;
+        automatic logic [2:0] next_c = field_storage.ADAMSBRIDGE_CTRL.CTRL.value;
         automatic logic load_next_c = '0;
         if(decoded_reg_strb.ADAMSBRIDGE_CTRL && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
-            next_c = (field_storage.ADAMSBRIDGE_CTRL.CTRL.value & ~decoded_wr_biten[1:0]) | (decoded_wr_data[1:0] & decoded_wr_biten[1:0]);
+            next_c = (field_storage.ADAMSBRIDGE_CTRL.CTRL.value & ~decoded_wr_biten[2:0]) | (decoded_wr_data[2:0] & decoded_wr_biten[2:0]);
             load_next_c = '1;
         end else if(hwif_in.ADAMSBRIDGE_CTRL.CTRL.hwclr) begin // HW Clear
             next_c = '0;
@@ -464,7 +458,7 @@ module adamsbridge_reg (
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.ADAMSBRIDGE_CTRL.CTRL.value <= 2'h0;
+            field_storage.ADAMSBRIDGE_CTRL.CTRL.value <= 3'h0;
         end else if(field_combo.ADAMSBRIDGE_CTRL.CTRL.load_next) begin
             field_storage.ADAMSBRIDGE_CTRL.CTRL.value <= field_combo.ADAMSBRIDGE_CTRL.CTRL.next;
         end
@@ -475,7 +469,7 @@ module adamsbridge_reg (
         automatic logic [0:0] next_c = field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value;
         automatic logic load_next_c = '0;
         if(decoded_reg_strb.ADAMSBRIDGE_CTRL && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value & ~decoded_wr_biten[2:2]) | (decoded_wr_data[2:2] & decoded_wr_biten[2:2]);
+            next_c = (field_storage.ADAMSBRIDGE_CTRL.ZEROIZE.value & ~decoded_wr_biten[3:3]) | (decoded_wr_data[3:3] & decoded_wr_biten[3:3]);
             load_next_c = '1;
         end else begin // singlepulse clears back to 0
             next_c = '0;
@@ -618,56 +612,6 @@ module adamsbridge_reg (
         end
         assign hwif_out.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value = field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value;
     end
-    for(genvar i0=0; i0<1224; i0++) begin
-        // Field: adamsbridge_reg.ADAMSBRIDGE_PRIVKEY_OUT[].PRIVKEY_OUT
-        always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value;
-            automatic logic load_next_c = '0;
-            if(hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.we) begin // HW Write - we
-                next_c = hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.next;
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.hwclr) begin // HW Clear
-                next_c = '0;
-                load_next_c = '1;
-            end
-            field_combo.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.next = next_c;
-            field_combo.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.load_next = load_next_c;
-        end
-        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
-            if(~hwif_in.reset_b) begin
-                field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value <= 32'h0;
-            end else if(field_combo.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.load_next) begin
-                field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value <= field_combo.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.next;
-            end
-        end
-    end
-    for(genvar i0=0; i0<1224; i0++) begin
-        // Field: adamsbridge_reg.ADAMSBRIDGE_PRIVKEY_IN[].PRIVKEY_IN
-        always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value;
-            automatic logic load_next_c = '0;
-            if(decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_IN[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
-                next_c = (field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.we) begin // HW Write - we
-                next_c = hwif_in.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.next;
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.hwclr) begin // HW Clear
-                next_c = '0;
-                load_next_c = '1;
-            end
-            field_combo.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.next = next_c;
-            field_combo.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.load_next = load_next_c;
-        end
-        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
-            if(~hwif_in.reset_b) begin
-                field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value <= 32'h0;
-            end else if(field_combo.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.load_next) begin
-                field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value <= field_combo.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.next;
-            end
-        end
-        assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value = field_storage.ADAMSBRIDGE_PRIVKEY_IN[i0].PRIVKEY_IN.value;
-    end
     for(genvar i0=0; i0<648; i0++) begin
         // Field: adamsbridge_reg.ADAMSBRIDGE_PUBKEY[].PUBKEY
         always_comb begin
@@ -695,33 +639,23 @@ module adamsbridge_reg (
         end
         assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value = field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value;
     end
-    for(genvar i0=0; i0<1149; i0++) begin
-        // Field: adamsbridge_reg.ADAMSBRIDGE_SIGNATURE[].SIGNATURE
-        always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value;
-            automatic logic load_next_c = '0;
-            if(decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
-                next_c = (field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.we) begin // HW Write - we
-                next_c = hwif_in.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.next;
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.hwclr) begin // HW Clear
-                next_c = '0;
-                load_next_c = '1;
-            end
-            field_combo.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.next = next_c;
-            field_combo.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.load_next = load_next_c;
-        end
-        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
-            if(~hwif_in.reset_b) begin
-                field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value <= 32'h0;
-            end else if(field_combo.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.load_next) begin
-                field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value <= field_combo.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.next;
-            end
-        end
-        assign hwif_out.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value = field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value;
+    for(genvar i0=0; i0<1157; i0++) begin
+
+        assign hwif_out.ADAMSBRIDGE_SIGNATURE[i0].req = decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0];
+        assign hwif_out.ADAMSBRIDGE_SIGNATURE[i0].req_is_wr = decoded_req_is_wr;
+        assign hwif_out.ADAMSBRIDGE_SIGNATURE[i0].wr_data = decoded_wr_data;
+        assign hwif_out.ADAMSBRIDGE_SIGNATURE[i0].wr_biten = decoded_wr_biten;
     end
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req = decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_OUT;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.addr = decoded_addr[12:0];
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.wr_data = decoded_wr_data;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.wr_biten = decoded_wr_biten;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req = decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_IN;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN.addr = decoded_addr[12:0];
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN.wr_data = decoded_wr_data;
+    assign hwif_out.ADAMSBRIDGE_PRIVKEY_IN.wr_biten = decoded_wr_biten;
     // Field: adamsbridge_reg.intr_block_rf.global_intr_en_r.error_en
     always_comb begin
         automatic logic [0:0] next_c = field_storage.intr_block_rf.global_intr_en_r.error_en.value;
@@ -1054,20 +988,45 @@ module adamsbridge_reg (
     //--------------------------------------------------------------------------
     // Write response
     //--------------------------------------------------------------------------
-    assign cpuif_wr_ack = decoded_req & decoded_req_is_wr;
+    always_comb begin
+        automatic logic wr_ack;
+        wr_ack = '0;
+        for(int i0=0; i0<1157; i0++) begin
+            wr_ack |= hwif_in.ADAMSBRIDGE_SIGNATURE[i0].wr_ack;
+        end
+        wr_ack |= hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.wr_ack;
+        wr_ack |= hwif_in.ADAMSBRIDGE_PRIVKEY_IN.wr_ack;
+        external_wr_ack = wr_ack;
+    end
+    assign cpuif_wr_ack = external_wr_ack | (decoded_req & decoded_req_is_wr & ~decoded_strb_is_external);
     // Writes are always granted with no error response
     assign cpuif_wr_err = '0;
 
     //--------------------------------------------------------------------------
     // Readback
     //--------------------------------------------------------------------------
+    logic readback_external_rd_ack_c;
+    always_comb begin
+        automatic logic rd_ack;
+        rd_ack = '0;
+        for(int i0=0; i0<1157; i0++) begin
+            rd_ack |= hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_ack;
+        end
+        rd_ack |= hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack;
+        rd_ack |= hwif_in.ADAMSBRIDGE_PRIVKEY_IN.rd_ack;
+        readback_external_rd_ack_c = rd_ack;
+    end
+
+    logic readback_external_rd_ack;
+
+    assign readback_external_rd_ack = readback_external_rd_ack_c;
 
     logic readback_err;
     logic readback_done;
     logic [31:0] readback_data;
     
     // Assign readback values to a flattened array
-    logic [3055-1:0][31:0] readback_array;
+    logic [1841-1:0][31:0] readback_array;
     for(genvar i0=0; i0<2; i0++) begin
         assign readback_array[i0*1 + 0][31:0] = (decoded_reg_strb.ADAMSBRIDGE_NAME[i0] && !decoded_req_is_wr) ? hwif_in.ADAMSBRIDGE_NAME[i0].NAME.next : '0;
     end
@@ -1080,52 +1039,52 @@ module adamsbridge_reg (
     for(genvar i0=0; i0<16; i0++) begin
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.ADAMSBRIDGE_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end
-    for(genvar i0=0; i0<1224; i0++) begin
-        assign readback_array[i0*1 + 21][31:0] = (decoded_reg_strb.ADAMSBRIDGE_PRIVKEY_OUT[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_PRIVKEY_OUT[i0].PRIVKEY_OUT.value : '0;
-    end
     for(genvar i0=0; i0<648; i0++) begin
-        assign readback_array[i0*1 + 1245][31:0] = (decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value : '0;
+        assign readback_array[i0*1 + 21][31:0] = (decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value : '0;
     end
-    for(genvar i0=0; i0<1149; i0++) begin
-        assign readback_array[i0*1 + 1893][31:0] = (decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_SIGNATURE[i0].SIGNATURE.value : '0;
+    for(genvar i0=0; i0<1157; i0++) begin
+        assign readback_array[i0*1 + 669] = hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_ack ? hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_data : '0;
     end
-    assign readback_array[3042][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
-    assign readback_array[3042][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
-    assign readback_array[3042][31:2] = '0;
-    assign readback_array[3043][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
-    assign readback_array[3043][31:1] = '0;
-    assign readback_array[3044][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
-    assign readback_array[3044][31:1] = '0;
-    assign readback_array[3045][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
-    assign readback_array[3045][31:1] = '0;
-    assign readback_array[3046][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
-    assign readback_array[3046][31:1] = '0;
-    assign readback_array[3047][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
-    assign readback_array[3047][31:1] = '0;
-    assign readback_array[3048][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
-    assign readback_array[3048][31:1] = '0;
-    assign readback_array[3049][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
-    assign readback_array[3049][31:1] = '0;
-    assign readback_array[3050][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
-    assign readback_array[3050][31:1] = '0;
-    assign readback_array[3051][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
-    assign readback_array[3052][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
-    assign readback_array[3053][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[3053][31:1] = '0;
-    assign readback_array[3054][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[3054][31:1] = '0;
+    assign readback_array[1826] = hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack ? hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_data : '0;
+    assign readback_array[1827] = hwif_in.ADAMSBRIDGE_PRIVKEY_IN.rd_ack ? hwif_in.ADAMSBRIDGE_PRIVKEY_IN.rd_data : '0;
+    assign readback_array[1828][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
+    assign readback_array[1828][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
+    assign readback_array[1828][31:2] = '0;
+    assign readback_array[1829][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
+    assign readback_array[1829][31:1] = '0;
+    assign readback_array[1830][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
+    assign readback_array[1830][31:1] = '0;
+    assign readback_array[1831][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
+    assign readback_array[1831][31:1] = '0;
+    assign readback_array[1832][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
+    assign readback_array[1832][31:1] = '0;
+    assign readback_array[1833][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
+    assign readback_array[1833][31:1] = '0;
+    assign readback_array[1834][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
+    assign readback_array[1834][31:1] = '0;
+    assign readback_array[1835][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
+    assign readback_array[1835][31:1] = '0;
+    assign readback_array[1836][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
+    assign readback_array[1836][31:1] = '0;
+    assign readback_array[1837][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
+    assign readback_array[1838][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
+    assign readback_array[1839][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[1839][31:1] = '0;
+    assign readback_array[1840][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[1840][31:1] = '0;
 
     // Reduce the array
     always_comb begin
         automatic logic [31:0] readback_data_var;
-        readback_done = decoded_req & ~decoded_req_is_wr;
+        readback_done = decoded_req & ~decoded_req_is_wr & ~decoded_strb_is_external;
         readback_err = '0;
         readback_data_var = '0;
-        for(int i=0; i<3055; i++) readback_data_var |= readback_array[i];
+        for(int i=0; i<1841; i++) readback_data_var |= readback_array[i];
         readback_data = readback_data_var;
     end
 
-    assign cpuif_rd_ack = readback_done;
+    assign external_rd_ack = readback_external_rd_ack;
+    assign cpuif_rd_ack = readback_done | readback_external_rd_ack;
     assign cpuif_rd_data = readback_data;
     assign cpuif_rd_err = readback_err;
 

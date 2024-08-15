@@ -22,18 +22,9 @@
 `define ABR_SKDECODE_DEFINES
 
 package skdecode_defines_pkg;
-    import ntt_defines_pkg::*;
-    import abr_params_pkg::*;
-
-    parameter KEY_MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH; //TODO: update as needed
 
     typedef enum logic [2:0] {SKDEC_RD_IDLE, SKDEC_RD_STAGE, SKDEC_RD_S1, SKDEC_RD_S2, SKDEC_RD_T0} skdec_read_state_e;
     typedef enum logic [2:0] {SKDEC_WR_IDLE, SKDEC_WR_STAGE, SKDEC_WR_S1, SKDEC_WR_S2, SKDEC_WR_T0} skdec_write_state_e;
-
-    typedef struct packed {
-        mem_rw_mode_e rd_wr_en;
-        logic [KEY_MEM_ADDR_WIDTH-1:0] addr;
-    } key_mem_if_t;
 
 endpackage
 

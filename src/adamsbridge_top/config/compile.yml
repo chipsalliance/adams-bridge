@@ -22,6 +22,12 @@ requires:
   - abr_libs
   - sampler_top
   - ntt_top
+  - decompose
+  - skencode
+  - skdecode
+  - makehint
+  - norm_check
+  - sigencode_z
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]

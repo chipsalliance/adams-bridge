@@ -27,7 +27,7 @@
 //======================================================================
 
 module skencode
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
@@ -49,7 +49,7 @@ module skencode
         input wire  [3:0][REG_SIZE-1:0] mem_a_rd_data,
         input wire  [3:0][REG_SIZE-1:0] mem_b_rd_data,
 
-        output key_mem_if_t keymem_a_wr_req,
+        output mem_if_t keymem_a_wr_req,
         output mem_if_t mem_a_rd_req,
         output mem_if_t mem_b_rd_req,
         output logic [AHB_DATA_WIDTH-1:0] keymem_a_wr_data,
@@ -166,21 +166,21 @@ module skencode
         case (write_state)
             IDLE: begin
                 if (main_state == READ_ENC_and_CONSUME)
-                    next_write_state    <= WAIT_BUFFER;
+                    next_write_state    = WAIT_BUFFER;
                 else
-                    next_write_state    <= IDLE;
+                    next_write_state    = IDLE;
             end
             WAIT_BUFFER: begin
                 if (producer_selector == 'h1)
-                    next_write_state    <= WRITE;
+                    next_write_state    = WRITE;
                 else
-                    next_write_state    <= WAIT_BUFFER;
+                    next_write_state    = WAIT_BUFFER;
             end
             WRITE: begin
                 if (consumer_selector == 'h1)
-                    next_write_state    <= STALL;
+                    next_write_state    = STALL;
                 else
-                    next_write_state    <= WRITE;
+                    next_write_state    = WRITE;
             end
             STALL: begin
                 if (num_api_operands == THE_LAST_API) begin
@@ -191,13 +191,13 @@ module skencode
                 end
             end
             GET_LAST: begin
-                next_write_state    <= DONE;
+                next_write_state    = DONE;
             end
             DONE: begin
-                next_write_state    <= IDLE;
+                next_write_state    = IDLE;
             end
             default: begin
-                next_write_state    <= IDLE;
+                next_write_state    = IDLE;
             end
         endcase
     end

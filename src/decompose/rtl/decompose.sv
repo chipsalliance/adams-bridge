@@ -33,9 +33,8 @@
 // 3. z_neq_z -->  store in a buffer that is ready by makehint simultaneously when it reads main mem
 
 module decompose 
-    import ntt_defines_pkg::*; //TODO: move all global params to config defines/ABR pkg?
-    import decompose_defines_pkg::*;
     import abr_params_pkg::*;
+    import decompose_defines_pkg::*;
     #(
         parameter DILITHIUM_Q = 23'd8380417,
         parameter GAMMA2 = (DILITHIUM_Q-1)/32,

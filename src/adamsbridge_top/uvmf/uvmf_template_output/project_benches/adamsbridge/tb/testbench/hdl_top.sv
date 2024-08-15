@@ -84,7 +84,7 @@ import uvmf_base_pkg_hdl::*;
   // DUT
   adamsbridge_top #(
     .AHB_ADDR_WIDTH(18),
-    .AHB_DATA_WIDTH(32),
+    .AHB_DATA_WIDTH(ahb_lite_slave_0_params::AHB_WDATA_WIDTH),
     .CLIENT_DATA_WIDTH(32)
     )
     dut

@@ -140,7 +140,7 @@ module sha3_tb
   ) dut (
     .clk_i (clk_tb),
     .rst_b (reset_n_tb),
-
+    .zeroize (1'b0),
     // MSG_FIFO interface
     .msg_start_i (msg_start),
     .msg_valid_i (msg_valid),

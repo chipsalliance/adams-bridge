@@ -18,9 +18,8 @@
 // Takes care of memory accesses during decompose function
 
 module decompose_ctrl
-    import ntt_defines_pkg::*;
-    import decompose_defines_pkg::*;
     import abr_params_pkg::*;
+    import decompose_defines_pkg::*;
     #(
         parameter DILITHIUM_N = 256,
         parameter DILITHIUM_K = 8

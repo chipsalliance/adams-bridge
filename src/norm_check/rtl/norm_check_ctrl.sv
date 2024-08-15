@@ -22,7 +22,7 @@
 // assumes all polynomials of the vector are stored in continuous addr space in memory
 
 module norm_check_ctrl
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
@@ -38,8 +38,7 @@ module norm_check_ctrl
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
         input wire [MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        output mem_if_t mem_a_rd_req,
-        output mem_if_t mem_b_rd_req,
+        output mem_if_t mem_rd_req,
         output logic check_enable,
         output logic norm_check_done
     );
@@ -65,11 +64,9 @@ module norm_check_ctrl
 
     //Addr assignment
     always_comb begin
-        mem_a_rd_req.addr = (mem_rd_addr << 'h1) + mem_base_addr;
-        mem_b_rd_req.addr = (mem_rd_addr << 'h1) + 'h1 + mem_base_addr;
+        mem_rd_req.addr = mem_rd_addr + mem_base_addr;
 
-        mem_a_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
-        mem_b_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
+        mem_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
     end
 
     //Mode mux
@@ -83,12 +80,11 @@ module norm_check_ctrl
     end
 
     //Last addr flag
-    always_comb last_poly_last_addr = (mem_b_rd_req.addr == mem_base_addr + (num_poly * (DILITHIUM_N/4))-1);
+    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + (num_poly * (DILITHIUM_N/4))-1));
 
     //Ctrl flags
     always_comb begin
         norm_check_busy = (read_fsm_state_ps != CHK_IDLE);
-        norm_check_done = (read_fsm_state_ps == CHK_IDLE);
     end
 
     //FSM
@@ -104,14 +100,19 @@ module norm_check_ctrl
     always_comb begin
         read_fsm_state_ns = read_fsm_state_ps;
         incr_rd_addr = 'b0;
+        norm_check_done = 0;
 
         case(read_fsm_state_ps)
             CHK_IDLE: begin
                 read_fsm_state_ns = norm_check_enable ? CHK_RD_MEM : CHK_IDLE;
             end
             CHK_RD_MEM: begin
-                read_fsm_state_ns = last_poly_last_addr ? CHK_IDLE : CHK_RD_MEM;
+                read_fsm_state_ns = last_poly_last_addr ? CHK_DONE : CHK_RD_MEM;
                 incr_rd_addr = 'b1;
+            end
+            CHK_DONE: begin
+                read_fsm_state_ns = CHK_IDLE;
+                norm_check_done = 'b1;
             end
             default begin
                 read_fsm_state_ns = CHK_IDLE;

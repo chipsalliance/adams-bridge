@@ -43,9 +43,9 @@ package adamsbridge_reg_uvm;
 
         virtual function void build();
             this.CTRL = new("CTRL");
-            this.CTRL.configure(this, 2, 0, "WO", 1, 'h0, 1, 1, 0);
+            this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
-            this.ZEROIZE.configure(this, 1, 2, "WO", 0, 'h0, 1, 1, 0);
+            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_CTRL
 
@@ -136,34 +136,6 @@ package adamsbridge_reg_uvm;
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES
 
-    // Reg - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_OUT
-    class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT extends uvm_reg;
-        rand uvm_reg_field PRIVKEY_OUT;
-
-        function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.PRIVKEY_OUT = new("PRIVKEY_OUT");
-            this.PRIVKEY_OUT.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT
-
-    // Reg - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_IN
-    class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN extends uvm_reg;
-        rand uvm_reg_field PRIVKEY_IN;
-
-        function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.PRIVKEY_IN = new("PRIVKEY_IN");
-            this.PRIVKEY_IN.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN
-
     // Reg - adamsbridge_reg::ADAMSBRIDGE_PUBKEY
     class adamsbridge_reg__ADAMSBRIDGE_PUBKEY extends uvm_reg;
         rand uvm_reg_field PUBKEY;
@@ -191,6 +163,38 @@ package adamsbridge_reg_uvm;
             this.SIGNATURE.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : adamsbridge_reg__ADAMSBRIDGE_SIGNATURE
+
+    // Mem - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_OUT
+    class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 1224, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT
+
+    // Mem - adamsbridge_reg::ADAMSBRIDGE_PRIVKEY_IN
+    class adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 1224, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN
 
     // Reg - adamsbridge_reg::intr_block_t::global_intr_en_t
     class adamsbridge_reg__intr_block_t__global_intr_en_t extends uvm_reg;
@@ -478,10 +482,10 @@ package adamsbridge_reg_uvm;
         rand adamsbridge_reg__ADAMSBRIDGE_SIGN_RND ADAMSBRIDGE_SIGN_RND[8];
         rand adamsbridge_reg__ADAMSBRIDGE_MSG ADAMSBRIDGE_MSG[16];
         rand adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES ADAMSBRIDGE_VERIFY_RES[16];
-        rand adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT ADAMSBRIDGE_PRIVKEY_OUT[1224];
-        rand adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN ADAMSBRIDGE_PRIVKEY_IN[1224];
         rand adamsbridge_reg__ADAMSBRIDGE_PUBKEY ADAMSBRIDGE_PUBKEY[648];
-        rand adamsbridge_reg__ADAMSBRIDGE_SIGNATURE ADAMSBRIDGE_SIGNATURE[1149];
+        rand adamsbridge_reg__ADAMSBRIDGE_SIGNATURE ADAMSBRIDGE_SIGNATURE[1157];
+        rand adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT ADAMSBRIDGE_PRIVKEY_OUT;
+        rand adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN ADAMSBRIDGE_PRIVKEY_IN;
         rand adamsbridge_reg__intr_block_t intr_block_rf;
 
         function new(string name = "adamsbridge_reg");
@@ -549,38 +553,32 @@ package adamsbridge_reg_uvm;
                 this.ADAMSBRIDGE_VERIFY_RES[i0].build();
                 this.default_map.add_reg(this.ADAMSBRIDGE_VERIFY_RES[i0], 'h280 + i0*'h4);
             end
-            foreach(this.ADAMSBRIDGE_PRIVKEY_OUT[i0]) begin
-                this.ADAMSBRIDGE_PRIVKEY_OUT[i0] = new($sformatf("ADAMSBRIDGE_PRIVKEY_OUT[%0d]", i0));
-                this.ADAMSBRIDGE_PRIVKEY_OUT[i0].configure(this);
-                
-                this.ADAMSBRIDGE_PRIVKEY_OUT[i0].build();
-                this.default_map.add_reg(this.ADAMSBRIDGE_PRIVKEY_OUT[i0], 'h300 + i0*'h4);
-            end
-            foreach(this.ADAMSBRIDGE_PRIVKEY_IN[i0]) begin
-                this.ADAMSBRIDGE_PRIVKEY_IN[i0] = new($sformatf("ADAMSBRIDGE_PRIVKEY_IN[%0d]", i0));
-                this.ADAMSBRIDGE_PRIVKEY_IN[i0].configure(this);
-                
-                this.ADAMSBRIDGE_PRIVKEY_IN[i0].build();
-                this.default_map.add_reg(this.ADAMSBRIDGE_PRIVKEY_IN[i0], 'h1600 + i0*'h4);
-            end
             foreach(this.ADAMSBRIDGE_PUBKEY[i0]) begin
                 this.ADAMSBRIDGE_PUBKEY[i0] = new($sformatf("ADAMSBRIDGE_PUBKEY[%0d]", i0));
                 this.ADAMSBRIDGE_PUBKEY[i0].configure(this);
                 
                 this.ADAMSBRIDGE_PUBKEY[i0].build();
-                this.default_map.add_reg(this.ADAMSBRIDGE_PUBKEY[i0], 'h2920 + i0*'h4);
+                this.default_map.add_reg(this.ADAMSBRIDGE_PUBKEY[i0], 'h2c0 + i0*'h4);
             end
             foreach(this.ADAMSBRIDGE_SIGNATURE[i0]) begin
                 this.ADAMSBRIDGE_SIGNATURE[i0] = new($sformatf("ADAMSBRIDGE_SIGNATURE[%0d]", i0));
                 this.ADAMSBRIDGE_SIGNATURE[i0].configure(this);
                 
                 this.ADAMSBRIDGE_SIGNATURE[i0].build();
-                this.default_map.add_reg(this.ADAMSBRIDGE_SIGNATURE[i0], 'h3400 + i0*'h4);
+                this.default_map.add_reg(this.ADAMSBRIDGE_SIGNATURE[i0], 'hce0 + i0*'h4);
             end
+            this.ADAMSBRIDGE_PRIVKEY_OUT = new("ADAMSBRIDGE_PRIVKEY_OUT");
+            this.ADAMSBRIDGE_PRIVKEY_OUT.configure(this);
+            this.ADAMSBRIDGE_PRIVKEY_OUT.build();
+            this.default_map.add_submap(this.ADAMSBRIDGE_PRIVKEY_OUT.default_map, 'h2000);
+            this.ADAMSBRIDGE_PRIVKEY_IN = new("ADAMSBRIDGE_PRIVKEY_IN");
+            this.ADAMSBRIDGE_PRIVKEY_IN.configure(this);
+            this.ADAMSBRIDGE_PRIVKEY_IN.build();
+            this.default_map.add_submap(this.ADAMSBRIDGE_PRIVKEY_IN.default_map, 'h4000);
             this.intr_block_rf = new("intr_block_rf");
             this.intr_block_rf.configure(this);
             this.intr_block_rf.build();
-            this.default_map.add_submap(this.intr_block_rf.default_map, 'h4600);
+            this.default_map.add_submap(this.intr_block_rf.default_map, 'h6000);
         endfunction : build
     endclass : adamsbridge_reg
 

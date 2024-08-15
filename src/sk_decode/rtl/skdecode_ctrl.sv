@@ -18,9 +18,8 @@
 // Enables unpack modules and keeps track of memory writes
 
 module skdecode_ctrl
-    import ntt_defines_pkg::*;
-    import skdecode_defines_pkg::*;
     import abr_params_pkg::*;
+    import skdecode_defines_pkg::*;
     #(
         parameter DILITHIUM_L = 7,
         parameter DILITHIUM_K = 8,
@@ -32,7 +31,7 @@ module skdecode_ctrl
         input wire zeroize,
 
         input wire skdecode_enable, //One enable for all of s0, s1, t0 unpack
-        input wire [KEY_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire s1s2_valid,
         input wire t0_valid,
@@ -41,8 +40,8 @@ module skdecode_ctrl
 
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
-        output key_mem_if_t kmem_a_rd_req,
-        output key_mem_if_t kmem_b_rd_req, 
+        output mem_if_t kmem_a_rd_req,
+        output mem_if_t kmem_b_rd_req, 
         output logic s1s2_enable,
         output logic t0_enable,
         output logic skdecode_done,
@@ -54,7 +53,7 @@ module skdecode_ctrl
 
     //Memory interface wires
     logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
-    logic [KEY_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
 
     logic incr_wr_addr, incr_skdec_count;
     logic rst_wr_addr, rst_skdec_count;
@@ -356,10 +355,10 @@ module skdecode_ctrl
     //Outputs
     always_comb begin
         mem_a_wr_req.addr       = t0_mode ? mem_wr_addr + dest_base_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + dest_base_addr : 'h0;
-        mem_a_wr_req.rd_wr_en   = mem_rw_mode;
+        mem_a_wr_req.rd_wr_en   = t0_mode & mem_a_wr_req.addr[0] ? RW_IDLE : mem_rw_mode;
 
-        mem_b_wr_req.addr       = t0_mode ? 'h0 : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 'h1 + dest_base_addr : 'h0;
-        mem_b_wr_req.rd_wr_en   = t0_mode ? RW_IDLE : mem_rw_mode;
+        mem_b_wr_req.addr       = t0_mode ? mem_wr_addr + dest_base_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 'h1 + dest_base_addr : 'h0;
+        mem_b_wr_req.rd_wr_en   = t0_mode & ~mem_a_wr_req.addr[0]? RW_IDLE : mem_rw_mode;
 
         kmem_a_rd_req.addr      = kmem_rd_addr + src_base_addr;
         kmem_a_rd_req.rd_wr_en  = kmem_rw_mode;

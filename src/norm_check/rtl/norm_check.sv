@@ -19,7 +19,7 @@
 
 module norm_check
     import norm_check_defines_pkg::*;
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter DILITHIUM_Q = 8380417,
         parameter GAMMA1 = 2**19,

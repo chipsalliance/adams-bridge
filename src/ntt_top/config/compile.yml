@@ -58,7 +58,7 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/ntt_wrapper.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
       
     tops: [ntt_top]
   rtl_lint:

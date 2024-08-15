@@ -57,7 +57,7 @@ reg           reset_n_tb;
 reg           cptra_pwrgood_tb;
 reg           zeroize_tb;
 reg           en_tb;
-reg [4*REG_SIZE-1:0] coeff_tb, mem_wr_data_o, coeff_a_tb, coeff_b_tb;
+reg [4*REG_SIZE-1:0] coeff_tb, mem_wr_data_o;
 reg [MEM_ADDR_WIDTH-1:0] src_base_tb;
 reg r0_rdy_tb;
 logic [255:0][REG_SIZE-1:0] coeff_array, coeff_high, coeff_low;
@@ -72,10 +72,8 @@ norm_check_top dut(
     .norm_check_enable(en_tb),
     .mode(mode_tb),
     .mem_base_addr(src_base_tb),
-    .mem_a_rd_req(),
-    .mem_b_rd_req(),
-    .mem_a_rd_data(coeff_a_tb),
-    .mem_b_rd_data(coeff_b_tb),
+    .mem_rd_req(),
+    .mem_rd_data(coeff_tb),
     .invalid(),
     .norm_check_ready(),
     .norm_check_done()
@@ -105,8 +103,6 @@ task init_sim;
         en_tb = 0;
         coeff_tb = 0;
         src_base_tb = 'h0;
-        coeff_a_tb = 0;
-        coeff_b_tb = 0;
         // dest_base_tb = 'h0;
         // r0_rdy_tb = 'b0;
         // coeff_high_tb = 'h0;
@@ -151,8 +147,7 @@ task norm_check_test;
     for (int poly = 0; poly < 7; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_a_tb = {REG_SIZE'($urandom_range(0,Z_BOUND-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-Z_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(0,Z_BOUND)), REG_SIZE'($urandom_range(0,Z_BOUND))};
-        coeff_b_tb = {REG_SIZE'($urandom_range(0,Z_BOUND-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-Z_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(0,Z_BOUND)), REG_SIZE'($urandom_range(0,Z_BOUND))};
+        coeff_tb = {REG_SIZE'($urandom_range(0,Z_BOUND-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-Z_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(0,Z_BOUND)), REG_SIZE'($urandom_range(0,Z_BOUND))};
         @(posedge clk_tb);
       end
     end
@@ -172,8 +167,7 @@ task norm_check_test;
     for (int poly = 0; poly < 8; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_a_tb = {REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1))};
-        coeff_b_tb = {REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1))};
+        coeff_tb = {REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1))};
         @(posedge clk_tb);
       end
     end
@@ -193,8 +187,7 @@ task norm_check_test;
     for (int poly = 0; poly < 8; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_a_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1))};
-        coeff_b_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1))};
+        coeff_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1))};
         @(posedge clk_tb);
       end
     end
@@ -215,8 +208,7 @@ task norm_check_test;
     for (int poly = 0; poly < 8; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_a_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(CT0_BOUND,DILITHIUM_Q-1))};
-        coeff_b_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(CT0_BOUND,DILITHIUM_Q-1))};
+        coeff_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(CT0_BOUND,DILITHIUM_Q-1))};
         @(posedge clk_tb);
       end
     end

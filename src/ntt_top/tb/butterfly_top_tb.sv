@@ -22,10 +22,8 @@
 //======================================================================
 
 `default_nettype none
-`include "caliptra_reg_defines.svh"
 
 module butterfly_top_tb 
-    import kv_defines_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter   TEST_VECTOR_NUM = 10,

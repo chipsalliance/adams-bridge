@@ -32,9 +32,8 @@
 //======================================================================
 
 module makehint
-    import ntt_defines_pkg::*;
-    import makehint_defines_pkg::*;
     import abr_params_pkg::*;
+    import makehint_defines_pkg::*;
     #(
         parameter REG_SIZE = 24,
         parameter DILITHIUM_Q = 23'd8380417,
@@ -68,7 +67,8 @@ module makehint
     logic [3:0] hint;
     logic [DILITHIUM_K-1:0][7:0] max_index_buffer;
     logic [31:0] max_index_buffer_data;
-    logic max_index_buffer_rd;  
+    logic max_index_buffer_rd_lo, max_index_buffer_rd_mid, max_index_buffer_rd_hi;  
+    logic max_index_buffer_rd;
 
     //Sample buffer wires
     //Flush buffer will perform last write of last polynomial irrespective of data_valid from sample buffer.
@@ -108,6 +108,8 @@ module makehint
     //Hint sum
     logic [7:0] hintsum;
     logic busy_reg;
+    logic incr_reg_wr_addr;
+    logic latch_hintsum_addr;
 
     //Busy flag
     always_ff @(posedge clk or negedge reset_n) begin
@@ -137,7 +139,7 @@ module makehint
             incr_index_d1 <= 'h0;
             incr_index_d2 <= 'h0;
         end
-        else if (zeroize) begin
+        else if (zeroize | makehint_done) begin
             incr_index_d1 <= 'h0;
             incr_index_d2 <= 'h0;
         end
@@ -151,7 +153,7 @@ module makehint
         if (!reset_n) begin
             index_count <= 'h0;
         end
-        else if (zeroize) begin
+        else if (zeroize | makehint_done) begin
             index_count <= 'h0;
         end
         else if (incr_index_d1) begin
@@ -171,7 +173,7 @@ module makehint
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
             poly_count <= 'h0;
-        else if (zeroize)
+        else if (zeroize | makehint_done)
             poly_count <= 'h0;
         else if (incr_poly)
             poly_count <= poly_count + 'h1;
@@ -188,7 +190,7 @@ module makehint
             poly_last_reg <= 'b0;
             flush_buffer_reg <= 'b0;
         end
-        else if (zeroize) begin
+        else if (zeroize | makehint_done) begin
             poly_last_reg <= 'b0;
             flush_buffer_reg <= 'b0;
         end
@@ -206,7 +208,7 @@ module makehint
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
             hintsum <= 'h0;
-        else if (zeroize)
+        else if (zeroize | makehint_done)
             hintsum <= 'h0;
         else
             hintsum <= hintsum + hint[3] + hint[2] + hint[1] + hint[0];
@@ -216,16 +218,19 @@ module makehint
     //-----------------------
     //Populate max_index_buffer
     //-----------------------
+    always_comb max_index_buffer_rd = max_index_buffer_rd_lo | max_index_buffer_rd_mid | max_index_buffer_rd_hi;
+
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
             max_index_buffer <= 'h0;
-        else if (zeroize)
+        else if (zeroize | makehint_done)
             max_index_buffer <= 'h0;
         else if (poly_done)
             max_index_buffer <= {hintsum, max_index_buffer[DILITHIUM_K-1:1]};
     end
-    assign max_index_buffer_data = max_index_buffer_rd ? (read_fsm_state_ps == MH_RD_IBUF_LOW) ? max_index_buffer[3:0] 
-                                                        : (read_fsm_state_ps == MH_RD_IBUF_HIGH) ? max_index_buffer[7:4] : 'h0 : 'h0;
+    assign max_index_buffer_data = max_index_buffer_rd_lo ? {max_index_buffer[0], 24'h0} : 
+                                   max_index_buffer_rd_mid ? max_index_buffer[4:1] :
+                                   max_index_buffer_rd_hi ? {8'h0, max_index_buffer[7:5]} : 'h0;
 
     //Reg API
     //Write from sample buffer for each dword captured per polynomial.
@@ -234,13 +239,13 @@ module makehint
     assign reg_wren = sample_valid | flush_buffer | max_index_buffer_rd;
     assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : 'h0;
 
-    always_comb reg_wr_addr_nxt = reg_wr_addr + 'h1;
+    always_comb reg_wr_addr_nxt = latch_hintsum_addr ? (OMEGA/4) : reg_wr_addr + 'h1; //Latch hintsum dword addr at the end of hint processing
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             reg_wr_addr <= 'h0;
         end
-        else if (zeroize) begin
+        else if (zeroize | makehint_done) begin
             reg_wr_addr <= 'h0;
         end
         else if (sample_valid | flush_buffer | max_index_buffer_rd) begin
@@ -297,8 +302,11 @@ module makehint
         incr_index        = 'b0;
         rst_rd_addr       = 'b0;
         hintgen_enable    = 'b0;
-        max_index_buffer_rd = 'b0;
+        max_index_buffer_rd_lo = 'b0;
+        max_index_buffer_rd_mid = 'b0;
+        max_index_buffer_rd_hi = 'b0;
         incr_poly         = 'b0;
+        latch_hintsum_addr = 'b0;
         unique case(read_fsm_state_ps)
             MH_IDLE: begin
                 read_fsm_state_ns   = arc_MH_IDLE_MH_RD_MEM ? MH_RD_MEM : MH_IDLE;
@@ -322,16 +330,21 @@ module makehint
             MH_FLUSH_SBUF: begin
                 //If last poly, flush sample buffer
                 read_fsm_state_ns   = MH_RD_IBUF_LOW;
+                latch_hintsum_addr  = 'b1; //prepare for next state
             end
             MH_RD_IBUF_LOW: begin
                 //last poly, write lower dword of max idx buf to reg API
+                read_fsm_state_ns   = MH_RD_IBUF_MID;
+                max_index_buffer_rd_lo = 'b1;
+            end
+            MH_RD_IBUF_MID: begin
                 read_fsm_state_ns   = MH_RD_IBUF_HIGH;
-                max_index_buffer_rd = 'b1;
+                max_index_buffer_rd_mid = 'b1;
             end
             MH_RD_IBUF_HIGH: begin
                 //last poly, write higher dword of max idx buf to reg API
                 read_fsm_state_ns   = MH_IDLE;
-                max_index_buffer_rd = 'b1;
+                max_index_buffer_rd_hi = 'b1;
             end
             default: begin
                 read_fsm_state_ns   = MH_IDLE;
@@ -371,7 +384,7 @@ module makehint
     hint_index_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
-        .zeroize(zeroize),
+        .zeroize(zeroize | flush_buffer),
         .data_valid_i(hint),
         .data_i(index),
         .buffer_full_o(),

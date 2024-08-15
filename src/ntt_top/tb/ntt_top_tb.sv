@@ -26,7 +26,6 @@
 module ntt_top_tb 
 
     import ntt_defines_pkg::*;
-    import kv_defines_pkg::*;
     
 #(
     parameter   TEST_VECTOR_NUM = 10,

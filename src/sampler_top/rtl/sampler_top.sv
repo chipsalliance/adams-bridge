@@ -42,6 +42,10 @@ module sampler_top
 
   input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_i,
 
+  //NTT read from sib_mem
+  input mem_if_t                        sib_mem_rd_req_i,
+  output logic [ABR_MEM_DATA_WIDTH-1:0] sib_mem_rd_data_o,
+
   //output
   output logic                     sampler_busy_o,
 
@@ -93,6 +97,7 @@ module sampler_top
 
   logic                                            rejs_dv;
   logic [REJS_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0]  rejs_data;
+  logic [REJS_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0]  rejs_data_q;
 
   //rej bounded
   logic                                               sha3_rejb_dv;
@@ -129,9 +134,9 @@ module sampler_top
 
   logic                                          sib_done;
 
-  logic [1:0]                                    sib_mem_cs;
+  logic [1:0]                                    sib_mem_cs, sib_mem_cs_mux;
   logic [1:0]                                    sib_mem_we;
-  logic [1:0][7:2]                               sib_mem_addr;
+  logic [1:0][7:2]                               sib_mem_addr, sib_mem_addr_mux;
   logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_wrdata;
   logic [1:0][3:0][DILITHIUM_Q_W-2:0]            sib_mem_rddata;
 
@@ -141,6 +146,7 @@ module sampler_top
   logic sampler_done;
 
   logic zeroize_sha3, zeroize_rejb, zeroize_rejs, zeroize_sib, zeroize_exp_mask;
+  logic zeroize_sib_mem;
 
   //Sampler mode muxes
   always_comb begin
@@ -157,6 +163,8 @@ module sampler_top
     zeroize_rejs = 0;
     zeroize_exp_mask = 0;
     zeroize_sib = 0;
+    zeroize_sib_mem = 0;
+    zeroize_sha3 = 0;
 
     unique case (sampler_mode_i) inside
       ABR_SHAKE256: begin
@@ -165,6 +173,7 @@ module sampler_top
         sampler_state_dv_o = sha3_state_dv;
         sampler_state_data_o[0] = sha3_state[0];
         sampler_done = sha3_state_dv;
+        zeroize_sha3 = sha3_state_dv;
       end
       ABR_SHAKE128: begin
         mode = sha3_pkg::Shake;
@@ -172,6 +181,7 @@ module sampler_top
         sampler_state_dv_o = sha3_state_dv;
         sampler_state_data_o [0]= sha3_state[0];
         sampler_done = sha3_state_dv;
+        zeroize_sha3 = sha3_state_dv;
       end
       ABR_REJ_SAMPLER: begin
         mode = sha3_pkg::Shake;
@@ -179,6 +189,7 @@ module sampler_top
         vld_cycle = rejs_dv;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_rejs = sampler_done;
+        zeroize_sha3 = sampler_done;
       end
       ABR_EXP_MASK: begin
         mode = sha3_pkg::Shake;
@@ -189,6 +200,7 @@ module sampler_top
         sampler_mem_addr_o = dest_addr;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_exp_mask = sampler_done;
+        zeroize_sha3 = sampler_done;
       end
       ABR_REJ_BOUNDED: begin
         mode = sha3_pkg::Shake;
@@ -199,12 +211,15 @@ module sampler_top
         sampler_mem_addr_o = dest_addr;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_rejb = sampler_done;
+        zeroize_sha3 = sampler_done;
       end
       ABR_SAMPLE_IN_BALL: begin
         mode = sha3_pkg::Shake;
         strength = sha3_pkg::L256;
+        zeroize_sib_mem = sampler_start_i;
         sampler_done = sib_done;
-        zeroize_sib = sib_done;
+        zeroize_sib = sampler_done;
+        zeroize_sha3 = sampler_done;
       end
       default: begin
 
@@ -315,6 +330,7 @@ always_comb sampler_ntt_data_o = rejs_data;
   ) sha3_inst (
     .clk_i (clk),
     .rst_b (rst_b),
+    .zeroize (zeroize_sha3),
 
     // MSG_FIFO interface
     .msg_start_i (msg_start_i),
@@ -410,8 +426,21 @@ always_comb sampler_ntt_data_o = rejs_data;
 
     //output data
     .data_valid_o(rejs_dv),
-    .data_o(rejs_data)
+    .data_o(rejs_data_q)
   );
+  
+  //FIXME HACK
+always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
+  if (!rst_b) begin
+    rejs_data <= 0;
+  end
+  else if (zeroize) begin
+    rejs_data <= 0;
+  end
+  else begin
+    rejs_data <= rejs_data_q;
+  end
+end  
 
 //rej bounded
   abr_piso #(
@@ -487,19 +516,28 @@ always_comb sampler_ntt_data_o = rejs_data;
   );
 
 //sample in ball
+  //Mux read from NTT in here
+  always_comb sib_mem_addr_mux[0] = (sib_mem_rd_req_i.rd_wr_en == RW_READ) ? sib_mem_rd_req_i.addr[5:0] : sib_mem_addr[0];
+  always_comb sib_mem_addr_mux[1] = sib_mem_addr[1];
+  always_comb sib_mem_cs_mux[0] = (sib_mem_rd_req_i.rd_wr_en == RW_READ) | sib_mem_cs[0];
+  always_comb sib_mem_cs_mux[1] = sib_mem_cs[1];
+
+  //ugly expansion of 23->24 bits FIXME
+  assign sib_mem_rd_data_o = {1'b0,sib_mem_rddata[0][3],1'b0,sib_mem_rddata[0][2],1'b0,sib_mem_rddata[0][1],1'b0,sib_mem_rddata[0][0]};
+
   sib_mem
   #(
     .DATA_WIDTH((DILITHIUM_Q_W-1)*4),
-    .DEPTH     (DILITHIUM_N/4      ),
-    .NUM_PORTS (2                  )
+    .DEPTH     (DILITHIUM_N/4),
+    .NUM_PORTS (2)
   )
   sib_mem_inst
   (
     .clk_i(clk),
-    .zeroize(zeroize),
-    .cs_i('1),
+    .zeroize(zeroize_sib_mem),
+    .cs_i(sib_mem_cs_mux),
     .we_i(sib_mem_we),
-    .addr_i(sib_mem_addr),
+    .addr_i(sib_mem_addr_mux),
     .wdata_i(sib_mem_wrdata),
 
     .rdata_o(sib_mem_rddata)
@@ -545,6 +583,8 @@ always_comb sampler_ntt_data_o = rejs_data;
 
 
   `ABR_ASSERT_MUTEX(ERR_SAMPLER_O_MUTEX, {sampler_ntt_dv_o,sampler_mem_dv_o,sampler_state_dv_o}, clk, !rst_b)
+
+  `ABR_ASSERT_NEVER(ERR_SIBMEM_ACCESS, (sib_mem_rd_req_i.rd_wr_en == RW_READ) && |sib_mem_cs, clk, !rst_b)
 
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_FSM_X, sampler_fsm_ps, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MODE_X, sampler_mode_i, clk, !rst_b)

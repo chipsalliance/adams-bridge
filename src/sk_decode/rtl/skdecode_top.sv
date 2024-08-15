@@ -30,9 +30,8 @@
 //======================================================================
 
 module skdecode_top
-    import ntt_defines_pkg::*;
-    import skdecode_defines_pkg::*;
     import abr_params_pkg::*;
+    import skdecode_defines_pkg::*;
     #(
         parameter DILITHIUM_ETA = 2,
         parameter DILITHIUM_D = 13,
@@ -51,8 +50,8 @@ module skdecode_top
         input wire [AHB_DATA_WIDTH-1:0] keymem_a_rd_data,
         input wire [AHB_DATA_WIDTH-1:0] keymem_b_rd_data,
 
-        output key_mem_if_t keymem_a_rd_req,
-        output key_mem_if_t keymem_b_rd_req,
+        output mem_if_t keymem_a_rd_req,
+        output mem_if_t keymem_b_rd_req,
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
         output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
@@ -155,7 +154,7 @@ module skdecode_top
     //Flags
     always_comb begin
         mem_a_wr_data_int  = |s1s2_valid ? s1s2_data[3:0] : |t0_valid ? t0_data[3:0] : 'h0;
-        mem_b_wr_data_int  = |s1s2_valid ? s1s2_data[7:4] : 'h0; //no writes for t0 on b port
+        mem_b_wr_data_int  = |s1s2_valid ? s1s2_data[7:4] : |t0_valid ? t0_data[3:0] : 'h0;
         skdecode_error     = |s1s2_error;
     end
 

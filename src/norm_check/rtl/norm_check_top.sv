@@ -30,7 +30,7 @@
 // TODO: need a restart input (other than zeroize)
 
 module norm_check_top
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
@@ -44,10 +44,8 @@ module norm_check_top
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
         input wire [MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        output mem_if_t mem_a_rd_req,
-        output mem_if_t mem_b_rd_req,
-        input [4*REG_SIZE-1:0] mem_a_rd_data,
-        input [4*REG_SIZE-1:0] mem_b_rd_data,
+        output mem_if_t mem_rd_req,
+        input [4*REG_SIZE-1:0] mem_rd_data,
         output logic invalid,
         output logic norm_check_ready,
         output logic norm_check_done
@@ -58,18 +56,11 @@ module norm_check_top
     
     generate 
         for (genvar i = 0; i < 4; i++) begin
-            norm_check check_a_inst (
+            norm_check check_inst (
                 .enable(check_enable_reg),
                 .mode(mode),
-                .opa_i(mem_a_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
+                .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .invalid(check_a_invalid[i])
-            );
-
-            norm_check check_b_inst (
-                .enable(check_enable_reg),
-                .mode(mode),
-                .opa_i(mem_b_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
-                .invalid(check_b_invalid[i])
             );
         end
     endgenerate
@@ -77,10 +68,10 @@ module norm_check_top
     always_ff @(posedge clk or negedge reset_n) begin
         if  (!reset_n) 
             invalid <= 'b0;
-        else if (zeroize) 
+        else if (zeroize | norm_check_done) 
             invalid <= 'b0;
         else 
-            invalid <= invalid | (|check_a_invalid) |  (|check_b_invalid);
+            invalid <= invalid | (|check_a_invalid);// |  (|check_b_invalid);
     end
 
     //Delay flops
@@ -111,8 +102,7 @@ module norm_check_top
         .norm_check_enable(norm_check_enable),
         .mode(mode),
         .mem_base_addr(mem_base_addr),
-        .mem_a_rd_req(mem_a_rd_req),
-        .mem_b_rd_req(mem_b_rd_req),
+        .mem_rd_req(mem_rd_req),
         .norm_check_done(norm_check_done),
         .check_enable(check_enable)
     );

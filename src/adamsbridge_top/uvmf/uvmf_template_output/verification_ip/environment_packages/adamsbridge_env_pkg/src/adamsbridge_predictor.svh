@@ -163,12 +163,12 @@ class adamsbridge_predictor #(
           idx = (reg_addr - base_addr) / 4;
           MSG[idx] = t.data[0][31:0];
         end
-        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map) &&
-                 reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN)-1].get_address(p_adamsbridge_map)) begin
-          base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map);
-          idx = (reg_addr - base_addr) / 4;
-          SK[idx] = t.data[0][31:0];
-        end
+        //else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map) &&
+        //         reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN)-1].get_address(p_adamsbridge_map)) begin
+        //  base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map);
+        //  idx = (reg_addr - base_addr) / 4;
+        //  SK[idx] = t.data[0][31:0];
+        //end
         else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[0].get_address(p_adamsbridge_map) &&
                  reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[$size(p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY)-1].get_address(p_adamsbridge_map)) begin
           base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[0].get_address(p_adamsbridge_map);
@@ -209,17 +209,17 @@ class adamsbridge_predictor #(
             `uvm_error("PRED_AHB", "Public key read out of bounds")
           end
         end
-        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map) &&
-                 reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT)-1].get_address(p_adamsbridge_map)) begin
-          base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map);
-          idx = (reg_addr - base_addr) / 4;
-          if (idx < $size(SK)) begin
-            t.data[0][31:0] = SK[idx];
-          end
-          else begin
-            `uvm_error("PRED_AHB", "Private key read out of bounds")
-          end
-        end
+        //else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map) &&
+        //         reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT)-1].get_address(p_adamsbridge_map)) begin
+        //  base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map);
+        //  idx = (reg_addr - base_addr) / 4;
+        //  if (idx < $size(SK)) begin
+        //    t.data[0][31:0] = SK[idx];
+        //  end
+        //  else begin
+        //    `uvm_error("PRED_AHB", "Private key read out of bounds")
+        //  end
+        //end
         else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[0].get_address(p_adamsbridge_map) &&
                  reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[$size(p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE)-1].get_address(p_adamsbridge_map)) begin
           base_addr = p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[0].get_address(p_adamsbridge_map);
@@ -312,7 +312,8 @@ class adamsbridge_predictor #(
         write_file(fd, 64/4, MSG); // Write 64-byte Message to the file
         write_file(fd, 4864/4, SK); // Write 4864-byte Secret Key to the file
         $fclose(fd);
-        $system("test_dilithium5 signing_input.hex signing_ouput.hex");
+        //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
+        $system($sformatf("%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
         `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
         // Open the file for reading
         fd = $fopen(input_file, "r");
@@ -419,12 +420,12 @@ class adamsbridge_predictor #(
       foreach (p_adamsbridge_rm.ADAMSBRIDGE_VERIFY_RES[i]) begin
         p_adamsbridge_rm.ADAMSBRIDGE_VERIFY_RES[i].set(zero_value);
       end
-      foreach (p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[i]) begin
-        p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[i].set(zero_value);
-      end
-      foreach (p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[i]) begin
-        p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[i].set(zero_value);
-      end
+      //foreach (p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[i]) begin
+      //  p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[i].set(zero_value);
+      //end
+      //foreach (p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[i]) begin
+      //  p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[i].set(zero_value);
+      //end
       foreach (p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[i]) begin
         p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[i].set(zero_value);
       end
@@ -465,7 +466,7 @@ endfunction
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write; i++) begin
-      $fwrite(fd, "%08X", array[i]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],array[i][15:8],array[i][23:16],array[i][31:24]);
     end
     $fwrite(fd, "\n");
 

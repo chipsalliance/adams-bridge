@@ -97,6 +97,8 @@ module adamsbridge_top_tb
   wire          hreadyout_o_tb;
   wire [AHB_DATA_WIDTH-1:0] hrdata_o_tb;
 
+  reg [31:0] write_data;
+
   assign clk_i = clk_tb;
   assign rst_b = reset_n_tb;
 
@@ -254,6 +256,14 @@ module adamsbridge_top_tb
 
       init_sim();
       reset_dut();
+
+      if (TEST_CMD == 2) begin
+        //Write PRIVKEY_IN
+        for (int key_loop = 0; key_loop < 1224; key_loop++) begin
+          write_data = $urandom();
+          write_single_word_ahb((32'h4000 + key_loop*4), write_data);
+        end
+      end
 
       write_single_word_ahb('h10, TEST_CMD);
 

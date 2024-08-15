@@ -19,7 +19,7 @@
 
 
 module decompose_mod_2gamma2
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 23,
         parameter DILITHIUM_Q = 23'd8380417,

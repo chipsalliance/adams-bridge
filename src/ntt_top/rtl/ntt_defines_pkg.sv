@@ -26,10 +26,8 @@
 package ntt_defines_pkg;
     import abr_params_pkg::*;
 
-parameter REG_SIZE = 24;
 parameter NTT_REG_SIZE = REG_SIZE-1;
 parameter MEM_DEPTH = 2**ABR_MEM_ADDR_WIDTH;
-parameter MEM_DATA_WIDTH = 4*REG_SIZE;
 
 
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
@@ -42,13 +40,6 @@ localparam ct =3'd0,
            pws=3'd4;
  
 typedef logic [2:0] mode_t;
-
-typedef enum logic [1:0] {RW_IDLE = 2'b00, RW_READ = 2'b01, RW_WRITE = 2'b10} mem_rw_mode_e;
-
-typedef struct packed {
-    mem_rw_mode_e rd_wr_en;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] addr;
-} mem_if_t;
 
 //NTT ports
 typedef struct packed {

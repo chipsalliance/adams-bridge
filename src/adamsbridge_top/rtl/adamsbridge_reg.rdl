@@ -67,19 +67,20 @@ addrmap adamsbridge_reg {
         name = "ADAMSBRIDGE component control register type definition";
         desc = "Control register to set the type of ADAMSBRIDGE operations.
                 [br] bit #[1:0]: This can be: 
-                [br]             00 for NONE
-                [br]             01 for KEYGEN
-                [br]             10 for SIGNING
-                [br]             11 for VERIFYING
+                [br]            000 for NONE
+                [br]            001 for KEYGEN
+                [br]            010 for SIGNING
+                [br]            011 for VERIFYING
+                [br]            100 for KEYGEN+SIGN
 
-                [br] bit #2: Zeroize all internal registers after ADAMSBRIDGE process, to avoid SCA leakage.
+                [br] bit #3: Zeroize all internal registers after ADAMSBRIDGE process, to avoid SCA leakage.
                 
                 This register is located at ADAMSBRIDGE_base_address + 0x0000_0010.";
 
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Control command field"; swwe = adamsbridge_ready; hwclr;} CTRL[2] = 2'b0;
+        field {desc = "Control command field"; swwe = adamsbridge_ready; hwclr;} CTRL[3] = 3'b0;
         field {desc = "Zeroize all internal registers"; singlepulse;} ZEROIZE = 1'b0;
     
     } ADAMSBRIDGE_CTRL @0x00000010;
@@ -189,40 +190,6 @@ addrmap adamsbridge_reg {
     
     } ADAMSBRIDGE_VERIFY_RES[16] @0x00000280;
 
-
-    /* ---- ADAMSBRIDGE Component Private Key OUT---- */
-    reg {
-        name = "ADAMSBRIDGE component private key output register type definition";
-        desc = "1216 32-bit registers storing the private key for keygen.
-                These registers is read by ADAMSBRIDGE user after keygen operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0300 to 0x0000_15FF in big-endian representation.";
-
-        default sw = r;
-        default hw = w;
-        default we = true;
-        default resetsignal = reset_b;
-        field {desc = "Private key field"; hwclr;} PRIVKEY_OUT[32] = 32'b0;
-    
-    } ADAMSBRIDGE_PRIVKEY_OUT[1224] @0x00000300;
-
-    /* ---- ADAMSBRIDGE Component Private Key IN---- */
-    reg {
-        name = "ADAMSBRIDGE component private key input register type definition";
-        desc = "1216 32-bit registers storing the private key for signing. 
-                These registers is set before signing operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_1600 to 0x0000_28FF in big-endian representation.";
-
-        default sw = w;
-        default hw = rw;
-        default we = true;
-        default resetsignal = reset_b;
-        field {desc = "Private key field"; swwe = adamsbridge_ready; hwclr;} PRIVKEY_IN[32] = 32'b0;
-    
-    } ADAMSBRIDGE_PRIVKEY_IN[1224] @0x00001600;
-
-
     /* ---- ADAMSBRIDGE Component Public Key ---- */
     reg {
         name = "ADAMSBRIDGE component public key register type definition";
@@ -230,7 +197,7 @@ addrmap adamsbridge_reg {
                 These registers is read by ADAMSBRIDGE user after keygen operation, 
                 or be set before verifying operation.
                 These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_2900 to 0x0000_331F in big-endian representation.";
+                0x0000_2900 to 0x0000_333F in big-endian representation.";
 
         default sw = rw;
         default hw = rw;
@@ -238,13 +205,12 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Public key field"; swwe = adamsbridge_ready; hwclr;} PUBKEY[32] = 32'b0;
     
-    } ADAMSBRIDGE_PUBKEY[648] @0x00002920;
+    } ADAMSBRIDGE_PUBKEY[648];
     
-
     /* ---- ADAMSBRIDGE Component Signature ---- */
-    reg {
+    external reg {
         name = "ADAMSBRIDGE component signature register type definition";
-        desc = "1149 32-bit registers storing the signature of the message. 
+        desc = "1157 32-bit registers storing the signature of the message. 
                 These registers is read by ADAMSBRIDGE user after signing operation, 
                 or be set before verifying operation.
                 These registers are located at ADAMSBRIDGE_base_address + 
@@ -256,7 +222,33 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Signature field"; swwe = adamsbridge_ready; hwclr;} SIGNATURE[32] = 32'b0;
     
-    } ADAMSBRIDGE_SIGNATURE[1149] @0x00003400;
+    } ADAMSBRIDGE_SIGNATURE[1157];
+
+    /* ---- ADAMSBRIDGE Component Private Key OUT---- */
+    external mem {
+        name = "ADAMSBRIDGE component private key output register type definition";
+        desc = "1224 32-bit registers storing the private key for keygen.
+                These registers is read by ADAMSBRIDGE user after keygen operation.
+                These registers are located at ADAMSBRIDGE_base_address + 
+                0x0000_0300 to 0x0000_161F in big-endian representation.";
+
+        default sw = r;
+        mementries = 1224;
+        memwidth = 32;
+    } ADAMSBRIDGE_PRIVKEY_OUT;
+
+    /* ---- ADAMSBRIDGE Component Private Key IN---- */
+    external mem {
+        name = "ADAMSBRIDGE component private key input register type definition";
+        desc = "1224 32-bit entries storing the private key for signing. 
+                These entries must be set before signing operation.
+                These registers are located at ADAMSBRIDGE_base_address + 
+                0x0000_1600 to 0x0000_2900 in big-endian representation.";
+
+        default sw = w;
+        mementries = 1224;
+        memwidth = 32;
+    } ADAMSBRIDGE_PRIVKEY_IN;
 
 
     ////////////////////////////////////////////////////////////////
@@ -525,5 +517,5 @@ addrmap adamsbridge_reg {
     /* -----------------------
      * Register File instance
      * ----------------------- */
-    intr_block_t intr_block_rf @0x4600;
+    intr_block_t intr_block_rf @0x6000;
 };

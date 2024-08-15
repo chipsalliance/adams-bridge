@@ -108,6 +108,7 @@ module ntt_top
     bf_uvo_t  uv_o, uv_o_reg;
     logic bf_enable, bf_enable_reg, bf_enable_mux;
     logic bf_ready;
+    logic buf0_valid;
 
     //Internal
     logic [6:0] twiddle_addr;
@@ -174,7 +175,7 @@ module ntt_top
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
     assign pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
     assign pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? pw_mem_rd_addr_b : 'h0;
-    assign pwm_rd_data_b         = (sampler_valid & pwo_mode) ? pwm_b_rd_data : 'h0;
+    assign pwm_rd_data_b         = pwm_b_rd_data;
 
     
     ntt_ctrl #(

@@ -18,38 +18,38 @@ module sha3
   // derived parameter
   localparam int Share = (EnMasking) ? 2 : 1
 ) (
-  input clk_i,
-  input rst_b,
-
+  input logic clk_i,
+  input logic rst_b,
+  input logic zeroize,
   // MSG interface
-  input                       msg_start_i,
-  input                       msg_valid_i,
-  input        [MsgWidth-1:0] msg_data_i [Share],
-  input        [MsgStrbW-1:0] msg_strb_i,         // one strobe for shares
+  input logic                      msg_start_i,
+  input logic                      msg_valid_i,
+  input logic       [MsgWidth-1:0] msg_data_i [Share],
+  input logic       [MsgStrbW-1:0] msg_strb_i,         // one strobe for shares
   output logic                msg_ready_o,
 
   // Entropy interface
-  input                     rand_valid_i,
-  input                     rand_early_i,
-  input      [StateW/2-1:0] rand_data_i,
-  input                     rand_aux_i,
+  input logic                    rand_valid_i,
+  input logic                    rand_early_i,
+  input logic     [StateW/2-1:0] rand_data_i,
+  input logic                    rand_aux_i,
   output logic              rand_consumed_o,
 
   // N, S: Used in cSHAKE mode only
-  input [NSRegisterSize*8-1:0] ns_data_i, // See sha3_pkg for details
+  input logic [NSRegisterSize*8-1:0] ns_data_i, // See sha3_pkg for details
 
   // configurations
   input sha3_mode_e       mode_i,     // see sha3pad for details
   input keccak_strength_e strength_i, // see sha3pad for details
 
   // controls
-  input start_i,   // see sha3pad for details
-  input process_i, // see sha3pad for details
+  input logic start_i,   // see sha3pad for details
+  input logic process_i, // see sha3pad for details
 
   // run_i is a pulse signal to trigger the keccak_round manually by SW.
   // It is used to run additional keccak_f after sponge absorbing is completed.
   // See `keccak_run` signal
-  input                        run_i,
+  input logic                       run_i,
   input abr_prim_mubi_pkg::mubi4_t done_i,    // see sha3pad for details
 
   output abr_prim_mubi_pkg::mubi4_t absorbed_o,
@@ -180,6 +180,7 @@ module sha3
 
   always_ff  @(posedge clk_i or negedge rst_b) begin
     if      (!rst_b)                                    state_valid <= 1'b0;
+    else if (zeroize)                                   state_valid <= 1'b0;
     else if ((st_d == StSqueeze_sparse) & ~state_valid) state_valid <= 1'b1;
     else if (state_valid_hold_i)                        state_valid <= state_valid;
     else                                                state_valid <= 1'b0;

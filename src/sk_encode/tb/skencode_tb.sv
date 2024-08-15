@@ -22,7 +22,6 @@
 `default_nettype none
 
 module skencode_tb
-    import ntt_defines_pkg::*;
     import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
 #(
@@ -53,7 +52,7 @@ wire skencode_done_tb;
 mem_if_t mem_a_rd_req_tb;
 mem_if_t mem_b_rd_req_tb;
 wire [AHB_DATA_WIDTH-1:0] keymem_a_wr_data_tb;
-key_mem_if_t keymem_a_wr_req_tb;
+mem_if_t keymem_a_wr_req_tb;
 wire skencode_error_tb;
 
 reg [23:0] input_mem [0:NUM_OF_COEFF-1];
@@ -107,7 +106,7 @@ generate
 endgenerate
 
 dual_port_memory #(
-            .ADDR_WIDTH(KEY_MEM_ADDR_WIDTH),
+            .ADDR_WIDTH(MEM_ADDR_WIDTH),
             .DATA_WIDTH(AHB_DATA_WIDTH),
             .DEPTH(NUM_OF_COEFF)
         )

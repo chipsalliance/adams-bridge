@@ -93,26 +93,6 @@ package adamsbridge_reg_pkg;
         logic [31:0] next;
         logic we;
         logic hwclr;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__PRIVKEY_OUT__in_t;
-
-    typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__PRIVKEY_OUT__in_t PRIVKEY_OUT;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__in_t;
-
-    typedef struct packed{
-        logic [31:0] next;
-        logic we;
-        logic hwclr;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__PRIVKEY_IN__in_t;
-
-    typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__PRIVKEY_IN__in_t PRIVKEY_IN;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__in_t;
-
-    typedef struct packed{
-        logic [31:0] next;
-        logic we;
-        logic hwclr;
     } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__in_t;
 
     typedef struct packed{
@@ -120,14 +100,22 @@ package adamsbridge_reg_pkg;
     } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__in_t;
 
     typedef struct packed{
-        logic [31:0] next;
-        logic we;
-        logic hwclr;
-    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__SIGNATURE__in_t;
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__in_t;
 
     typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__SIGNATURE__in_t SIGNATURE;
-    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__in_t;
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__in_t;
+
+    typedef struct packed{
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__in_t;
 
     typedef struct packed{
         logic hwset;
@@ -163,15 +151,15 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__in_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__in_t [16-1:0]ADAMSBRIDGE_MSG;
         adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__in_t [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__in_t [1224-1:0]ADAMSBRIDGE_PRIVKEY_OUT;
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__in_t [1224-1:0]ADAMSBRIDGE_PRIVKEY_IN;
         adamsbridge_reg__ADAMSBRIDGE_PUBKEY__in_t [648-1:0]ADAMSBRIDGE_PUBKEY;
-        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__in_t [1149-1:0]ADAMSBRIDGE_SIGNATURE;
+        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__in_t [1157-1:0]ADAMSBRIDGE_SIGNATURE;
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__in_t ADAMSBRIDGE_PRIVKEY_OUT;
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__in_t ADAMSBRIDGE_PRIVKEY_IN;
         adamsbridge_reg__intr_block_t__in_t intr_block_rf;
     } adamsbridge_reg__in_t;
 
     typedef struct packed{
-        logic [1:0] value;
+        logic [2:0] value;
     } adamsbridge_reg__ADAMSBRIDGE_CTRL__CTRL__out_t;
 
     typedef struct packed{
@@ -225,14 +213,6 @@ package adamsbridge_reg_pkg;
 
     typedef struct packed{
         logic [31:0] value;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__PRIVKEY_IN__out_t;
-
-    typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__PRIVKEY_IN__out_t PRIVKEY_IN;
-    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__out_t;
-
-    typedef struct packed{
-        logic [31:0] value;
     } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__out_t;
 
     typedef struct packed{
@@ -240,12 +220,27 @@ package adamsbridge_reg_pkg;
     } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__out_t;
 
     typedef struct packed{
-        logic [31:0] value;
-    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__SIGNATURE__out_t;
+        logic req;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__out_t;
 
     typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__SIGNATURE__out_t SIGNATURE;
-    } adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__out_t;
+        logic req;
+        logic [12:0] addr;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__out_t;
+
+    typedef struct packed{
+        logic req;
+        logic [12:0] addr;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__out_t;
 
     typedef struct packed{
         logic intr;
@@ -277,9 +272,10 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__out_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__out_t [16-1:0]ADAMSBRIDGE_MSG;
         adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__out_t [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__out_t [1224-1:0]ADAMSBRIDGE_PRIVKEY_IN;
         adamsbridge_reg__ADAMSBRIDGE_PUBKEY__out_t [648-1:0]ADAMSBRIDGE_PUBKEY;
-        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__out_t [1149-1:0]ADAMSBRIDGE_SIGNATURE;
+        adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__out_t [1157-1:0]ADAMSBRIDGE_SIGNATURE;
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__out_t ADAMSBRIDGE_PRIVKEY_OUT;
+        adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__out_t ADAMSBRIDGE_PRIVKEY_IN;
         adamsbridge_reg__intr_block_t__out_t intr_block_rf;
     } adamsbridge_reg__out_t;
 

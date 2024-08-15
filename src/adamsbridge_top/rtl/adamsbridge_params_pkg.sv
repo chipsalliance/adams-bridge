@@ -16,7 +16,7 @@
 //
 // abr_params_pkg.sv
 // --------
-// required parameters and register address for ECC Secp384r1.
+// Common params and defines for ML-DSA 87
 //
 //======================================================================
 
@@ -28,8 +28,9 @@ package abr_params_pkg;
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
   //----------------------------------------------------------------
-  parameter DILITHIUM_Q = 8380417;
+  parameter DILITHIUM_Q = 23'd8380417;
   parameter DILITHIUM_Q_W = $clog2(DILITHIUM_Q) + 1;
+  parameter REG_SIZE = 24; //FIXME
   parameter DILITHIUM_N = 256;
   
   parameter COEFF_PER_CLK = 4;
@@ -37,30 +38,39 @@ package abr_params_pkg;
 //Memory interface - FIXME calculate the width based on depth not the other way
   parameter ABR_MEM_MAX_DEPTH = 2496; //FIXME
   parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * DILITHIUM_Q_W;
-  parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 2; //+ 2 bits for bank selection
+  parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
 
   parameter ABR_MEM_INST0_DEPTH = 2496;
   parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
   parameter ABR_MEM_INST1_DEPTH = 1088;
   parameter ABR_MEM_INST1_ADDR_W = $clog2(ABR_MEM_INST1_DEPTH);
-  parameter ABR_MEM_INST2_DEPTH = 960;
+  parameter ABR_MEM_INST2_DEPTH = 1408;
   parameter ABR_MEM_INST2_ADDR_W = $clog2(ABR_MEM_INST2_DEPTH);
   parameter ABR_MEM_INST3_DEPTH = 576;
   parameter ABR_MEM_INST3_ADDR_W = $clog2(ABR_MEM_INST3_DEPTH);
 
-  parameter MEM_ADDR_WIDTH = 15;
-  parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH;
-  parameter MEM_DATA_WIDTH = COEFF_PER_CLK*DILITHIUM_Q_W;
+  parameter MEM_ADDR_WIDTH = 15; //FIXME REMOVE
+  parameter MEM_DEPTH = 2**MEM_ADDR_WIDTH; //FIXME REMOVE
+  parameter MEM_DATA_WIDTH = COEFF_PER_CLK*DILITHIUM_Q_W; //FIXME REMOVE
 
-  parameter ABR_KEYGEN = 2'b01;
-  parameter ABR_SIGN   = 2'b10;
-  parameter ABR_VERIFY = 2'b11;
+  parameter ABR_KEYGEN      = 3'b001;
+  parameter ABR_SIGN        = 3'b010;
+  parameter ABR_VERIFY      = 3'b011;
+  parameter ABR_KEYGEN_SIGN = 3'b100;
 
   parameter [63  : 0] ABR_CORE_NAME        = 64'h30; //FIXME
   parameter [63  : 0] ABR_CORE_VERSION     = 64'h0;  //FIXME
 
   // Implementation parameters
   parameter DATA_WIDTH           = 32;
+
+  //Common structs
+  typedef enum logic [1:0] {RW_IDLE = 2'b00, RW_READ = 2'b01, RW_WRITE = 2'b10} mem_rw_mode_e;
+
+  typedef struct packed {
+      mem_rw_mode_e rd_wr_en;
+      logic [ABR_MEM_ADDR_WIDTH-1:0] addr;
+  } mem_if_t;
 
 endpackage
 

@@ -21,7 +21,6 @@
 `default_nettype none
 
 module skdecode_tb
-    import ntt_defines_pkg::*;
     import abr_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
