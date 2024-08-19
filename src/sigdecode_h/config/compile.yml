@@ -16,12 +16,9 @@ targets:
 provides: [sigdecode_h]
 schema_version: 2.4.0
 requires:
-  - libs
   - abr_defines
   - abr_libs
-  - hmac_drbg
   - sigdecode_h_pkg
-  - ntt_pkg
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -39,7 +36,6 @@ provides: [sigdecode_h_tb]
 schema_version: 2.4.0
 requires: 
   - sigdecode_h
-  - caliptra_top_defines
   - sigdecode_h_pkg
 targets:
   rtl:

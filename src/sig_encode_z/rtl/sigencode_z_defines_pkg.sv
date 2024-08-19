@@ -22,7 +22,6 @@
 `define ABR_SIGENCODE_Z_DEFINES
 
 package sigencode_z_defines_pkg;
-    import ntt_defines_pkg::*;
     import abr_params_pkg::*;
 
     parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;

@@ -90,14 +90,10 @@ package adamsbridge_reg_pkg;
     } adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__in_t;
 
     typedef struct packed{
-        logic [31:0] next;
-        logic we;
-        logic hwclr;
-    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__in_t;
-
-    typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__in_t PUBKEY;
-    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__in_t;
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__external__in_t;
 
     typedef struct packed{
         logic rd_ack;
@@ -151,7 +147,7 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__in_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__in_t [16-1:0]ADAMSBRIDGE_MSG;
         adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__in_t [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__in_t [648-1:0]ADAMSBRIDGE_PUBKEY;
+        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__external__in_t [648-1:0]ADAMSBRIDGE_PUBKEY;
         adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__in_t [1157-1:0]ADAMSBRIDGE_SIGNATURE;
         adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__in_t ADAMSBRIDGE_PRIVKEY_OUT;
         adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__in_t ADAMSBRIDGE_PRIVKEY_IN;
@@ -212,12 +208,11 @@ package adamsbridge_reg_pkg;
     } adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__out_t;
 
     typedef struct packed{
-        logic [31:0] value;
-    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__out_t;
-
-    typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__PUBKEY__out_t PUBKEY;
-    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__out_t;
+        logic req;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } adamsbridge_reg__ADAMSBRIDGE_PUBKEY__external__out_t;
 
     typedef struct packed{
         logic req;
@@ -272,7 +267,7 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__out_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__out_t [16-1:0]ADAMSBRIDGE_MSG;
         adamsbridge_reg__ADAMSBRIDGE_VERIFY_RES__out_t [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__out_t [648-1:0]ADAMSBRIDGE_PUBKEY;
+        adamsbridge_reg__ADAMSBRIDGE_PUBKEY__external__out_t [648-1:0]ADAMSBRIDGE_PUBKEY;
         adamsbridge_reg__ADAMSBRIDGE_SIGNATURE__external__out_t [1157-1:0]ADAMSBRIDGE_SIGNATURE;
         adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT__external__out_t ADAMSBRIDGE_PRIVKEY_OUT;
         adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN__external__out_t ADAMSBRIDGE_PRIVKEY_IN;

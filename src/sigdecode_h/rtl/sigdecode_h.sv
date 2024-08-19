@@ -23,9 +23,7 @@
 // 4 coeffs are written to each memory addr.
 
 module sigdecode_h
-    import adamsbridge_reg_pkg::*;
     import abr_params_pkg::*;
-    import ntt_defines_pkg::*;
     #(
         parameter REG_SIZE = 24,
         parameter DILITHIUM_OMEGA = 75,

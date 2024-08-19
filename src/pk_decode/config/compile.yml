@@ -7,7 +7,7 @@
 provides: [pkdecode]
 schema_version: 2.4.0
 requires:
-  - ntt_pkg
+  - abr_defines
   - abr_libs
 targets:
   rtl:
@@ -25,7 +25,6 @@ provides: [pkdecode_tb]
 schema_version: 2.4.0
 requires:
   - pkdecode
-  - caliptra_top_defines
 targets:
   rtl:
     directories: [$COMPILE_ROOT/tb]

@@ -28,7 +28,6 @@
 
 module sigencode_z_top
     import abr_params_pkg::*;
-    import ntt_defines_pkg::*;
     import sigencode_z_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,

@@ -150,6 +150,7 @@ module adamsbridge_reg (
         end
         for(int i0=0; i0<648; i0++) begin
             decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] = cpuif_req_masked & (cpuif_addr == 15'h2c0 + i0*15'h4);
+            is_external |= cpuif_req_masked & (cpuif_addr == 15'h2c0 + i0*15'h4);
         end
         for(int i0=0; i0<1157; i0++) begin
             decoded_reg_strb.ADAMSBRIDGE_SIGNATURE[i0] = cpuif_req_masked & (cpuif_addr == 15'hce0 + i0*15'h4);
@@ -229,12 +230,6 @@ module adamsbridge_reg (
                 logic load_next;
             } VERIFY_RES;
         } [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        struct packed{
-            struct packed{
-                logic [31:0] next;
-                logic load_next;
-            } PUBKEY;
-        } [648-1:0]ADAMSBRIDGE_PUBKEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -364,11 +359,6 @@ module adamsbridge_reg (
                 logic [31:0] value;
             } VERIFY_RES;
         } [16-1:0]ADAMSBRIDGE_VERIFY_RES;
-        struct packed{
-            struct packed{
-                logic [31:0] value;
-            } PUBKEY;
-        } [648-1:0]ADAMSBRIDGE_PUBKEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -613,31 +603,11 @@ module adamsbridge_reg (
         assign hwif_out.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value = field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value;
     end
     for(genvar i0=0; i0<648; i0++) begin
-        // Field: adamsbridge_reg.ADAMSBRIDGE_PUBKEY[].PUBKEY
-        always_comb begin
-            automatic logic [31:0] next_c = field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value;
-            automatic logic load_next_c = '0;
-            if(decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] && decoded_req_is_wr && hwif_in.adamsbridge_ready) begin // SW write
-                next_c = (field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.we) begin // HW Write - we
-                next_c = hwif_in.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.next;
-                load_next_c = '1;
-            end else if(hwif_in.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.hwclr) begin // HW Clear
-                next_c = '0;
-                load_next_c = '1;
-            end
-            field_combo.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.next = next_c;
-            field_combo.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.load_next = load_next_c;
-        end
-        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
-            if(~hwif_in.reset_b) begin
-                field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value <= 32'h0;
-            end else if(field_combo.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.load_next) begin
-                field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value <= field_combo.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.next;
-            end
-        end
-        assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value = field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value;
+
+        assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].req = decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0];
+        assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].req_is_wr = decoded_req_is_wr;
+        assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].wr_data = decoded_wr_data;
+        assign hwif_out.ADAMSBRIDGE_PUBKEY[i0].wr_biten = decoded_wr_biten;
     end
     for(genvar i0=0; i0<1157; i0++) begin
 
@@ -991,6 +961,9 @@ module adamsbridge_reg (
     always_comb begin
         automatic logic wr_ack;
         wr_ack = '0;
+        for(int i0=0; i0<648; i0++) begin
+            wr_ack |= hwif_in.ADAMSBRIDGE_PUBKEY[i0].wr_ack;
+        end
         for(int i0=0; i0<1157; i0++) begin
             wr_ack |= hwif_in.ADAMSBRIDGE_SIGNATURE[i0].wr_ack;
         end
@@ -1009,6 +982,9 @@ module adamsbridge_reg (
     always_comb begin
         automatic logic rd_ack;
         rd_ack = '0;
+        for(int i0=0; i0<648; i0++) begin
+            rd_ack |= hwif_in.ADAMSBRIDGE_PUBKEY[i0].rd_ack;
+        end
         for(int i0=0; i0<1157; i0++) begin
             rd_ack |= hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_ack;
         end
@@ -1040,7 +1016,7 @@ module adamsbridge_reg (
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.ADAMSBRIDGE_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end
     for(genvar i0=0; i0<648; i0++) begin
-        assign readback_array[i0*1 + 21][31:0] = (decoded_reg_strb.ADAMSBRIDGE_PUBKEY[i0] && !decoded_req_is_wr) ? field_storage.ADAMSBRIDGE_PUBKEY[i0].PUBKEY.value : '0;
+        assign readback_array[i0*1 + 21] = hwif_in.ADAMSBRIDGE_PUBKEY[i0].rd_ack ? hwif_in.ADAMSBRIDGE_PUBKEY[i0].rd_data : '0;
     end
     for(genvar i0=0; i0<1157; i0++) begin
         assign readback_array[i0*1 + 669] = hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_ack ? hwif_in.ADAMSBRIDGE_SIGNATURE[i0].rd_data : '0;

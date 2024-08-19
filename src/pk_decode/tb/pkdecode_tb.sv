@@ -21,7 +21,7 @@
 `default_nettype none
 
 module pkdecode_tb
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter DILITHIUM_K = 'h8,

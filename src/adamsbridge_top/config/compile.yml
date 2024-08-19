@@ -28,6 +28,9 @@ requires:
   - makehint
   - norm_check
   - sigencode_z
+  - sigdecode_h
+  - sigdecode_z
+  - pkdecode
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]

@@ -60,9 +60,11 @@ module abr_ctrl
   input logic [1:0]                         ntt_busy_i,
 
   //aux interfaces
-  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src_base_addr_o,
+  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
+  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
   output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
   output logic decompose_start_o,
+  output logic decompose_mode_o,
   input logic decompose_done_i,
 
   output logic skencode_enable_o,
@@ -84,13 +86,30 @@ module abr_ctrl
 
   output logic normcheck_enable_o,
   output logic [1:0] normcheck_mode_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] normcheck_src_addr_o,
   input logic normcheck_invalid_i,
   input logic normcheck_done_i,
 
   output logic sigencode_enable_o,
   input mem_if_t sigencode_wr_req_i,
   input logic [1:0][3:0][19:0] sigencode_wr_data_i,
-  input logic sigencode_done_i
+  input logic sigencode_done_i,
+
+  output logic pkdecode_enable_o,
+  input logic [7:0] pkdecode_rd_addr_i,
+  output logic [7:0][T1_COEFF_W-1:0] pkdecode_rd_data_o,
+  input logic pkdecode_done_i,
+
+
+  output logic sigdecode_h_enable_o, 
+  output logic [SIGNATURE_H_VALID_NUM_BYTES-1:0][7:0] signature_h_o,
+  input logic sigdecode_h_invalid_i,
+  input logic sigdecode_h_done_i,
+
+  output logic sigdecode_z_enable_o, 
+  input mem_if_t sigdecode_z_rd_req_i,
+  output logic [1:0][3:0][19:0] sigdecode_z_rd_data_o,
+  input logic sigdecode_z_done_i
 
   );
 
@@ -110,12 +129,11 @@ module abr_ctrl
   //assign appropriate data to msg interface
   logic [ABR_OPR_WIDTH-1:0]  sampler_src;
   logic [15:0]               sampler_src_offset;
-  logic [15:0]               sampler_iter;
+  logic [15:0]               sampler_imm;
   
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
-  logic [3:0][63:0] roh_reg;
   logic [7:0][63:0] roh_p_reg;
   logic [3:0][63:0] K_reg;
   logic [7:0][63:0] mu_reg;
@@ -145,12 +163,20 @@ module abr_ctrl
 
   abr_privkey_u privatekey_in;
   abr_signature_u signature_reg;
+  abr_pubkey_u publickey_reg;
 
   //sync points for dual sequencers
   logic y_valid, set_y_valid, clear_y_valid;
   logic w0_valid, set_w0_valid, clear_w0_valid;
   logic c_valid, set_c_valid, clear_c_valid;
+
+  //signature and verify validity checks
   logic signature_valid, set_signature_valid, clear_signature_valid;
+  logic verify_valid, set_verify_valid, clear_verify_valid;
+  
+  //shared aux functions
+  logic [1:0] normcheck_enable;
+  logic [1:0] makehint_enable;
   
   assign abr_reg_hwif_in_o = abr_reg_hwif_in;
   assign abr_reg_hwif_out = abr_reg_hwif_out_i;
@@ -177,14 +203,12 @@ module abr_ctrl
   
   always_comb zeroize = abr_reg_hwif_out.ADAMSBRIDGE_CTRL.ZEROIZE.value;
   
-  always_comb begin // adamsbridge reg writing
- 
+  always_comb begin // adamsbridge reg writing 
     for (int dword=0; dword < PUBKEY_NUM_DWORDS; dword++)begin
-        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.we = '0;
-        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.next = '0;
-        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].PUBKEY.hwclr = zeroize;
-    end
-  
+        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].rd_ack = abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & ~abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr; //FIXME protect with key done
+        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].wr_ack = abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr; //FIXME protect with busy
+        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].rd_data = publickey_reg.raw[dword]; 
+    end 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = abr_reg_hwif_out.ADAMSBRIDGE_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
       abr_reg_hwif_in.ADAMSBRIDGE_SEED[dword].SEED.we = '0;
@@ -211,9 +235,9 @@ module abr_ctrl
     end
   
     for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++)begin 
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.we = '0;       
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.next = '0;
-      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (instr.operand3 == ABR_DEST_VERIFY_RES_REG_ID);       
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
+      abr_reg_hwif_in.ADAMSBRIDGE_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
   
     for (int dword=0; dword < IV_NUM_DWORDS; dword++)begin
@@ -273,6 +297,18 @@ module abr_ctrl
     .reg_o()
   );
 
+  //ack the read request one clock later
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack <= 0;
+    end
+    else begin
+      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack <= abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req & ~abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr;
+    end
+  end
+
+  always_comb abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_data = abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack ? privkey_out_rdata : 0;
+
   //No write to PRIVKEY_OUT allowed - just ack it
   assign abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.wr_ack = abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req & abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr;
 
@@ -297,7 +333,6 @@ module abr_ctrl
       //HW write z
       for (int chunk = 0; chunk < 224; chunk++) begin
         if ((sigencode_wr_req_i.rd_wr_en == RW_WRITE) & (sigencode_wr_req_i.addr[8:1] == chunk)) begin
-
           signature_reg.enc.z[chunk*5 +: 5] <= sigencode_wr_data_i;
         end
       end
@@ -310,29 +345,65 @@ module abr_ctrl
     end
   end
 
-  //ack the read request one clock later
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack <= 0;
+  always_comb begin
+    //HW read h
+    for (int i = 0; i < SIGNATURE_H_VALID_NUM_BYTES; i++) begin
+      signature_h_o[i] = signature_reg.enc.h[i/4][(i%4)*8 +: 8];
     end
-    else begin
-      abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack <= abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req & ~abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr;
+
+    //HW read z
+    for (int chunk = 0; chunk < 224; chunk++) begin
+      if ((sigencode_wr_req_i.rd_wr_en == RW_READ) & (sigdecode_z_rd_req_i.addr[8:1] == chunk)) begin
+        sigdecode_z_rd_data_o = signature_reg.enc.z[chunk*5 +: 5];
+      end
+      else begin
+        sigdecode_z_rd_data_o = '0;
+      end
     end
   end
 
-  always_comb abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_data = abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_OUT.rd_ack ? privkey_out_rdata : 0;
+
+
+  //Public Key
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      publickey_reg <= '0;
+    end else if (zeroize) begin
+      publickey_reg <= '0;
+    end else begin
+      for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
+        if (abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr) begin
+          publickey_reg.raw[dword] <= abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].wr_data;
+        end
+      end
+      //HW write roh
+      if (sampler_state_dv_i) begin
+        if (instr.operand3 == ABR_DEST_K_ROH_REG_ID) begin
+          publickey_reg.enc.roh <= sampler_state_data_i[0][255:0];
+        end
+      end
+      //HW write h
+      for (int coeff = 0; coeff < 2048; coeff++) begin //fixme
+        if (0) begin //pubkey t1 write interface
+          publickey_reg.enc.t1[coeff] <= '0;
+        end
+      end
+    end
+  end
+
+  always_comb pkdecode_rd_data_o = publickey_reg.enc.t1[pkdecode_rd_addr_i*8 +: 8];
 
   always_comb begin : sampler_src_mux
     unique case (sampler_src) inside
       ABR_SEED_ID:        msg_data_o[0] = {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-      ABR_ROH_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_iter} : roh_reg[sampler_src_offset[1:0]];
-      ABR_ROH_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_iter} : roh_p_reg[sampler_src_offset[2:0]];
+      ABR_ROH_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : {publickey_reg.enc.roh[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.roh[{sampler_src_offset[1:0],1'b0}]};
+      ABR_ROH_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : roh_p_reg[sampler_src_offset[2:0]];
       ABR_TR_ID:          msg_data_o[0] = signing_process ? privatekey_in.enc.tr[sampler_src_offset[2:0]] : '0; //FIXME keygen+signing
       ABR_MSG_ID:         msg_data_o[0] = {msg_reg[{sampler_src_offset[2:0],1'b1}],msg_reg[{sampler_src_offset[2:0],1'b0}]};
       ABR_K_ID:           msg_data_o[0] = K_reg[sampler_src_offset[1:0]];
       ABR_MU_ID:          msg_data_o[0] = mu_reg[sampler_src_offset[2:0]];
       ABR_SIGN_RND_ID:    msg_data_o[0] = {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-      ABR_ROH_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_iter[2:0])} : roh_p_reg[sampler_src_offset[2:0]];
+      ABR_ROH_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : roh_p_reg[sampler_src_offset[2:0]];
       ABR_SIG_C_REG_ID:   msg_data_o[0] = {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
       default:            msg_data_o[0] = '0;
     endcase
@@ -341,16 +412,16 @@ module abr_ctrl
   //If we're storing state directly into registers, do that here
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      {K_reg, roh_p_reg, roh_reg} <= 0;
+      {K_reg, roh_p_reg} <= 0;
       mu_reg <= 0;
     end
     else if (zeroize) begin
-      {K_reg, roh_p_reg, roh_reg} <= 0;
+      {K_reg, roh_p_reg} <= 0;
       mu_reg <= 0;
     end
     else if (sampler_state_dv_i) begin
       if (instr.operand3 == ABR_DEST_K_ROH_REG_ID) begin
-        {K_reg, roh_p_reg, roh_reg} <= sampler_state_data_i[0][1023:0];
+        {K_reg, roh_p_reg} <= sampler_state_data_i[0][1023:256];
       end
       else if (instr.operand3 == ABR_DEST_MU_REG_ID) begin
         mu_reg <= sampler_state_data_i[0][511:0];
@@ -380,6 +451,7 @@ module abr_ctrl
       w0_valid <= '0;
       c_valid <= '0;
       signature_valid <= 0;
+      verify_valid <= 0;
       keygen_process <= 0;
       signing_process <= 0;
       verifying_process <= 0;
@@ -391,7 +463,7 @@ module abr_ctrl
       w0_valid <= '0;
       c_valid <= '0;
       signature_valid <= 0;
-      signature_valid <= 0;
+      verify_valid <= 0;
       keygen_process <= 0;
       signing_process <= 0;
       verifying_process <= 0;
@@ -400,7 +472,8 @@ module abr_ctrl
     else begin
       dilithium_valid_reg <= dilithium_valid_reg | 
                              (keygen_process & keygen_done) |
-                             (signing_process & signature_done);
+                             (signing_process & signature_done) |
+                             (verifying_process & verify_done);
       y_valid <= set_y_valid ? 1 :
                  clear_y_valid ? 0 :
                  y_valid;
@@ -413,6 +486,9 @@ module abr_ctrl
       signature_valid <= set_signature_valid ? 1 :
                          clear_signature_valid ? 0 :
                          signature_valid;
+      verify_valid <= set_verify_valid ? 1 :
+                      clear_verify_valid ? 0 :
+                      verify_valid;
       keygen_process <= keygen_process | keygen_process_nxt;
       signing_process <= signing_process | signing_process_nxt;
       verifying_process <= verifying_process | verifying_process_nxt;
@@ -420,8 +496,11 @@ module abr_ctrl
     end
   end
   
-  always_comb clear_signature_valid = ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
+  //FIXME check if aux mode is set appropriately?
+  always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
+  always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | (sigdecode_h_done_i & sigdecode_h_invalid_i));
+                                   
 //Primary sequencer for keygen, signing, and verify
 
   //FIXME need to optimize sequencer
@@ -457,10 +536,12 @@ module abr_ctrl
     verifying_process_nxt = 0;
     keygen_signing_process_nxt = 0;
     keygen_done = 0;
+    verify_done = 0;
     set_y_valid = 0;
     set_w0_valid = 0;
     set_c_valid = 0;
     update_kappa = 0;
+    set_verify_valid = 0;
     prog_cntr_nxt = DILITHIUM_RESET;
 
     unique case (prog_cntr) inside
@@ -476,8 +557,9 @@ module abr_ctrl
             signing_process_nxt  = 1;
           end                                   
           ABR_VERIFY : begin  // verifying
-            prog_cntr_nxt = DILITHIUM_ERROR; //fixme
+            prog_cntr_nxt = DILITHIUM_VERIFY_S;
             verifying_process_nxt  = 1;
+            set_verify_valid = 1;
           end                          
           ABR_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
             prog_cntr_nxt = DILITHIUM_KG_S;
@@ -498,7 +580,7 @@ module abr_ctrl
         end
       end
       DILITHIUM_KG_E : begin // end of keygen
-        prog_cntr_nxt = DILITHIUM_RESET;
+        //prog_cntr_nxt = DILITHIUM_RESET;
         keygen_done = 1;
       end
       //START of Y access - check if Y is still valid
@@ -549,6 +631,9 @@ module abr_ctrl
         //restart challenge generation
         prog_cntr_nxt = DILITHIUM_SIGN_CHECK_Y_CLR;
       end
+      DILITHIUM_VERIFY_E : begin // end of verify flow
+        verify_done = 1;
+      end
       default : begin
         if (subcomponent_busy) begin //Stalled until sub-component is done
           prog_cntr_nxt = prog_cntr;
@@ -598,7 +683,8 @@ module abr_ctrl
                                          pw_base_addr_c:instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
 
   always_comb dest_base_addr_o = instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src_base_addr_o[0] = instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[0] = instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[0] = instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
   always_comb aux_dest_base_addr_o[0] = instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
 //determine the number of bytes in the last message
@@ -625,6 +711,8 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
+always_comb decompose_mode_o = instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_USEHINT);
+
 //State logic
 always_comb begin : primary_ctrl_fsm_out_combo
     ctrl_fsm_ns = ctrl_fsm_ps;
@@ -634,10 +722,15 @@ always_comb begin : primary_ctrl_fsm_out_combo
     msg_strobe_o = 0;
     sampler_start_o = 0;
     sampler_src = 0;
-    sampler_iter = 0;
+    sampler_imm = 0;
     ntt_enable_o[0] = 0;
     decompose_start_o = 0;
     skencode_enable_o = 0;
+    pkdecode_enable_o = 0;
+    sigdecode_h_enable_o = 0;
+    sigdecode_z_enable_o = 0;
+    normcheck_enable[0] = 0;
+    makehint_enable[0] = 0;
 
     unique case (ctrl_fsm_ps)
       ABR_CTRL_IDLE: begin
@@ -660,7 +753,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
       ABR_CTRL_MSG_LOAD: begin
         msg_valid_o = 1;
         sampler_src = instr.operand1;
-        sampler_iter = instr.iter;
+        sampler_imm = instr.imm;
         if (msg_done) begin
           msg_strobe_o = last_msg_strobe;
           if (instr.opcode.sampler_en) ctrl_fsm_ns = ABR_CTRL_FUNC_START;
@@ -681,14 +774,23 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_start_o = instr.opcode.sampler_en;
         ntt_enable_o[0] = instr.opcode.ntt_en;
         if (instr.opcode.aux_en) begin
-          decompose_start_o = (instr.opcode.mode.aux_mode == ABR_DECOMP);
+          decompose_start_o = (instr.opcode.mode.aux_mode inside {ABR_DECOMP,ABR_USEHINT});
           skencode_enable_o = (instr.opcode.mode.aux_mode == ABR_SKENCODE);
+          pkdecode_enable_o = (instr.opcode.mode.aux_mode == ABR_PKDECODE);
+          sigdecode_h_enable_o = (instr.opcode.mode.aux_mode == ABR_SIGDEC_H);
+          sigdecode_z_enable_o = (instr.opcode.mode.aux_mode == ABR_SIGDEC_Z);
+          normcheck_enable[0] = (instr.opcode.mode.aux_mode == ABR_NORMCHK);
+          
         end
       end
       ABR_CTRL_DONE: begin
         if ((~sampler_busy_i & ~ntt_busy_i[0] & ~instr.opcode.aux_en) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_DECOMP) & decompose_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SKENCODE) & skencode_done_i)) begin
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode inside {ABR_DECOMP,ABR_USEHINT}) & decompose_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SKENCODE) & skencode_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_PKDECODE) & pkdecode_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SIGDEC_H) & sigdecode_h_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SIGDEC_Z) & sigdecode_z_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_NORMCHK) & normcheck_done_i)) begin
           
               ctrl_fsm_ns = ABR_CTRL_IDLE;
 
@@ -865,10 +967,15 @@ abr_seq_prim abr_seq_prim_inst
                                          pw_base_addr_a:sign_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
                                          pw_base_addr_c:sign_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb aux_src_base_addr_o[1] = sign_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[1] = sign_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[1] = sign_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
   always_comb aux_dest_base_addr_o[1] = sign_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
-  always_comb normcheck_mode_o = sign_instr.iter[1:0];
+  always_comb normcheck_mode_o = (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_NORMCHK)) ? instr.imm[1:0] :
+                                 (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == ABR_NORMCHK)) ? sign_instr.imm[1:0] : '0;
+  always_comb normcheck_src_addr_o = (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_NORMCHK)) ? aux_src0_base_addr_o[0] :
+                                     (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == ABR_NORMCHK)) ? aux_src0_base_addr_o[1] : '0;
+  always_comb normcheck_enable_o = |normcheck_enable;
 
 //State logic
 always_comb begin : secpondary_ctrl_fsm_out_combo
@@ -876,7 +983,7 @@ always_comb begin : secpondary_ctrl_fsm_out_combo
     ntt_enable_o[1] = 0;
     skdecode_enable_o = 0;
     makehint_enable_o = 0;
-    normcheck_enable_o = 0;
+    normcheck_enable[1] = 0;
     sigencode_enable_o = 0;
 
     unique case (sign_ctrl_fsm_ps)
@@ -893,7 +1000,7 @@ always_comb begin : secpondary_ctrl_fsm_out_combo
         if (sign_instr.opcode.aux_en) begin
           skdecode_enable_o = (sign_instr.opcode.mode.aux_mode == ABR_SKDECODE);
           makehint_enable_o = (sign_instr.opcode.mode.aux_mode == ABR_MAKEHINT);
-          normcheck_enable_o = (sign_instr.opcode.mode.aux_mode == ABR_NORMCHK);
+          normcheck_enable[1] = (sign_instr.opcode.mode.aux_mode == ABR_NORMCHK);
           sigencode_enable_o = (sign_instr.opcode.mode.aux_mode == ABR_SIGENC);
         end
       end

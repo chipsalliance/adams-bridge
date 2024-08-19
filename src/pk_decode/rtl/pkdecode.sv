@@ -23,7 +23,7 @@
 //======================================================================
 
 module pkdecode
-    import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
         parameter DILITHIUM_K = 'h8,

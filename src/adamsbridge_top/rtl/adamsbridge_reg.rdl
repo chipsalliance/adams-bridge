@@ -191,7 +191,7 @@ addrmap adamsbridge_reg {
     } ADAMSBRIDGE_VERIFY_RES[16] @0x00000280;
 
     /* ---- ADAMSBRIDGE Component Public Key ---- */
-    reg {
+    external reg {
         name = "ADAMSBRIDGE component public key register type definition";
         desc = "648 32-bit registers storing the public key. 
                 These registers is read by ADAMSBRIDGE user after keygen operation, 
@@ -232,7 +232,7 @@ addrmap adamsbridge_reg {
                 These registers are located at ADAMSBRIDGE_base_address + 
                 0x0000_0300 to 0x0000_161F in big-endian representation.";
 
-        default sw = r;
+        sw = r;
         mementries = 1224;
         memwidth = 32;
     } ADAMSBRIDGE_PRIVKEY_OUT;
@@ -245,7 +245,7 @@ addrmap adamsbridge_reg {
                 These registers are located at ADAMSBRIDGE_base_address + 
                 0x0000_1600 to 0x0000_2900 in big-endian representation.";
 
-        default sw = w;
+        sw = w;
         mementries = 1224;
         memwidth = 32;
     } ADAMSBRIDGE_PRIVKEY_IN;
