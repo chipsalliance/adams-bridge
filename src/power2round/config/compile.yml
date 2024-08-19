@@ -1,0 +1,49 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [power2round_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/power2round_defines_pkg.sv
+---
+provides: [power2round]
+schema_version: 2.4.0
+requires:
+  - ntt_pkg
+  - skdecode_pkg
+  - ntt_top
+  - abr_libs
+  - power2round_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/power2round_top.sv
+      - $COMPILE_ROOT/rtl/power2round_ctrl.sv
+      - $COMPILE_ROOT/rtl/power2round_core.sv
+      - $COMPILE_ROOT/rtl/power2round_skencode.sv
+      
+    tops: [power2round_top]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/power2round/config/design_lint/power2round/sglint_waivers
+---
+provides: [power2round_tb]  
+schema_version: 2.4.0
+requires: 
+  - power2round
+  - power2round_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/power2round_tb.sv
+    tops: [power2round_tb]
