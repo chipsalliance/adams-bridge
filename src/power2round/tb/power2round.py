@@ -1,17 +1,20 @@
 import numpy as np
+import random
 
 DILITHIUM_Q = 8380417 # 2**23 - 2**13 + 1
 DILITHIUM_N = 256
+DILITHIUM_K = 8
 DILITHIUM_D = 13
 
 
-class Poly:
-    def __init__(self, coeffs):
-        self.coeffs = coeffs
-
-def generate_random_poly():
-    coeffs = np.random.randint(0, DILITHIUM_Q, DILITHIUM_N, dtype=np.uint32)
-    return Poly(coeffs)
+def vec_power2round(t):
+    coeff_high = []
+    coeff_low  = []
+    for poly_i in t:
+        r1, r0 = poly_power2round(poly_i)
+        coeff_high.append(r1)
+        coeff_low.append(r0)
+    return coeff_high, coeff_low
 
 def poly_power2round(poly):
     r1_coeffs = []
@@ -29,22 +32,24 @@ def power2round(coeff):
     r0 = r - (r1 << DILITHIUM_D)
     return r1, r0
 
-def write_hex_file(filename, data):
-    with open(filename, 'w') as f:
-        for value in data:
-            f.write(f"{value:X}\n")
+def skencode(value):
+    value_encodede = (1 << (DILITHIUM_D-1)) - value
+    return f"{value_encodede:0X}"
 
-def main():
-    # Generate random inputs
-    poly_i = generate_random_poly()
+vec = []
+for _ in range(DILITHIUM_K):
+    poly = [random.randrange(DILITHIUM_Q) for _ in range(DILITHIUM_N)]
+    vec.append(poly)
 
-    # Run the pack function
-    r1, r0 = poly_power2round(poly_i)
+coeff_high, coeff_low = vec_power2round(vec)
 
-    write_hex_file("input_poly.hex", poly_i.coeffs)
-
-    write_hex_file("output_r1.hex", r1)
-    write_hex_file("output_r0.hex", r0)
-
-if __name__ == "__main__":
-    main()
+# Export to files
+with open("coeff_input.hex", "w") as input_file, \
+    open("coeff_high.hex", "w") as high_file, \
+    open("coeff_low.hex", "w") as low_file:
+    
+    for poly_index, (r1_coeffs, r0_coeffs) in enumerate(zip(coeff_high, coeff_low)):
+        for i in range(DILITHIUM_N):
+            input_file.write(f"{vec[poly_index][i]:06X}\n")
+            high_file.write(f"{r1_coeffs[i]:X}\n")
+            low_file.write(f"{skencode(r0_coeffs[i])}\n")

@@ -17,12 +17,9 @@
 // ---------------------
 
 module power2round_ctrl
-    import ntt_defines_pkg::*;
-    import skdecode_defines_pkg::*;
+    import abr_params_pkg::*;
     import power2round_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
-        parameter DILITHIUM_L = 7,
         parameter DILITHIUM_K = 8,
         parameter DILITHIUM_N = 256
     )
@@ -32,25 +29,25 @@ module power2round_ctrl
         input wire zeroize,
 
         input wire enable,
-        input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [KEY_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr,
-        // input wire [MEM_ADDR_WIDTH-1:0] pk_dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr,
+        // input wire [ABR_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr,
         input wire r_valid,
         input wire sk_buff_valid,
         input wire sk_buff_full,
 
         output mem_if_t mem_a_rd_req,
         output mem_if_t mem_b_rd_req,
-        output key_mem_if_t skmem_a_wr_req,
-        output key_mem_if_t skmem_b_wr_req,
+        output mem_if_t skmem_a_wr_req,
+        output mem_if_t skmem_b_wr_req,
         output logic pk_t1_wren,
         output logic [7 : 0] pk_t1_wr_addr,   // K*N*10 / 8coeff_per_write  TODO: parameter
         output logic sk_buff_enable,
         output logic done
     );
 
-    localparam [MEM_ADDR_WIDTH-1 : 0] MAX_MEM_ADDR = (DILITHIUM_K * (DILITHIUM_N/4))-2;
-    localparam [KEY_MEM_ADDR_WIDTH-1 : 0] MAX_SKMEM_ADDR = (DILITHIUM_K * (DILITHIUM_N/32) * 13)-2;
+    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_MEM_ADDR = (DILITHIUM_K * (DILITHIUM_N/4))-2;
+    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_SKMEM_ADDR = (DILITHIUM_K * (DILITHIUM_N/32) * 13)-2;
     localparam [7 : 0] MAX_PK_ADDR = ((DILITHIUM_K * (DILITHIUM_N/8))-1);
 
     power2round_read_state_type read_fsm_state_ps, read_fsm_state_ns;
@@ -58,8 +55,8 @@ module power2round_ctrl
     power2round_pk_write_state_type pk_write_fsm_state_ps, pk_write_fsm_state_ns;
 
     
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_rd_addr_nxt, mem_rd_addr_delay, mem_rd_addr_tmp;
-    logic [KEY_MEM_ADDR_WIDTH-1:0] skmem_wr_addr, skmem_wr_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_rd_addr_nxt, mem_rd_addr_delay, mem_rd_addr_tmp;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] skmem_wr_addr, skmem_wr_addr_nxt;
     logic [7 : 0] pk_wr_addr, pk_wr_addr_nxt;
     
     logic rst_mem_rd_addr, incr_mem_rd_addr, last_mem_rd_addr;

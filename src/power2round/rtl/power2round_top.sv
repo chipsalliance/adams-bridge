@@ -18,8 +18,6 @@
 //======================================================================
 
 module power2round_top
-    import ntt_defines_pkg::*;
-    import skdecode_defines_pkg::*;
     import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 24,
@@ -27,8 +25,6 @@ module power2round_top
         parameter DILITHIUM_N = 256,
         parameter DILITHIUM_K = 8,
         parameter DILITHIUM_D = 13,
-        //parameter BUFFER_DATA_W = 8,
-        parameter MEM_ADDR_WIDTH = 15,
         parameter AHB_DATA_WIDTH = 32
     )
     (
@@ -37,9 +33,9 @@ module power2round_top
         input wire zeroize,
 
         input wire enable,
-        input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [KEY_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
-        // input wire [MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
+        // input wire [ABR_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
 
         //Input from internal memory
         output mem_if_t mem_a_rd_req,
@@ -49,8 +45,8 @@ module power2round_top
         input wire mem_rd_data_valid,  // TODO: 
 
         //output to sk mem
-        output key_mem_if_t skmem_a_wr_req,
-        output key_mem_if_t skmem_b_wr_req,
+        output mem_if_t skmem_a_wr_req,
+        output mem_if_t skmem_b_wr_req,
         output logic [AHB_DATA_WIDTH-1:0] skmem_wr_data_a,
         output logic [AHB_DATA_WIDTH-1:0] skmem_wr_data_b,
 
@@ -179,7 +175,8 @@ module power2round_top
 
 
     power2round_ctrl #(
-        .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
+        .DILITHIUM_K(DILITHIUM_K),
+        .DILITHIUM_N(DILITHIUM_N)
     )
     power2round_ctrl_inst (
         .clk(clk),

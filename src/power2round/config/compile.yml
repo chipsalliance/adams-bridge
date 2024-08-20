@@ -16,9 +16,7 @@ targets:
 provides: [power2round]
 schema_version: 2.4.0
 requires:
-  - ntt_pkg
-  - skdecode_pkg
-  - ntt_top
+  - abr_defines
   - abr_libs
   - power2round_pkg
 targets:
@@ -39,6 +37,8 @@ targets:
 provides: [power2round_tb]  
 schema_version: 2.4.0
 requires: 
+  - abr_defines
+  - abr_libs
   - power2round
   - power2round_pkg
 targets:
@@ -47,3 +47,5 @@ targets:
     files:
       - $COMPILE_ROOT/tb/power2round_tb.sv
     tops: [power2round_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/power2round.py .'
