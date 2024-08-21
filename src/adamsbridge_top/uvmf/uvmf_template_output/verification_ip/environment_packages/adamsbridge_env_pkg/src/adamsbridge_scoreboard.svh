@@ -79,6 +79,8 @@ class adamsbridge_scoreboard #(
   int mismatch_count = 0;
   int nothing_to_compare_against_count = 0;
   event entry_received;
+  adamsbridge_reg_model_top scbr_adamsbridge_rm;
+  uvm_reg_map scbr_adamsbridge_map; // Block map
 
   // FUNCTION: new
   function new(string name, uvm_component parent);
@@ -93,6 +95,10 @@ class adamsbridge_scoreboard #(
     actual_ahb_analysis_export = new("actual_ahb_analysis_export", this);
     expected_ahb_analysis_export = new("expected_ahb_analysis_export", this);
   // pragma uvmf custom build_phase begin
+    // Instantiate the register model
+    // scbr_adamsbridge_rm = adamsbridge_reg_model_top::type_id::create("scbr_adamsbridge_rm", this);
+    scbr_adamsbridge_rm = configuration.adamsbridge_rm;
+    scbr_adamsbridge_map = scbr_adamsbridge_rm.get_default_map();
   // pragma uvmf custom build_phase end
   endfunction
 
@@ -116,7 +122,25 @@ class adamsbridge_scoreboard #(
 
     if (t.RnW == 1'b0) begin
       // `uvm_info("SCBD_AHB", "Transaction is a read", UVM_MEDIUM)
-      if (ahb_expected_q.size() > 0) begin
+      // Check if the transaction address matches any of the registers to be skipped
+      if ((t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_NAME[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_NAME[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_NAME)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address == scbr_adamsbridge_rm.ADAMSBRIDGE_CTRL.get_address(scbr_adamsbridge_map)) ||
+        (t.address == scbr_adamsbridge_rm.ADAMSBRIDGE_STATUS.get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_IV[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_IV[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_IV)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_SEED[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_SEED[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_SEED)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_MSG[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_MSG[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_MSG)-1].get_address(scbr_adamsbridge_map))
+      ) begin
+        `uvm_info("SCBD_AHB", $sformatf("Skipping register access in scoreboard at address: 0x%x", t.address), UVM_LOW)
+      end
+      else if (ahb_expected_q.size() > 0) begin
           t_exp = ahb_expected_q.pop_front();
           txn_eq = (t_exp.data[0][31:0] == t.data[0][31:0]);
           // `uvm_info("SCBD_AHB",{"           Poped Data: ",t_exp.convert2string()}, UVM_MEDIUM)
@@ -126,7 +150,7 @@ class adamsbridge_scoreboard #(
           end
           else begin
               mismatch_count++;
-              // `uvm_error("SCBD_AHB", $sformatf("Actual AHB txn with {Address: 0x%x} {Data: 0x%x} {RnW: %p} {Resp: %p} does not match expected: {Address: 0x%x} {Data: 0x%x} {RnW: %p} {Resp: %p}",t.address,t.data[0],t.RnW,t.resp[0],t_exp.address,t_exp.data[0],t_exp.RnW,t_exp.resp[0]))
+              `uvm_error("SCBD_AHB", $sformatf("Actual AHB txn with {Address: 0x%x} {Data: 0x%x} {RnW: %p} {Resp: %p} does not match expected: {Address: 0x%x} {Data: 0x%x} {RnW: %p} {Resp: %p}",t.address,t.data[0],t.RnW,t.resp[0],t_exp.address,t_exp.data[0],t_exp.RnW,t_exp.resp[0]))
           end
       end
       else begin
@@ -153,11 +177,34 @@ class adamsbridge_scoreboard #(
     end
     // `uvm_info("SCBD_AHB", "Transaction Received through expected_ahb_analysis_export", UVM_MEDIUM)
     // `uvm_info("SCBD_AHB",{"            Data: ",t.convert2string()}, UVM_HIGH)
+    if (t.RnW == 1'b0) begin
+      // `uvm_info("SCBD_AHB", "Transaction is a read", UVM_MEDIUM)
+      // Check if the transaction address matches any of the registers to be skipped
+      if ((t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_NAME[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_NAME[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_NAME)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_VERSION)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address == scbr_adamsbridge_rm.ADAMSBRIDGE_CTRL.get_address(scbr_adamsbridge_map)) ||
+        (t.address == scbr_adamsbridge_rm.ADAMSBRIDGE_STATUS.get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_IV[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_IV[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_IV)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_SEED[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_SEED[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_SEED)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND)-1].get_address(scbr_adamsbridge_map)) ||
+        (t.address >= scbr_adamsbridge_rm.ADAMSBRIDGE_MSG[0].get_address(scbr_adamsbridge_map) &&
+          t.address <= scbr_adamsbridge_rm.ADAMSBRIDGE_MSG[$size(scbr_adamsbridge_rm.ADAMSBRIDGE_MSG)-1].get_address(scbr_adamsbridge_map))
+      ) begin
+        `uvm_info("SCBD_AHB", $sformatf("Skipping monitor message in scoreboard at address: 0x%x", t.address), UVM_LOW)
+      end
+      else begin
 
-    ahb_expected_q.push_back(t);
+        ahb_expected_q.push_back(t);
 
-    transaction_count++;
-    -> entry_received;
+        transaction_count++;
+        -> entry_received;
+      end
+    end
  
     // pragma uvmf custom expected_ahb_analysis_export_scoreboard end
   endfunction
@@ -181,6 +228,9 @@ class adamsbridge_scoreboard #(
   virtual function void report_phase(uvm_phase phase);
 // pragma uvmf custom report_phase begin
      super.report_phase(phase);
+     `uvm_info("SCBD_REPORT", $sformatf("Total Matches: %0d", match_count), UVM_LOW)
+     `uvm_info("SCBD_REPORT", $sformatf("Total Mismatches: %0d", mismatch_count), UVM_LOW)
+     `uvm_info("SCBD_REPORT", $sformatf("No Predicted Entries to Compare Against: %0d", nothing_to_compare_against_count), UVM_LOW)
 // pragma uvmf custom report_phase end
   endfunction
 

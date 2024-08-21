@@ -68,7 +68,7 @@
 
     endgroup
     covergroup adamsbridge_reg__ADAMSBRIDGE_CTRL_fld_cg with function sample(
-    input bit [2-1:0] CTRL,
+    input bit [3-1:0] CTRL,
     input bit [1-1:0] ZEROIZE
     );
         option.per_instance = 1;
@@ -196,46 +196,6 @@
     );
         option.per_instance = 1;
         VERIFY_RES_cp : coverpoint VERIFY_RES;
-
-    endgroup
-
-    /*----------------------- ADAMSBRIDGE_REG__ADAMSBRIDGE_PRIVKEY_OUT COVERGROUPS -----------------------*/
-    covergroup adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT_bit_cg with function sample(input bit reg_bit);
-        option.per_instance = 1;
-        reg_bit_cp : coverpoint reg_bit {
-            bins value[2] = {0,1};
-        }
-        reg_bit_edge_cp : coverpoint reg_bit {
-            bins rise = (0 => 1);
-            bins fall = (1 => 0);
-        }
-
-    endgroup
-    covergroup adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_OUT_fld_cg with function sample(
-    input bit [32-1:0] PRIVKEY_OUT
-    );
-        option.per_instance = 1;
-        PRIVKEY_OUT_cp : coverpoint PRIVKEY_OUT;
-
-    endgroup
-
-    /*----------------------- ADAMSBRIDGE_REG__ADAMSBRIDGE_PRIVKEY_IN COVERGROUPS -----------------------*/
-    covergroup adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN_bit_cg with function sample(input bit reg_bit);
-        option.per_instance = 1;
-        reg_bit_cp : coverpoint reg_bit {
-            bins value[2] = {0,1};
-        }
-        reg_bit_edge_cp : coverpoint reg_bit {
-            bins rise = (0 => 1);
-            bins fall = (1 => 0);
-        }
-
-    endgroup
-    covergroup adamsbridge_reg__ADAMSBRIDGE_PRIVKEY_IN_fld_cg with function sample(
-    input bit [32-1:0] PRIVKEY_IN
-    );
-        option.per_instance = 1;
-        PRIVKEY_IN_cp : coverpoint PRIVKEY_IN;
 
     endgroup
 

@@ -50,6 +50,12 @@ rand adamsbridge_env_sequence_base_t adamsbridge_env_seq;
   uvm_status_e status;
 
   // pragma uvmf custom class_item_additional begin
+  bit [31:0] data;
+  bit [31:0] SEED [0:7]; //32 Bytes
+  bit [31:0] SK []; //4896 Bytes
+  bit [31:0] PK []; //2592 Bytes
+  bit [31:0] MSG [0:15]; //64 Bytes
+  bit [31:0] SIG []; //4628 Bytes
   // pragma uvmf custom class_item_additional end
 
   // ****************************************************************************
@@ -77,6 +83,10 @@ rand adamsbridge_env_sequence_base_t adamsbridge_env_seq;
 
 
     // pragma uvmf custom new begin
+    // Construct arrays
+    SK = new[1224];
+    PK = new[648];
+    SIG = new[1157];
     // pragma uvmf custom new end
 
   endfunction
@@ -109,6 +119,41 @@ adamsbridge_env_seq.start(top_configuration.vsqr);
 
     // pragma uvmf custom body end
   endtask
+
+  function void read_line(int fd, int bit_length_words, ref bit [31:0] array []);
+    string line;
+    int words_read;
+    bit [31:0] word;
+    bit [31:0] reversed_word;
+
+    // Read the data from the file line by line
+    words_read = 0;
+    while (!$feof(fd) && words_read < bit_length_words) begin
+      line = "";
+      void'($fgets(line, fd)); // Read a line from the file
+      while ($sscanf(line, "%08x", word) == 1) begin
+        reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
+        array[(bit_length_words-1)-words_read] = reversed_word;
+        words_read++;
+        // Remove the parsed part from the line
+        line = line.substr(8);
+      end
+    end
+  endfunction
+
+  function void write_file(int fd, int bit_length_words, bit [31:0] array []);
+    int i;
+    int words_to_write;
+
+    // Write the data from the array to the file
+    words_to_write = bit_length_words;
+    for (i = 0; i < words_to_write; i++) begin
+      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
+                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+    end
+    $fwrite(fd, "\n");
+
+  endfunction
 
 endclass
 

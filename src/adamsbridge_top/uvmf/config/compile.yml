@@ -15,7 +15,7 @@ targets:
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/adamsbridge/tb/tests
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/adamsbridge/tb/testbench
     files:
-      - ${COMPILE_ROOT}/adamsbridge_reg_uvm.sv
+      - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/adamsbridge_env_pkg/registers/adamsbridge_reg_uvm.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/adamsbridge_env_pkg/registers/adamsbridge_reg_model_top_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/adamsbridge_env_pkg/adamsbridge_env_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/adamsbridge/tb/parameters/adamsbridge_parameters_pkg.sv

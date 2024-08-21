@@ -74,19 +74,19 @@ class adamsbridge_predictor #(
   adamsbridge_reg_model_top  p_adamsbridge_rm;
 
   bit [31:0] SEED [0:7]; //32 Bytes
-  bit [31:0] SK []; //4864 Bytes
+  bit [31:0] SK []; //4896 Bytes
   bit [31:0] PK []; //2592 Bytes
   bit [31:0] MSG [0:15]; //64 Bytes
-  bit [31:0] SIG []; //4864 Bytes
+  bit [31:0] SIG []; //4628 Bytes
   bit [31:0] VERIF [0:15]; //64 Bytes
 
   // FUNCTION: new
   function new(string name, uvm_component parent);
     super.new(name,parent);
     // Construct arrays
-    SK = new[1216];
+    SK = new[1224];
     PK = new[648];
-    SIG = new[1149];
+    SIG = new[1157];
     `uvm_warning("PREDICTOR_REVIEW", "This predictor has been created either through generation or re-generation with merging.  Remove this warning after the predictor has been reviewed.")
   
      // pragma uvmf custom new begin
@@ -124,7 +124,12 @@ class adamsbridge_predictor #(
   // of DUT output values based on DUT input, configuration and state
   virtual function void write_ahb_slave_0_ae(mvc_sequence_item_base _t);
     logic [31:0] written_value, expected_value;
+    uvm_reg_addr_t privkey_out_base_addr, privkey_in_base_addr;
+    uvm_reg_addr_t privkey_out_size, privkey_in_size;
+    uvm_reg_addr_t reg_addr;
+    uvm_mem privkey_out_mem, privkey_in_mem;
     uvm_reg reg_obj;
+    bit SK_range_true;
     // pragma uvmf custom ahb_slave_0_ae_predictor begin
     ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS, 
                                 ahb_lite_slave_0_params::AHB_NUM_MASTER_BITS, 
@@ -143,13 +148,48 @@ class adamsbridge_predictor #(
     //  UVMF_CHANGE_ME: Implement predictor model here.  
 
     reg_obj = p_adamsbridge_rm.default_map.get_reg_by_offset(t.address);
+
+
+    
+    
+//==========================================================================================
+    
+    privkey_out_base_addr = p_adamsbridge_rm.default_map.get_submap_offset(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT.default_map);
+    privkey_out_mem = p_adamsbridge_rm.default_map.get_mem_by_offset(privkey_out_base_addr);
+    privkey_out_size = uvm_reg_addr_t'(privkey_out_mem.get_size());
+    // Check if ADAMSBRIDGE_PRIVKEY_OUT memory is correctly retrieved
+    if (privkey_out_mem != null) begin
+      //`uvm_info("PRED_AHB", $sformatf("ADAMSBRIDGE_PRIVKEY_OUT: Base Addr = 0x%0h, Size = %0d", privkey_out_base_addr, privkey_out_size), UVM_LOW)
+    end
+    else begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve ADAMSBRIDGE_PRIVKEY_OUT memory from sub-map")
+    end
+
+    // Retrieve base address and memory object for ADAMSBRIDGE_PRIVKEY_IN
+    privkey_in_base_addr = p_adamsbridge_rm.default_map.get_submap_offset(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN.default_map);
+    privkey_in_mem = p_adamsbridge_rm.default_map.get_mem_by_offset(privkey_in_base_addr);
+    privkey_in_size = uvm_reg_addr_t'(privkey_in_mem.get_size());
+
+    // Check if ADAMSBRIDGE_PRIVKEY_IN memory is correctly retrieved
+    if (privkey_in_mem != null) begin
+      //`uvm_info("PRED_AHB", $sformatf("ADAMSBRIDGE_PRIVKEY_IN: Base Addr = 0x%0h, Size = %0d", privkey_in_base_addr, privkey_in_size), UVM_LOW)
+    end
+    else begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve ADAMSBRIDGE_PRIVKEY_IN memory from sub-map")
+    end
+    reg_addr = t.address;
+    SK_range_true = (reg_addr >= privkey_in_base_addr && reg_addr < privkey_in_base_addr + privkey_in_size * 4)
+                      ||
+                    (reg_addr >= privkey_out_base_addr && reg_addr < privkey_out_base_addr + privkey_out_size * 4);
+
+
+//===========================================================================================
     if (t.RnW == 1'b1) begin // write
-      if (reg_obj == null) begin
+      if (reg_obj == null && !SK_range_true) begin
         `uvm_error("PRED_AHB", $sformatf("AHB transaction to address: 0x%x decodes to null from AHB_map", t.address))
       end
       else begin
         uvm_reg_addr_t base_addr;
-        uvm_reg_addr_t reg_addr = t.address;
         int idx;
         if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SEED[0].get_address(p_adamsbridge_map) &&
             reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SEED[$size(p_adamsbridge_rm.ADAMSBRIDGE_SEED)-1].get_address(p_adamsbridge_map)) begin
@@ -163,12 +203,12 @@ class adamsbridge_predictor #(
           idx = (reg_addr - base_addr) / 4;
           MSG[idx] = t.data[0][31:0];
         end
-        //else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map) &&
-        //         reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN)-1].get_address(p_adamsbridge_map)) begin
-        //  base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_IN[0].get_address(p_adamsbridge_map);
-        //  idx = (reg_addr - base_addr) / 4;
-        //  SK[idx] = t.data[0][31:0];
-        //end
+        // Accessing data in ADAMSBRIDGE_PRIVKEY_IN
+        else if (reg_addr >= privkey_in_base_addr && reg_addr < privkey_in_base_addr + privkey_in_size * 4) begin
+          idx = (reg_addr - privkey_in_base_addr) / 4;
+          SK[idx] = t.data[0][31:0];
+          //`uvm_info("PRED_AHB", $sformatf("Writing to ADAMSBRIDGE_PRIVKEY_IN: Addr = 0x%0h, Data = 0x%0h", reg_addr, t.data[0][31:0]), UVM_LOW)
+        end
         else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[0].get_address(p_adamsbridge_map) &&
                  reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[$size(p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY)-1].get_address(p_adamsbridge_map)) begin
           base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[0].get_address(p_adamsbridge_map);
@@ -185,18 +225,22 @@ class adamsbridge_predictor #(
           run_executable(t.data[0][1:0]);
           zeroize_registers(t.data[0][2]);
         end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[$size(p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_SIGN_RND at address: 0x%x", reg_addr), UVM_LOW)
+        end
         else begin
           `uvm_error("PRED_AHB", $sformatf("Unhandled register write at address: 0x%x", reg_addr))
         end
       end
     end
     else if (t.RnW == 1'b0) begin // read
-      if (reg_obj == null) begin
+      if (reg_obj == null && !SK_range_true) begin
         `uvm_error("PRED_AHB", $sformatf("AHB transaction to address: 0x%x decodes to null from AHB_map", t.address))
       end
       else begin
         uvm_reg_addr_t base_addr;
-        uvm_reg_addr_t reg_addr = t.address;
+        // uvm_reg_addr_t reg_addr = t.address;
         int idx;
         if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[0].get_address(p_adamsbridge_map) &&
             reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY[$size(p_adamsbridge_rm.ADAMSBRIDGE_PUBKEY)-1].get_address(p_adamsbridge_map)) begin
@@ -209,17 +253,17 @@ class adamsbridge_predictor #(
             `uvm_error("PRED_AHB", "Public key read out of bounds")
           end
         end
-        //else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map) &&
-        //         reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[$size(p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT)-1].get_address(p_adamsbridge_map)) begin
-        //  base_addr = p_adamsbridge_rm.ADAMSBRIDGE_PRIVKEY_OUT[0].get_address(p_adamsbridge_map);
-        //  idx = (reg_addr - base_addr) / 4;
-        //  if (idx < $size(SK)) begin
-        //    t.data[0][31:0] = SK[idx];
-        //  end
-        //  else begin
-        //    `uvm_error("PRED_AHB", "Private key read out of bounds")
-        //  end
-        //end
+        // Accessing data in ADAMSBRIDGE_PRIVKEY_OUT
+        else if (reg_addr >= privkey_out_base_addr && reg_addr < privkey_out_base_addr + privkey_out_size * 4) begin
+            idx = (reg_addr - privkey_out_base_addr) / 4;
+            if (idx < privkey_out_size) begin
+                t.data[0][31:0] = SK[idx]; // Example read from SK
+                //`uvm_info("PRED_AHB", $sformatf("Reading from ADAMSBRIDGE_PRIVKEY_OUT: Addr = 0x%0h, Data = 0x%0h", reg_addr, t.data[0][31:0]), UVM_LOW)
+            end
+            else begin
+                `uvm_error("PRED_AHB", "Private key out read out of bounds")
+            end
+        end
         else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[0].get_address(p_adamsbridge_map) &&
                  reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[$size(p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE)-1].get_address(p_adamsbridge_map)) begin
           base_addr = p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[0].get_address(p_adamsbridge_map);
@@ -241,6 +285,36 @@ class adamsbridge_predictor #(
           else begin
             `uvm_error("PRED_AHB", "Verification result read out of bounds")
           end
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_NAME[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_NAME[$size(p_adamsbridge_rm.ADAMSBRIDGE_NAME)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_NAME at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_VERSION[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_VERSION[$size(p_adamsbridge_rm.ADAMSBRIDGE_VERSION)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_VERSION at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr == p_adamsbridge_rm.ADAMSBRIDGE_CTRL.get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_CTRL at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr == p_adamsbridge_rm.ADAMSBRIDGE_STATUS.get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_STATUS at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_IV[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_IV[$size(p_adamsbridge_rm.ADAMSBRIDGE_IV)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_IV at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SEED[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SEED[$size(p_adamsbridge_rm.ADAMSBRIDGE_SEED)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_SEED at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND[$size(p_adamsbridge_rm.ADAMSBRIDGE_SIGN_RND)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_SIGN_RND at address: 0x%x", reg_addr), UVM_LOW)
+        end
+        else if (reg_addr >= p_adamsbridge_rm.ADAMSBRIDGE_MSG[0].get_address(p_adamsbridge_map) &&
+                reg_addr <= p_adamsbridge_rm.ADAMSBRIDGE_MSG[$size(p_adamsbridge_rm.ADAMSBRIDGE_MSG)-1].get_address(p_adamsbridge_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ADAMSBRIDGE_MSG at address: 0x%x", reg_addr), UVM_LOW)
         end
         // Add more cases as needed for other registers
         else begin
@@ -281,7 +355,7 @@ class adamsbridge_predictor #(
         write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
         $fclose(fd);
         // $system("test_dilithium5 keygen_input.hex keygen_output.hex");
-        $system($sformatf("%s keygen_input.hex keygen_output.hex", dilithium_command));
+        $system($sformatf("%s keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
         `uvm_info("PRED", $sformatf("%s is being executed", dilithium_command), UVM_MEDIUM)
         `uvm_info("PRED", "CTRL Reg is configured to perform KeyGen", UVM_MEDIUM)
         // Open the file for reading
@@ -295,8 +369,8 @@ class adamsbridge_predictor #(
           void'($fgets(line, fd)); // Read a line from the file
           $sscanf(line, "%02x\n", value);
         end
-        read_line(fd, 2592/4, PK); // Read 2592-byte Public Key to the file
-        read_line(fd, 4864/4, SK); // Read 4864-byte Secret Key to the file
+        read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
+        read_line(fd, 1224, SK); // Read 4864-byte Secret Key to the file
         $fclose(fd);
       end
       2'b10: begin
@@ -309,8 +383,8 @@ class adamsbridge_predictor #(
           return;
         end
         $fwrite(fd, "%02X\n", op_code-1); // Signature generation cmd
-        write_file(fd, 64/4, MSG); // Write 64-byte Message to the file
-        write_file(fd, 4864/4, SK); // Write 4864-byte Secret Key to the file
+        write_file(fd, 16, MSG); // Write 64-byte Message to the file
+        write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
         $fclose(fd);
         //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
         $system($sformatf("%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
@@ -329,7 +403,7 @@ class adamsbridge_predictor #(
         // Skip the second line
         void'($fgets(line, fd)); // Read a line from the file
         $sscanf(line, "%08x\n", value);
-        read_line(fd, 4864/4, SIG);// Read 4864-byte Signature to the file
+        read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
         $fclose(fd);
       end
       2'b11: begin
@@ -342,11 +416,11 @@ class adamsbridge_predictor #(
           return;
         end
         $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
-        $fwrite(fd, "00001233\n"); // Signature lenght
-        write_file(fd, 4864/4, SIG); // Write 4864-byte Signature to the file
-        write_file(fd, 2592/4, PK); // Write 2592-byte Public Key to the file
+        $fwrite(fd, "00001253\n"); // Signature lenght
+        write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
+        write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
         $fclose(fd);
-        $system("test_dilithium5 verif_input.hex verif_ouput.hex");
+        $system($sformatf("%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
         `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
         // Open the file for reading
         fd = $fopen(input_file, "r");
@@ -361,8 +435,10 @@ class adamsbridge_predictor #(
         end
         // Skip the second line
         void'($fgets(line, fd)); // Read a line from the file
-        $sscanf(line, "%08x\n", value);
-        // TODO: Implement returned verification result
+        $sscanf(line, "%02x\n", value);
+        foreach(this.VERIF[i0]) begin
+          this.VERIF[i0] = value;
+        end
         $fclose(fd);
       end
     endcase
@@ -433,17 +509,16 @@ class adamsbridge_predictor #(
         p_adamsbridge_rm.ADAMSBRIDGE_SIGNATURE[i].set(zero_value);
       end
     end
-endfunction
+  endfunction
 
   
   
 
   function void read_line(int fd, int bit_length_words, ref bit [31:0] array []);
-
-
     string line;
     int words_read;
     bit [31:0] word;
+    bit [31:0] reversed_word;
 
     // Read the data from the file line by line
     words_read = 0;
@@ -451,7 +526,8 @@ endfunction
       line = "";
       void'($fgets(line, fd)); // Read a line from the file
       while ($sscanf(line, "%08x", word) == 1) begin
-        array[words_read] = word;
+        reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
+        array[(bit_length_words-1)-words_read] = reversed_word;
         words_read++;
         // Remove the parsed part from the line
         line = line.substr(8);
@@ -466,7 +542,8 @@ endfunction
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],array[i][15:8],array[i][23:16],array[i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
+                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
     end
     $fwrite(fd, "\n");
 
