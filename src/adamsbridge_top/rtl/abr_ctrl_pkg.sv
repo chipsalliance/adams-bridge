@@ -50,17 +50,16 @@ package abr_ctrl_pkg;
     localparam T1_COEFF_W = 10;
 
     typedef struct packed {
-        logic [3:0][63:0] roh;
-        logic [3:0][63:0] K;
-        logic [7:0][63:0] tr;
-        logic [83:0][63:0] s1;
-        logic [95:0][63:0] s2;
         logic [415:0][63:0] t0;
+        logic [359:0][31:0] s1s2;
+        logic [7:0][63:0] tr;
+        logic [3:0][63:0] K;
+        logic [3:0][63:0] roh;
     } abr_privkey_t;
 
     typedef union packed {
         abr_privkey_t enc;
-        logic [1223:0][31:0] raw;
+        logic [PRIVKEY_NUM_DWORDS-1:0][31:0] raw;
     } abr_privkey_u;
 
     typedef struct packed {
@@ -181,6 +180,7 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_SIGDEC_Z   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_SIGDEC_Z,  sca_en:1'b0};
     localparam abr_opcode_t ABR_UOP_HINTSUM    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_HINTSUM,  sca_en:1'b0};
     localparam abr_opcode_t ABR_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_USEHINT,  sca_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:ABR_PWR2RND,  sca_en:1'b0};
 
     //Immediate encodings
     localparam [ABR_IMM_WIDTH-1:0] ABR_NORMCHK_Z = 'h0000;
@@ -212,8 +212,11 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_TR_ID          = 'd22;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_ROH_P_KAPPA_ID = 'd23;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_SIG_C_REG_ID   = 'd24;
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_PK_REG_ID      = 'd24;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_PK_REG_ID      = 'd25;
     
+    //SK offsets in dwords
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_SK_S1_OFFSET = 'd32;
+
     // DILITHIUM MEMORY LOCATIONS
     //COEFF DEPTH is 256/4
     localparam ABR_COEFF_DEPTH = DILITHIUM_N/COEFF_PER_CLK;
@@ -246,7 +249,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_T6_BASE = ABR_T5_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_T7_BASE = ABR_T6_BASE + ABR_COEFF_DEPTH;
     // NTT(s1) for KEYGEN
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_0_NTT_BASE = ABR_INST0_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_0_NTT_BASE = ABR_T7_BASE + ABR_COEFF_DEPTH;;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_1_NTT_BASE = ABR_S1_0_NTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_2_NTT_BASE = ABR_S1_1_NTT_BASE + ABR_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_S1_3_NTT_BASE = ABR_S1_2_NTT_BASE + ABR_COEFF_DEPTH;

@@ -145,8 +145,8 @@ module skdecode_top
             //Bit swizzle to match endianness
             //Eg: sk dword = 0x01234567
             //To process, it needs to be 0x6745230
-            keymem_a_rd_data_reg <= {keymem_a_rd_data[7:0], keymem_a_rd_data[15:8], keymem_a_rd_data[23:16], keymem_a_rd_data[31:24]};
-            keymem_b_rd_data_reg <= {keymem_b_rd_data[7:0], keymem_b_rd_data[15:8], keymem_b_rd_data[23:16], keymem_b_rd_data[31:24]};
+            keymem_a_rd_data_reg <= keymem_a_rd_data;
+            keymem_b_rd_data_reg <= keymem_b_rd_data;
 
         end
     end

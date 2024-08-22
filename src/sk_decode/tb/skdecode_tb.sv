@@ -43,9 +43,9 @@ reg [7:0][2:0] s1s2_data_i;
 reg [3:0][12:0] t0_data_i;
 reg [ABR_MEM_ADDR_WIDTH-1:0] dest_base_tb;
 reg [31:0] ahb_data_tb, keymem_a_data_tb, keymem_b_data_tb;
-reg [167:0][31:0] s1_array, s1_array_rev;
-reg [191:0][31:0] s2_array_tb;
-reg [831:0][31:0] t0_array_tb;
+reg [167:0][3:0][7:0] s1_array, s1_array_rev;
+reg [191:0][3:0][7:0] s2_array_tb;
+reg [831:0][3:0][7:0] t0_array_tb;
 reg [2:0] stall_count; 
 reg [9:0] byte_index;
 reg [6:0] buf_count;
@@ -150,7 +150,7 @@ task read_test_vectors();
     
     while (!$feof(file)) begin
         if($fgets(line,file)) begin
-            ret = $sscanf(line, "%h", s1_array[i]);
+            ret = $sscanf(line, "%02x%02x%02x%02x", s1_array[i][0],s1_array[i][1],s1_array[i][2],s1_array[i][3]);
             ret = $sscanf(line, "%h", s1_array_rev[167-i]);
             i = i+1;
         end
@@ -160,7 +160,7 @@ task read_test_vectors();
     i = 0;
     while (!$feof(file2)) begin
         if($fgets(line,file2)) begin
-            ret = $sscanf(line, "%h", s2_array_tb[i]);
+            ret = $sscanf(line, "%02x%02x%02x%02x", s2_array_tb[i][0],s2_array_tb[i][1],s2_array_tb[i][2],s2_array_tb[i][3]);
             i = i+1;
         end
     end
@@ -169,7 +169,7 @@ task read_test_vectors();
     i = 0;
     while (!$feof(file3)) begin
         if($fgets(line,file3)) begin
-            ret = $sscanf(line, "%h", t0_array_tb[i]);
+            ret = $sscanf(line, "%02x%02x%02x%02x", t0_array_tb[i][0],t0_array_tb[i][1],t0_array_tb[i][2],t0_array_tb[i][3]);
             i = i+1;
         end
     end

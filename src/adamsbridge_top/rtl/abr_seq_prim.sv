@@ -73,13 +73,13 @@ module abr_seq_prim
                 DILITHIUM_KG_S+ 14   : data_o <= '{opcode:ABR_UOP_REJB, imm:'h000D, length:'d66, operand1:ABR_ROH_P_ID, operand2:ABR_NOP, operand3:ABR_S2_6_BASE};
                 DILITHIUM_KG_S+ 15   : data_o <= '{opcode:ABR_UOP_REJB, imm:'h000E, length:'d66, operand1:ABR_ROH_P_ID, operand2:ABR_NOP, operand3:ABR_S2_7_BASE};
                 //NTT(s1)
-                DILITHIUM_KG_S+ 16   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_0_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_0_NTT_BASE};
-                DILITHIUM_KG_S+ 17   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_1_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_1_NTT_BASE};
-                DILITHIUM_KG_S+ 18   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_2_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_2_NTT_BASE};
-                DILITHIUM_KG_S+ 19   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_3_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_3_NTT_BASE};
-                DILITHIUM_KG_S+ 20   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_4_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_4_NTT_BASE};
-                DILITHIUM_KG_S+ 21   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_5_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_5_NTT_BASE};
-                DILITHIUM_KG_S+ 22   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_6_BASE, operand2:ABR_TEMP3_BASE, operand3:ABR_S1_6_NTT_BASE};
+                DILITHIUM_KG_S+ 16   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_0_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_0_NTT_BASE};
+                DILITHIUM_KG_S+ 17   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_1_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_1_NTT_BASE};
+                DILITHIUM_KG_S+ 18   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_2_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_2_NTT_BASE};
+                DILITHIUM_KG_S+ 19   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_3_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_3_NTT_BASE};
+                DILITHIUM_KG_S+ 20   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_4_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_4_NTT_BASE};
+                DILITHIUM_KG_S+ 21   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_5_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_5_NTT_BASE};
+                DILITHIUM_KG_S+ 22   : data_o <= '{opcode:ABR_UOP_NTT,  imm:'h0000, length:'d00, operand1:ABR_S1_6_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_6_NTT_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 DILITHIUM_KG_S+ 23   : data_o <= '{opcode:ABR_UOP_REJS_PWM,  imm:'h0000, length:'d34, operand1:ABR_ROH_ID, operand2:ABR_S1_0_NTT_BASE, operand3:ABR_AS0_BASE};
                 DILITHIUM_KG_S+ 24   : data_o <= '{opcode:ABR_UOP_REJS_PWMA, imm:'h0001, length:'d34, operand1:ABR_ROH_ID, operand2:ABR_S1_1_NTT_BASE, operand3:ABR_AS0_BASE};
@@ -163,12 +163,12 @@ module abr_seq_prim
                 DILITHIUM_KG_S+ 93   : data_o <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:ABR_AS6_INTT_BASE, operand2:ABR_S2_6_BASE, operand3:ABR_T6_BASE};
                 DILITHIUM_KG_S+ 94   : data_o <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:ABR_AS7_INTT_BASE, operand2:ABR_S2_7_BASE, operand3:ABR_T7_BASE};
                 //(t1,t0)←Power2Round(t,d) AND pk ←pkEncode(ρ,t1)
-                DILITHIUM_KG_S+ 95 : data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                DILITHIUM_KG_S+ 95 : data_o <= '{opcode:ABR_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:ABR_T0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 //tr ←H(BytesToBits(pk),512)
-                DILITHIUM_KG_S+ 96 : data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                DILITHIUM_KG_S+ 96 : data_o <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:ABR_PK_REG_ID, operand2:ABR_NOP, operand3:ABR_DEST_TR_REG_ID};
                 DILITHIUM_KG_JUMP_SIGN : data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //sk ←skEncode(ρ,K,tr,s1,s2,t0)
-                DILITHIUM_KG_S+ 98: data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                DILITHIUM_KG_S+ 98: data_o <= '{opcode:ABR_UOP_SKENCODE, imm:'h0000, length:'d00, operand1:ABR_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 //KG end
                 DILITHIUM_KG_E       : data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
 

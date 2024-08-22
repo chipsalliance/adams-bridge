@@ -63,7 +63,16 @@ module abr_ctrl
   output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
   output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
   output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
-  output logic decompose_start_o,
+
+  output logic power2round_enable_o,
+  input mem_if_t [1:0] pwr2rnd_keymem_if_i,
+  input logic [1:0] [DATA_WIDTH-1:0] pwr2rnd_wr_data_i,
+  input logic pk_t1_wren_i,
+  input logic [7:0][9:0] pk_t1_wrdata_i, // TODO: change to parameter
+  input logic [7:0] pk_t1_wr_addr_i, // TODO: change to parameter
+  input logic power2round_done_i,
+
+  output logic decompose_enable_o,
   output logic decompose_mode_o,
   input logic decompose_done_i,
 
@@ -135,7 +144,6 @@ module abr_ctrl
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
   logic [7:0][63:0] roh_p_reg;
-  logic [3:0][63:0] K_reg;
   logic [7:0][63:0] mu_reg;
   logic [15:0] kappa_reg;
   logic update_kappa;
@@ -161,7 +169,7 @@ module abr_ctrl
   adamsbridge_reg__in_t abr_reg_hwif_in;
   adamsbridge_reg__out_t abr_reg_hwif_out;
 
-  abr_privkey_u privatekey_in;
+  abr_privkey_u privatekey_reg;
   abr_signature_u signature_reg;
   abr_pubkey_u publickey_reg;
 
@@ -176,7 +184,6 @@ module abr_ctrl
   
   //shared aux functions
   logic [1:0] normcheck_enable;
-  logic [1:0] makehint_enable;
   
   assign abr_reg_hwif_in_o = abr_reg_hwif_in;
   assign abr_reg_hwif_out = abr_reg_hwif_out_i;
@@ -207,7 +214,7 @@ module abr_ctrl
     for (int dword=0; dword < PUBKEY_NUM_DWORDS; dword++)begin
         abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].rd_ack = abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & ~abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr; //FIXME protect with key done
         abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].wr_ack = abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr; //FIXME protect with busy
-        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].rd_data = publickey_reg.raw[dword]; 
+        abr_reg_hwif_in.ADAMSBRIDGE_PUBKEY[dword].rd_data = publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword]; 
     end 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = abr_reg_hwif_out.ADAMSBRIDGE_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
@@ -226,7 +233,7 @@ module abr_ctrl
     for (int dword=0; dword < SIGNATURE_NUM_DWORDS; dword++)begin
         abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].rd_ack = abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req & ~abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req_is_wr; //FIXME protect with signature done
         abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].wr_ack = abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req_is_wr; //FIXME protect with busy
-        abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].rd_data = signature_reg.raw[dword]; 
+        abr_reg_hwif_in.ADAMSBRIDGE_SIGNATURE[dword].rd_data = signature_reg.raw[SIGNATURE_NUM_DWORDS-1-dword]; 
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin
@@ -255,47 +262,73 @@ module abr_ctrl
     end
   end
 
-  abr_ram_regout
-  #(
-    .DEPTH(PRIVKEY_NUM_DWORDS),
-    .DATA_WIDTH(DATA_WIDTH),
-    .NUM_RD_PORTS(2)
-  ) abr_sk_in_mem
-  (
-    .clk_i(clk),
-    .zeroize_i(zeroize),
-    .we_i(abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN.wr_ack),
-    .waddr_i(abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.addr[12:2]),
-    .wdata_i(abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.wr_data),
-    .re_i(skdecode_rden),
-    .raddr_i(skdecode_rdaddr),
-    .rdata_o(skdecode_rd_data_o),
-    .reg_o(privatekey_in)
-  );
+  //Private Key External Memory
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      privatekey_reg <= '0;
+    end else if (zeroize) begin
+      privatekey_reg <= '0;
+    end else begin
+      //SW write port
+      if (abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN.wr_ack & adamsbridge_ready) begin
+        privatekey_reg.raw[PRIVKEY_NUM_DWORDS-1-abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.addr[12:2]] <= abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.wr_data;
+      end
+      //HW write roh
+      if (sampler_state_dv_i) begin
+        if (instr.operand3 == ABR_DEST_K_ROH_REG_ID) begin
+          privatekey_reg.enc.roh <= sampler_state_data_i[0][255:0]; //FIXME optimize this to be shared with pubkey?
+        end
+      end
+      //HW write K
+      if (sampler_state_dv_i) begin
+        if (instr.operand3 == ABR_DEST_K_ROH_REG_ID) begin
+          privatekey_reg.enc.K <= sampler_state_data_i[0][1023:768];
+        end
+      end
+      //HW write tr
+      if (sampler_state_dv_i) begin
+        if (instr.operand3 == ABR_DEST_TR_REG_ID) begin
+          privatekey_reg.enc.tr <= sampler_state_data_i[0][511:0];
+        end
+      end
+      //HW write s1s2
+      if (skencode_keymem_if_i.rd_wr_en == RW_WRITE) begin
+        privatekey_reg.enc.s1s2[skencode_keymem_if_i.addr[8:0]] <= skencode_wr_data_i;
+      end
+      //HW write t0
+      if (pwr2rnd_keymem_if_i[0].rd_wr_en == RW_WRITE) begin
+        privatekey_reg.enc.t0[pwr2rnd_keymem_if_i[0].addr[9:1]] <= pwr2rnd_wr_data_i; //fixme one interface
+      end
+    end 
+  end
+
+  //private key read ports
+  logic [DATA_WIDTH-1:0] privkey_out_rdata;
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      skdecode_rd_data_o <= '0;
+      privkey_out_rdata <= '0;
+    end else if (zeroize) begin
+      skdecode_rd_data_o <= '0;
+      privkey_out_rdata <= '0;
+    end else begin
+      for (int i = 0; i < 2; i++) begin 
+        if (skdecode_rden[i]) begin
+          skdecode_rd_data_o[i] <= privatekey_reg.raw[skdecode_rdaddr[i]];
+        end
+      end
+      if (abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req & ~abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr) begin
+        privkey_out_rdata <= privatekey_reg.raw[PRIVKEY_NUM_DWORDS-1-abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.addr[12:2]];
+      end
+    end
+  end
 
   assign abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN.wr_ack = abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req & abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req_is_wr;
   //no reads to PRIVKEY_IN allowed - just ack it
   assign abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN.rd_ack = abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req & ~abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_IN.req_is_wr;
   assign abr_reg_hwif_in.ADAMSBRIDGE_PRIVKEY_IN.rd_data = '0;
 
-  logic [DATA_WIDTH-1:0] privkey_out_rdata;
-
-  abr_ram_regout
-  #(
-    .DEPTH(PRIVKEY_NUM_DWORDS),
-    .DATA_WIDTH(DATA_WIDTH)
-  ) abr_sk_out_mem
-  (
-    .clk_i(clk),
-    .zeroize_i(zeroize),
-    .we_i((skencode_keymem_if_i.rd_wr_en == RW_WRITE)),
-    .waddr_i(skencode_keymem_if_i.addr[10:0]),
-    .wdata_i(skencode_wr_data_i),
-    .re_i(abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req & ~abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.req_is_wr),
-    .raddr_i(abr_reg_hwif_out.ADAMSBRIDGE_PRIVKEY_OUT.addr[12:2]),
-    .rdata_o(privkey_out_rdata),
-    .reg_o()
-  );
 
   //ack the read request one clock later
   always_ff @(posedge clk or negedge rst_b) begin
@@ -320,8 +353,8 @@ module abr_ctrl
       signature_reg <= '0;
     end else begin
       for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-        if (abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req_is_wr) begin
-          signature_reg.raw[dword] <= abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].wr_data;
+        if (adamsbridge_ready & abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[dword].req_is_wr) begin
+          signature_reg.raw[dword] <= abr_reg_hwif_out.ADAMSBRIDGE_SIGNATURE[SIGNATURE_NUM_DWORDS-1-dword].wr_data;
         end
       end
       //HW write c
@@ -362,8 +395,6 @@ module abr_ctrl
     end
   end
 
-
-
   //Public Key
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
@@ -372,7 +403,7 @@ module abr_ctrl
       publickey_reg <= '0;
     end else begin
       for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
-        if (abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr) begin
+        if (adamsbridge_ready & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req & abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].req_is_wr) begin
           publickey_reg.raw[dword] <= abr_reg_hwif_out.ADAMSBRIDGE_PUBKEY[dword].wr_data;
         end
       end
@@ -382,10 +413,10 @@ module abr_ctrl
           publickey_reg.enc.roh <= sampler_state_data_i[0][255:0];
         end
       end
-      //HW write h
-      for (int coeff = 0; coeff < 2048; coeff++) begin //fixme
-        if (0) begin //pubkey t1 write interface
-          publickey_reg.enc.t1[coeff] <= '0;
+      //HW write t1
+      for (int coeff = 0; coeff < T1_NUM_COEFF; coeff++) begin 
+        if (pk_t1_wren_i & (pk_t1_wr_addr_i == coeff[10:3])) begin //pubkey t1 write interface
+          publickey_reg.enc.t1[coeff] <= pk_t1_wrdata_i[coeff[2:0]];
         end
       end
     end
@@ -396,15 +427,16 @@ module abr_ctrl
   always_comb begin : sampler_src_mux
     unique case (sampler_src) inside
       ABR_SEED_ID:        msg_data_o[0] = {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-      ABR_ROH_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : {publickey_reg.enc.roh[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.roh[{sampler_src_offset[1:0],1'b0}]};
+      ABR_ROH_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : privatekey_reg.enc.roh[sampler_src_offset[1:0]];
       ABR_ROH_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : roh_p_reg[sampler_src_offset[2:0]];
-      ABR_TR_ID:          msg_data_o[0] = signing_process ? privatekey_in.enc.tr[sampler_src_offset[2:0]] : '0; //FIXME keygen+signing
+      ABR_TR_ID:          msg_data_o[0] = privatekey_reg.enc.tr[sampler_src_offset[2:0]];
       ABR_MSG_ID:         msg_data_o[0] = {msg_reg[{sampler_src_offset[2:0],1'b1}],msg_reg[{sampler_src_offset[2:0],1'b0}]};
-      ABR_K_ID:           msg_data_o[0] = K_reg[sampler_src_offset[1:0]];
+      ABR_K_ID:           msg_data_o[0] = privatekey_reg.enc.K[sampler_src_offset[1:0]];
       ABR_MU_ID:          msg_data_o[0] = mu_reg[sampler_src_offset[2:0]];
       ABR_SIGN_RND_ID:    msg_data_o[0] = {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
       ABR_ROH_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : roh_p_reg[sampler_src_offset[2:0]];
       ABR_SIG_C_REG_ID:   msg_data_o[0] = {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
+      ABR_PK_REG_ID:      msg_data_o[0] = {publickey_reg.raw[{sampler_src_offset[8:0],1'b1}],publickey_reg.raw[{sampler_src_offset[8:0],1'b0}]};
       default:            msg_data_o[0] = '0;
     endcase
   end
@@ -412,16 +444,16 @@ module abr_ctrl
   //If we're storing state directly into registers, do that here
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      {K_reg, roh_p_reg} <= 0;
+      roh_p_reg <= 0;
       mu_reg <= 0;
     end
     else if (zeroize) begin
-      {K_reg, roh_p_reg} <= 0;
+      roh_p_reg <= 0;
       mu_reg <= 0;
     end
     else if (sampler_state_dv_i) begin
       if (instr.operand3 == ABR_DEST_K_ROH_REG_ID) begin
-        {K_reg, roh_p_reg} <= sampler_state_data_i[0][1023:256];
+        roh_p_reg <= sampler_state_data_i[0][767:256];
       end
       else if (instr.operand3 == ABR_DEST_MU_REG_ID) begin
         mu_reg <= sampler_state_data_i[0][511:0];
@@ -724,13 +756,13 @@ always_comb begin : primary_ctrl_fsm_out_combo
     sampler_src = 0;
     sampler_imm = 0;
     ntt_enable_o[0] = 0;
-    decompose_start_o = 0;
+    power2round_enable_o = 0;
+    decompose_enable_o = 0;
     skencode_enable_o = 0;
     pkdecode_enable_o = 0;
     sigdecode_h_enable_o = 0;
     sigdecode_z_enable_o = 0;
     normcheck_enable[0] = 0;
-    makehint_enable[0] = 0;
 
     unique case (ctrl_fsm_ps)
       ABR_CTRL_IDLE: begin
@@ -774,7 +806,8 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_start_o = instr.opcode.sampler_en;
         ntt_enable_o[0] = instr.opcode.ntt_en;
         if (instr.opcode.aux_en) begin
-          decompose_start_o = (instr.opcode.mode.aux_mode inside {ABR_DECOMP,ABR_USEHINT});
+          power2round_enable_o = (instr.opcode.mode.aux_mode == ABR_PWR2RND);
+          decompose_enable_o = (instr.opcode.mode.aux_mode inside {ABR_DECOMP,ABR_USEHINT});
           skencode_enable_o = (instr.opcode.mode.aux_mode == ABR_SKENCODE);
           pkdecode_enable_o = (instr.opcode.mode.aux_mode == ABR_PKDECODE);
           sigdecode_h_enable_o = (instr.opcode.mode.aux_mode == ABR_SIGDEC_H);
@@ -786,6 +819,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
       ABR_CTRL_DONE: begin
         if ((~sampler_busy_i & ~ntt_busy_i[0] & ~instr.opcode.aux_en) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode inside {ABR_DECOMP,ABR_USEHINT}) & decompose_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_PWR2RND) & power2round_done_i) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SKENCODE) & skencode_done_i) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_PKDECODE) & pkdecode_done_i) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == ABR_SIGDEC_H) & sigdecode_h_done_i) |
@@ -879,7 +913,7 @@ abr_seq_prim abr_seq_prim_inst
             sign_prog_cntr_nxt = DILITHIUM_RESET;
           end   
         endcase
-        if (prog_cntr == DILITHIUM_KG_JUMP_SIGN) begin
+        if (keygen_signing_process & (prog_cntr == DILITHIUM_KG_JUMP_SIGN)) begin
           sign_prog_cntr_nxt = DILITHIUM_SIGN_INIT_S+8; //FIXME
         end
       end

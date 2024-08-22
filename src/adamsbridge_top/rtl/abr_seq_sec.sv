@@ -51,7 +51,7 @@ module abr_seq_sec
                 DILITHIUM_RESET      : data_o <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
 
                 //Signing initial steps start
-                DILITHIUM_SIGN_INIT_S   : data_o <= '{opcode:ABR_UOP_SKDECODE, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_S1_0_BASE};
+                DILITHIUM_SIGN_INIT_S   : data_o <= '{opcode:ABR_UOP_SKDECODE, imm:'h0000, length:'d00, operand1:ABR_SK_S1_OFFSET, operand2:ABR_NOP, operand3:ABR_S1_0_BASE};
                 //NTT(s1)
                 DILITHIUM_SIGN_INIT_S+1 : data_o <= '{opcode:ABR_UOP_NTT, imm:'h0000, length:'d00, operand1:ABR_S1_0_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_0_BASE};
                 DILITHIUM_SIGN_INIT_S+2 : data_o <= '{opcode:ABR_UOP_NTT, imm:'h0000, length:'d00, operand1:ABR_S1_1_BASE, operand2:ABR_TEMP0_BASE, operand3:ABR_S1_1_BASE};

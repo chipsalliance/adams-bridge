@@ -97,11 +97,6 @@ module adamsbridge_top
   logic [1:0] ntt_done;
   logic [1:0] ntt_busy;
 
-  mem_if_t decomp_mem_wr_req;
-  mem_if_t [1:0] decomp_mem_rd_req;
-  logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_wr_data;
-  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data;
-
   mem_if_t w1_mem_wr_req;
   logic [3:0] w1_mem_wr_data;
   mem_if_t w1_mem_rd_req;
@@ -113,7 +108,21 @@ module adamsbridge_top
   logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr;
   logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr;
   logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr;
-  logic decompose_start, decompose_done;
+
+  logic power2round_enable, power2round_done;
+  mem_if_t [1:0] pwr2rnd_mem_rd_req;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pwr2rnd_mem_rd_data;
+  mem_if_t [1:0] pwr2rnd_keymem_if;
+  logic [1:0] [DATA_WIDTH-1:0] pwr2rnd_wr_data;
+  logic pk_t1_wren;
+  logic [7:0][9:0] pk_t1_wrdata; // TODO: change to parameter
+  logic [7:0] pk_t1_wr_addr; // TODO: change to parameter
+
+  logic decompose_enable, decompose_done;
+  mem_if_t decomp_mem_wr_req;
+  mem_if_t [1:0] decomp_mem_rd_req;
+  logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_wr_data;
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data;
   logic decompose_mode;
 
   logic skencode_enable, skencode_done;
@@ -174,6 +183,7 @@ module adamsbridge_top
   //gasket to assemble reg requests
   logic abr_reg_dv;
   logic abr_reg_hold;
+  logic abr_reg_rd_ack, abr_reg_wr_ack;
   logic [CLIENT_DATA_WIDTH-1:0] abr_reg_rdata;
   logic [AHB_ADDR_WIDTH-1:0]    abr_reg_addr;
   logic [CLIENT_DATA_WIDTH-1:0] abr_reg_wdata;
@@ -216,7 +226,8 @@ module adamsbridge_top
     .rdata(abr_reg_rdata)
 );
 
-always_comb abr_reg_err = abr_reg_read_err | abr_reg_write_err;
+always_comb abr_reg_err = (abr_reg_rd_ack & abr_reg_read_err) | (abr_reg_wr_ack & abr_reg_write_err);
+always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack); //FIXME can we do this without dv?
 
 adamsbridge_reg adamsbridge_reg_inst (
   .clk(clk),
@@ -227,12 +238,12 @@ adamsbridge_reg adamsbridge_reg_inst (
   .s_cpuif_addr(abr_reg_addr[ADAMSBRIDGE_REG_ADDR_WIDTH-1:0]),
   .s_cpuif_wr_data(abr_reg_wdata),
   .s_cpuif_wr_biten('1),
-  .s_cpuif_req_stall_wr(), //same as stall rd
-  .s_cpuif_req_stall_rd(abr_reg_hold),
-  .s_cpuif_rd_ack(),
+  .s_cpuif_req_stall_wr(),
+  .s_cpuif_req_stall_rd(),
+  .s_cpuif_rd_ack(abr_reg_rd_ack),
   .s_cpuif_rd_err(abr_reg_read_err),
   .s_cpuif_rd_data(abr_reg_rdata),
-  .s_cpuif_wr_ack(),
+  .s_cpuif_wr_ack(abr_reg_wr_ack),
   .s_cpuif_wr_err(abr_reg_write_err),
 
   .hwif_in(abr_reg_hwif_in),
@@ -276,7 +287,16 @@ abr_ctrl abr_control_inst
   .aux_src0_base_addr_o(aux_src0_base_addr),
   .aux_src1_base_addr_o(aux_src1_base_addr),
   .aux_dest_base_addr_o(aux_dest_base_addr),
-  .decompose_start_o(decompose_start),
+
+  .power2round_enable_o(power2round_enable),
+  .pwr2rnd_keymem_if_i(pwr2rnd_keymem_if),
+  .pwr2rnd_wr_data_i(pwr2rnd_wr_data),
+  .pk_t1_wren_i(pk_t1_wren),
+  .pk_t1_wr_addr_i(pk_t1_wr_addr),
+  .pk_t1_wrdata_i(pk_t1_wrdata),
+  .power2round_done_i(power2round_done),
+  
+  .decompose_enable_o(decompose_enable),
   .decompose_mode_o(decompose_mode),
   .decompose_done_i(decompose_done),
 
@@ -446,8 +466,31 @@ generate
 endgenerate
 
 //aux functions
+power2round_top
+power2round_inst (
+  .clk(clk),
+  .reset_n(rst_b),
+  .zeroize(zeroize_reg),
 
-//Decompose
+  .enable(power2round_enable),
+  .done(power2round_done),
+
+  .src_base_addr(aux_src0_base_addr[0]),
+  .mem_a_rd_req(pwr2rnd_mem_rd_req[0]),
+  .mem_rd_data_a(pwr2rnd_mem_rd_data[0]),
+  .mem_b_rd_req(pwr2rnd_mem_rd_req[1]),
+  .mem_rd_data_b(pwr2rnd_mem_rd_data[1]),
+
+  .pk_t1_wren(pk_t1_wren),
+  .pk_t1_wr_addr(pk_t1_wr_addr),
+  .pk_t1_wrdata(pk_t1_wrdata),
+
+  .skmem_dest_base_addr(aux_dest_base_addr[0]),
+  .skmem_a_wr_req(pwr2rnd_keymem_if[0]),
+  .skmem_wr_data_a(pwr2rnd_wr_data[0]),
+  .skmem_b_wr_req(pwr2rnd_keymem_if[1]),
+  .skmem_wr_data_b(pwr2rnd_wr_data[1])
+);
 
 decompose
 decompose_inst (
@@ -455,7 +498,7 @@ decompose_inst (
   .reset_n(rst_b),
   .zeroize(zeroize_reg),
 
-  .decompose_enable(decompose_start),
+  .decompose_enable(decompose_enable),
   .dcmp_mode(decompose_mode),
   .src_base_addr(aux_src0_base_addr[0]),
   .dest_base_addr(aux_dest_base_addr[0]),
@@ -523,7 +566,7 @@ skdecode_inst
   .skdecode_enable(skdecode_enable),
   .skdecode_done(skdecode_done),
 
-  .keymem_src_base_addr('0), //fixme remove - dedicated memory, no need for base addr
+  .keymem_src_base_addr(aux_src0_base_addr[1]), 
   .dest_base_addr(aux_dest_base_addr[1]),
 
   .keymem_a_rd_req(skdecode_keymem_if[0]),
@@ -746,6 +789,7 @@ logic [1:0][1:0] decomp_mem_re0_bank,decomp_mem_re0_bank_f;
 logic [1:0] normcheck_mem_re0_bank,normcheck_mem_re0_bank_f;
 logic [1:0] skencode_mem_re0_bank;
 logic [1:0] sigencode_mem_re0_bank;
+logic [1:0] pwr2rnd_mem_re0_bank;
 
 //Write Muxes
 always_comb begin
@@ -824,12 +868,13 @@ always_comb begin
         normcheck_mem_re0_bank[bank] = (normcheck_mem_rd_req.rd_wr_en == RW_READ) & (normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i[2:0]) & (normcheck_mem_rd_req.addr[0] == bank);
         skencode_mem_re0_bank[bank] = (skencode_mem_rd_req[bank].rd_wr_en == RW_READ);
         sigencode_mem_re0_bank[bank] = (sigencode_mem_rd_req[bank].rd_wr_en == RW_READ);
+        pwr2rnd_mem_re0_bank[bank] = (pwr2rnd_mem_rd_req[bank].rd_wr_en == RW_READ);
 
         abr_mem_re0_bank[bank] = ntt_mem_re0_bank[0][bank] | pwo_a_mem_re0_bank[0][bank] | pwo_b_mem_re0_bank[0][bank] |
                                  ntt_mem_re0_bank[1][bank] | pwo_a_mem_re0_bank[1][bank] | pwo_b_mem_re0_bank[1][bank] |
                                  decomp_mem_re0_bank[0][bank] | decomp_mem_re0_bank[1][bank] | 
                                  skencode_mem_re0_bank[bank] | normcheck_mem_re0_bank[bank] |
-                                 sigencode_mem_re0_bank[bank];
+                                 sigencode_mem_re0_bank[bank] | pwr2rnd_mem_re0_bank[bank];
         abr_mem_raddr0_bank[bank] = ({ABR_MEM_ADDR_WIDTH-3{ntt_mem_re0_bank[0][bank]}}    & ntt_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:0]) |
                                     ({ABR_MEM_ADDR_WIDTH-3{pwo_a_mem_re0_bank[0][bank]}} & pwm_a_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:0])   |
                                     ({ABR_MEM_ADDR_WIDTH-3{pwo_b_mem_re0_bank[0][bank]}} & pwm_b_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:0])   |
@@ -840,7 +885,8 @@ always_comb begin
                                     ({ABR_MEM_ADDR_WIDTH-3{decomp_mem_re0_bank[1][bank]}}   & decomp_mem_rd_req[1].addr[ABR_MEM_ADDR_WIDTH-4:0]) |
                                     ({ABR_MEM_ADDR_WIDTH-3{skencode_mem_re0_bank[bank]}} & skencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:0]) |
                                     ({ABR_MEM_ADDR_WIDTH-3{normcheck_mem_re0_bank[bank]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]) |
-                                    ({ABR_MEM_ADDR_WIDTH-3{sigencode_mem_re0_bank[bank]}} & sigencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:0]);
+                                    ({ABR_MEM_ADDR_WIDTH-3{sigencode_mem_re0_bank[bank]}} & sigencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:0])|
+                                    ({ABR_MEM_ADDR_WIDTH-3{pwr2rnd_mem_re0_bank[bank]}} & pwr2rnd_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:0]);
       end
     end else begin
       ntt_mem_re[0][i]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i[2:0]);
@@ -944,6 +990,7 @@ always_comb skencode_mem_rd_data = abr_mem_rdata0_bank;
 always_comb makehint_mem_rd_data = abr_mem_rdata[1];
 //always_comb normcheck_mem_rd_data = abr_mem_rdata0_bank;
 always_comb sigencode_mem_rd_data = abr_mem_rdata0_bank;
+always_comb pwr2rnd_mem_rd_data = abr_mem_rdata0_bank;
 
 abr_1r1w_ram
 #(
@@ -1024,10 +1071,10 @@ abr_1r1w_ram
 
 `ABR_ASSERT_MUTEX(ERR_MEM_0_0_RD_ACCESS_MUTEX, {ntt_mem_re0_bank[0][0],pwo_a_mem_re0_bank[0][0],pwo_b_mem_re0_bank[0][0],ntt_mem_re0_bank[1][0],
                                                 pwo_a_mem_re0_bank[1][0],pwo_b_mem_re0_bank[1][0],decomp_mem_re0_bank[0][0],decomp_mem_re0_bank[1][0],
-                                                skencode_mem_re0_bank[0], normcheck_mem_re0_bank[0], sigencode_mem_re0_bank[0]}, clk, !rst_b)
+                                                skencode_mem_re0_bank[0], normcheck_mem_re0_bank[0], sigencode_mem_re0_bank[0], pwr2rnd_mem_re0_bank[0]}, clk, !rst_b)
 `ABR_ASSERT_MUTEX(ERR_MEM_0_1_RD_ACCESS_MUTEX, {ntt_mem_re0_bank[0][1],pwo_a_mem_re0_bank[0][1],pwo_b_mem_re0_bank[0][1],ntt_mem_re0_bank[1][1],
                                                 pwo_a_mem_re0_bank[1][1],pwo_b_mem_re0_bank[1][1],decomp_mem_re0_bank[0][1],decomp_mem_re0_bank[1][1], 
-                                                skencode_mem_re0_bank[1],normcheck_mem_re0_bank[1],sigencode_mem_re0_bank[1]}, clk, !rst_b)
+                                                skencode_mem_re0_bank[1],normcheck_mem_re0_bank[1],sigencode_mem_re0_bank[1], pwr2rnd_mem_re0_bank[1]}, clk, !rst_b)
 
 `ABR_ASSERT_MUTEX(ERR_MEM_1_RD_ACCESS_MUTEX, {ntt_mem_re[0][1],pwo_a_mem_re[0][1],pwo_b_mem_re[0][1],ntt_mem_re[1][1],pwo_a_mem_re[1][1],pwo_b_mem_re[1][1],
                                                 normcheck_mem_re[1], decomp_mem_re[0][1],decomp_mem_re[1][1],makehint_mem_re[1]}, clk, !rst_b)
@@ -1056,5 +1103,26 @@ abr_1r1w_ram
 `ABR_ASSERT_KNOWN(ERR_MEM_0_RDATA_X, {ntt_mem_rd_data}, clk, !rst_b)
 `ABR_ASSERT_KNOWN(ERR_MEM_1_RDATA_X, {pwm_a_rd_data}, clk, !rst_b)
 `ABR_ASSERT_KNOWN(ERR_MEM_2_RDATA_X, {pwm_b_rd_data}, clk, !rst_b)
+
+
+  abr_prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o;
+  logic clk_i;
+
+  assign clk_i = clk;
+
+  `ABR_ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(SHA3FsmCheck_A,
+  sampler_top_inst.sha3_inst.u_state_regs, alert_tx_o[1])
+
+  `ABR_ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(KeccakRoundFsmCheck_A,
+  sampler_top_inst.sha3_inst.u_keccak.u_state_regs, alert_tx_o[1])
+
+  `ABR_ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(SHA3padFsmCheck_A,
+  sampler_top_inst.sha3_inst.u_pad.u_state_regs, alert_tx_o[1])
+
+  `ABR_ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(WrMsgCountCheck_A,
+  sampler_top_inst.sha3_inst.u_pad.u_wrmsg_count, alert_tx_o[1])
+
+  `ABR_ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(RoundCountCheck_A,
+  sampler_top_inst.sha3_inst.u_keccak.u_round_count, alert_tx_o[1])
 
 endmodule

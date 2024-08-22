@@ -42,7 +42,7 @@ module power2round_top
         output mem_if_t mem_b_rd_req,
         input wire [(4*REG_SIZE)-1:0] mem_rd_data_a,
         input wire [(4*REG_SIZE)-1:0] mem_rd_data_b,
-        input wire mem_rd_data_valid,  // TODO: 
+        //input wire mem_rd_data_valid,  // TODO: 
 
         //output to sk mem
         output mem_if_t skmem_a_wr_req,
@@ -64,15 +64,19 @@ module power2round_top
 
     logic sk_buff_full;
     logic mem_data_reg_valid, r_valid;
+    logic mem_rd_data_valid;
 
-    // always_ff @(posedge clk or negedge reset_n) begin
-    //     if (!reset_n)
-    //         mem_rd_data_valid <= 'h0;
-    //     else if (zeroize)
-    //         mem_rd_data_valid <= 'h0;
-    //     else
-    //         mem_rd_data_valid <= (mem_a_rd_req.rd_wr_en == RW_READ); //assuming data is valid 1 cycle after read request
-    // end
+    logic sk_buff_enable;
+    logic sk_buff_valid;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            mem_rd_data_valid <= 'h0;
+        else if (zeroize)
+            mem_rd_data_valid <= 'h0;
+        else
+            mem_rd_data_valid <= (mem_a_rd_req.rd_wr_en == RW_READ); //assuming data is valid 1 cycle after read request
+    end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin

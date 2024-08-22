@@ -27,10 +27,19 @@ class example_derived_test_sequence extends adamsbridge_bench_sequence_base;
     bit [31:0] data;
     bit ready;
     bit valid;
+    bit [7:0][31:0] seed;
     reg_model.reset();
     data =0;
     ready =0;
-    valid = 0;
+    valid =0;
+    seed[0] = 32'h38359FBC;
+    seed[1] = 32'hD79582CF;
+    seed[2] = 32'hFE609E13;
+    seed[3] = 32'h7EE2EFE8;
+    seed[4] = 32'hA8DBCBAD;
+    seed[5] = 32'h18BA92BB;
+    seed[6] = 32'h433AB4F0;
+    seed[7] = 32'h9B49299D;
     #400;
 
 
@@ -39,13 +48,24 @@ class example_derived_test_sequence extends adamsbridge_bench_sequence_base;
     end else begin
       `uvm_info("MAP_INIT", "adamsbridge_uvm_rm.default_map is initialized", UVM_LOW);
     end
-/*
+
     // ---------------------------------------------------------
     //                    KEYGEN TEST
     // ---------------------------------------------------------
+
+    while(!ready) begin
+      reg_model.ADAMSBRIDGE_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read ADAMSBRIDGE_STATUS"));
+      end else begin
+        `uvm_info("REG_READ", $sformatf("ADAMSBRIDGE_STATUS: %0h", data), UVM_LOW);
+      end
+      ready = data[0];
+    end
+
     // Writing ADAMSBRIDGE_SEED register
     foreach (reg_model.ADAMSBRIDGE_SEED[i]) begin
-      data = data+2; // example data
+      data = seed[i]; // example data
       reg_model.ADAMSBRIDGE_SEED[i].write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write ADAMSBRIDGE_SEED[%0d]", i));
@@ -60,6 +80,16 @@ class example_derived_test_sequence extends adamsbridge_bench_sequence_base;
       `uvm_error("REG_WRITE", $sformatf("Failed to write ADAMSBRIDGE_CTRL"));
     end else begin
       `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_CTRL written with %0h", data), UVM_LOW);
+    end
+
+    while(!valid) begin
+      reg_model.ADAMSBRIDGE_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read ADAMSBRIDGE_STATUS"));
+      end else begin
+        `uvm_info("REG_READ", $sformatf("ADAMSBRIDGE_STATUS: %0h", data), UVM_LOW);
+      end
+      valid = data[1];
     end
 
     // Reading ADAMSBRIDGE_PUBKEY register
@@ -84,7 +114,7 @@ class example_derived_test_sequence extends adamsbridge_bench_sequence_base;
     // ---------------------------------------------------------
     //              KEYGEN TEST IS DONE
     // ---------------------------------------------------------
-*/
+/*
     // ---------------------------------------------------------
     //                    SIGNING TEST
     // ---------------------------------------------------------
@@ -163,7 +193,7 @@ class example_derived_test_sequence extends adamsbridge_bench_sequence_base;
     // ---------------------------------------------------------
     //              SIGNING TEST IS DONE
     // ---------------------------------------------------------
-
+*/
     // ---------------------------------------------------------
     //                VERIFIACTION TEST
     // ---------------------------------------------------------

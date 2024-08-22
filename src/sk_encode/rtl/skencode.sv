@@ -93,9 +93,9 @@ module skencode
     assign one_encoding_string = {encoded_coeffs[7],encoded_coeffs[6],encoded_coeffs[5],encoded_coeffs[4],
                                     encoded_coeffs[3],encoded_coeffs[2],encoded_coeffs[1],encoded_coeffs[0]};
 
-
-    assign error_flag = encoding_error[0] | encoding_error[1] | encoding_error[2] | encoding_error[3] |
-                        encoding_error[4] | encoding_error[5] | encoding_error[6] | encoding_error[7];
+    //FIXME enable this later?
+    assign error_flag = 0;//encoding_error[0] | encoding_error[1] | encoding_error[2] | encoding_error[3] |
+                        //encoding_error[4] | encoding_error[5] | encoding_error[6] | encoding_error[7];
     
     
     // State Machine: Updates main_state and write_state based on current conditions and next states.
