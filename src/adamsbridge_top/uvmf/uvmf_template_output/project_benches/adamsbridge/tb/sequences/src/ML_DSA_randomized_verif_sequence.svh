@@ -99,7 +99,7 @@ class ML_DSA_randomized_verif_sequence extends adamsbridge_bench_sequence_base;
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write ADAMSBRIDGE_PUBKEY[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_PUBKEY[%0d] written with %0h", i, data), UVM_LOW);
+        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_PUBKEY[%0d] written with %0h", i, PK[i]), UVM_LOW);
       end
     end
 
@@ -139,6 +139,7 @@ class ML_DSA_randomized_verif_sequence extends adamsbridge_bench_sequence_base;
     void'($fgets(line, fd)); // Read a line from the file
     $sscanf(line, "%08x\n", value);
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+    SIG[0][31:24]='h00;
     $fclose(fd);
 
     // Writing ADAMSBRIDGE_MSG register
@@ -147,7 +148,7 @@ class ML_DSA_randomized_verif_sequence extends adamsbridge_bench_sequence_base;
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write ADAMSBRIDGE_MSG[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_MSG[%0d] written with %0h", i, data), UVM_LOW);
+        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_MSG[%0d] written with %0h", i, MSG[i]), UVM_LOW);
       end
     end
 
@@ -157,7 +158,7 @@ class ML_DSA_randomized_verif_sequence extends adamsbridge_bench_sequence_base;
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write ADAMSBRIDGE_SIGNATURE[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_SIGNATURE[%0d] written with %0h", i, data), UVM_LOW);
+        `uvm_info("REG_WRITE", $sformatf("ADAMSBRIDGE_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
       end
     end
 
