@@ -45,11 +45,11 @@ package adamsbridge_reg_pkg;
 
     typedef struct packed{
         logic hwclr;
-    } adamsbridge_reg__ADAMSBRIDGE_IV__IV__in_t;
+    } adamsbridge_reg__ADAMSBRIDGE_ENTROPY__ENTROPY__in_t;
 
     typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_IV__IV__in_t IV;
-    } adamsbridge_reg__ADAMSBRIDGE_IV__in_t;
+        adamsbridge_reg__ADAMSBRIDGE_ENTROPY__ENTROPY__in_t ENTROPY;
+    } adamsbridge_reg__ADAMSBRIDGE_ENTROPY__in_t;
 
     typedef struct packed{
         logic [31:0] next;
@@ -142,7 +142,7 @@ package adamsbridge_reg_pkg;
         adamsbridge_reg__ADAMSBRIDGE_VERSION__in_t [2-1:0]ADAMSBRIDGE_VERSION;
         adamsbridge_reg__ADAMSBRIDGE_CTRL__in_t ADAMSBRIDGE_CTRL;
         adamsbridge_reg__ADAMSBRIDGE_STATUS__in_t ADAMSBRIDGE_STATUS;
-        adamsbridge_reg__ADAMSBRIDGE_IV__in_t [16-1:0]ADAMSBRIDGE_IV;
+        adamsbridge_reg__ADAMSBRIDGE_ENTROPY__in_t [16-1:0]ADAMSBRIDGE_ENTROPY;
         adamsbridge_reg__ADAMSBRIDGE_SEED__in_t [8-1:0]ADAMSBRIDGE_SEED;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__in_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__in_t [16-1:0]ADAMSBRIDGE_MSG;
@@ -169,11 +169,11 @@ package adamsbridge_reg_pkg;
 
     typedef struct packed{
         logic [31:0] value;
-    } adamsbridge_reg__ADAMSBRIDGE_IV__IV__out_t;
+    } adamsbridge_reg__ADAMSBRIDGE_ENTROPY__ENTROPY__out_t;
 
     typedef struct packed{
-        adamsbridge_reg__ADAMSBRIDGE_IV__IV__out_t IV;
-    } adamsbridge_reg__ADAMSBRIDGE_IV__out_t;
+        adamsbridge_reg__ADAMSBRIDGE_ENTROPY__ENTROPY__out_t ENTROPY;
+    } adamsbridge_reg__ADAMSBRIDGE_ENTROPY__out_t;
 
     typedef struct packed{
         logic [31:0] value;
@@ -262,7 +262,7 @@ package adamsbridge_reg_pkg;
 
     typedef struct packed{
         adamsbridge_reg__ADAMSBRIDGE_CTRL__out_t ADAMSBRIDGE_CTRL;
-        adamsbridge_reg__ADAMSBRIDGE_IV__out_t [16-1:0]ADAMSBRIDGE_IV;
+        adamsbridge_reg__ADAMSBRIDGE_ENTROPY__out_t [16-1:0]ADAMSBRIDGE_ENTROPY;
         adamsbridge_reg__ADAMSBRIDGE_SEED__out_t [8-1:0]ADAMSBRIDGE_SEED;
         adamsbridge_reg__ADAMSBRIDGE_SIGN_RND__out_t [8-1:0]ADAMSBRIDGE_SIGN_RND;
         adamsbridge_reg__ADAMSBRIDGE_MSG__out_t [16-1:0]ADAMSBRIDGE_MSG;

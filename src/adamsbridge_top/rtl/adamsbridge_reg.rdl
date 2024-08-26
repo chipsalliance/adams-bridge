@@ -43,7 +43,7 @@ addrmap adamsbridge_reg {
         default hw = w;
         field {desc = "Name field";} NAME[32];
 
-    } ADAMSBRIDGE_NAME[2] @0x00000000;
+    } ADAMSBRIDGE_NAME[2];
 
 
 
@@ -58,7 +58,7 @@ addrmap adamsbridge_reg {
         default hw = w;
         field {desc = "Version field";} VERSION[32];
         
-    } ADAMSBRIDGE_VERSION[2] @0x00000008;
+    } ADAMSBRIDGE_VERSION[2];
 
 
 
@@ -74,8 +74,7 @@ addrmap adamsbridge_reg {
                 [br]            100 for KEYGEN+SIGN
 
                 [br] bit #3: Zeroize all internal registers after ADAMSBRIDGE process, to avoid SCA leakage.
-                
-                This register is located at ADAMSBRIDGE_base_address + 0x0000_0010.";
+                ";
 
         default sw = w;
         default hw = r;
@@ -83,7 +82,7 @@ addrmap adamsbridge_reg {
         field {desc = "Control command field"; swwe = adamsbridge_ready; hwclr;} CTRL[3] = 3'b0;
         field {desc = "Zeroize all internal registers"; singlepulse;} ZEROIZE = 1'b0;
     
-    } ADAMSBRIDGE_CTRL @0x00000010;
+    } ADAMSBRIDGE_CTRL;
 
 
 
@@ -95,7 +94,7 @@ addrmap adamsbridge_reg {
                                 a control command and process the inputs.  
                 bit #1: VALID : ​Indicates if the process is done and the
                                 result is valid. 
-                This register is located at ADAMSBRIDGE_base_address + 0x0000_0018.";
+                ";
 
         default sw = r;
         default hw = w;
@@ -103,32 +102,28 @@ addrmap adamsbridge_reg {
         field {desc = "Status ready bit";} READY = 1'b0;
         field {desc = "Status valid bit";} VALID = 1'b0;
     
-    } ADAMSBRIDGE_STATUS @0x00000018;
+    } ADAMSBRIDGE_STATUS;
 
 
-    /* ---- ADAMSBRIDGE Component Input IV ---- */
+    /* ---- ADAMSBRIDGE Component Input ENTROPY ---- */
     reg {
-        name = "ADAMSBRIDGE component IV register type definition";
-        desc = "16 32-bit registers storing the 512-bit IV required 
-                for SCA countermeasures with no change on the outputs. 
-                The IV can be any 512-bit value in [0 : 2^512-1].
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0080 to 0x0000_00BF in big-endian representation.";
+        name = "ADAMSBRIDGE component entropy register type definition";
+        desc = "16 32-bit registers storing the 512-bit entropy  in big-endian representation
+                required for SCA countermeasures with no change on the outputs. 
+                The entropy can be any 512-bit value in [0 : 2^512-1].";
 
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Input IV field"; swwe = adamsbridge_ready; hwclr;} IV[32] = 32'b0;
+        field {desc = "Input entropy field"; swwe = adamsbridge_ready; hwclr;} ENTROPY[32] = 32'b0;
     
-    } ADAMSBRIDGE_IV[16] @0x00000080;
+    } ADAMSBRIDGE_ENTROPY[16];
 
     /* ---- ADAMSBRIDGE Component Input SEED ---- */
     reg {
         name = "ADAMSBRIDGE component seed register type definition";
-        desc = "8 32-bit registers storing the 256-bit seed for keygen.
-                The seed can be any 256-bit value in [0 : 2^256-1].
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0100 to 0x0000_011F in big-endian representation.";
+        desc = "8 32-bit registers storing the 256-bit seed for keygen in big-endian representation.
+                The seed can be any 256-bit value in [0 : 2^256-1].";
 
         default sw = w;
         default hw = rw;
@@ -136,33 +131,29 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Input seed field"; swwe = adamsbridge_ready; hwclr;} SEED[32] = 32'b0;
     
-    } ADAMSBRIDGE_SEED[8] @0x00000100;
+    } ADAMSBRIDGE_SEED[8];
 
     
     /* ---- ADAMSBRIDGE Component Input sign_rnd ---- */
     reg {
         name = "ADAMSBRIDGE component sign_rnd register type definition";
-        desc = "8 32-bit registers storing the 256-bit sign_rnd for signing.
+        desc = "8 32-bit registers storing the 256-bit sign_rnd for signing in big-endian representation.
                 The sign_rnd can be any 256-bit value in [0 : 2^256-1].
-                sign_rnd should be all zero for deterministic variant.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0180 to 0x0000_019F in big-endian representation.";
+                sign_rnd should be all zero for deterministic variant.";
 
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
         field {desc = "Input sign_rnd field"; swwe = adamsbridge_ready; hwclr;} SIGN_RND[32] = 32'b0;
     
-    } ADAMSBRIDGE_SIGN_RND[8] @0x00000180;
+    } ADAMSBRIDGE_SIGN_RND[8];
 
 
     /* ---- ADAMSBRIDGE Component Input Message ---- */
     reg {
         name = "ADAMSBRIDGE component hashed message register type definition";
-        desc = "16 32-bit registers storing the hash of the message.
-                The hashed message can be any 512-bit value in [0 : 2^512-1].
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0200 to 0x0000_023F in big-endian representation.";
+        desc = "16 32-bit registers storing the hash of the message in big-endian representation.
+                The hashed message can be any 512-bit value in [0 : 2^512-1].";
 
         default sw = w;
         default hw = rw;
@@ -170,17 +161,15 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Input message field"; swwe = adamsbridge_ready; hwclr;} MSG[32] = 32'b0;
     
-    } ADAMSBRIDGE_MSG[16] @0x00000200;
+    } ADAMSBRIDGE_MSG[16];
 
 
     /* ---- ADAMSBRIDGE Component Verify Result ---- */
     reg {
         name = "ADAMSBRIDGE component verify result register type definition";
-        desc = "16 32-bit registers storing the result of verifying operation.
+        desc = "16 32-bit registers storing the result of verifying operation in big-endian representation.
                 Firmware is responsible for comparing the computed result with 
-                the signature, and if they are equal the signature is valid.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0280 to 0x0000_02BF in big-endian representation.";
+                the signature, and if they are equal the signature is valid.F";
 
         default sw = r;
         default hw = rw;
@@ -188,16 +177,14 @@ addrmap adamsbridge_reg {
         default resetsignal = reset_b;
         field {desc = "Output verify result field"; hwclr;} VERIFY_RES[32] = 32'b0;
     
-    } ADAMSBRIDGE_VERIFY_RES[16] @0x00000280;
+    } ADAMSBRIDGE_VERIFY_RES[16];
 
     /* ---- ADAMSBRIDGE Component Public Key ---- */
     external reg {
         name = "ADAMSBRIDGE component public key register type definition";
-        desc = "648 32-bit registers storing the public key. 
+        desc = "648 32-bit registers storing the public key in big-endian representation. 
                 These registers is read by ADAMSBRIDGE user after keygen operation, 
-                or be set before verifying operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_2900 to 0x0000_333F in big-endian representation.";
+                or be set before verifying operation.";
 
         default sw = rw;
         default hw = rw;
@@ -210,11 +197,9 @@ addrmap adamsbridge_reg {
     /* ---- ADAMSBRIDGE Component Signature ---- */
     external reg {
         name = "ADAMSBRIDGE component signature register type definition";
-        desc = "1157 32-bit registers storing the signature of the message. 
+        desc = "1157 32-bit registers storing the signature of the message in big-endian representation. 
                 These registers is read by ADAMSBRIDGE user after signing operation, 
-                or be set before verifying operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_3400 to 0x0000_45F3 in big-endian representation.";
+                or be set before verifying operation.";
 
         default sw = rw;
         default hw = rw;
@@ -227,10 +212,8 @@ addrmap adamsbridge_reg {
     /* ---- ADAMSBRIDGE Component Private Key OUT---- */
     external mem {
         name = "ADAMSBRIDGE component private key output register type definition";
-        desc = "1224 32-bit registers storing the private key for keygen.
-                These registers is read by ADAMSBRIDGE user after keygen operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_0300 to 0x0000_161F in big-endian representation.";
+        desc = "1224 32-bit registers storing the private key for keygen in big-endian representation.
+                These registers is read by ADAMSBRIDGE user after keygen operation.";
 
         sw = r;
         mementries = 1224;
@@ -240,10 +223,8 @@ addrmap adamsbridge_reg {
     /* ---- ADAMSBRIDGE Component Private Key IN---- */
     external mem {
         name = "ADAMSBRIDGE component private key input register type definition";
-        desc = "1224 32-bit entries storing the private key for signing. 
-                These entries must be set before signing operation.
-                These registers are located at ADAMSBRIDGE_base_address + 
-                0x0000_1600 to 0x0000_2900 in big-endian representation.";
+        desc = "1224 32-bit entries storing the private key for signing in big-endian representation. 
+                These entries must be set before signing operation.";
 
         sw = w;
         mementries = 1224;
