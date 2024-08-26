@@ -95,7 +95,15 @@ int crypto_sign_keypair_with_external_seed(uint8_t *pk, uint8_t *sk, const uint8
 
   /* Copy external seed into seedbuf */
   memcpy(seedbuf, external_seed, SEEDBYTES);
-  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES);
+  //===============================================================
+  // ********************** FIPS Update ***************************
+  // shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES);
+  const uint8_t byte_K = K;  // K = 8
+  const uint8_t byte_L = L;  // L = 7
+  seedbuf[SEEDBYTES] = byte_K;
+  seedbuf[SEEDBYTES + 1] = byte_L;
+  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES+2);
+  //===============================================================
   rho = seedbuf;
   rhoprime = rho + SEEDBYTES;
   key = rhoprime + CRHBYTES;
@@ -266,6 +274,7 @@ int crypto_sign_signature(uint8_t *sig,
   print_hex("rho", rho, SEEDBYTES);
   print_hex("tr", tr, SEEDBYTES*2);
   print_hex("K", key, SEEDBYTES);
+  print_hex("M_prime", m, ((unsigned int)mlen)*2);
   print_polyvecl("s1", &s1);
   print_polyveck("s2", &s2);
   print_polyveck("t0", &t0);
@@ -501,6 +510,7 @@ int crypto_sign_verify(const uint8_t *sig,
 #if DEBUG == 1
   print_hex("tr", mu, SEEDBYTES*2);
   print_hex("rho", rho, SEEDBYTES);
+  print_hex("M_prime", m, ((unsigned int)mlen)*2);
 #endif
   // This for mu
   shake256_init(&state);
