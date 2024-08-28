@@ -1,7 +1,0 @@
-needs:
-  - $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.compile
-
-src:
-  - registers/adamsbridge_reg_model_top_pkg.sv
-  - adamsbridge_env_pkg.sv
-

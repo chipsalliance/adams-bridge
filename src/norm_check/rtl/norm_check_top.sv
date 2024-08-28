@@ -30,11 +30,11 @@
 // TODO: need a restart input (other than zeroize)
 
 module norm_check_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
-        parameter DILITHIUM_N = 256
+        parameter MLDSA_N = 256
     )
     (
         input wire clk,

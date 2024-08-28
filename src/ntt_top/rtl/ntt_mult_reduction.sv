@@ -16,8 +16,8 @@
 //
 // ntt_mult_reduction.sv
 // --------
-// Performs (input mod DILITHIUM_Q) where the input comes from multiplier in the BF. 
-// This is a custom reduction block that is specific to DILITHIUM_Q.
+// Performs (input mod MLDSA_Q) where the input comes from multiplier in the BF. 
+// This is a custom reduction block that is specific to MLDSA_Q.
 // 
 // 
 //======================================================================
@@ -78,7 +78,7 @@ module ntt_mult_reduction #(
     end
 
     //Mod add
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         mod_add_inst_0(
@@ -100,7 +100,7 @@ module ntt_mult_reduction #(
     always_comb g = (REG_SIZE+1)'(d[10:0] << 'd13);
 
     //Mod add
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE+1)
         )
         mod_add_inst_1(
@@ -119,7 +119,7 @@ module ntt_mult_reduction #(
     //Calculate ab mod q
     //--------------------
     //Mod sub
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         mod_sub_inst_0(

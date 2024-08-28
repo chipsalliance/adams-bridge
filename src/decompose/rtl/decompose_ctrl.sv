@@ -18,20 +18,16 @@
 // Takes care of memory accesses during decompose function
 
 module decompose_ctrl
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import decompose_defines_pkg::*;
-    #(
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_K = 8
-    )
     (
         input wire clk,
         input wire reset_n,
         input wire zeroize,
 
         input wire decompose_enable, //Assumes polynomials are stored in contiguous locations and 1 enable will trig all 8 at once
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr, 
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr, 
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire r0_ready,
 
         output mem_if_t mem_rd_req,
@@ -41,8 +37,8 @@ module decompose_ctrl
     );
 
     //Internals
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr_nxt, mem_wr_addr_nxt;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_wr_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr_nxt, mem_wr_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_wr_addr;
     logic incr_rd_addr, incr_wr_addr;
     logic rst_rd_addr, rst_wr_addr;
     logic last_poly_last_addr_rd; //TODO: confirm that decompose take 8 polys. If there's a case with 7 polys, need to change code
@@ -96,8 +92,8 @@ module decompose_ctrl
     end
 
     //Flags
-    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr  + (DILITHIUM_K * (DILITHIUM_N/4))-1);
-    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr + (DILITHIUM_K * (DILITHIUM_N/4))-1);
+    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr  + (MLDSA_K * (MLDSA_N/4))-1);
+    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr + (MLDSA_K * (MLDSA_N/4))-1);
     assign decompose_busy = (read_fsm_state_ps != DCMP_RD_IDLE);
     assign decompose_done = (read_fsm_state_ps == DCMP_RD_IDLE) & (write_fsm_state_ps == DCMP_WR_IDLE);
 

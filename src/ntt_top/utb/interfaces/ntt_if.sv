@@ -1,4 +1,5 @@
 import ntt_defines_pkg::*;
+import mldsa_params_pkg::*;
 
 interface ntt_if(input bit clk);
 
@@ -13,7 +14,7 @@ interface ntt_if(input bit clk);
     logic                           accumulate;
     logic                           sampler_valid;
     logic                           sampler_mode;
-    logic [MEM_DATA_WIDTH-1:0]      sampler_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0]sampler_data;
 
     logic                           ntt_done;
     logic                           stage_done;

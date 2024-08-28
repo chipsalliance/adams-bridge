@@ -22,16 +22,15 @@
 `default_nettype none
 
 module sigdecode_z_tb
-    import abr_params_pkg::*;
-    import ntt_defines_pkg::*;
+    import mldsa_params_pkg::*;
     import sigdecode_z_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
-    parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
+    parameter MEM_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH,
     parameter GAMMA1 = 19
 )
 ();
-localparam NUM_OF_COEFF = 256* DILITHIUM_L;
+localparam NUM_OF_COEFF = 256* MLDSA_L;
 parameter CLK_HALF_PERIOD = 5;
 parameter CLK_PERIOD = 2 * CLK_HALF_PERIOD;
 

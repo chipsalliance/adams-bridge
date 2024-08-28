@@ -22,7 +22,7 @@
 import "DPI-C" function string getenv(input string env_name);
 
 module rej_bounded_tb
-  //import sampler_pkg::*;
+  //import mldsa_sampler_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb
@@ -38,9 +38,9 @@ module rej_bounded_tb
   parameter PISO_BUFFER_W    = 1334;
   parameter PISO_INPUT_RATE  = 1088;
   parameter PISO_OUTPUT_RATE = 32;
-  parameter DILITHIUM_Q = 8380417;
-  parameter DILITHIUM_Q_W = $clog2(DILITHIUM_Q) + 1;
-  parameter DILITHIUM_N = 256;
+  parameter MLDSA_Q = 8380417;
+  parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1;
+  parameter MLDSA_N = 256;
 
   `ifndef VERILATOR
   int MAX_CYCLES;
@@ -82,7 +82,7 @@ module rej_bounded_tb
 
   //output data
   logic                                         data_valid_o;
-  logic [REJ_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0] data_o;
+  logic [REJ_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0] data_o;
 
   logic zeroize;
 
@@ -105,8 +105,8 @@ module rej_bounded_tb
   assign clk_i = clk_tb;
   assign rst_ni = reset_n_tb;
 
-  logic [DILITHIUM_Q_W-1:0] exp_result;
-  logic [DILITHIUM_Q_W-1:0] expected_results[$];  // queue of results
+  logic [MLDSA_Q_WIDTH-1:0] exp_result;
+  logic [MLDSA_Q_WIDTH-1:0] expected_results[$];  // queue of results
 
   string seed_filename, vector_filename, exp_res_filename;
   assign exp_res_filename = "exp_results.txt";
@@ -376,7 +376,7 @@ module rej_bounded_tb
         $error("Failed to read a new line");
         error_ctr++;
       end
-      for (int res = 0; res < DILITHIUM_N; res++) begin
+      for (int res = 0; res < MLDSA_N; res++) begin
         exp_result = line_read.substr(res*7, res*7 + 7-2).atohex();
         expected_results.push_back(exp_result);
       end

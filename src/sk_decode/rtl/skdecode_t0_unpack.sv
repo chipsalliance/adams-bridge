@@ -16,15 +16,15 @@
 // skdecode_t0_unpack.sv
 // ----------------------------
 // Unpacks t0 from sk by calculating the following equation:
-// coeff = (2**(d-1)) - data[d-1:0] where d is a Dilithium param = 13
+// coeff = (2**(d-1)) - data[d-1:0] where d is a Mldsa param = 13
 // The result of this modular subtraction is a 24-bit value (2**12-a mod q)
 // that is stored in memory as coefficients for further processing
 
 module skdecode_t0_unpack
     #(
         parameter REG_SIZE = 23,
-        parameter DILITHIUM_Q = 8380417,
-        parameter DILITHIUM_D = 13
+        parameter MLDSA_Q = 8380417,
+        parameter MLDSA_D = 13
     )
     (
         input wire clk,
@@ -33,7 +33,7 @@ module skdecode_t0_unpack
 
         input wire enable,
         input wire sub_i,
-        input wire [DILITHIUM_D-1:0] data_i,
+        input wire [MLDSA_D-1:0] data_i,
         output logic [REG_SIZE:0] data_o, //TODO: clean up. At top level, data_o is 24-bits, so add 1 more bit here and assign 0
         output logic valid_o
     );
@@ -50,10 +50,10 @@ module skdecode_t0_unpack
     logic carry0_reg;
     logic sub_n;
 
-    assign opa0 = (1 << (DILITHIUM_D-1));
+    assign opa0 = (1 << (MLDSA_D-1));
     assign opb0 = sub_i ? REG_SIZE'(~data_i) : REG_SIZE'(data_i);
 
-    ntt_adder #(
+    abr_adder #(
         .RADIX(REG_SIZE)
         ) 
         adder_inst_0(
@@ -64,7 +64,7 @@ module skdecode_t0_unpack
         .cout_o(carry0)
     );
 
-    ntt_adder #(
+    abr_adder #(
         .RADIX(REG_SIZE)
         ) 
         adder_inst_1(
@@ -92,7 +92,7 @@ module skdecode_t0_unpack
         else if (enable) begin 
             r0_reg      <= r0;
             carry0_reg  <= carry0;
-            opb1        <= sub_i ? DILITHIUM_Q : ~DILITHIUM_Q;
+            opb1        <= sub_i ? MLDSA_Q : ~MLDSA_Q;
             sub_n       <= !sub_i;
         end
     end

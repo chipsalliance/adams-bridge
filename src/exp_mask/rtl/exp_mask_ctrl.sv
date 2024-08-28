@@ -14,7 +14,7 @@
 
 
 module exp_mask_ctrl
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
    parameter EXP_NUM_SAMPLERS = 4
   ,parameter EXP_SAMPLE_W     = 20

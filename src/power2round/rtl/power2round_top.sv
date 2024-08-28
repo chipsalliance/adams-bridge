@@ -18,13 +18,13 @@
 //======================================================================
 
 module power2round_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
         parameter REG_SIZE = 24,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_K = 8,
-        parameter DILITHIUM_D = 13,
+        parameter MLDSA_Q = 23'd8380417,
+        parameter MLDSA_N = 256,
+        parameter MLDSA_K = 8,
+        parameter MLDSA_D = 13,
         parameter AHB_DATA_WIDTH = 32
     )
     (
@@ -33,9 +33,9 @@ module power2round_top
         input wire zeroize,
 
         input wire enable,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
-        // input wire [ABR_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
+        // input wire [MLDSA_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
 
         //Input from internal memory
         output mem_if_t mem_a_rd_req,
@@ -59,8 +59,8 @@ module power2round_top
 
 
     logic [7:0][REG_SIZE-1:0] mem_data_reg;
-    logic [7:0][DILITHIUM_D-1:0] r0, r0_packed, r0_packed_reg;
-    logic [7:0][REG_SIZE-DILITHIUM_D-2:0] r1, r1_reg;
+    logic [7:0][MLDSA_D-1:0] r0, r0_packed, r0_packed_reg;
+    logic [7:0][REG_SIZE-MLDSA_D-2:0] r1, r1_reg;
 
     logic sk_buff_full;
     logic mem_data_reg_valid, r_valid;
@@ -98,8 +98,8 @@ module power2round_top
         for (genvar i = 0; i < 8; i++) begin
             power2round_core #(
                 .REG_SIZE(REG_SIZE-1),
-                .DILITHIUM_Q(DILITHIUM_Q),
-                .DILITHIUM_D(DILITHIUM_D)
+                .MLDSA_Q(MLDSA_Q),
+                .MLDSA_D(MLDSA_D)
             ) 
             power2round_core_inst (
                 .r(mem_data_reg[i][REG_SIZE-2:0]),
@@ -114,8 +114,8 @@ module power2round_top
         for (genvar i = 0; i < 8; i++) begin
             power2round_skencode #(
                 .REG_SIZE(REG_SIZE-1),
-                .DILITHIUM_Q(DILITHIUM_Q),
-                .DILITHIUM_D(DILITHIUM_D)
+                .MLDSA_Q(MLDSA_Q),
+                .MLDSA_D(MLDSA_D)
             ) 
             power2round_skencode_inst (
                 .r0(r0[i]),
@@ -179,8 +179,8 @@ module power2round_top
 
 
     power2round_ctrl #(
-        .DILITHIUM_K(DILITHIUM_K),
-        .DILITHIUM_N(DILITHIUM_N)
+        .MLDSA_K(MLDSA_K),
+        .MLDSA_N(MLDSA_N)
     )
     power2round_ctrl_inst (
         .clk(clk),

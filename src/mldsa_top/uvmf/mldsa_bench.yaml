@@ -1,0 +1,14 @@
+uvmf:
+  benches:
+    mldsa:
+
+      clock_half_period: 5ns
+      clock_phase_offset: 0ns
+
+      interface_params: []
+
+      reset_assertion_level: 'False'
+      reset_duration: 200ns
+
+      top_env: mldsa
+

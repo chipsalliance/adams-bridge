@@ -23,11 +23,11 @@
 //======================================================================
 
 module pkdecode
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
-        parameter DILITHIUM_K = 'h8,
-        parameter DILITHIUM_N = 'd256,
+        parameter MLDSA_K = 'h8,
+        parameter MLDSA_N = 'd256,
         parameter REG_SIZE = 24,
         parameter INPUT_COEFF_SIZE = 10,
         parameter API_ADDR_WIDTH = 16
@@ -54,7 +54,7 @@ module pkdecode
     localparam COEFF_WIDTH = 10;
     localparam SHIFT_LEFT = 13;
     localparam NUM_COEFFS_PER_CYCLE = 8;
-    localparam THE_LAST_ADDR = (DILITHIUM_K * DILITHIUM_N)/8;
+    localparam THE_LAST_ADDR = (MLDSA_K * MLDSA_N)/8;
     // State Machine States
     localparam  IDLE                = 3'b000,
                 READ                = 3'b001,

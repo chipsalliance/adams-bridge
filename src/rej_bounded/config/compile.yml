@@ -2,7 +2,7 @@
 provides: [rej_bounded]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - abr_libs
 targets:
   rtl:

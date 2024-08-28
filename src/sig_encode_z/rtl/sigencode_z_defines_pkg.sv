@@ -15,17 +15,17 @@
 //
 // sigencode_z_defines_pkg.sv
 // --------
-// sigencode_z parameters for Dilithium
+// sigencode_z parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_SIGENCODE_Z_DEFINES
-`define ABR_SIGENCODE_Z_DEFINES
+`ifndef MLDSA_SIGENCODE_Z_DEFINES
+`define MLDSA_SIGENCODE_Z_DEFINES
 
 package sigencode_z_defines_pkg;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 
-    parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;
-    parameter DILITHIUM_L = 7;
+    parameter API_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH;
+    parameter MLDSA_L = 7;
 
     typedef struct packed {
         mem_rw_mode_e rd_wr_en;

@@ -151,7 +151,8 @@ ntt_wrapper dut (
     .sampler_valid(svalid_tb),
     .sampler_mode(sampler_mode_tb),
     .sampler_data(96'hFFFFFF),
-    .ntt_done(ntt_done_tb)
+    .ntt_done(ntt_done_tb),
+    .ntt_busy()
 );
 
 //----------------------------------------------------------------

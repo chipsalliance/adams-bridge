@@ -21,7 +21,7 @@
 `default_nettype none
 
 module skdecode_tb
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter MEM_ADDR_WIDTH = 15
@@ -41,7 +41,7 @@ reg           zeroize_tb;
 reg           en_tb;
 reg [7:0][2:0] s1s2_data_i;
 reg [3:0][12:0] t0_data_i;
-reg [ABR_MEM_ADDR_WIDTH-1:0] dest_base_tb;
+reg [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_tb;
 reg [31:0] ahb_data_tb, keymem_a_data_tb, keymem_b_data_tb;
 reg [167:0][3:0][7:0] s1_array, s1_array_rev;
 reg [191:0][3:0][7:0] s2_array_tb;
@@ -57,7 +57,7 @@ skdecode_top dut (
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
     .skdecode_enable(en_tb),
-    .keymem_src_base_addr(ABR_MEM_ADDR_WIDTH'(0)),
+    .keymem_src_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),
     .dest_base_addr(dest_base_tb),
     .keymem_a_rd_data(keymem_a_data_tb),
     .keymem_b_rd_data(keymem_b_data_tb),

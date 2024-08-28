@@ -23,7 +23,7 @@ import "DPI-C" function string getenv(input string env_name);
 
 module sample_in_ball_tb
   import sampler_pkg::*;
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb
@@ -73,8 +73,8 @@ module sample_in_ball_tb
   logic [1:0]                                    cs;
   logic [1:0]                                    we;
   logic [1:0][7:2]                               addr;
-  logic [1:0][3:0][DILITHIUM_Q_W-2:0]            wrdata;
-  logic [1:0][3:0][DILITHIUM_Q_W-2:0]            rddata;
+  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            wrdata;
+  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            rddata;
 
   logic zeroize;
 
@@ -106,8 +106,8 @@ module sample_in_ball_tb
   //SRAM
   sib_mem
   #(
-      .DATA_WIDTH((DILITHIUM_Q_W-1)*4),
-      .DEPTH     (DILITHIUM_N/4  ),
+      .DATA_WIDTH((MLDSA_Q_WIDTH-1)*4),
+      .DEPTH     (MLDSA_N/4  ),
       .NUM_PORTS (2              )
   )
   sib_mem_inst
@@ -265,8 +265,8 @@ module sample_in_ball_tb
     int byt;
 
     // Slam
-    $display("SRAM clear from %h to %h", 0, DILITHIUM_N/4);
-    for (clear_addr = 0; clear_addr < (DILITHIUM_N/4); clear_addr++) begin
+    $display("SRAM clear from %h to %h", 0, MLDSA_N/4);
+    for (clear_addr = 0; clear_addr < (MLDSA_N/4); clear_addr++) begin
         sib_mem_inst.mem[clear_addr[5:0]] = '0;
     end
     $display("SRAM clear completed");
@@ -279,8 +279,8 @@ module sample_in_ball_tb
   initial begin
     string exp_res_read;
   
-    logic [DILITHIUM_Q_W-2:0] exp_result;
-    logic [3:0][DILITHIUM_Q_W-2:0] actual_result;
+    logic [MLDSA_Q_WIDTH-2:0] exp_result;
+    logic [3:0][MLDSA_Q_WIDTH-2:0] actual_result;
     
 
     forever begin
@@ -292,7 +292,7 @@ module sample_in_ball_tb
           error_ctr++;
         end
         //check each coefficient
-        for (int coeff = 0; coeff < DILITHIUM_N; coeff++) begin
+        for (int coeff = 0; coeff < MLDSA_N; coeff++) begin
             //parse line for expected result
             exp_result = exp_res_read.substr(coeff*7, coeff*7+6).atohex();
 

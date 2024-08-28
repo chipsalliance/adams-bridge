@@ -22,8 +22,8 @@
 module ntt_div2
     #(
         parameter REG_SIZE      = 23,
-        parameter DILITHIUM_Q   = 23'd8380417,
-        parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q + 1) / 2
+        parameter MLDSA_Q   = 23'd8380417,
+        parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2
     )
     (
         input  wire  [REG_SIZE-1:0] op_i,
@@ -33,7 +33,7 @@ module ntt_div2
     //No need to perform reduction for the addition here. 
     //If op_i = Q-1 (which is max even value allowed), op_i >> 1 is less than Q. 
     //If op_i = Q-2 (which is max odd value allowed), (op_i >> 1) + DIITHIUM_Q_DIV2_ODD is also less than Q.
-    always_comb res_o = op_i[0] ? (op_i >> 1) + DILITHIUM_Q_DIV2_ODD
+    always_comb res_o = op_i[0] ? (op_i >> 1) + MLDSA_Q_DIV2_ODD
                                              : REG_SIZE'(op_i >> 1);
 
 endmodule

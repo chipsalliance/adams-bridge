@@ -23,11 +23,9 @@
 // above modified w1 is passed onto w1 encode
 
 module decompose_usehint
+    import mldsa_params_pkg::*;
     #(
-        parameter DILITHIUM_Q = 8380417,
-        parameter DILITHIUM_GAMMA2 = (DILITHIUM_Q-1)/32,
-        parameter REG_SIZE = 23,
-        localparam DILITHIUM_M = (DILITHIUM_Q-1)/(2*DILITHIUM_GAMMA2)
+        parameter REG_SIZE = 23
     )
     (
         input wire clk,
@@ -70,7 +68,7 @@ module decompose_usehint
         end
     end
 
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(4)
     ) 
     usehint_add_inst (
@@ -86,7 +84,7 @@ module decompose_usehint
         .ready_o()
     );
 
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(4)
     ) 
     usehint_sub_inst (
@@ -113,7 +111,7 @@ module decompose_usehint
 
     always_comb begin
         if (ready) begin
-            w1_mux = ((w0_reg == 'h0) | (w0_reg > DILITHIUM_GAMMA2)) ? w1_minus_one : w1_plus_one;
+            w1_mux = ((w0_reg == 'h0) | (w0_reg > MLDSA_GAMMA2)) ? w1_minus_one : w1_plus_one;
             w1_o   = hint_reg ? w1_mux : w1_reg;
         end
         else begin

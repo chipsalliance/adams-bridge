@@ -1,12 +1,12 @@
 // import ntt_defines_pkg::*;
 
 module ntt_utb_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
     parameter REG_SIZE = 24,
     parameter RADIX = 23,
-    parameter DILITHIUM_Q = 23'd8380417,
-    parameter DILITHIUM_N = 256
+    parameter MLDSA_Q = 23'd8380417,
+    parameter MLDSA_N = 256
 );
 
     // Clock and reset
@@ -57,8 +57,8 @@ module ntt_utb_top
 
     //NTT/PWM muxes
     logic ntt_mem_wren, ntt_mem_rden;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_addr;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_rd_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] ntt_mem_rd_addr;
     logic [MEM_DATA_WIDTH-1:0] ntt_mem_wr_data;
     logic [MEM_DATA_WIDTH-1:0] ntt_mem_rd_data;
 
@@ -86,7 +86,7 @@ module ntt_utb_top
     assign pwm_mem_b_rden = (pwm_b_mem_if_i.mem_port1_req.rd_wr_en == RW_READ);
 
     ecc_ram_tdp_file #(
-        .ADDR_WIDTH(ABR_MEM_ADDR_WIDTH),
+        .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) ntt_mem (
         .clk(clk),
@@ -103,11 +103,11 @@ module ntt_utb_top
         .dinb(),
         .doutb(ntt_mem_if_i.p1_read_data),
         .load_tb_values(1'b0),
-        .load_tb_addr({ABR_MEM_ADDR_WIDTH{1'b0}})
+        .load_tb_addr({MLDSA_MEM_ADDR_WIDTH{1'b0}})
     );
 
     ecc_ram_tdp_file #(
-        .ADDR_WIDTH(ABR_MEM_ADDR_WIDTH),
+        .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_a (
         .clk(clk),
@@ -124,11 +124,11 @@ module ntt_utb_top
         .dinb(),
         .doutb(pwm_a_mem_if_i.p1_read_data),
         .load_tb_values(1'b0),
-        .load_tb_addr({ABR_MEM_ADDR_WIDTH{1'b0}})
+        .load_tb_addr({MLDSA_MEM_ADDR_WIDTH{1'b0}})
     );
 
     ecc_ram_tdp_file #(
-        .ADDR_WIDTH(ABR_MEM_ADDR_WIDTH),
+        .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_b (
         .clk(clk),
@@ -145,14 +145,14 @@ module ntt_utb_top
         .dinb(),
         .doutb(pwm_b_mem_if_i.p1_read_data),
         .load_tb_values(1'b0),
-        .load_tb_addr({ABR_MEM_ADDR_WIDTH{1'b0}})
+        .load_tb_addr({MLDSA_MEM_ADDR_WIDTH{1'b0}})
     );
 
     ntt_top #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q),
-        .DILITHIUM_N(DILITHIUM_N),
-        .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
+        .MLDSA_Q(MLDSA_Q),
+        .MLDSA_N(MLDSA_N),
+        .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
     )
     ntt_top_inst0 (
         .clk(clk),
@@ -176,6 +176,7 @@ module ntt_utb_top
         .pwm_b_rd_req(pwm_b_mem_if_i.mem_port1_req),
         .pwm_a_rd_data(pwm_a_mem_if_i.p1_read_data),
         .pwm_b_rd_data(ntt_if_i.sampler_mode ? ntt_if_i.sampler_data : pwm_a_mem_if_i.p1_read_data),
+        .ntt_busy(),
         .ntt_done(wired_ntt_done)
     );
 

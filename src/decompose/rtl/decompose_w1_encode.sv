@@ -29,9 +29,7 @@
 //      high level controller issues the last round with padding and enables Keccak.
 
 module decompose_w1_encode
-    #(
-        parameter DILITHIUM_K = 8
-    )
+    import mldsa_params_pkg::*;
     (
         input wire clk,
         input wire reset_n,
@@ -112,7 +110,7 @@ module decompose_w1_encode
         else if (zeroize)
             rounds_count <= 'h0;
         else if (init_count_first)
-            rounds_count <= DILITHIUM_K-1;
+            rounds_count <= MLDSA_K-1;
         else if (keccak_en && (rounds_count > 0))
             rounds_count <= rounds_count - 'h1;
     end

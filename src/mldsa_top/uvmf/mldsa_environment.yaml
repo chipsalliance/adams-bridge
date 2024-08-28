@@ -1,0 +1,51 @@
+uvmf:
+  environments:
+    mldsa:
+      imports:
+        - name: "rw_txn_pkg"
+
+      analysis_components:
+        - name: mldsa_pred
+          type: mldsa_predictor
+        - name: mldsa_sb
+          type: mldsa_scoreboard
+
+      analysis_ports: []
+
+      config_constraints: []
+      config_vars: []
+
+      parameters: []
+
+      scoreboards: []
+
+      subenvs: []
+
+      qvip_subenvs:
+        - name: "qvip_ahb_lite_slave_subenv"
+          type: "qvip_ahb_lite_slave"
+
+      qvip_connections:
+        - driver: "qvip_ahb_lite_slave_subenv.ahb_lite_slave_0"
+          ap_key: "burst_transfer"
+          receiver: "mldsa_pred.ahb_slave_0_ae"
+          validate: "false"
+        - driver: "qvip_ahb_lite_slave_subenv.ahb_lite_slave_0"
+          ap_key: "trans_ap"  # Assuming a placeholder key
+          receiver: "mldsa_sb.actual_ahb_analysis_export"
+          validate: "false"
+
+      tlm_connections:
+        - driver: "mldsa_pred.mldsa_sb_ahb_ap"
+          receiver: "mldsa_sb.expected_ahb_analysis_export"
+          validate: "false"
+
+      register_model:
+        use_adapter: "True"
+        use_explicit_prediction: "True"
+        reg_block_class: mldsa_reg_model_top
+        reg_model_package: mldsa_reg_model_top_pkg
+        maps:
+          - name: "fixme_map"
+            interface: "qvip_ahb_lite_slave_subenv.ahb_lite_slave_0"
+            qvip_agent: "True"

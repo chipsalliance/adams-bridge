@@ -77,7 +77,7 @@ bf_uvo_t uv_o_tb;
 butterfly2x2 #(
   .REG_SIZE(23),
   .RADIX(23),
-  .DILITHIUM_Q(PRIME)
+  .MLDSA_Q(PRIME)
 )
 dut (
   .clk(clk_tb),
@@ -93,7 +93,7 @@ dut (
 // butterfly #(
 //     .REG_SIZE(23),
 //     .RADIX(23),
-//     .DILITHIUM_Q(PRIME)
+//     .MLDSA_Q(PRIME)
 // )
 // dut (
 //     .clk(clk_tb),

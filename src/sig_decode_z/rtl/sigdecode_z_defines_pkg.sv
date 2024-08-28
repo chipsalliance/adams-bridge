@@ -15,18 +15,17 @@
 //
 // sigdecode_z_defines_pkg.sv
 // --------
-// Sigdecode parameters for Dilithium
+// Sigdecode parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_SIGDECODE_Z_DEFINES
-`define ABR_SIGDECODE_Z_DEFINES
+`ifndef MLDSA_SIGDECODE_Z_DEFINES
+`define MLDSA_SIGDECODE_Z_DEFINES
 
 package sigdecode_z_defines_pkg;
-    import ntt_defines_pkg::*;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 
-    parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;
-    parameter DILITHIUM_L = 7;
+    parameter API_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH;
+    parameter MLDSA_L = 7;
 
     typedef struct packed {
         mem_rw_mode_e rd_wr_en;

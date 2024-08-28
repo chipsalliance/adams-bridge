@@ -22,13 +22,13 @@
 // assumes all polynomials of the vector are stored in continuous addr space in memory
 
 module norm_check_ctrl
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_L = 7,
-        parameter DILITHIUM_K = 8
+        parameter MLDSA_N = 256,
+        parameter MLDSA_L = 7,
+        parameter MLDSA_K = 8
     )
     (
         input wire clk,
@@ -72,15 +72,15 @@ module norm_check_ctrl
     //Mode mux
     always_comb begin
         case(mode)
-            z_bound:    num_poly = DILITHIUM_L;
-            r0_bound:   num_poly = DILITHIUM_K;
-            ct0_bound:  num_poly = DILITHIUM_K;
+            z_bound:    num_poly = MLDSA_L;
+            r0_bound:   num_poly = MLDSA_K;
+            ct0_bound:  num_poly = MLDSA_K;
             default:    num_poly = 0;
         endcase
     end
 
     //Last addr flag
-    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + (num_poly * (DILITHIUM_N/4))-1));
+    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + (num_poly * (MLDSA_N/4))-1));
 
     //Ctrl flags
     always_comb begin

@@ -20,14 +20,14 @@
 //
 //======================================================================
 
-`ifndef ABR_NTT_DEFINES
-`define ABR_NTT_DEFINES
+`ifndef MLDSA_NTT_DEFINES
+`define MLDSA_NTT_DEFINES
 
 package ntt_defines_pkg;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 
 parameter NTT_REG_SIZE = REG_SIZE-1;
-parameter MEM_DEPTH = 2**ABR_MEM_ADDR_WIDTH;
+// parameter MEM_DEPTH = 2**MLDSA_MEM_ADDR_WIDTH;
 
 
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
@@ -61,15 +61,15 @@ typedef struct packed {
 } bf_uvo_t;
 
 typedef struct packed {
-    logic [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] interim_base_addr;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] interim_base_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr;
 } ntt_mem_addr_t;
 
 typedef struct packed {
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_a;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_b;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_base_addr_c;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_base_addr_a;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_base_addr_b;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_base_addr_c;
 } pwo_mem_addr_t;
 
 //PWO ports

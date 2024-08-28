@@ -1,0 +1,5 @@
+@use $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.vinfo
+@use $UVMF_VIP_LIBRARY_HOME/environment_packages/mldsa_env_pkg/mldsa_env_pkg.vinfo
+@use $UVMF_PROJECT_DIR/tb/parameters/mldsa_parameters_pkg.vinfo
++incdir+@vinfodir
+mldsa_sequences_pkg.sv

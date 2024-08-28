@@ -26,8 +26,8 @@ module ntt_butterfly2x2
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE = 23,
-    parameter DILITHIUM_Q = 23'd8380417,
-    parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q + 1) / 2,
+    parameter MLDSA_Q = 23'd8380417,
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2,
     parameter BF_LATENCY = 10, //5 cycles per butterfly * 2 instances in serial = 10 clks
     parameter PWM_LATENCY = 5, //latency of modular multiplier + modular addition to perform accumulation
     parameter PWA_LATENCY = 1, //latency of modular addition
@@ -137,7 +137,7 @@ module ntt_butterfly2x2
 
     ntt_butterfly #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     bf_inst00(
         .clk(clk),
@@ -155,7 +155,7 @@ module ntt_butterfly2x2
 
     ntt_butterfly #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     bf_inst01(
         .clk(clk),
@@ -173,7 +173,7 @@ module ntt_butterfly2x2
 
     ntt_butterfly #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     bf_inst10(
         .clk(clk),
@@ -191,7 +191,7 @@ module ntt_butterfly2x2
 
     ntt_butterfly #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     bf_inst11(
         .clk(clk),

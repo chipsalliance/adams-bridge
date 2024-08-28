@@ -37,16 +37,16 @@ module norm_check_tb
 parameter CLK_HALF_PERIOD = 5;
 parameter CLK_PERIOD      = 2 * CLK_HALF_PERIOD;
 
-parameter DILITHIUM_Q = 8380417;
-parameter DILITHIUM_ETA = 2;
-parameter DILITHIUM_TAU = 60;
-parameter DILITHIUM_GAMMA1 = 2**19;
-parameter DILITHIUM_GAMMA2 = (DILITHIUM_Q -1)/32;
-parameter DILITHIUM_BETA = DILITHIUM_TAU * DILITHIUM_ETA;
+parameter MLDSA_Q = 8380417;
+parameter MLDSA_ETA = 2;
+parameter MLDSA_TAU = 60;
+parameter MLDSA_GAMMA1 = 2**19;
+parameter MLDSA_GAMMA2 = (MLDSA_Q -1)/32;
+parameter MLDSA_BETA = MLDSA_TAU * MLDSA_ETA;
 
-parameter Z_BOUND = DILITHIUM_GAMMA1 - DILITHIUM_BETA;
-parameter R0_BOUND = DILITHIUM_GAMMA2 - DILITHIUM_BETA;
-parameter CT0_BOUND = DILITHIUM_GAMMA2;
+parameter Z_BOUND = MLDSA_GAMMA1 - MLDSA_BETA;
+parameter R0_BOUND = MLDSA_GAMMA2 - MLDSA_BETA;
+parameter CT0_BOUND = MLDSA_GAMMA2;
 
 
 //----------------------------------------------------------------
@@ -147,7 +147,7 @@ task norm_check_test;
     for (int poly = 0; poly < 7; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_tb = {REG_SIZE'($urandom_range(0,Z_BOUND-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-Z_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(0,Z_BOUND)), REG_SIZE'($urandom_range(0,Z_BOUND))};
+        coeff_tb = {REG_SIZE'($urandom_range(0,Z_BOUND-1)), REG_SIZE'($urandom_range(MLDSA_Q-Z_BOUND, MLDSA_Q-1)), REG_SIZE'($urandom_range(0,Z_BOUND)), REG_SIZE'($urandom_range(0,Z_BOUND))};
         @(posedge clk_tb);
       end
     end
@@ -167,7 +167,7 @@ task norm_check_test;
     for (int poly = 0; poly < 8; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_tb = {REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1)), REG_SIZE'($urandom_range(DILITHIUM_Q-R0_BOUND, DILITHIUM_Q-1))};
+        coeff_tb = {REG_SIZE'($urandom_range(MLDSA_Q-R0_BOUND, MLDSA_Q-1)), REG_SIZE'($urandom_range(MLDSA_Q-R0_BOUND, MLDSA_Q-1)), REG_SIZE'($urandom_range(MLDSA_Q-R0_BOUND, MLDSA_Q-1)), REG_SIZE'($urandom_range(MLDSA_Q-R0_BOUND, MLDSA_Q-1))};
         @(posedge clk_tb);
       end
     end
@@ -208,7 +208,7 @@ task norm_check_test;
     for (int poly = 0; poly < 8; poly++) begin
       $display("Starting poly %0d", poly);
       for (int i = 0; i < 32; i++) begin
-        coeff_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(CT0_BOUND,DILITHIUM_Q-1))};
+        coeff_tb = {REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(0,CT0_BOUND-1)), REG_SIZE'($urandom_range(CT0_BOUND,MLDSA_Q-1))};
         @(posedge clk_tb);
       end
     end

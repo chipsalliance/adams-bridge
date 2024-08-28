@@ -2,7 +2,7 @@
 provides: [abr_libs]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
 targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
@@ -24,6 +24,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+      - $COMPILE_ROOT/rtl/abr_adder.sv
+      - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -44,6 +46,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+      - $COMPILE_ROOT/rtl/abr_adder.sv
+      - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
 
 ---
 provides: [masking_tb]

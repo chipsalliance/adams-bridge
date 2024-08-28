@@ -1,6 +1,0 @@
-@use $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.vinfo
-@use $UVMF_VIP_LIBRARY_HOME/environment_packages/adamsbridge_env_pkg/adamsbridge_env_pkg.vinfo
-@use $UVMF_PROJECT_DIR/tb/parameters/adamsbridge_parameters_pkg.vinfo
-@use $UVMF_PROJECT_DIR/tb/sequences/adamsbridge_sequences_pkg.vinfo
-+incdir+@vinfodir
-adamsbridge_tests_pkg.sv

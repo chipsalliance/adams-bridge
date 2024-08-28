@@ -18,12 +18,12 @@
 // Enables unpack modules and keeps track of memory writes
 
 module skdecode_ctrl
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
-        parameter DILITHIUM_L = 7,
-        parameter DILITHIUM_K = 8,
-        parameter DILITHIUM_N = 256
+        parameter MLDSA_L = 7,
+        parameter MLDSA_K = 8,
+        parameter MLDSA_N = 256
     )
     (
         input wire clk,
@@ -31,8 +31,8 @@ module skdecode_ctrl
         input wire zeroize,
 
         input wire skdecode_enable, //One enable for all of s0, s1, t0 unpack
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire s1s2_valid,
         input wire t0_valid,
         input wire s1s2_error,
@@ -52,8 +52,8 @@ module skdecode_ctrl
     );
 
     //Memory interface wires
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
 
     logic incr_wr_addr, incr_skdec_count;
     logic rst_wr_addr, rst_skdec_count;
@@ -103,7 +103,7 @@ module skdecode_ctrl
         else if (rst_skdec_count)
             skdecode_count <= 'h0;
         else if (incr_skdec_count) begin
-            skdecode_count <= (skdecode_count == ((num_poly * DILITHIUM_N)/num_inst)-1) ? 'h0 : skdecode_count + 'h1;
+            skdecode_count <= (skdecode_count == ((num_poly * MLDSA_N)/num_inst)-1) ? 'h0 : skdecode_count + 'h1;
         end
     end
 
@@ -181,7 +181,7 @@ module skdecode_ctrl
         skdecode_busy       = (write_fsm_state_ps != SKDEC_WR_IDLE);
         skdecode_done       = (write_fsm_state_ps == SKDEC_WR_IDLE);
         //last addr flag only used in read
-        last_poly_last_addr = (skdecode_count == (((num_poly * DILITHIUM_N)/num_inst)-1));
+        last_poly_last_addr = (skdecode_count == (((num_poly * MLDSA_N)/num_inst)-1));
     end
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -258,7 +258,7 @@ module skdecode_ctrl
                 kmem_rw_mode        = ~s1s2_buf_stall_fsm ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 s1s2_enable_fsm     = 'b1;
-                num_poly            = DILITHIUM_L;
+                num_poly            = MLDSA_L;
                 num_inst            = 'd8;
             end
             SKDEC_RD_S2: begin
@@ -268,7 +268,7 @@ module skdecode_ctrl
                 kmem_rw_mode        = ~s1s2_buf_stall_fsm ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 s1s2_enable_fsm     = 'b1;
-                num_poly            = DILITHIUM_K;
+                num_poly            = MLDSA_K;
                 num_inst            = 'd8;
             end
             SKDEC_RD_T0: begin
@@ -278,7 +278,7 @@ module skdecode_ctrl
                 kmem_rw_mode        = ~t0_buf_stall ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 t0_enable_fsm       = 'b1;
-                num_poly            = DILITHIUM_K;
+                num_poly            = MLDSA_K;
                 num_inst            = 'd4;
             end
             SKDEC_RD_STAGE: begin

@@ -22,7 +22,7 @@
 `default_nettype none
 
 module sigencode_z_tb
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
     import sigencode_z_defines_pkg::*;
 #(
@@ -31,7 +31,7 @@ module sigencode_z_tb
     parameter GAMMA1 = 19
 )
 ();
-localparam NUM_OF_COEFF = 256* DILITHIUM_L;
+localparam NUM_OF_COEFF = MLDSA_N * MLDSA_L;
 parameter CLK_HALF_PERIOD = 5;
 parameter CLK_PERIOD = 2 * CLK_HALF_PERIOD;
 

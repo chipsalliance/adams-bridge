@@ -21,12 +21,12 @@
 
 module ntt_wrapper
     import ntt_defines_pkg::*;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter RADIX = 23,
-    parameter DILITHIUM_Q = 23'd8380417,
-    parameter DILITHIUM_N = 256,
+    parameter MLDSA_Q = 23'd8380417,
+    parameter MLDSA_N = 256,
     parameter MEM_ADDR_WIDTH = 15
 )
 (
@@ -47,7 +47,8 @@ module ntt_wrapper
     input wire sampler_valid,
     input wire sampler_mode,
     input wire [MEM_DATA_WIDTH-1:0] sampler_data,
-    output logic ntt_done
+    output logic ntt_done,
+    output logic ntt_busy
 
 );
 
@@ -162,8 +163,8 @@ module ntt_wrapper
 
     ntt_top #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q),
-        .DILITHIUM_N(DILITHIUM_N),
+        .MLDSA_Q(MLDSA_Q),
+        .MLDSA_N(MLDSA_N),
         .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
     )
     ntt_top_inst0 (
@@ -186,6 +187,7 @@ module ntt_wrapper
         .pwm_b_rd_req(pwm_b_rd_req),
         .pwm_a_rd_data(pwm_a_rd_data),
         .pwm_b_rd_data(sampler_mode ? sampler_data : pwm_b_rd_data),
+        .ntt_busy(ntt_busy),
         .ntt_done(ntt_done)
     );
 endmodule

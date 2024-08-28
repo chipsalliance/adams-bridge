@@ -16,7 +16,7 @@
 //and returns a coefficient calculated by the function 2^19-a%q
 
 module exp_mask
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
     parameter EXP_SAMPLE_W     = 20
    ,parameter EXP_VLD_SAMPLE_W = 23
@@ -36,7 +36,7 @@ module exp_mask
   //compute 2^19 - a
   always_comb {c0,r0} = (24'd1 << 19) - data_i;
   //compute potential % q value
-  always_comb {c1,r1} = r0 + DILITHIUM_Q;
+  always_comb {c1,r1} = r0 + MLDSA_Q;
   //determine if we can take 2^19-a or need to take + q value
   always_comb data_o  = (c0 & c1) ? {1'b0,r1} : {1'b0,r0};
 

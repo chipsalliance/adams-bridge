@@ -15,10 +15,10 @@
 //
 // sigencode_z_top.sv
 // --------
-// @brief Top-level module for the signature encoder in the Dilithium scheme.
+// @brief Top-level module for the signature encoder in the Mldsa scheme.
 // 
 // This module implements the top-level logic for encoding z polynomial (a part of signature) in the
-// Dilithium post-quantum cryptographic scheme. The encoder reads coefficients from memory,
+// Mldsa post-quantum cryptographic scheme. The encoder reads coefficients from memory,
 // processes them through encoding units, and writes the encoded values to a specified
 // register map.
 // The module interfaces with memory through two parallel read ports and writes the
@@ -27,10 +27,10 @@
 //======================================================================
 
 module sigencode_z_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import sigencode_z_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
+        parameter MEM_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH,
         parameter REG_SIZE = 24,
         parameter GAMMA1 = 19
     )
@@ -58,7 +58,7 @@ module sigencode_z_top
         output logic sigencode_z_done
     );
 
-    localparam THE_LAST_ADDR = ((DILITHIUM_L * DILITHIUM_N)/4)-1;
+    localparam THE_LAST_ADDR = ((MLDSA_L * MLDSA_N)/4)-1;
     // State Machine States
     localparam  IDLE                = 3'b000,
                 READ                = 3'b001,

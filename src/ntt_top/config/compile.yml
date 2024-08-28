@@ -7,7 +7,7 @@
 provides: [ntt_pkg]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - abr_libs
 targets:
   rtl:
@@ -45,10 +45,9 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/ntt_butterfly2x2.sv
       - $COMPILE_ROOT/rtl/ntt_butterfly.sv
-      - $COMPILE_ROOT/rtl/ecc_ram_tdp_file.sv
       - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
-      - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
-      - $COMPILE_ROOT/rtl/ntt_adder.sv
+      # - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
+      # - $COMPILE_ROOT/rtl/ntt_adder.sv
       - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
       - $COMPILE_ROOT/rtl/ntt_buffer.sv
@@ -58,6 +57,7 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
+      - $COMPILE_ROOT/tb/ecc_ram_tdp_file.sv
       - $COMPILE_ROOT/tb/ntt_wrapper.sv
       
     tops: [ntt_top]

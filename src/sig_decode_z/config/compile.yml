@@ -16,7 +16,7 @@ targets:
 provides: [sigdecode_z]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - sigdecode_z_pkg
   - abr_libs
 targets:

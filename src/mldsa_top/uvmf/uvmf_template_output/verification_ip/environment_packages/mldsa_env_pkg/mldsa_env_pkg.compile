@@ -1,0 +1,7 @@
+needs:
+  - $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.compile
+
+src:
+  - registers/mldsa_reg_model_top_pkg.sv
+  - mldsa_env_pkg.sv
+

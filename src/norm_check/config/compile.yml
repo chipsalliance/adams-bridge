@@ -21,7 +21,7 @@ provides: [norm_check]
 schema_version: 2.4.0
 requires:
   - norm_check_pkg
-  - abr_defines
+  - mldsa_defines
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -40,7 +40,7 @@ schema_version: 2.4.0
 requires: 
   - norm_check
   - norm_check_pkg
-  - abr_defines
+  - mldsa_defines
 targets:
   rtl:
     directories: [$COMPILE_ROOT/tb]

@@ -16,7 +16,7 @@
 // skencode.sv
 // --------
 // The skencode module performs the encoding of secret key components into a packed format. 
-// This module supports the CRYSTAL-Dilithium scheme, encoding sk inputs into s1, s2 polynomials. 
+// This module supports the MLDSA scheme, encoding sk inputs into s1, s2 polynomials. 
 // The output coefficients are packed into 24-bit format.
 // The design supports dual memory writes per cycle, processing 8 values per cycle for s1 and s2 encoding. 
 // The module operates under the control of a single enable pulse, triggering the encoding process for all polynomials. 
@@ -27,14 +27,14 @@
 //======================================================================
 
 module skencode
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter DILITHIUM_L = 'h7,
-        parameter DILITHIUM_K = 'h8,
-        parameter DILITHIUM_N = 'd256,
+        parameter MLDSA_Q = 23'd8380417,
+        parameter MLDSA_L = 'h7,
+        parameter MLDSA_K = 'h8,
+        parameter MLDSA_N = 'd256,
         parameter REG_SIZE = 24,
         parameter AHB_DATA_WIDTH = 32
     )
@@ -58,8 +58,8 @@ module skencode
         output logic skencode_done
     );
 
-    localparam THE_LAST_ADDR = ((DILITHIUM_K * DILITHIUM_N)/4)+((DILITHIUM_L * DILITHIUM_N)/4)-1;
-    localparam THE_LAST_API = ((DILITHIUM_K +DILITHIUM_L)*DILITHIUM_N*3)/32;
+    localparam THE_LAST_ADDR = ((MLDSA_K * MLDSA_N)/4)+((MLDSA_L * MLDSA_N)/4)-1;
+    localparam THE_LAST_API = ((MLDSA_K +MLDSA_L)*MLDSA_N*3)/32;
 
     // Main State Machine States
     // TODO: Define the state names in a pakcage.
@@ -354,11 +354,11 @@ module skencode
                     encoded_coeffs[i] = 'h0;
                     encoding_error[i] = 'h0;
                 end
-                DILITHIUM_Q-1: begin
+                MLDSA_Q-1: begin
                     encoded_coeffs[i] = 'h3;
                     encoding_error[i] = 'h0;
                 end
-                DILITHIUM_Q-2: begin
+                MLDSA_Q-2: begin
                     encoded_coeffs[i] = 'h4;
                     encoding_error[i] = 'h0;
                 end
@@ -380,11 +380,11 @@ module skencode
                     encoded_coeffs[i+4] = 'h0;
                     encoding_error[i+4] = 'h0;
                 end
-                DILITHIUM_Q-1: begin
+                MLDSA_Q-1: begin
                     encoded_coeffs[i+4] = 'h3;
                     encoding_error[i+4] = 'h0;
                 end
-                DILITHIUM_Q-2: begin
+                MLDSA_Q-2: begin
                     encoded_coeffs[i+4] = 'h4;
                     encoding_error[i+4] = 'h0;
                 end

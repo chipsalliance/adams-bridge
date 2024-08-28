@@ -22,7 +22,7 @@
 module sigdecode_z_unit
 #(
     parameter REG_SIZE = 23,
-    parameter DILITHIUM_Q = 8380417,
+    parameter MLDSA_Q = 8380417,
     parameter GAMMA1 = 19
 )
 (
@@ -34,7 +34,7 @@ module sigdecode_z_unit
     output logic [REG_SIZE-1:0] data_o //TODO: clean up. At top level, data_o is 24-bits, so add 1 more bit here and assign 0
 );
 
-    localparam DILITHIUM_GAMMA1_RANGE = 2**GAMMA1;
+    localparam MLDSA_GAMMA1_RANGE = 2**GAMMA1;
 
     logic [REG_SIZE-1:0] opa0;
     logic [REG_SIZE-1:0] opb0;
@@ -50,10 +50,10 @@ module sigdecode_z_unit
     logic sub_i;
 
     assign sub_i = 1'b1;
-    assign opa0 = DILITHIUM_GAMMA1_RANGE;
+    assign opa0 = MLDSA_GAMMA1_RANGE;
     assign opb0 = sub_i ? REG_SIZE'(~data_i) : REG_SIZE'(data_i);
 
-    ntt_adder #(
+    abr_adder #(
         .RADIX(REG_SIZE)
         ) 
         adder_inst_0(
@@ -64,7 +64,7 @@ module sigdecode_z_unit
         .cout_o(carry0)
     );
 
-    ntt_adder #(
+    abr_adder #(
         .RADIX(REG_SIZE)
         ) 
         adder_inst_1(
@@ -92,7 +92,7 @@ module sigdecode_z_unit
         else begin 
             r0_reg      <= r0;
             carry0_reg  <= carry0;
-            opb1        <= sub_i ? DILITHIUM_Q : ~DILITHIUM_Q;
+            opb1        <= sub_i ? MLDSA_Q : ~MLDSA_Q;
             sub_n       <= !sub_i;
         end
     end

@@ -7,7 +7,7 @@
 provides: [skencode]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - skdecode_pkg
   - abr_libs
 targets:

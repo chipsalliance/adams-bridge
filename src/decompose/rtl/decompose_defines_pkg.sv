@@ -15,11 +15,11 @@
 //
 // decompose_defines_pkg.sv
 // --------
-// Decompose parameters for Dilithium
+// Decompose parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_DECOMPOSE_DEFINES
-`define ABR_DECOMPOSE_DEFINES
+`ifndef MLDSA_DECOMPOSE_DEFINES
+`define MLDSA_DECOMPOSE_DEFINES
 
 package decompose_defines_pkg;
 

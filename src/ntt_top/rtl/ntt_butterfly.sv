@@ -27,8 +27,8 @@ module ntt_butterfly
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE  = 23,
-    parameter DILITHIUM_Q     = 23'd8380417,
-    parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q + 1) / 2
+    parameter MLDSA_Q     = 23'd8380417,
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2
 )
 (
     //Clock and reset
@@ -201,7 +201,7 @@ module ntt_butterfly
     end
 
     //Mod sub - used in GS
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_0(
@@ -212,13 +212,13 @@ module ntt_butterfly
         .sub_i(1'b1),
         .opa_i(opu_i),
         .opb_i(opv_i),
-        .prime_i(DILITHIUM_Q), //TODO: convert prime input to param everywhere
+        .prime_i(MLDSA_Q), //TODO: convert prime input to param everywhere
         .res_o(u_minus_v),
         .ready_o()
     );
 
     //Mod sub - used in CT
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_1(
@@ -229,13 +229,13 @@ module ntt_butterfly
         .sub_i(1'b1),
         .opa_i(u_reg_d4),
         .opb_i(mul_res_reduced),
-        .prime_i(DILITHIUM_Q),
+        .prime_i(MLDSA_Q),
         .res_o(sub_res),
         .ready_o()
     );
 
     //Mod add - used in CT and GS
-    ntt_add_sub_mod #(
+    abr_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         add_inst_0(
@@ -246,7 +246,7 @@ module ntt_butterfly
         .sub_i(1'b0),
         .opa_i(add_opa),
         .opb_i(add_opb),
-        .prime_i(DILITHIUM_Q),
+        .prime_i(MLDSA_Q),
         .res_o(add_res),
         .ready_o()
     );
@@ -264,7 +264,7 @@ module ntt_butterfly
     
     ntt_mult_reduction #(
         .REG_SIZE(REG_SIZE),
-        .PRIME(DILITHIUM_Q)
+        .PRIME(MLDSA_Q)
         )
         mul_redux_inst_0 (
         .clk(clk),
@@ -278,7 +278,7 @@ module ntt_butterfly
     //Output div2 - used in GS
     ntt_div2 #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     div2_inst_0 (
         .op_i (add_res_d4),
@@ -287,7 +287,7 @@ module ntt_butterfly
 
     ntt_div2 #(
         .REG_SIZE(REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     div2_inst_2 (
         .op_i (u_minus_v),
@@ -296,7 +296,7 @@ module ntt_butterfly
 
     // div2 #(
     //     .REG_SIZE(REG_SIZE),
-    //     .DILITHIUM_Q(DILITHIUM_Q)
+    //     .MLDSA_Q(MLDSA_Q)
     // )
     // div2_inst_2 (
     //     .op_i (mul_res_reduced),

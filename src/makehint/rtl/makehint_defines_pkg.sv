@@ -15,11 +15,11 @@
 //
 // makehint_defines_pkg.sv
 // --------
-// Makehint parameters for Dilithium
+// Makehint parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_MAKEHINT_DEFINES
-`define ABR_MAKEHINT_DEFINES
+`ifndef MLDSA_MAKEHINT_DEFINES
+`define MLDSA_MAKEHINT_DEFINES
 
 package makehint_defines_pkg;
 

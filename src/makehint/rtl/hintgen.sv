@@ -20,11 +20,12 @@
 //======================================================================
 
 module hintgen
+    import mldsa_params_pkg::*;
     #(
         parameter REG_SIZE = 23,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter GAMMA2 = (DILITHIUM_Q-1)/32,
-        parameter Q_MINUS_GAMMA2 = DILITHIUM_Q - GAMMA2
+        parameter MLDSA_Q = 23'd8380417,
+        // parameter GAMMA2 = (MLDSA_Q-1)/32,
+        parameter Q_MINUS_GAMMA2 = MLDSA_Q - MLDSA_GAMMA2
     )
     (
         input wire clk,
@@ -58,7 +59,7 @@ module hintgen
     assign h = (enable & ~zeroize) ? or2_res : 'b0;
 
     always_comb begin
-        r_lt_gamma2         = (r <= GAMMA2)         ? 1'b1 : 1'b0;
+        r_lt_gamma2         = (r <= MLDSA_GAMMA2)         ? 1'b1 : 1'b0;
         r_gt_q_minus_gamma2 = (r > Q_MINUS_GAMMA2)  ? 1'b1 : 1'b0;
         r_eq_q_minus_gamma2 = (r == Q_MINUS_GAMMA2) ? 1'b1 : 1'b0;
     end

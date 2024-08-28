@@ -1,0 +1,7 @@
+needs:
+  - $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.compile
+  - ../../../../verification_ip/environment_packages/mldsa_env_pkg/mldsa_env_pkg.compile
+  - ../parameters/mldsa_parameters_pkg.compile
+  - ../sequences/mldsa_sequences_pkg.compile
+src:
+  - mldsa_tests_pkg.sv

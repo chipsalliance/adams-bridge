@@ -23,22 +23,22 @@
 // 4 coeffs are written to each memory addr.
 
 module sigdecode_h
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
         parameter REG_SIZE = 24,
-        parameter DILITHIUM_OMEGA = 75,
-        parameter DILITHIUM_K = 8,
-        parameter DILITHIUM_N = 256
+        parameter MLDSA_OMEGA = 75,
+        parameter MLDSA_K = 8,
+        parameter MLDSA_N = 256
     )
     (
         input wire clk,
         input wire reset_n,
         input wire zeroize,
 
-        input wire [(DILITHIUM_OMEGA+DILITHIUM_K)-1:0][7:0] encoded_h_i,
+        input wire [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h_i,
 
         input wire sigdecode_h_enable,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
 
         output mem_if_t mem_wr_req,
         output logic [(4*REG_SIZE)-1:0] mem_wr_data,
@@ -46,19 +46,19 @@ module sigdecode_h
         output logic sigdecode_h_error
     );
 
-    localparam SIG_H_NUM_DWORDS = ((DILITHIUM_OMEGA + DILITHIUM_K + 1)*8)/32;
+    localparam SIG_H_NUM_DWORDS = ((MLDSA_OMEGA + MLDSA_K + 1)*8)/32;
 
-    // logic [(DILITHIUM_OMEGA+DILITHIUM_K)-1:0][7:0] encoded_h;
+    // logic [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h;
     // logic [SIG_H_NUM_DWORDS-1:0][31:0] encoded_h_reg;
-    logic [DILITHIUM_OMEGA-1:0] hint_array;
+    logic [MLDSA_OMEGA-1:0] hint_array;
     logic [7:0] hintsum, hintsum_prev_poly, hintsum_curr_poly;
     logic [3:0] poly_count;
     logic [6:0] rd_ptr;
-    logic [DILITHIUM_N-1:0] bitmap;
+    logic [MLDSA_N-1:0] bitmap;
     logic rst_bitmap;
     logic [3:0][7:0] hint;
     logic [3:0] curr_poly_map;
-    logic [$clog2(DILITHIUM_N)-1:0] bitmap_ptr;
+    logic [$clog2(MLDSA_N)-1:0] bitmap_ptr;
     logic hint_rd_en;
     mem_if_t mem_wr_req_int;
 
@@ -88,7 +88,7 @@ module sigdecode_h
             sigdecode_h_error   <= 'b0;
         end
         else begin
-            hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[DILITHIUM_OMEGA+poly_count];
+            hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[MLDSA_OMEGA+poly_count];
             hintsum_prev_poly   <= hintsum;
             mem_wr_data         <= {REG_SIZE'(bitmap[8'(bitmap_ptr+3)]), REG_SIZE'(bitmap[8'(bitmap_ptr+2)]), REG_SIZE'(bitmap[8'(bitmap_ptr+1)]), REG_SIZE'(bitmap[8'(bitmap_ptr)])};
             hint                <= hint_rd_en ? {encoded_h_i[7'(rd_ptr+3)], encoded_h_i[7'(rd_ptr+2)], encoded_h_i[7'(rd_ptr+1)], encoded_h_i[7'(rd_ptr)]} : 'h0;

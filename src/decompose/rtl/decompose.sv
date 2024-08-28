@@ -33,12 +33,10 @@
 // 3. z_neq_z -->  store in a buffer that is ready by makehint simultaneously when it reads main mem
 
 module decompose 
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import decompose_defines_pkg::*;
     #(
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter GAMMA2 = (DILITHIUM_Q-1)/32,
-        parameter Q_MINUS_2GAMMA2 = DILITHIUM_Q - (2*GAMMA2)
+        parameter Q_MINUS_2GAMMA2 = MLDSA_Q - (2*MLDSA_GAMMA2)
     )
     (
         input wire clk,
@@ -47,9 +45,9 @@ module decompose
 
         input wire decompose_enable,
         input dcmp_mode_t dcmp_mode,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
 
         //Input from keccak to w1_encode
         input wire keccak_done,
@@ -160,7 +158,7 @@ module decompose
     generate
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
-                r0_mod_q[i] = (r0_mod_2gamma2[i] <= GAMMA2) ? {4'h0, r0_mod_2gamma2[i]} : (REG_SIZE-1)'(r0_mod_2gamma2[i] + Q_MINUS_2GAMMA2);
+                r0_mod_q[i] = (r0_mod_2gamma2[i] <= MLDSA_GAMMA2) ? {4'h0, r0_mod_2gamma2[i]} : (REG_SIZE-1)'(r0_mod_2gamma2[i] + Q_MINUS_2GAMMA2);
             end
         end
     endgenerate
@@ -221,13 +219,13 @@ module decompose
 
     always_comb begin
         z_mem_wr_req.rd_wr_en    = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-        z_mem_wr_req.addr        = verify ? 'h0 : ABR_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
+        z_mem_wr_req.addr        = verify ? 'h0 : MLDSA_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                   = verify & (&usehint_ready) ? r1_usehint : r1_reg;
 
         mem_wr_req.addr          = verify ? 'h0 : mem_wr_req_int.addr;
         mem_wr_req.rd_wr_en      = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
 
-        mem_hint_rd_req.addr     = verify ? ABR_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
+        mem_hint_rd_req.addr     = verify ? MLDSA_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
         mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
     end
 

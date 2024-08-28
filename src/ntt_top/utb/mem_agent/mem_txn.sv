@@ -17,21 +17,21 @@ class mem_txn extends uvm_sequence_item;
     rand bit [MEM_DATA_WIDTH-1:0]    artificialMemory [];
 
     // Define constants
-    localparam int DILITHIUM_Q = 23'd8380417;
+    localparam int MLDSA_Q = 23'd8380417;
 
 
     function new(string name = "");
        super.new(name);
-       artificialMemory = new[MEM_DEPTH];
+       artificialMemory = new[MLDSA_MEM_MAX_DEPTH];
     endfunction: new
 
     //Constraint for artificialMemory
     constraint artificialMemory_c {
         foreach (artificialMemory[i]) {
-            (artificialMemory[i][23:0] < DILITHIUM_Q) &&
-            (artificialMemory[i][47:24] < DILITHIUM_Q) &&
-            (artificialMemory[i][71:48] < DILITHIUM_Q) &&
-            (artificialMemory[i][95:72] < DILITHIUM_Q);
+            (artificialMemory[i][23:0] < MLDSA_Q) &&
+            (artificialMemory[i][47:24] < MLDSA_Q) &&
+            (artificialMemory[i][71:48] < MLDSA_Q) &&
+            (artificialMemory[i][95:72] < MLDSA_Q);
         }
     }
 

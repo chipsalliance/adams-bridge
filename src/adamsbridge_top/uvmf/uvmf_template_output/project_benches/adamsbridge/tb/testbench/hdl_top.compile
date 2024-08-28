@@ -1,8 +1,0 @@
-incdir:
-  - ${uvm_path}/src
-  - .
-needs:
-  - $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg_hdl.compile
-  - ../parameters/adamsbridge_parameters_pkg.compile
-src:
-  - hdl_top.sv

@@ -19,12 +19,10 @@
 
 
 module decompose_mod_2gamma2
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
-        parameter REG_SIZE = 23,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter GAMMA2 = (DILITHIUM_Q-1)/32,
-        localparam DILITHIUM_2GAMMA2_SIZE = $clog2(2*GAMMA2)
+        parameter REG_SIZE = mldsa_params_pkg::REG_SIZE-1,
+        localparam MLDSA_2GAMMA2_SIZE = $clog2(2*MLDSA_GAMMA2)
     )
     (
         // Clock and reset.
@@ -35,27 +33,27 @@ module decompose_mod_2gamma2
     // DATA PORT
     input  wire                 add_en_i,
     input  wire  [REG_SIZE-1:0] opa_i,
-    output logic [DILITHIUM_2GAMMA2_SIZE-1:0]         res_o,
+    output logic [MLDSA_2GAMMA2_SIZE-1:0]         res_o,
     output logic                ready_o
 );
   
     logic [12:0] opa0;
-    logic [DILITHIUM_2GAMMA2_SIZE-1:0] opb0;
-    logic [DILITHIUM_2GAMMA2_SIZE-1:0] opb1;
-    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r0;
-    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r1;
+    logic [MLDSA_2GAMMA2_SIZE-1:0] opb0;
+    logic [MLDSA_2GAMMA2_SIZE-1:0] opb1;
+    logic [MLDSA_2GAMMA2_SIZE-1:0] r0;
+    logic [MLDSA_2GAMMA2_SIZE-1:0] r1;
     logic carry0; 
 
-    logic [DILITHIUM_2GAMMA2_SIZE-1:0] r0_reg;
+    logic [MLDSA_2GAMMA2_SIZE-1:0] r0_reg;
     logic carry0_reg;
 
     logic carry1;
 
     assign opa0 = 13'(opa_i[22:19] << 9);
-    assign opb0 = opa_i[DILITHIUM_2GAMMA2_SIZE-1:0];
+    assign opb0 = opa_i[MLDSA_2GAMMA2_SIZE-1:0];
 
-    ntt_adder #(
-        .RADIX(DILITHIUM_2GAMMA2_SIZE)
+    abr_adder #(
+        .RADIX(MLDSA_2GAMMA2_SIZE)
         ) 
         adder_inst_0(
         .a_i({6'h0,opa0}),
@@ -65,8 +63,8 @@ module decompose_mod_2gamma2
         .cout_o(carry0)
     );
 
-    ntt_adder #(
-        .RADIX(DILITHIUM_2GAMMA2_SIZE)
+    abr_adder #(
+        .RADIX(MLDSA_2GAMMA2_SIZE)
         ) 
         adder_inst_1(
         .a_i(r0_reg),
@@ -92,7 +90,7 @@ module decompose_mod_2gamma2
         else if (add_en_i) begin 
             r0_reg <= r0;
             carry0_reg <= carry0;
-            opb1 <= ~DILITHIUM_2GAMMA2_SIZE'(2*GAMMA2);
+            opb1 <= ~MLDSA_2GAMMA2_SIZE'(2*MLDSA_GAMMA2);
         end
     end
 

@@ -30,15 +30,15 @@
 //======================================================================
 
 module ntt_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter NTT_REG_SIZE = REG_SIZE-1,
-    parameter DILITHIUM_Q = 23'd8380417,
-    parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q + 1) / 2,
-    parameter DILITHIUM_N = 256,
-    parameter DILITHIUM_LOGN = $clog2(DILITHIUM_N),
+    parameter MLDSA_Q = 23'd8380417,
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2,
+    parameter MLDSA_N = 256,
+    parameter MLDSA_LOGN = $clog2(MLDSA_N),
     parameter MEM_ADDR_WIDTH = 15,
     parameter MEM_DATA_WIDTH = 4*REG_SIZE
 )
@@ -94,12 +94,12 @@ module ntt_top
     //NTT mem signals
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
     // logic [(4*REG_SIZE)-1:0] mem_wr_data;
     
     //Read IF
     logic mem_rden;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg;
 
     //Butterfly IF signals
@@ -127,12 +127,12 @@ module ntt_top
     logic pw_rden, pw_rden_dest_mem;
 
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
     logic [(4*REG_SIZE)-1:0] pwm_wr_data_reg;
 
     //ntt_ctrl output connections
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
 
     //pwm mem data_out connections
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a, pwm_rd_data_b, pwm_rd_data_c; 
@@ -179,7 +179,7 @@ module ntt_top
 
     
     ntt_ctrl #(
-        .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
+        .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
     )
     ntt_ctrl_inst0 (
         .clk(clk),
@@ -254,7 +254,7 @@ module ntt_top
     //Butterfly 2x2
     ntt_butterfly2x2 #(
         .REG_SIZE(NTT_REG_SIZE),
-        .DILITHIUM_Q(DILITHIUM_Q)
+        .MLDSA_Q(MLDSA_Q)
     )
     bf2x2 (
         .clk(clk),

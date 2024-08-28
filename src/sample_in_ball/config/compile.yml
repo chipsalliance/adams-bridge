@@ -18,7 +18,7 @@ targets:
 provides: [sample_in_ball]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - abr_libs
   - sample_in_ball_pkg
 targets:
@@ -34,7 +34,7 @@ provides: [sample_in_ball_tb]
 schema_version: 2.4.0
 requires:
   - sample_in_ball
-  - sampler_pkg
+  - mldsa_sampler_pkg
 targets:
   tb:
     directories: [$COMPILE_ROOT/tb]

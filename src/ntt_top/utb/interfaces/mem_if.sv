@@ -1,6 +1,6 @@
 
 interface mem_if(input bit clk);
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     logic reset_n;
     mem_if_t mem_port0_req;
     mem_if_t mem_port1_req;
@@ -28,7 +28,7 @@ interface mem_if(input bit clk);
     // modport mem_m_sync_mp(clocking mem_m_cb);
     modport mem_s_sync_mp(clocking mem_s_cb);
 
-    task update_mem_task(input logic [ABR_MEM_ADDR_WIDTH-1:0] addr, input logic [MEM_DATA_WIDTH-1:0] data);
+    task update_mem_task(input logic [MLDSA_MEM_ADDR_WIDTH-1:0] addr, input logic [MEM_DATA_WIDTH-1:0] data);
         // Time zero assignment to update memory content using hierarchical reference
         case (mem_path)
             "mem_ntt": ntt_utb_top.ntt_mem.mem[addr]        = data;
@@ -38,7 +38,7 @@ interface mem_if(input bit clk);
         endcase
     endtask: update_mem_task
 
-    task read_mem(input logic [ABR_MEM_ADDR_WIDTH-1:0] addr, output logic [MEM_DATA_WIDTH-1:0] data);
+    task read_mem(input logic [MLDSA_MEM_ADDR_WIDTH-1:0] addr, output logic [MEM_DATA_WIDTH-1:0] data);
         // Read the memory content using hierarchical reference
         case (mem_path)
             "mem_ntt": data     = ntt_utb_top.ntt_mem.mem[addr];

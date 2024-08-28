@@ -27,10 +27,10 @@ module ntt_ctrl
 #(
     parameter REG_SIZE = 23,
     parameter RADIX = 23,
-    parameter DILITHIUM_Q = 23'd8380417,
-    parameter DILITHIUM_Q_DIV2_ODD = (DILITHIUM_Q+1)/2,
-    parameter DILITHIUM_N = 256,
-    parameter DILITHIUM_LOGN = 8,
+    parameter MLDSA_Q = 23'd8380417,
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q+1)/2,
+    parameter MLDSA_N = 256,
+    parameter MLDSA_LOGN = 8,
     parameter MEM_ADDR_WIDTH = 15
 )
 (

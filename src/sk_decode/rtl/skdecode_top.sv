@@ -30,11 +30,11 @@
 //======================================================================
 
 module skdecode_top
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
-        parameter DILITHIUM_ETA = 2,
-        parameter DILITHIUM_D = 13,
+        parameter MLDSA_ETA = 2,
+        parameter MLDSA_D = 13,
         parameter ETA_SIZE = 3,
         parameter REG_SIZE = 24,
         parameter AHB_DATA_WIDTH = 32
@@ -45,8 +45,8 @@ module skdecode_top
         input wire zeroize,
         
         input wire skdecode_enable,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [AHB_DATA_WIDTH-1:0] keymem_a_rd_data,
         input wire [AHB_DATA_WIDTH-1:0] keymem_b_rd_data,
 
@@ -75,7 +75,7 @@ module skdecode_top
     //IO flops
     mem_if_t mem_a_wr_req_int, mem_b_wr_req_int, mem_a_wr_req_reg, mem_b_wr_req_reg;
     logic [7:0][ETA_SIZE-1:0] s1s2_buf_data;
-    logic [3:0][DILITHIUM_D-1:0] t0_buf_data;
+    logic [3:0][MLDSA_D-1:0] t0_buf_data;
     logic [3:0][REG_SIZE-1:0] mem_a_wr_data_int, mem_b_wr_data_int, mem_a_wr_data_reg, mem_b_wr_data_reg;
     logic [AHB_DATA_WIDTH-1:0] keymem_a_rd_data_reg, keymem_b_rd_data_reg;
 
@@ -87,7 +87,7 @@ module skdecode_top
     logic s1s2_buf_full;
 
     //Read address counters
-    logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
 
 
     //IO flops

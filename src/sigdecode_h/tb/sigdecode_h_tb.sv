@@ -24,14 +24,14 @@
 `default_nettype none
 
 module sigdecode_h_tb
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 #(
     parameter NUM_WR = 4,
     parameter NUM_RD = 4,
     parameter BUFFER_DATA_W = 8,
     parameter REG_SIZE = 24,
-    parameter DILITHIUM_OMEGA = 75,
-    parameter DILITHIUM_K = 8
+    parameter MLDSA_OMEGA = 75,
+    parameter MLDSA_K = 8
 ) 
 ();
 
@@ -46,9 +46,9 @@ reg           reset_n_tb;
 reg           cptra_pwrgood_tb;
 reg           zeroize_tb;
 reg           en_tb;
-reg [DILITHIUM_OMEGA+DILITHIUM_K-1:0][7:0] y_tb;
-reg [DILITHIUM_K-1:0][7:0] hintsum;
-reg [DILITHIUM_OMEGA-1:0][7:0] y_bytes, padding;
+reg [MLDSA_OMEGA+MLDSA_K-1:0][7:0] y_tb;
+reg [MLDSA_K-1:0][7:0] hintsum;
+reg [MLDSA_OMEGA-1:0][7:0] y_bytes, padding;
 
 
 sigdecode_h #(
@@ -59,7 +59,7 @@ sigdecode_h #(
     .zeroize(zeroize_tb),
     .encoded_h_i(y_tb),
     .sigdecode_h_enable(en_tb),
-    .dest_base_addr(ABR_MEM_ADDR_WIDTH'(0)),
+    .dest_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),
     .mem_wr_req(),
     .mem_wr_data(),
     .sigdecode_h_done(),
@@ -136,7 +136,7 @@ task sigdecode_h_test_check;
     en_tb = 'b1;
     @(posedge clk_tb);
     en_tb = 'b0;
-    y_tb = {hintsum, y_bytes}; //((DILITHIUM_OMEGA+DILITHIUM_K)*8)'(0);
+    y_tb = {hintsum, y_bytes}; //((MLDSA_OMEGA+MLDSA_K)*8)'(0);
     @(posedge clk_tb);
 
     //Check output

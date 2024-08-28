@@ -15,13 +15,13 @@
 
 module sample_in_ball_ctrl
   import sib_pkg::*;
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
    parameter SIB_NUM_SAMPLERS = 4
   ,parameter SIB_SAMPLE_W     = 8
   ,parameter SIB_TAU          = 60
   ,parameter SIB_NUM_COEFF    = 256
-  ,localparam DILITHIUM_Q_W   = $clog2(8380417)
+  ,localparam MLDSA_Q_WIDTH   = $clog2(8380417)
   )
   (
   input logic clk,
@@ -38,8 +38,8 @@ module sample_in_ball_ctrl
   output logic [1:0]                         cs_o,
   output logic [1:0]                         we_o,
   output logic [1:0][7:2]                    addr_o,
-  output logic [1:0][3:0][DILITHIUM_Q_W-1:0] wrdata_o,
-  input  logic [1:0][3:0][DILITHIUM_Q_W-1:0] rddata_i
+  output logic [1:0][3:0][MLDSA_Q_WIDTH-1:0] wrdata_o,
+  input  logic [1:0][3:0][MLDSA_Q_WIDTH-1:0] rddata_i
 
   );
   localparam SIB_NUM_DATA_BITS = $bits(data_i);

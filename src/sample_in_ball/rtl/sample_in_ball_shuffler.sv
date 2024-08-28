@@ -18,7 +18,7 @@
 //For sign value of 1, the value Q-1 is written to Index j, else 1 is written to Index j
 
 module sample_in_ball_shuffler
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
      parameter SIB_SAMPLE_W = 8
   )
@@ -37,15 +37,15 @@ module sample_in_ball_shuffler
     output logic [1:0]                         cs_o,
     output logic [1:0]                         we_o,
     output logic [1:0][7:2]                    addr_o,
-    output logic [1:0][3:0][DILITHIUM_Q_W-2:0] wrdata_o,
-    input  logic [1:0][3:0][DILITHIUM_Q_W-2:0] rddata_i
+    output logic [1:0][3:0][MLDSA_Q_WIDTH-2:0] wrdata_o,
+    input  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0] rddata_i
 
   );
 
   logic read_valid;
   logic addr_match;
-  logic [DILITHIUM_Q_W-2:0] nxt_i, nxt_j;
-  logic [3:0][DILITHIUM_Q_W-2:0] wrdata_pre;
+  logic [MLDSA_Q_WIDTH-2:0] nxt_i, nxt_j;
+  logic [3:0][MLDSA_Q_WIDTH-2:0] wrdata_pre;
 
   //hold the first phase
   always_comb hold_o = valid_i & ~read_valid;
@@ -70,7 +70,7 @@ module sample_in_ball_shuffler
   always_comb addr_match = indexi_i[7:2] == indexj_i[7:2];
 
   //Assign the nxt j value (contents of i, modified by sign bit)
-  always_comb nxt_j = sign_i ? DILITHIUM_Q-1 : 1;
+  always_comb nxt_j = sign_i ? MLDSA_Q-1 : 1;
 
   //Write nxt_j into indexj_i location
   always_comb begin

@@ -28,9 +28,9 @@
 module skdecode_s1s2_unpack
     #(
         parameter REG_SIZE = 24,
-        parameter DILITHIUM_ETA = 2,
-        parameter ETA_SIZE = 3, //$clog2(2*DILITHIUM_ETA),
-        parameter DILITHIUM_Q = 8380417
+        parameter MLDSA_ETA = 2,
+        parameter ETA_SIZE = 3, //$clog2(2*MLDSA_ETA),
+        parameter MLDSA_Q = 8380417
     )
     (
         input wire [ETA_SIZE-1:0] data_i,
@@ -45,19 +45,19 @@ module skdecode_s1s2_unpack
     always_comb begin
         if (enable) begin
             error_o = 'b0;
-            eta_minus_data = REG_SIZE'(DILITHIUM_ETA - data_i);
+            eta_minus_data = REG_SIZE'(MLDSA_ETA - data_i);
 
             unique case(data_i)
                 3'h0: data_o = 'h2;
                 3'h1: data_o = 'h1;
                 3'h2: data_o = 'h0; 
-                3'h3: data_o = DILITHIUM_Q-1;
-                3'h4: data_o = DILITHIUM_Q-2;
+                3'h3: data_o = MLDSA_Q-1;
+                3'h4: data_o = MLDSA_Q-2;
                 default: begin
                     //TODO uncomment these when error validation is ready
                     // data_o   = 'h0;
                     // error_o  = 'b1;
-                    data_o = DILITHIUM_Q + eta_minus_data;
+                    data_o = MLDSA_Q + eta_minus_data;
                 end
             endcase
 

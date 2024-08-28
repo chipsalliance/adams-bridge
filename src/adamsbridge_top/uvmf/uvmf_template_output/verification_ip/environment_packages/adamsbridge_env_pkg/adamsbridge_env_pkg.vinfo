@@ -1,4 +1,0 @@
-@use $UVMF_HOME/uvmf_base_pkg/uvmf_base_pkg.vinfo
-registers/adamsbridge_reg_model_top_pkg.sv
-+incdir+@vinfodir
-adamsbridge_env_pkg.sv

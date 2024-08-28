@@ -22,8 +22,8 @@
 import "DPI-C" function string getenv(input string env_name);
 
 module rej_sampler_tb
-  import sampler_pkg::*;
-  import abr_params_pkg::*;
+  import mldsa_sampler_pkg::*;
+  import mldsa_params_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb
@@ -36,9 +36,9 @@ module rej_sampler_tb
   parameter PISO_BUFFER_W    = 1440;
   parameter PISO_INPUT_RATE  = 1344;
   parameter PISO_OUTPUT_RATE = 120;
-  parameter DILITHIUM_Q = 8380417;
-  parameter DILITHIUM_Q_W = $clog2(DILITHIUM_Q) + 1;
-  parameter DILITHIUM_N = 256;
+  parameter MLDSA_Q = 8380417;
+  parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1;
+  parameter MLDSA_N = 256;
 
 
   `ifndef VERILATOR
@@ -81,7 +81,7 @@ module rej_sampler_tb
 
   //output data
   logic                                         data_valid_o;
-  logic [REJ_VLD_SAMPLES-1:0][DILITHIUM_Q_W-1:0] data_o;
+  logic [REJ_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0] data_o;
 
   logic zeroize;
 
@@ -104,8 +104,8 @@ module rej_sampler_tb
   assign clk_i = clk_tb;
   assign rst_ni = reset_n_tb;
 
-  logic [DILITHIUM_Q_W-1:0] exp_result;
-  logic [DILITHIUM_Q_W-1:0] expected_results[$];  // queue of results
+  logic [MLDSA_Q_WIDTH-1:0] exp_result;
+  logic [MLDSA_Q_WIDTH-1:0] expected_results[$];  // queue of results
 
   string seed_filename, vector_filename, exp_res_filename;
   assign exp_res_filename = "exp_results.txt";
@@ -137,7 +137,7 @@ module rej_sampler_tb
     .REJ_NUM_SAMPLERS(REJ_NUM_SAMPLERS),
     .REJ_SAMPLE_W(REJ_SAMPLE_W),
     .REJ_VLD_SAMPLES(REJ_VLD_SAMPLES),
-    .REJ_VALUE(DILITHIUM_Q)
+    .REJ_VALUE(MLDSA_Q)
   ) dut (
   .clk(clk_i),
   .rst_b(rst_ni),
@@ -375,7 +375,7 @@ module rej_sampler_tb
         $error("Failed to read a new line");
         error_ctr++;
       end
-      for (int res = 0; res < DILITHIUM_N; res++) begin
+      for (int res = 0; res < MLDSA_N; res++) begin
         exp_result = line_read.substr(res*7, res*7 + 7-2).atohex();
         expected_results.push_back(exp_result);
       end

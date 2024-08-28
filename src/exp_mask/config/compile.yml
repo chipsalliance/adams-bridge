@@ -2,7 +2,7 @@
 provides: [exp_mask]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - abr_libs
 targets:
   rtl:
@@ -16,7 +16,7 @@ provides: [exp_mask_tb]
 schema_version: 2.4.0
 requires:
   - exp_mask
-  - sampler_pkg
+  - mldsa_sampler_pkg
 targets:
   tb:
     directories: [$COMPILE_ROOT/tb]

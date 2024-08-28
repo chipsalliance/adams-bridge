@@ -14,7 +14,7 @@
 
 
 module rej_bounded_ctrl
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
    parameter REJ_NUM_SAMPLERS = 8
   ,parameter REJ_SAMPLE_W     = 4
@@ -70,7 +70,7 @@ module rej_bounded_ctrl
     .NUM_WR(REJ_NUM_SAMPLERS),
     .NUM_RD(REJ_VLD_SAMPLES),
     .BUFFER_DATA_W(REJ_BUFFER_W)
-  ) abr_sample_buffer_i (
+  ) mldsa_sample_buffer_i (
     .clk(clk),
     .rst_b(rst_b),
     .zeroize(zeroize),
@@ -92,8 +92,8 @@ module rej_bounded_ctrl
         3'd0 : data_o[sample] = 2;
         3'd1 : data_o[sample] = 1;
         3'd2 : data_o[sample] = 0;
-        3'd3 : data_o[sample] = DILITHIUM_Q-1;
-        3'd4 : data_o[sample] = DILITHIUM_Q-2;
+        3'd3 : data_o[sample] = MLDSA_Q-1;
+        3'd4 : data_o[sample] = MLDSA_Q-2;
         default : data_o[sample] = '0;
       endcase
     end

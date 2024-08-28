@@ -22,18 +22,18 @@
 `default_nettype none
 
 module skencode_tb
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import skdecode_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
-    parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
-    parameter DILITHIUM_Q = 23'd8380417,
+    parameter MEM_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH,
+    parameter MLDSA_Q = 23'd8380417,
     parameter AHB_DATA_WIDTH = 32,
-    parameter DILITHIUM_L = 'h7,
-    parameter DILITHIUM_K = 'h8
+    parameter MLDSA_L = 'h7,
+    parameter MLDSA_K = 'h8
 )
 ();
-localparam NUM_OF_COEFF = 256 * (DILITHIUM_L + DILITHIUM_K);
+localparam NUM_OF_COEFF = MLDSA_N * (MLDSA_L + MLDSA_K);
 parameter CLK_HALF_PERIOD = 5;
 parameter CLK_PERIOD = 2 * CLK_HALF_PERIOD;
 
@@ -61,7 +61,7 @@ reg [AHB_DATA_WIDTH*3-1:0] actual_output_mem [0:NUM_OF_COEFF/32-1];
 
 skencode #(
     .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH),
-    .DILITHIUM_Q(DILITHIUM_Q),
+    .MLDSA_Q(MLDSA_Q),
     .REG_SIZE(REG_SIZE),
     .AHB_DATA_WIDTH(AHB_DATA_WIDTH)
 ) dut (

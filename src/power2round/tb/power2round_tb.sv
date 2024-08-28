@@ -24,12 +24,12 @@
 `default_nettype none
 
 module power2round_tb
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
 #(
         parameter REG_SIZE = 24,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_K = 8,
+        parameter MLDSA_Q = 23'd8380417,
+        parameter MLDSA_N = 256,
+        parameter MLDSA_K = 8,
         parameter OMEGA = 75,
         parameter BUFFER_DATA_W = 8,
         parameter MEM_ADDR_WIDTH = 15,
@@ -82,12 +82,12 @@ power2round_top #(
     .zeroize(zeroize_tb),
     .enable(en_tb),
     .src_base_addr(15'h0),
-    .skmem_dest_base_addr(14'h0),
+    .skmem_dest_base_addr(15'h0),
     .mem_a_rd_req(mem_a_rd_req_tb),
     .mem_b_rd_req(mem_b_rd_req_tb),
     .mem_rd_data_a(mem_rd_data_a_tb),
     .mem_rd_data_b(mem_rd_data_b_tb),
-    .mem_rd_data_valid(mem_rd_data_valid_tb),
+    // .mem_rd_data_valid(mem_rd_data_valid_tb),
     .skmem_a_wr_req(skmem_a_wr_req_tb),
     .skmem_b_wr_req(skmem_b_wr_req_tb),
     .skmem_wr_data_a(skmem_wr_data_a_tb),

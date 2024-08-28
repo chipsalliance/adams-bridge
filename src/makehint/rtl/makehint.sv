@@ -32,13 +32,13 @@
 //======================================================================
 
 module makehint
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import makehint_defines_pkg::*;
     #(
         parameter REG_SIZE = 24,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_K = 8,
+        parameter MLDSA_Q = 23'd8380417,
+        parameter MLDSA_N = 256,
+        parameter MLDSA_K = 8,
         parameter OMEGA = 75,
         parameter BUFFER_DATA_W = 8
     )
@@ -50,8 +50,8 @@ module makehint
         input wire makehint_enable,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
 
         output logic invalid_h,
         output mem_if_t mem_rd_req,
@@ -59,13 +59,13 @@ module makehint
         output logic makehint_done,
         output logic reg_wren,
         output logic [3:0][7:0] reg_wrdata,
-        output logic [ABR_MEM_ADDR_WIDTH-1:0] reg_wr_addr
+        output logic [MLDSA_MEM_ADDR_WIDTH-1:0] reg_wr_addr
     );
 
     //Internal wires
     logic hintgen_enable, hintgen_enable_reg;
     logic [3:0] hint;
-    logic [DILITHIUM_K-1:0][7:0] max_index_buffer;
+    logic [MLDSA_K-1:0][7:0] max_index_buffer;
     logic [31:0] max_index_buffer_data;
     logic max_index_buffer_rd_lo, max_index_buffer_rd_mid, max_index_buffer_rd_hi;  
     logic max_index_buffer_rd;
@@ -84,13 +84,13 @@ module makehint
     logic incr_index, incr_index_d1, incr_index_d2;
 
     //Polynomial counter
-    logic [$clog2(DILITHIUM_K)-1:0] poly_count;
+    logic [$clog2(MLDSA_K)-1:0] poly_count;
     logic incr_poly;
     logic poly_done;
     logic poly_last, poly_last_reg;
 
     //Read addr counter
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt;
     logic incr_mem_rd_addr;
     logic rst_rd_addr;
     logic last_addr_read;
@@ -226,7 +226,7 @@ module makehint
         else if (zeroize | makehint_done)
             max_index_buffer <= 'h0;
         else if (poly_done)
-            max_index_buffer <= {hintsum, max_index_buffer[DILITHIUM_K-1:1]};
+            max_index_buffer <= {hintsum, max_index_buffer[MLDSA_K-1:1]};
     end
     assign max_index_buffer_data = max_index_buffer_rd_lo ? {max_index_buffer[0], 24'h0} : 
                                    max_index_buffer_rd_mid ? max_index_buffer[4:1] :
@@ -269,7 +269,7 @@ module makehint
             mem_rd_addr <= (poly_last && last_addr_read) ? 'h0 : mem_rd_addr + 'h1;
     end
 
-    assign last_addr_read = (mem_rd_addr == ABR_MEM_ADDR_WIDTH'(((poly_count+1) * (DILITHIUM_N/4))-1));
+    assign last_addr_read = (mem_rd_addr == MLDSA_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
 
     //----------------------------
     //Read fsm
@@ -293,7 +293,7 @@ module makehint
         //When non-last poly is done, move to IDLE and wait for next enable. Opt - if we know all 8 poly will be back to back, we can remain in RD_MEM and wrap addr around + take new base addr if needed, calc hints and continue execution without waiting in IDLE for HLC to give enable
         arc_MH_WAIT2_MH_IDLE = (read_fsm_state_ps == MH_WAIT2) && !poly_last;
         //When non-last poly is done, go back to RD_MEM and continue executing
-        arc_MH_WAIT2_MH_FLUSH = (read_fsm_state_ps == MH_WAIT2) && (poly_count == DILITHIUM_K-1);
+        arc_MH_WAIT2_MH_FLUSH = (read_fsm_state_ps == MH_WAIT2) && (poly_count == MLDSA_K-1);
     end
 
     always_comb begin

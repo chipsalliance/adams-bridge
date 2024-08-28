@@ -1,5 +1,5 @@
 ---
-provides: [abr_defines]
+provides: [mldsa_defines]
 schema_version: 2.4.0
 targets:
   tb:
@@ -16,7 +16,7 @@ targets:
 provides: [embedded_top]
 schema_version: 2.4.0
 requires:
-  - abr_defines
+  - mldsa_defines
   - abr_libs
   - rej_bounded
   - rej_sampler

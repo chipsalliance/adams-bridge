@@ -15,11 +15,11 @@
 //
 // power2round_defines_pkg.sv
 // --------
-// power2round parameters for Dilithium
+// power2round parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_POWER2ROUND_DEFINES
-`define ABR_POWER2ROUND_DEFINES
+`ifndef MLDSA_POWER2ROUND_DEFINES
+`define MLDSA_POWER2ROUND_DEFINES
 
 package power2round_defines_pkg;
 

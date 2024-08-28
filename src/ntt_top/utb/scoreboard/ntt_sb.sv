@@ -1,5 +1,5 @@
 class ntt_sb extends uvm_scoreboard;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     `uvm_component_utils(ntt_sb)
 
     uvm_analysis_imp_ntt_txn#(ntt_txn, ntt_sb) ntt_ap;
@@ -10,10 +10,10 @@ class ntt_sb extends uvm_scoreboard;
 
 
 
-    localparam DILITHIUM_Q = 23'd8380417;
-    localparam DILITHIUM_N = 256;
-    localparam DILITHIUM_LOGN = $clog2(DILITHIUM_N);
-    localparam f= 8347681;  // 256^-1 mod DILITHIUM_Q
+    localparam MLDSA_Q = 23'd8380417;
+    localparam MLDSA_N = 256;
+    localparam MLDSA_LOGN = $clog2(MLDSA_N);
+    localparam f= 8347681;  // 256^-1 mod MLDSA_Q
 
     // Memory models for the three memories
     bit [MEM_DATA_WIDTH-1:0] ntt_mem_model [0:MEM_DEPTH-1];
@@ -24,12 +24,12 @@ class ntt_sb extends uvm_scoreboard;
     bit [MEM_DATA_WIDTH-1:0] pwm_a_model_inputs [0:MEM_DEPTH-1];
     bit [MEM_DATA_WIDTH-1:0] pwm_b_model_inputs [0:MEM_DEPTH-1];
 
-    bit [REG_SIZE-1:0] One_NTT_input [0:DILITHIUM_N-1];
-    bit [REG_SIZE-1:0] model_NTT_output [0:DILITHIUM_N-1];
-    bit [REG_SIZE-1:0] DUT_NTT_output [0:DILITHIUM_N-1];
+    bit [REG_SIZE-1:0] One_NTT_input [0:MLDSA_N-1];
+    bit [REG_SIZE-1:0] model_NTT_output [0:MLDSA_N-1];
+    bit [REG_SIZE-1:0] DUT_NTT_output [0:MLDSA_N-1];
 
-    bit [REG_SIZE-1:0] ntt_memory_for_stages[0:3][0:DILITHIUM_N-1];
-    bit [REG_SIZE-1:0] model_stage_memory[0:3][0:DILITHIUM_N-1];
+    bit [REG_SIZE-1:0] ntt_memory_for_stages[0:3][0:MLDSA_N-1];
+    bit [REG_SIZE-1:0] model_stage_memory[0:3][0:MLDSA_N-1];
 
     //try get from each export and print the transactions
     ntt_txn     ntt_input_txn;
@@ -157,9 +157,9 @@ class ntt_sb extends uvm_scoreboard;
     // Function to extract 256 coefficients from the input memory starting at src_base_addr
     function void extract_256_coeffs(
         input bit [MEM_DATA_WIDTH-1:0] input_memory [0:MEM_DEPTH-1], 
-        input logic [ABR_MEM_ADDR_WIDTH-1:0] base_addr,
+        input logic [MLDSA_MEM_ADDR_WIDTH-1:0] base_addr,
         input int stage_idx,
-        output bit [REG_SIZE-1:0] NTT_coeffs [0:DILITHIUM_N-1]
+        output bit [REG_SIZE-1:0] NTT_coeffs [0:MLDSA_N-1]
     );
         int cnt;
         begin
@@ -226,16 +226,16 @@ class ntt_sb extends uvm_scoreboard;
         logic [46:0] u_minus; // Temporary variable for intermediate results
 
         begin
-            t = (v * z) % DILITHIUM_Q;
+            t = (v * z) % MLDSA_Q;
             
             if (u >= t) begin
                 u_minus = u - t;
             end else begin
-                u_minus = (u + DILITHIUM_Q) - t;
+                u_minus = (u + MLDSA_Q) - t;
             end
 
-            u_out = (u + t) % DILITHIUM_Q;
-            v_out = u_minus % DILITHIUM_Q; // Ensure v_out is within the correct range
+            u_out = (u + t) % MLDSA_Q;
+            v_out = u_minus % MLDSA_Q; // Ensure v_out is within the correct range
         end
     endfunction
 
@@ -251,20 +251,20 @@ class ntt_sb extends uvm_scoreboard;
         logic [23:0] u_temp; // Temporary variable for intermediate results
     
         begin
-            t_minus = (u >= v) ? (u - v) : (u + DILITHIUM_Q) - v;
-            t = t_minus % DILITHIUM_Q; // Ensure t is within the correct range
-            u_temp = (u + v) % DILITHIUM_Q;
-            u_out = u_temp % DILITHIUM_Q;
-            t_minus = (t * z) % DILITHIUM_Q; // Ensure v_out is within the correct range
-            v_out = t_minus % DILITHIUM_Q;
+            t_minus = (u >= v) ? (u - v) : (u + MLDSA_Q) - v;
+            t = t_minus % MLDSA_Q; // Ensure t is within the correct range
+            u_temp = (u + v) % MLDSA_Q;
+            u_out = u_temp % MLDSA_Q;
+            t_minus = (t * z) % MLDSA_Q; // Ensure v_out is within the correct range
+            v_out = t_minus % MLDSA_Q;
         end
     endfunction
     
 
     // Function to perform the forward NTT
     function void fwd_NTT(
-        input logic [REG_SIZE-1:0] poly_r[0:DILITHIUM_N-1],
-        output logic [REG_SIZE-1:0] r[0:DILITHIUM_N-1]
+        input logic [REG_SIZE-1:0] poly_r[0:MLDSA_N-1],
+        output logic [REG_SIZE-1:0] r[0:MLDSA_N-1]
         );
         int k, m, start, j;
         logic [22:0] zeta;
@@ -272,7 +272,7 @@ class ntt_sb extends uvm_scoreboard;
 
         begin
             // Initialize r with the 23-bit values from poly_r
-            for (int i = 0; i < DILITHIUM_N; i++) begin
+            for (int i = 0; i < MLDSA_N; i++) begin
                 r[i] = poly_r[i][22:0];
             end
 
@@ -281,7 +281,7 @@ class ntt_sb extends uvm_scoreboard;
 
             while (m > 0) begin
                 start = 0;
-                while (start < DILITHIUM_N) begin
+                while (start < MLDSA_N) begin
                     k += 1;
                     zeta = zetas[k];
                     for (j = start; j < start + m; j++) begin
@@ -300,17 +300,17 @@ class ntt_sb extends uvm_scoreboard;
 
 
     function void fwd_2x2_NTT(
-        input logic [REG_SIZE-1:0] poly_r[0:DILITHIUM_N-1],
-        output logic [REG_SIZE-1:0] r[0:3][0:DILITHIUM_N-1] // 3D array for storing intermediate stages
+        input logic [REG_SIZE-1:0] poly_r[0:MLDSA_N-1],
+        output logic [REG_SIZE-1:0] r[0:3][0:MLDSA_N-1] // 3D array for storing intermediate stages
         );
         int k, m, start, j, stage_idx;
         logic [22:0] zeta;
         logic [22:0] temp_u, temp_v, u_out, v_out;
-        logic [REG_SIZE-1:0] temp_r[0:DILITHIUM_N-1]; // Temporary array for computation
+        logic [REG_SIZE-1:0] temp_r[0:MLDSA_N-1]; // Temporary array for computation
         
         begin
             // Initialize temp_r with the 23-bit values from poly_r
-            for (int i = 0; i < DILITHIUM_N; i++) begin
+            for (int i = 0; i < MLDSA_N; i++) begin
                 temp_r[i] = poly_r[i][22:0];
             end
     
@@ -320,7 +320,7 @@ class ntt_sb extends uvm_scoreboard;
     
             while (m > 0) begin
                 start = 0;
-                while (start < DILITHIUM_N) begin
+                while (start < MLDSA_N) begin
                     k += 1;
                     zeta = zetas[k];
                     for (j = start; j < start + m; j++) begin
@@ -335,7 +335,7 @@ class ntt_sb extends uvm_scoreboard;
     
                 // Save the intermediate stages after every two stages
                 if (stage_idx % 2 == 0) begin
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         r[(stage_idx/2)-1][i] = temp_r[i];
                     end
                 end
@@ -351,7 +351,7 @@ class ntt_sb extends uvm_scoreboard;
         bit match = 1;
 
         // Compare ntt_model_outputs with organized DUT memory
-        for (int i = 0; i < DILITHIUM_N; i++) begin
+        for (int i = 0; i < MLDSA_N; i++) begin
             if (model_NTT_output[i] != DUT_NTT_output[i]) begin
                 match = 0;
                 `uvm_error("ntt_sb", $sformatf("Mismatch at index %0d: model_NTT_output[%0d] = %h, organized_DUT_mem[%0d] = %h", i, i, model_NTT_output[i], i, DUT_NTT_output[i]));
@@ -372,7 +372,7 @@ class ntt_sb extends uvm_scoreboard;
     
         // Compare ntt_model_outputs with organized DUT memory
         for (int i = 0; i < 3; i++) begin
-            for (int j = 0; j < DILITHIUM_N; j++) begin
+            for (int j = 0; j < MLDSA_N; j++) begin
                 if (model_stage_memory[i][j] != ntt_memory_for_stages[i][j]) begin
                     match = 0;
                     `uvm_error("ntt_sb", $sformatf("Mismatch at index %0d of stage %0d: model_NTT_output[%0d] = %h, DUT_NTT_output[%0d] = %h",
@@ -402,12 +402,12 @@ class ntt_sb extends uvm_scoreboard;
      * the `ntt_memory_for_stages` array for comparison.
      */    
     function void extract_DUTs_NTT_stage_outputs(input int stage_idx);
-        bit [REG_SIZE-1:0] tmp_poly [0:DILITHIUM_N-1];
+        bit [REG_SIZE-1:0] tmp_poly [0:MLDSA_N-1];
         begin
             case (stage_idx)
                 -1: begin
                     extract_256_coeffs(ntt_mem_model, ntt_mem_addrs.src_base_addr, stage_idx, tmp_poly);
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         ntt_memory_for_stages[stage_idx][i] = tmp_poly[i];
                     end
                 end
@@ -418,7 +418,7 @@ class ntt_sb extends uvm_scoreboard;
                     else begin
                         extract_256_coeffs(ntt_mem_model, ntt_mem_addrs.interim_base_addr, 2-stage_idx, tmp_poly);
                     end
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         ntt_memory_for_stages[stage_idx][i] = tmp_poly[i];
                     end
                 end
@@ -429,7 +429,7 @@ class ntt_sb extends uvm_scoreboard;
                     else begin
                         extract_256_coeffs(ntt_mem_model, ntt_mem_addrs.dest_base_addr, 2-stage_idx, tmp_poly);
                     end
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         ntt_memory_for_stages[stage_idx][i] = tmp_poly[i];
                     end
                 end
@@ -440,7 +440,7 @@ class ntt_sb extends uvm_scoreboard;
                     else begin
                         extract_256_coeffs(ntt_mem_model, ntt_mem_addrs.interim_base_addr, 2-stage_idx, tmp_poly);
                     end
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         ntt_memory_for_stages[stage_idx][i] = tmp_poly[i];
                     end
                 end
@@ -451,12 +451,12 @@ class ntt_sb extends uvm_scoreboard;
                     else begin
                         extract_256_coeffs(ntt_mem_model, ntt_mem_addrs.dest_base_addr, 2-stage_idx, tmp_poly);
                     end
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         ntt_memory_for_stages[stage_idx][i] = tmp_poly[i];
                     end
                 end
                 default: begin
-                    `uvm_error("ntt_sb", "Invalid stage_idx. Dilithium has only 4 stages to compare (1-4).")
+                    `uvm_error("ntt_sb", "Invalid stage_idx. Mldsa has only 4 stages to compare (1-4).")
                 end
             endcase
         end
@@ -464,8 +464,8 @@ class ntt_sb extends uvm_scoreboard;
 
 
     function void inv_NTT(
-        input logic [REG_SIZE-1:0] poly_r[0:DILITHIUM_N-1],
-        output logic [REG_SIZE-1:0] r[0:DILITHIUM_N-1]
+        input logic [REG_SIZE-1:0] poly_r[0:MLDSA_N-1],
+        output logic [REG_SIZE-1:0] r[0:MLDSA_N-1]
         );
         int k, m, start, j;
         logic [22:0] zeta;
@@ -474,16 +474,16 @@ class ntt_sb extends uvm_scoreboard;
     
         begin
             // Initialize r with the 23-bit values from poly_r
-            for (int i = 0; i < DILITHIUM_N; i++) begin
+            for (int i = 0; i < MLDSA_N; i++) begin
                 r[i] = poly_r[i][22:0];
             end
     
-            k = DILITHIUM_N;
+            k = MLDSA_N;
             m = 1;
     
-            while (m < DILITHIUM_N) begin
+            while (m < MLDSA_N) begin
                 start = 0;
-                while (start < DILITHIUM_N) begin
+                while (start < MLDSA_N) begin
                     k -= 1;
                     zeta = zetas_inv[k];
                     for (j = start; j < start + m; j++) begin
@@ -497,35 +497,35 @@ class ntt_sb extends uvm_scoreboard;
                 end
                 m = m << 1;
             end
-            for (int i = 0; i < DILITHIUM_N; i++) begin
-                temp_last = (f * r[i]) % DILITHIUM_Q;
-                r[i] =  temp_last % DILITHIUM_Q;
+            for (int i = 0; i < MLDSA_N; i++) begin
+                temp_last = (f * r[i]) % MLDSA_Q;
+                r[i] =  temp_last % MLDSA_Q;
             end
         end
     endfunction
     
     function void inv_2x2_NTT(
-        input logic [REG_SIZE-1:0] poly_r[0:DILITHIUM_N-1],
-        output logic [REG_SIZE-1:0] r[0:3][0:DILITHIUM_N-1] // 3D array for storing intermediate stages
+        input logic [REG_SIZE-1:0] poly_r[0:MLDSA_N-1],
+        output logic [REG_SIZE-1:0] r[0:3][0:MLDSA_N-1] // 3D array for storing intermediate stages
         );
         int k, m, start, j, stage_idx;
         logic [22:0] zeta;
         logic [22:0] temp_u, temp_v, u_out, v_out;
-        logic [REG_SIZE-1:0] temp_r[0:DILITHIUM_N-1]; // Temporary array for computation
+        logic [REG_SIZE-1:0] temp_r[0:MLDSA_N-1]; // Temporary array for computation
         
         begin
             // Initialize temp_r with the 23-bit values from poly_r
-            for (int i = 0; i < DILITHIUM_N; i++) begin
+            for (int i = 0; i < MLDSA_N; i++) begin
                 temp_r[i] = poly_r[i][22:0];
             end
     
-            k = DILITHIUM_N;
+            k = MLDSA_N;
             m = 1;
             stage_idx = 1; // To track the stages
     
-            while (m < DILITHIUM_N) begin
+            while (m < MLDSA_N) begin
                 start = 0;
-                while (start < DILITHIUM_N) begin
+                while (start < MLDSA_N) begin
                     k -= 1;
                     zeta = zetas_inv[k];
                     for (j = start; j < start + m; j++) begin
@@ -540,7 +540,7 @@ class ntt_sb extends uvm_scoreboard;
     
                 // Save the intermediate stages after every two stages
                 if (stage_idx % 2 == 0) begin
-                    for (int i = 0; i < DILITHIUM_N; i++) begin
+                    for (int i = 0; i < MLDSA_N; i++) begin
                         r[(stage_idx/2)-1][i] = temp_r[i];
                     end
                 end
@@ -565,45 +565,45 @@ class ntt_sb extends uvm_scoreboard;
         
         begin
             // Calculate t and perform division by 2
-            t_minus = (u >= v) ? (u - v) : (u + DILITHIUM_Q) - v;
+            t_minus = (u >= v) ? (u - v) : (u + MLDSA_Q) - v;
             
             if (t_minus & 1) begin
-                t = (t_minus >> 1) + ((DILITHIUM_Q + 1) >> 1);
+                t = (t_minus >> 1) + ((MLDSA_Q + 1) >> 1);
             end else begin
                 t = t_minus >> 1;
             end
-            t = t % DILITHIUM_Q;
+            t = t % MLDSA_Q;
             
             // Calculate u and perform division by 2
-            u_temp = (u + v) % DILITHIUM_Q;
+            u_temp = (u + v) % MLDSA_Q;
             if (u_temp & 1) begin
-                u_temp = (u_temp >> 1) + ((DILITHIUM_Q + 1) >> 1);
+                u_temp = (u_temp >> 1) + ((MLDSA_Q + 1) >> 1);
             end else begin
                 u_temp = u_temp >> 1;
             end
-            u_out = u_temp % DILITHIUM_Q;
+            u_out = u_temp % MLDSA_Q;
     
             // Calculate v_out
-            t_minus = (t * z) % DILITHIUM_Q;
-            v_out = t_minus % DILITHIUM_Q;
+            t_minus = (t * z) % MLDSA_Q;
+            v_out = t_minus % MLDSA_Q;
         end
     endfunction
 
     
     function void inv_2x2_NTT_div2(
-        input logic [REG_SIZE-1:0] poly_r[0:DILITHIUM_N-1],
-        output logic [REG_SIZE-1:0] r[0:3][0:DILITHIUM_N-1] // 3D array for storing intermediate stages
+        input logic [REG_SIZE-1:0] poly_r[0:MLDSA_N-1],
+        output logic [REG_SIZE-1:0] r[0:3][0:MLDSA_N-1] // 3D array for storing intermediate stages
         );
         int k1[0:1], k2, m, start, j, stage_idx;
         logic [22:0] zeta1[0:1], zeta2;
         logic [22:0] u00, v00, u01, v01;
         logic [22:0] u10, u11, v10, v11;
         logic [22:0] u20, u21, v20, v21;
-        logic [REG_SIZE-1:0] temp_r[0:DILITHIUM_N-1]; // Temporary array for computation
+        logic [REG_SIZE-1:0] temp_r[0:MLDSA_N-1]; // Temporary array for computation
         
         begin
             // Initialize temp_r with the 23-bit values from poly_r
-            for (int i = 0; i < DILITHIUM_N; i++) begin
+            for (int i = 0; i < MLDSA_N; i++) begin
                 temp_r[i] = poly_r[i][22:0];
             end
     
@@ -612,10 +612,10 @@ class ntt_sb extends uvm_scoreboard;
     
             for (int l = 0; l < 8; l += 2) begin
                 m = 1 << l;
-                for (int i = 0; i < DILITHIUM_N; i += (1 << (l + 2))) begin
-                    k1[0] = ((DILITHIUM_N - (i >> 1)) >> l) - 1;
+                for (int i = 0; i < MLDSA_N; i += (1 << (l + 2))) begin
+                    k1[0] = ((MLDSA_N - (i >> 1)) >> l) - 1;
                     k1[1] = k1[0] - 1;
-                    k2 = ((DILITHIUM_N - (i >> 1)) >> (l + 1)) - 1;
+                    k2 = ((MLDSA_N - (i >> 1)) >> (l + 1)) - 1;
                     zeta1[0] = zetas_inv[k1[0]];
                     zeta1[1] = zetas_inv[k1[1]];
                     zeta2 = zetas_inv[k2];
@@ -640,7 +640,7 @@ class ntt_sb extends uvm_scoreboard;
                 end
     
                 // Save the intermediate stages after every two stages
-                for (int i = 0; i < DILITHIUM_N; i++) begin
+                for (int i = 0; i < MLDSA_N; i++) begin
                     r[stage_idx][i] = temp_r[i];
                 end
     

@@ -19,14 +19,14 @@
 
 module norm_check
     import norm_check_defines_pkg::*;
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     #(
-        parameter DILITHIUM_Q = 8380417,
+        parameter MLDSA_Q = 8380417,
         parameter GAMMA1 = 2**19,
-        parameter GAMMA2 = (DILITHIUM_Q-1)/32,
+        // parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32,
         parameter BETA = 120,
         parameter GAMMA1_MINUS_BETA = GAMMA1 - BETA,
-        parameter GAMMA2_MINUS_BETA = GAMMA2 - BETA
+        parameter GAMMA2_MINUS_BETA = MLDSA_GAMMA2 - BETA
     )
     (
         input wire enable,
@@ -42,11 +42,11 @@ module norm_check
         case(mode)
             z_bound:    bound = GAMMA1_MINUS_BETA;
             r0_bound:   bound = GAMMA2_MINUS_BETA;
-            ct0_bound:  bound = GAMMA2;
+            ct0_bound:  bound = MLDSA_GAMMA2;
             default:    bound = 'h0;
         endcase
 
-        q_minus_bound = DILITHIUM_Q - bound;
+        q_minus_bound = MLDSA_Q - bound;
     end
 
     always_comb invalid = enable & (opa_i >= bound) & (opa_i <= q_minus_bound);

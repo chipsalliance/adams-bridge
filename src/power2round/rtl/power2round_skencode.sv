@@ -21,17 +21,17 @@
 module power2round_skencode
     #(
         parameter REG_SIZE = 23,
-        parameter DILITHIUM_Q = 23'd8380417,
-        parameter DILITHIUM_D = 13
+        parameter MLDSA_Q = 23'd8380417,
+        parameter MLDSA_D = 13
     )
     (
-        input logic  [DILITHIUM_D-1:0] r0,
-        output logic [DILITHIUM_D-1:0] r0_packed
+        input logic  [MLDSA_D-1:0] r0,
+        output logic [MLDSA_D-1:0] r0_packed
     );
 
-    localparam power2_d_minus_one = (1 << (DILITHIUM_D-1));
+    localparam power2_d_minus_one = (1 << (MLDSA_D-1));
 
-    logic [DILITHIUM_D-1 : 0] r0_packed_temp;
+    logic [MLDSA_D-1 : 0] r0_packed_temp;
 
     always_comb begin
         r0_packed_temp = power2_d_minus_one - r0;

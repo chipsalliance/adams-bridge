@@ -15,11 +15,11 @@
 //
 // sigdecode_h_defines_pkg.sv
 // --------
-// sigdecode_h parameters for Dilithium
+// sigdecode_h parameters for Mldsa
 //======================================================================
 
-`ifndef ABR_SIGDECODE_H_DEFINES
-`define ABR_SIGDECODE_H_DEFINES
+`ifndef MLDSA_SIGDECODE_H_DEFINES
+`define MLDSA_SIGDECODE_H_DEFINES
 
 package sigdecode_h_defines_pkg;
 

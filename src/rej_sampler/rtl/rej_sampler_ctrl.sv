@@ -14,7 +14,7 @@
 
 
 module rej_sampler_ctrl
-  import abr_params_pkg::*;
+  import mldsa_params_pkg::*;
   #(
    parameter REJ_NUM_SAMPLERS = 5
   ,parameter REJ_SAMPLE_W     = 24
@@ -73,7 +73,7 @@ module rej_sampler_ctrl
     .NUM_WR(REJ_NUM_SAMPLERS),
     .NUM_RD(REJ_VLD_SAMPLES),
     .BUFFER_DATA_W(REJ_BUFFER_W)
-  ) abr_sample_buffer_i (
+  ) mldsa_sample_buffer_i (
     .clk(clk),
     .rst_b(rst_b),
     .zeroize(zeroize),

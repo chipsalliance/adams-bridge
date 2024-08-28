@@ -15,7 +15,7 @@
 //
 // skdecode_defines_pkg.sv
 // --------
-// Skdecode parameters for Dilithium
+// Skdecode parameters for Mldsa
 //======================================================================
 
 `ifndef ABR_SKDECODE_DEFINES

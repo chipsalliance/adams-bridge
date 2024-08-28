@@ -19,12 +19,11 @@
 // Keeps track of indices and polynomial count
 
 module sigdecode_h_ctrl
-    import abr_params_pkg::*;
+    import mldsa_params_pkg::*;
     import sigdecode_h_defines_pkg::*;
-    import ntt_defines_pkg::*;
     #(
-        parameter DILITHIUM_N = 256,
-        parameter DILITHIUM_K = 8
+        parameter MLDSA_N = 256,
+        parameter MLDSA_K = 8
     )
     (
         input wire clk,
@@ -32,7 +31,7 @@ module sigdecode_h_ctrl
         input wire zeroize,
 
         input wire sigdecode_h_enable,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [7:0] hintsum_i, //points to hintsum of i_th poly shown by poly_count
         input wire sigdecode_h_error,
 
@@ -42,11 +41,11 @@ module sigdecode_h_ctrl
         output logic [6:0] rd_ptr,
         output logic rst_bitmap, 
         output logic [3:0] curr_poly_map,
-        output logic [$clog2(DILITHIUM_N)-1:0] bitmap_ptr,
+        output logic [$clog2(MLDSA_N)-1:0] bitmap_ptr,
         output logic hint_rd_en
     );
 
-    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt;
     logic incr_wr_addr, rst_wr_addr;
     logic last_poly_last_addr_wr, last_poly;
     logic incr_poly;
@@ -98,7 +97,7 @@ module sigdecode_h_ctrl
         end
     end
 
-    always_comb poly_done_wr = (mem_wr_addr == ABR_MEM_ADDR_WIDTH'((poly_count*(DILITHIUM_N/4)+(DILITHIUM_N/4 - 1))));
+    always_comb poly_done_wr = (mem_wr_addr == MLDSA_MEM_ADDR_WIDTH'((poly_count*(MLDSA_N/4)+(MLDSA_N/4 - 1))));
 
     //Poly counter
     always_ff @(posedge clk or negedge reset_n) begin
@@ -109,7 +108,7 @@ module sigdecode_h_ctrl
             poly_count <= 'h0;
         end
         else if (incr_poly)
-            poly_count <= (poly_count == DILITHIUM_K) ? 'h0 : poly_count + 'h1;
+            poly_count <= (poly_count == MLDSA_K) ? 'h0 : poly_count + 'h1;
     end
 
     //bitmap ptr counter
@@ -126,8 +125,8 @@ module sigdecode_h_ctrl
 
     //Flags
     always_comb begin
-        last_poly_last_addr_wr  = (mem_wr_addr == dest_base_addr + (DILITHIUM_K * (DILITHIUM_N/4))-1);
-        last_poly               = (poly_count == DILITHIUM_K-1);
+        last_poly_last_addr_wr  = (mem_wr_addr == dest_base_addr + (MLDSA_K * (MLDSA_N/4))-1);
+        last_poly               = (poly_count == MLDSA_K-1);
         sigdecode_h_busy        = (write_fsm_state_ps != SDH_WR_IDLE); //writes follow reads, so using that for busy
         sigdecode_h_done        = (read_fsm_state_ps == SDH_RD_IDLE) & (write_fsm_state_ps == SDH_WR_IDLE);
     end
