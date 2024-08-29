@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/power2round/rtl
+${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_defines_pkg.sv

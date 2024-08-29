@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl
+${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h_defines_pkg.sv

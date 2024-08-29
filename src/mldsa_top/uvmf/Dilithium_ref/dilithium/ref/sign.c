@@ -274,7 +274,7 @@ int crypto_sign_signature(uint8_t *sig,
   print_hex("rho", rho, SEEDBYTES);
   print_hex("tr", tr, SEEDBYTES*2);
   print_hex("K", key, SEEDBYTES);
-  print_hex("M_prime", m, ((unsigned int)mlen)*2);
+  print_hex("M_prime", m, ((unsigned int)mlen));
   print_polyvecl("s1", &s1);
   print_polyveck("s2", &s2);
   print_polyveck("t0", &t0);
@@ -510,7 +510,7 @@ int crypto_sign_verify(const uint8_t *sig,
 #if DEBUG == 1
   print_hex("tr", mu, SEEDBYTES*2);
   print_hex("rho", rho, SEEDBYTES);
-  print_hex("M_prime", m, ((unsigned int)mlen)*2);
+  print_hex("M_prime", m, ((unsigned int)mlen));
 #endif
   // This for mu
   shake256_init(&state);
@@ -522,12 +522,22 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 #if DEBUG == 1
   print_hex("mu", mu, SEEDBYTES*2);
+  print_polyveck("h", &h);
+  print_polyveck("t1", &t1);
+  print_polyvecl("z", &z);
 #endif
 
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   poly_challenge(&cp, c);
   polyvec_matrix_expand(mat, rho);
+
+#if DEBUG == 1
+  for(i = 0; i < K; ++i){
+    printf("            A[%d]            \n",i);
+    print_polyvecl("A", &mat[i]);
+  }
+#endif
 
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
@@ -543,8 +553,15 @@ int crypto_sign_verify(const uint8_t *sig,
 
   /* Reconstruct w1 */
   polyveck_caddq(&w1);
+#if DEBUG == 1
+  print_polyveck("w1", &w1);
+#endif
   polyveck_use_hint(&w1, &w1, &h);
   polyveck_pack_w1(buf, &w1);
+
+#if DEBUG == 1
+  print_hex("Decomposed w1", buf, K*POLYW1_PACKEDBYTES);
+#endif
 
   /* Call random oracle and verify challenge */
   shake256_init(&state);

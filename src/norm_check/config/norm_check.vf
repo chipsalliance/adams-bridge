@@ -1,0 +1,9 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/config_defines.svh
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check.sv
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_top.sv

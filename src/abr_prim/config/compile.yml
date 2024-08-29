@@ -26,8 +26,6 @@ targets:
 provides: [abr_prim]
 schema_version: 2.4.0
 requires:
-  - libs
-  - lc_ctrl_pkg
   - abr_prim_pkg
   - abr_prim_generic
 targets:
@@ -56,7 +54,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_prim_mubi8_sync.sv
       - $COMPILE_ROOT/rtl/abr_prim_fifo_sync_cnt.sv
       - $COMPILE_ROOT/rtl/abr_prim_buf.sv
-      - $COMPILE_ROOT/rtl/abr_prim_lc_sync.sv
+      #- $COMPILE_ROOT/rtl/abr_prim_lc_sync.sv
       - $COMPILE_ROOT/rtl/abr_prim_alert_receiver.sv
       - $COMPILE_ROOT/rtl/abr_prim_flop.sv
       - $COMPILE_ROOT/rtl/abr_prim_alert_sender.sv

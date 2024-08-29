@@ -1,0 +1,4 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl
+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop_en.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_buf.sv

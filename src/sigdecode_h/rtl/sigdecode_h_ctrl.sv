@@ -97,7 +97,7 @@ module sigdecode_h_ctrl
         end
     end
 
-    always_comb poly_done_wr = (mem_wr_addr == MLDSA_MEM_ADDR_WIDTH'((poly_count*(MLDSA_N/4)+(MLDSA_N/4 - 1))));
+    always_comb poly_done_wr = (mem_wr_addr[5:0] == ((MLDSA_N/4 - 1)));
 
     //Poly counter
     always_ff @(posedge clk or negedge reset_n) begin

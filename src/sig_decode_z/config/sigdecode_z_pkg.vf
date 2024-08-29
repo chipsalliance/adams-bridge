@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/sig_decode_z/rtl
+${ADAMSBRIDGE_ROOT}/src/sig_decode_z/rtl/sigdecode_z_defines_pkg.sv

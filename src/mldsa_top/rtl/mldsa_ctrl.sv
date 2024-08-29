@@ -143,7 +143,8 @@ module mldsa_ctrl
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
-  logic [7:0][63:0] roh_p_reg;
+  logic [7:0][63:0] rho_p_reg;
+  logic [3:0][63:0] rho_reg;
   logic [7:0][63:0] mu_reg;
   logic [15:0] kappa_reg;
   logic update_kappa;
@@ -243,7 +244,7 @@ module mldsa_ctrl
   
     for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++)begin 
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
+      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[VERIFY_RES_NUM_DWORDS-1-dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
   
@@ -273,15 +274,15 @@ module mldsa_ctrl
       if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready) begin
         privatekey_reg.raw[PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2]] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
       end
-      //HW write roh
+      //HW write rho
       if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_ROH_REG_ID) begin
-          privatekey_reg.enc.roh <= sampler_state_data_i[0][255:0]; //FIXME optimize this to be shared with pubkey?
+        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+          privatekey_reg.enc.rho <= sampler_state_data_i[0][255:0]; //FIXME optimize this to be shared with pubkey?
         end
       end
       //HW write K
       if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_ROH_REG_ID) begin
+        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
           privatekey_reg.enc.K <= sampler_state_data_i[0][1023:768];
         end
       end
@@ -354,7 +355,7 @@ module mldsa_ctrl
     end else begin
       for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
         if (mldsa_ready & mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req & mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req_is_wr) begin
-          signature_reg.raw[dword] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE[SIGNATURE_NUM_DWORDS-1-dword].wr_data;
+          signature_reg.raw[SIGNATURE_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].wr_data;
         end
       end
       //HW write c
@@ -383,14 +384,19 @@ module mldsa_ctrl
     for (int i = 0; i < SIGNATURE_H_VALID_NUM_BYTES; i++) begin
       signature_h_o[i] = signature_reg.enc.h[i/4][(i%4)*8 +: 8];
     end
+  end
 
-    //HW read z
-    for (int chunk = 0; chunk < 224; chunk++) begin
-      if ((sigencode_wr_req_i.rd_wr_en == RW_READ) & (sigdecode_z_rd_req_i.addr[8:1] == chunk)) begin
-        sigdecode_z_rd_data_o = signature_reg.enc.z[chunk*5 +: 5];
+  //HW read z
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      sigdecode_z_rd_data_o <= '0;
+      pkdecode_rd_data_o <= '0;
+    end else begin
+      if ((sigdecode_z_rd_req_i.rd_wr_en == RW_READ)) begin
+        sigdecode_z_rd_data_o <= signature_reg.enc.z[sigdecode_z_rd_req_i.addr[8:1]*5 +: 5];
       end
-      else begin
-        sigdecode_z_rd_data_o = '0;
+      if (1) begin //fixme read enable or remove flop
+        pkdecode_rd_data_o <= publickey_reg.enc.t1[pkdecode_rd_addr_i*8 +: 8];
       end
     end
   end
@@ -404,13 +410,13 @@ module mldsa_ctrl
     end else begin
       for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
         if (mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr) begin
-          publickey_reg.raw[dword] <= mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].wr_data;
+          publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].wr_data;
         end
       end
-      //HW write roh
+      //HW write rho
       if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_ROH_REG_ID) begin
-          publickey_reg.enc.roh <= sampler_state_data_i[0][255:0];
+        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+          publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
         end
       end
       //HW write t1
@@ -422,19 +428,24 @@ module mldsa_ctrl
     end
   end
 
-  always_comb pkdecode_rd_data_o = publickey_reg.enc.t1[pkdecode_rd_addr_i*8 +: 8];
+  //concatenate OID and MSG to make msg prime
+  logic [MSG_NUM_DWORDS-1+4 : 0][DATA_WIDTH-1:0] msg_p_reg;
+
+  always_comb msg_p_reg = {24'h0, msg_reg, PREHASH_OID, 8'h00, 8'h01};
+
+  always_comb rho_reg = verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
 
   always_comb begin : sampler_src_mux
     unique case (sampler_src) inside
-      MLDSA_SEED_ID:        msg_data_o[0] = {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-      MLDSA_ROH_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : privatekey_reg.enc.roh[sampler_src_offset[1:0]];
-      MLDSA_ROH_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : roh_p_reg[sampler_src_offset[2:0]];
+      MLDSA_SEED_ID:        msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
+      MLDSA_RHO_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
+      MLDSA_RHO_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
       MLDSA_TR_ID:          msg_data_o[0] = privatekey_reg.enc.tr[sampler_src_offset[2:0]];
-      MLDSA_MSG_ID:         msg_data_o[0] = {msg_reg[{sampler_src_offset[2:0],1'b1}],msg_reg[{sampler_src_offset[2:0],1'b0}]};
+      MLDSA_MSG_ID:         msg_data_o[0] = {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
       MLDSA_K_ID:           msg_data_o[0] = privatekey_reg.enc.K[sampler_src_offset[1:0]];
       MLDSA_MU_ID:          msg_data_o[0] = mu_reg[sampler_src_offset[2:0]];
       MLDSA_SIGN_RND_ID:    msg_data_o[0] = {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-      MLDSA_ROH_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : roh_p_reg[sampler_src_offset[2:0]];
+      MLDSA_RHO_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
       MLDSA_SIG_C_REG_ID:   msg_data_o[0] = {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
       MLDSA_PK_REG_ID:      msg_data_o[0] = {publickey_reg.raw[{sampler_src_offset[8:0],1'b1}],publickey_reg.raw[{sampler_src_offset[8:0],1'b0}]};
       default:            msg_data_o[0] = '0;
@@ -444,22 +455,22 @@ module mldsa_ctrl
   //If we're storing state directly into registers, do that here
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      roh_p_reg <= 0;
+      rho_p_reg <= 0;
       mu_reg <= 0;
     end
     else if (zeroize) begin
-      roh_p_reg <= 0;
+      rho_p_reg <= 0;
       mu_reg <= 0;
     end
     else if (sampler_state_dv_i) begin
-      if (instr.operand3 == MLDSA_DEST_K_ROH_REG_ID) begin
-        roh_p_reg <= sampler_state_data_i[0][767:256];
+      if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+        rho_p_reg <= sampler_state_data_i[0][767:256];
       end
       else if (instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
         mu_reg <= sampler_state_data_i[0][511:0];
       end
-      else if (instr.operand3 == MLDSA_DEST_ROH_P_REG_ID) begin
-        roh_p_reg <= sampler_state_data_i[0][511:0];
+      else if (instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
+        rho_p_reg <= sampler_state_data_i[0][511:0];
       end
     end
   end
@@ -531,6 +542,7 @@ module mldsa_ctrl
   //FIXME check if aux mode is set appropriately?
   always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
+  //FIXME jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
   always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | (sigdecode_h_done_i & sigdecode_h_invalid_i));
                                    
 //Primary sequencer for keygen, signing, and verify
@@ -722,7 +734,7 @@ module mldsa_ctrl
 //determine the number of bytes in the last message
 //operand 2 contains the length of the message being fed to sha3
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
-always_comb last_msg_strobe = ~(MsgStrbW'('1) << instr.length[$clog2(MsgStrbW)+1:0]);
+always_comb last_msg_strobe = ~(MsgStrbW'('1) << instr.length[$clog2(MsgStrbW)-1:0]);
  
 always_comb vld_cycle = msg_valid_o & msg_rdy_i;
 

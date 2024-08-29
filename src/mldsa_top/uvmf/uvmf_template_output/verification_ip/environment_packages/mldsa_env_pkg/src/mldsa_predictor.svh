@@ -78,7 +78,7 @@ class mldsa_predictor #(
   bit [31:0] PK []; //2592 Bytes
   bit [31:0] MSG [0:15]; //64 Bytes
   bit [31:0] SIG []; //4628 Bytes
-  bit [31:0] VERIF [0:15]; //64 Bytes
+  bit [31:0] VERIF []; //64 Bytes
 
   // FUNCTION: new
   function new(string name, uvm_component parent);
@@ -87,6 +87,7 @@ class mldsa_predictor #(
     SK = new[1224];
     PK = new[648];
     SIG = new[1157];
+    VERIF = new[16];
     `uvm_warning("PREDICTOR_REVIEW", "This predictor has been created either through generation or re-generation with merging.  Remove this warning after the predictor has been reviewed.")
   
      // pragma uvmf custom new begin
@@ -404,7 +405,7 @@ class mldsa_predictor #(
         void'($fgets(line, fd)); // Read a line from the file
         $sscanf(line, "%08x\n", value);
         read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-        SIG[0][31:24]='h00;
+        SIG[0] = SIG[0] >> 8;
         $fclose(fd);
       end
       2'b11: begin
@@ -417,11 +418,10 @@ class mldsa_predictor #(
           return;
         end
         $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
-        $fwrite(fd, "00001253\n"); // Signature lenght
+        //$fwrite(fd, "00001253\n"); // Signature lenght
         // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
-        write_file_without_newline(fd, 1156, SIG);
-        $fwrite(fd, "%02X%02X%02X", SIG[1156][7:0],  SIG[1156][15:8],
-                                      SIG[1156][23:16]);
+        write_file_without_newline(fd, 1157, SIG);
+        $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
         write_file(fd, 16, MSG); // Write 64-byte message to the file
         write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
         $fclose(fd);
@@ -441,9 +441,7 @@ class mldsa_predictor #(
         // Skip the second line
         void'($fgets(line, fd)); // Read a line from the file
         $sscanf(line, "%02x\n", value);
-        foreach(this.VERIF[i0]) begin
-          this.VERIF[i0] = value;
-        end
+        read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
         $fclose(fd);
       end
     endcase
@@ -560,7 +558,7 @@ class mldsa_predictor #(
 
     // Write the data from the array to the file
     words_to_write = bit_length_words;
-    for (i = 0; i < words_to_write; i++) begin
+    for (i = 0; i < words_to_write-1; i++) begin
       $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
                                       array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
     end

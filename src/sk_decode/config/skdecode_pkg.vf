@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl
+${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_defines_pkg.sv

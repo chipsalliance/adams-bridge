@@ -139,7 +139,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
     void'($fgets(line, fd)); // Read a line from the file
     $sscanf(line, "%08x\n", value);
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-    SIG[0][31:24]='h00;
+    SIG[0] = SIG[0] >> 8;
     $fclose(fd);
 
     // Writing MLDSA_MSG register

@@ -54,7 +54,7 @@ package mldsa_ctrl_pkg;
         logic [359:0][31:0] s1s2;
         logic [7:0][63:0] tr;
         logic [3:0][63:0] K;
-        logic [3:0][63:0] roh;
+        logic [3:0][63:0] rho;
     } mldsa_privkey_t;
 
     typedef union packed {
@@ -75,7 +75,7 @@ package mldsa_ctrl_pkg;
 
     typedef struct packed {
         logic [T1_NUM_COEFF-1:0][T1_COEFF_W-1:0] t1;
-        logic [7:0][31:0] roh;
+        logic [7:0][31:0] rho;
     } mldsa_pubkey_t;
 
     typedef union packed {
@@ -194,9 +194,9 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_CONST_ONE_ID  = 'd1;
 
     // DEST register IDs
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_K_ROH_REG_ID = 'd2;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_K_RHO_REG_ID = 'd2;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_MU_REG_ID    = 'd3;
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_ROH_P_REG_ID = 'd4;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_RHO_P_REG_ID = 'd4;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_SIG_C_REG_ID = 'd5;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_TR_REG_ID    = 'd6;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_VERIFY_RES_REG_ID = 'd7;
@@ -206,11 +206,11 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SEED_ID        = 'd16;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SIGN_RND_ID    = 'd17;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_K_ID           = 'd18;
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_ROH_ID         = 'd19;
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_ROH_P_ID       = 'd20;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_RHO_ID         = 'd19;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_RHO_P_ID       = 'd20;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_MU_ID          = 'd21;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_TR_ID          = 'd22;
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_ROH_P_KAPPA_ID = 'd23;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_RHO_P_KAPPA_ID = 'd23;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SIG_C_REG_ID   = 'd24;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_PK_REG_ID      = 'd25;
     

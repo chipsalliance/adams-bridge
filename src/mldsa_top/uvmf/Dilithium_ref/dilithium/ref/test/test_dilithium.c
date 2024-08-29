@@ -223,6 +223,20 @@ int main(int argc, char *argv[]) {
 
         case 2: // verification
             {
+#if M_PRIME == 1
+                smlen = SEEDBYTES + CRYPTO_BYTES + M_SIZE;
+                printf("signature lenght is %04X\n", (unsigned int)smlen);
+
+                
+                readFile(input_file, sm, SEEDBYTES +CRYPTO_BYTES+PHM_SIZE);
+                readFile(input_file, pk, CRYPTO_PUBLICKEYBYTES);
+
+                uint8_t PHM[PHM_SIZE]; // This should contain the SHA-512 hash of the message
+                memcpy(PHM, sm + SEEDBYTES +CRYPTO_BYTES, PHM_SIZE);
+                create_message_prime(PHM, sm + SEEDBYTES +CRYPTO_BYTES);
+                mlen = M_SIZE;
+                printf("message lenght is %04X\n", (unsigned int)mlen);
+#else
                 uint8_t smlen_array[4];
                 readFile(input_file, smlen_array, 4);
                 smlen = byteArrayToSizeT(smlen_array);
@@ -231,13 +245,14 @@ int main(int argc, char *argv[]) {
                 
                 readFile(input_file, sm, smlen);
                 readFile(input_file, pk, CRYPTO_PUBLICKEYBYTES);
+#endif
 
                 ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
 
                 writeFile(output_file, &cmd, 1);
                 fprintf(output_file, "%d\n", ret);
                 if (!ret)
-                    writeFile(output_file, m2, mlen);
+                    writeFile(output_file, sm, SEEDBYTES*2);
                 else
                     fprintf(output_file, "0\n");
 

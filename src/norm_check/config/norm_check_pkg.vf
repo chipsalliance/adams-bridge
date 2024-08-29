@@ -1,0 +1,3 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv

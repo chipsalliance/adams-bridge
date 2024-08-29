@@ -1,18 +1,18 @@
 ---
 # Random seed desired...
-seed: 1
-# plusargs:
+#seed: 1
+#plusargs:
 #  - '+UVM_TESTNAME=ML_DSA_randomized_key_gen_test'
-# testname: ML_DSA_randomized_key_gen_test
-# parameters:
+#testname: ML_DSA_randomized_key_gen_test
+#parameters:
 #  dilithium_command: "test_dilithium5"
-plusargs:
-- '+UVM_TESTNAME=ML_DSA_randomized_sign_gen_test'
-testname: ML_DSA_randomized_sign_gen_test
-parameters:
-   dilithium_command: "test_dilithium5"
-# plusargs:
-# - '+UVM_TESTNAME=ML_DSA_randomized_verif_test'
-# testname: ML_DSA_randomized_verif_test
-# parameters:
+#plusargs:
+#  - '+UVM_TESTNAME=ML_DSA_randomized_sign_gen_test'
+#testname: ML_DSA_randomized_sign_gen_test
+#parameters:
 #   dilithium_command: "test_dilithium5"
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_randomized_verif_test'
+testname: ML_DSA_randomized_verif_test
+parameters:
+  dilithium_command: "test_dilithium5"

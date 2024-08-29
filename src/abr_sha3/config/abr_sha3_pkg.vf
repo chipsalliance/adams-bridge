@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl
+${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3_pkg.sv
