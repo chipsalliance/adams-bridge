@@ -163,7 +163,8 @@ module abr_sha3
   // `StAbsorb`. Next state is `StSqueeze`.
   always_ff @(posedge clk_i or negedge rst_b) begin
     if (!rst_b) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
-    else         absorbed_o <= absorbed;
+    else if (zeroize) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
+    else              absorbed_o <= absorbed;
   end
 
   // Squeezing output
@@ -171,7 +172,8 @@ module abr_sha3
 
   // processing
   always_ff @(posedge clk_i or negedge rst_b) begin
-    if (!rst_b)        processing <= 1'b 0;
+    if (!rst_b)         processing <= 1'b 0;
+    else if (zeroize)   processing <= 1'b 0;
     else if (process_i) processing <= 1'b 1;
     else if (abr_prim_mubi_pkg::mubi4_test_true_strict(absorbed)) begin
       processing <= 1'b 0;
@@ -288,6 +290,8 @@ module abr_sha3
       end
     endcase
 
+    if (zeroize) st_d = StIdle_sparse;
+
   end
 
   //////////////
@@ -389,6 +393,7 @@ module abr_sha3
   ) u_pad (
     .clk_i,
     .rst_b,
+    .zeroize,
 
     // MSG_FIFO (or from KMAC core)
     .msg_valid_i,
@@ -428,7 +433,8 @@ module abr_sha3
   ) u_keccak (
     .clk_i,
     .rst_b,
-
+    .zeroize,
+    
     .data_i  (keccak_data ),
     .ready_o (keccak_ready),
 

@@ -159,12 +159,12 @@ module mldsa_sampler_top
     sampler_mem_addr_o = 0;
     sampler_state_dv_o = 0;
     sampler_state_data_o[0] = 0;
-    zeroize_rejb = 0;
-    zeroize_rejs = 0;
-    zeroize_exp_mask = 0;
-    zeroize_sib = 0;
-    zeroize_sib_mem = 0;
-    zeroize_sha3 = 0;
+    zeroize_rejb = zeroize;
+    zeroize_rejs = zeroize;
+    zeroize_exp_mask = zeroize;
+    zeroize_sib = zeroize;
+    zeroize_sib_mem = zeroize;
+    zeroize_sha3 = zeroize;
 
     unique case (sampler_mode_i) inside
       MLDSA_SHAKE256: begin
@@ -173,7 +173,7 @@ module mldsa_sampler_top
         sampler_state_dv_o = sha3_state_dv;
         sampler_state_data_o[0] = sha3_state[0];
         sampler_done = sha3_state_dv;
-        zeroize_sha3 = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
       end
       MLDSA_SHAKE128: begin
         mode = abr_sha3_pkg::Shake;
@@ -181,15 +181,15 @@ module mldsa_sampler_top
         sampler_state_dv_o = sha3_state_dv;
         sampler_state_data_o [0]= sha3_state[0];
         sampler_done = sha3_state_dv;
-        zeroize_sha3 = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
       end
       MLDSA_REJ_SAMPLER: begin
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L128;
         vld_cycle = rejs_dv;
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
-        zeroize_rejs = sampler_done;
-        zeroize_sha3 = sampler_done;
+        zeroize_rejs |= sampler_done;
+        zeroize_sha3 |= sampler_done;
       end
       MLDSA_EXP_MASK: begin
         mode = abr_sha3_pkg::Shake;
@@ -199,8 +199,8 @@ module mldsa_sampler_top
         sampler_mem_data_o = exp_data;
         sampler_mem_addr_o = dest_addr;
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
-        zeroize_exp_mask = sampler_done;
-        zeroize_sha3 = sampler_done;
+        zeroize_exp_mask |= sampler_done;
+        zeroize_sha3 |= sampler_done;
       end
       MLDSA_REJ_BOUNDED: begin
         mode = abr_sha3_pkg::Shake;
@@ -210,16 +210,16 @@ module mldsa_sampler_top
         sampler_mem_data_o = rejb_data;
         sampler_mem_addr_o = dest_addr;
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
-        zeroize_rejb = sampler_done;
-        zeroize_sha3 = sampler_done;
+        zeroize_rejb |= sampler_done;
+        zeroize_sha3 |= sampler_done;
       end
       MLDSA_SAMPLE_IN_BALL: begin
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L256;
         zeroize_sib_mem = sampler_start_i;
         sampler_done = sib_done;
-        zeroize_sib = sampler_done;
-        zeroize_sha3 = sampler_done;
+        zeroize_sib |= sampler_done;
+        zeroize_sha3 |= sampler_done;
       end
       default: begin
 
@@ -246,7 +246,7 @@ always_ff @(posedge clk or negedge rst_b) begin
     coeff_cnt <= 0;
     dest_addr <= 0;
   end
-  else if (zeroize) begin
+  else if (zeroize | sampler_done) begin
     coeff_cnt <= 0;
     dest_addr <= 0;
   end
@@ -266,7 +266,7 @@ always_comb begin : sampler_fsm_out_comb
     sha3_process = 0;
     sha3_run = 0;
     sha3_done = abr_prim_mubi_pkg::MuBi4False;
-    
+
     unique case (sampler_fsm_ps)
       MLDSA_SAMPLER_IDLE: begin
         //wait for start
@@ -296,10 +296,13 @@ always_comb begin : sampler_fsm_out_comb
       end
       MLDSA_SAMPLER_DONE: begin
         //drive done
-        sha3_done = abr_prim_mubi_pkg::MuBi4True;
+        if (sha3_fsm == abr_sha3_pkg::StSqueeze) begin
+          sha3_done = abr_prim_mubi_pkg::MuBi4True;
+        end
         //Go to IDLE when sha3 resets
-        if (~sha3_squeezing) sampler_fsm_ns = MLDSA_SAMPLER_IDLE;
-        //zeroize samplers
+        if (~sha3_squeezing) begin 
+          sampler_fsm_ns = MLDSA_SAMPLER_IDLE;
+        end
       end
       default: begin
       end

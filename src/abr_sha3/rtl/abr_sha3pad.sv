@@ -15,6 +15,7 @@ module abr_sha3pad
 ) (
   input clk_i,
   input rst_b,
+  input logic zeroize,
 
   // Message interface (FIFO)
   input                       msg_valid_i,
@@ -191,7 +192,7 @@ module abr_sha3pad
   ) u_wrmsg_count (
     .clk_i,
     .rst_b,
-    .clr_i(clr_wrmsg),
+    .clr_i(clr_wrmsg | zeroize),
     .set_i(1'b0),
     .set_cnt_i(MsgCountW'(0)),
     .incr_en_i(inc_wrmsg),
@@ -203,7 +204,7 @@ module abr_sha3pad
   );
 
   assign inc_wrmsg = update_serial_buffer;
-  assign rst_serial_buffer = clr_wrmsg;
+  assign rst_serial_buffer = clr_wrmsg | zeroize;
   // Prefix index to slice the `prefix` n-bits into multiple of 64bit.
   logic [MsgAddrW-1:0] prefix_index;
   assign prefix_index = (wr_message < block_addr_limit) ? wr_message : '0;
@@ -284,7 +285,8 @@ module abr_sha3pad
   abr_prim_mubi_pkg::mubi4_t absorbed_d;
   always_ff @(posedge clk_i or negedge rst_b) begin
     if (!rst_b) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
-    else         absorbed_o <= absorbed_d;
+    else if (zeroize) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
+    else              absorbed_o <= absorbed_d;
   end
 
   always_comb begin
@@ -507,6 +509,8 @@ module abr_sha3pad
         sparse_fsm_error_o = 1'b 1;
       end
     endcase
+
+    if (zeroize) st_d = StPadIdle;
 
   end
 
@@ -841,6 +845,8 @@ module abr_sha3pad
   always_ff @(posedge clk_i or negedge rst_b) begin
     if (!rst_b) begin
       start_valid <= 1'b 1;
+    end else if (zeroize) begin
+      start_valid <= 1'b 1;
     end else if (start_i) begin
       start_valid <= 1'b 0;
     end else if (process_i) begin
@@ -849,6 +855,8 @@ module abr_sha3pad
   end
   always_ff @(posedge clk_i or negedge rst_b) begin
     if (!rst_b) begin
+      process_valid <= 1'b 0;
+    end else if (zeroize) begin
       process_valid <= 1'b 0;
     end else if (start_i) begin
       process_valid <= 1'b 1;

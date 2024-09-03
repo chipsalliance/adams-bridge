@@ -42,6 +42,7 @@ package mldsa_tests_pkg;
    `include "src/example_derived_test.svh"
    `include "src/ML_DSA_randomized_key_gen_test.svh"
    `include "src/ML_DSA_randomized_sign_gen_test.svh"
+   `include "src/ML_DSA_randomized_all_test.svh"
    `include "src/ML_DSA_randomized_verif_test.svh"
 
   // pragma uvmf custom package_item_additional begin

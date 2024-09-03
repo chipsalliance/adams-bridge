@@ -25,6 +25,7 @@ module abr_keccak_round
 ) (
   input clk_i,
   input rst_b,
+  input logic zeroize,
 
   // Message Feed
   input [Width-1:0] data_i [Share],
@@ -341,6 +342,8 @@ module abr_keccak_round
       end
     endcase
 
+    if (zeroize) keccak_st_d =StIdle;
+
   end
 
   // Ready indicates the keccak_round is able to receive new message.
@@ -366,6 +369,8 @@ module abr_keccak_round
   logic [Width-1:0] storage_d [Share];
   always_ff @(posedge clk_i or negedge rst_n) begin
     if (!rst_n) begin
+      storage <= '{default:'0};
+    end else if (zeroize) begin
       storage <= '{default:'0};
     end else if (rst_storage) begin
       storage <= '{default:'0};
@@ -443,7 +448,7 @@ module abr_keccak_round
   ) u_round_count (
     .clk_i,
     .rst_b,
-    .clr_i(rst_rnd_num),
+    .clr_i(rst_rnd_num | zeroize),
     .set_i(1'b0),
     .set_cnt_i('0),
     .incr_en_i(inc_rnd_num),
@@ -457,6 +462,8 @@ module abr_keccak_round
   // completion signal
   always_ff @(posedge clk_i or negedge rst_b) begin
     if (!rst_b) begin
+      complete_o <= 1'b 0;
+    end else if (zeroize) begin
       complete_o <= 1'b 0;
     end else begin
       complete_o <= complete_d;

@@ -1,2 +1,0 @@
-+incdir+${ADAMSBRIDGE_ROOT}/src/sha3/rtl
-${ADAMSBRIDGE_ROOT}/src/sha3/rtl/sha3_pkg.sv
