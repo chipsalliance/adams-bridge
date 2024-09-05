@@ -25,7 +25,6 @@
 module pkdecode
     import mldsa_params_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
         parameter MLDSA_K = 'h8,
         parameter MLDSA_N = 'd256,
         parameter REG_SIZE = 24,
@@ -38,7 +37,7 @@ module pkdecode
         input wire zeroize,
 
         input wire pkdecode_enable,
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [API_ADDR_WIDTH-1:0] src_base_addr,
         input wire [8*INPUT_COEFF_SIZE-1:0] API_rd_data,
 
@@ -66,7 +65,7 @@ module pkdecode
     // Internal signals
     logic [7:0][REG_SIZE-1:0] coefficients;  // Extracted 10-bit coefficients
     logic [7:0][REG_SIZE-1:0] encoded_coeffs; // Encoded 24-bit coefficients
-    logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] locked_dest_addr;
     logic [API_ADDR_WIDTH-1:0] locked_src_addr; // this ensures that addresses are captured when the block is enabled
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [2:0] state, next_state;

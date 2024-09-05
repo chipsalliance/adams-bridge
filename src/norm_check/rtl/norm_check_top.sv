@@ -33,7 +33,6 @@ module norm_check_top
     import mldsa_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
         parameter MLDSA_N = 256
     )
     (
@@ -43,7 +42,7 @@ module norm_check_top
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
-        input wire [MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         input [4*REG_SIZE-1:0] mem_rd_data,
         output logic invalid,
@@ -93,9 +92,7 @@ module norm_check_top
     end
 
     norm_check_ctrl
-    #(
-        .MEM_ADDR_WIDTH(MEM_ADDR_WIDTH)
-    ) norm_check_ctrl_inst (
+    norm_check_ctrl_inst (
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),

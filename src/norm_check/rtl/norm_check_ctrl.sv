@@ -25,7 +25,6 @@ module norm_check_ctrl
     import mldsa_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = 15,
         parameter MLDSA_N = 256,
         parameter MLDSA_L = 7,
         parameter MLDSA_K = 8
@@ -37,14 +36,14 @@ module norm_check_ctrl
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
-        input wire [MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         output logic check_enable,
         output logic norm_check_done
     );
     
     chk_read_state_e read_fsm_state_ps, read_fsm_state_ns;
-    logic [MEM_ADDR_WIDTH-1:0] mem_rd_addr;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
     logic [3:0] num_poly;
 
     //Flags
@@ -80,7 +79,7 @@ module norm_check_ctrl
     end
 
     //Last addr flag
-    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + (num_poly * (MLDSA_N/4))-1));
+    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + ((MLDSA_N/4))-1));
 
     //Ctrl flags
     always_comb begin

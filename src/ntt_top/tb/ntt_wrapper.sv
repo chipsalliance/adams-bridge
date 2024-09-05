@@ -27,7 +27,8 @@ module ntt_wrapper
     parameter RADIX = 23,
     parameter MLDSA_Q = 23'd8380417,
     parameter MLDSA_N = 256,
-    parameter MEM_ADDR_WIDTH = 15
+    parameter MEM_ADDR_WIDTH = 15,
+    parameter MEM_DATA_WIDTH = 96
 )
 (
     input wire clk,

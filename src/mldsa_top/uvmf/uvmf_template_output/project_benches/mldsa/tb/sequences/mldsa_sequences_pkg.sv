@@ -37,6 +37,7 @@ package mldsa_sequences_pkg;
   `include "src/register_test_sequence.svh"
   `include "src/example_derived_test_sequence.svh"
   `include "src/ML_DSA_randomized_key_gen_sequence.svh"
+  `include "src/ML_DSA_randomized_key_gen_and_sign_sequence.svh"
   `include "src/ML_DSA_randomized_sign_gen_sequence.svh"
   `include "src/ML_DSA_randomized_verif_sequence.svh"
   `include "src/ML_DSA_randomized_all_sequence.svh"

@@ -58,7 +58,7 @@ module sigencode_z_top
         output logic sigencode_z_done
     );
 
-    localparam THE_LAST_ADDR = ((MLDSA_L * MLDSA_N)/4)-1;
+    localparam THE_LAST_ADDR = ((MLDSA_N)/4)-1;
     // State Machine States
     localparam  IDLE                = 3'b000,
                 READ                = 3'b001,

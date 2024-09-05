@@ -143,7 +143,7 @@ module mldsa_top
   logic [MLDSA_MEM_DATA_WIDTH-1:0] makehint_mem_rd_data;
   logic makehint_reg_wren;
   logic [3:0][7:0] makehint_reg_wrdata;
-  logic [MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr;
+  logic [MLDSA_MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr;
 
   logic normcheck_enable;
   logic normcheck_done;
@@ -642,7 +642,7 @@ sigencode_z_inst
   .sigencode_z_done(sigencode_done),
 
   .src_base_addr(aux_src0_base_addr[1]),
-  .sigmem_dest_base_addr('0), //fixme remove - dedicated memory no need for base address
+  .sigmem_dest_base_addr(aux_dest_base_addr[1]),
 
   .mem_a_rd_req(sigencode_mem_rd_req[0]),
   .mem_a_rd_data(sigencode_mem_rd_data[0]),

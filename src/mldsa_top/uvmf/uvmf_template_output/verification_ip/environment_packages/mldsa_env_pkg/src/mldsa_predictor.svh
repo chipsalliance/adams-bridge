@@ -223,8 +223,8 @@ class mldsa_predictor #(
           SIG[idx] = t.data[0][31:0];
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_CTRL.get_address(p_mldsa_map)) begin
-          run_executable(t.data[0][1:0]);
-          zeroize_registers(t.data[0][2]);
+          run_executable(t.data[0][2:0]);
+          zeroize_registers(t.data[0][3]);
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_SIGN_RND[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_SIGN_RND[$size(p_mldsa_rm.MLDSA_SIGN_RND)-1].get_address(p_mldsa_map)) begin
@@ -332,7 +332,7 @@ class mldsa_predictor #(
     // pragma uvmf custom ahb_slave_0_ae_predictor end
   endfunction
 
-  function void run_executable(bit [1:0] op_code);
+  function void run_executable(bit [2:0] op_code);
     string input_file;
     string output_file;
     string line;
@@ -340,10 +340,10 @@ class mldsa_predictor #(
     bit [31:0] value;
     int fd;
     case (op_code)
-      2'b00: begin
-        `uvm_info("PRED", "CTRL Reg is written 2'b00 (No operation)...", UVM_MEDIUM)
+      3'b000: begin
+        `uvm_info("PRED", "CTRL Reg is written 3'b00 (No operation)...", UVM_MEDIUM)
       end
-      2'b01: begin
+      3'b001: begin
         output_file = "./keygen_input.hex";
         input_file = "./keygen_output.hex";
         // Open the file for writing
@@ -374,7 +374,7 @@ class mldsa_predictor #(
         read_line(fd, 1224, SK); // Read 4864-byte Secret Key to the file
         $fclose(fd);
       end
-      2'b10: begin
+      3'b010: begin
         output_file = "./signing_input.hex";
         input_file  = "./signing_ouput.hex";
         // Open the file for writing
@@ -408,7 +408,7 @@ class mldsa_predictor #(
         SIG[0] = SIG[0] >> 8;
         $fclose(fd);
       end
-      2'b11: begin
+      3'b011: begin
         output_file = "./verif_input.hex";
         input_file  = "./verif_ouput.hex";
         // Open the file for writing
@@ -443,6 +443,57 @@ class mldsa_predictor #(
         $sscanf(line, "%02x\n", value);
         read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
         $fclose(fd);
+      end
+      3'b100: begin
+        //Grab the PK and SK from keygen op ran by sequence
+        input_file = "./keygen_output_for_test.hex";
+        // Open the generated file for reading
+        fd = $fopen(input_file, "r");
+        if (fd == 0) begin
+            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+            return;
+        end
+        // Skip the two lines (KeyGen command and PK in output)
+        void'($fgets(line, fd));
+        $sscanf(line, "%02x\n", value);
+        read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
+        // Read the secret key (SK) from the file into the SK array
+        read_line(fd, 1224, SK);
+        $fclose(fd);
+        //Perform Signing
+        output_file = "./signing_input.hex";
+        input_file  = "./signing_ouput.hex";
+        // Open the file for writing
+        fd = $fopen(output_file, "w");
+        if (fd == 0) begin
+          $display("ERROR: Failed to open file: %s", output_file);
+          return;
+        end
+        $fwrite(fd, "%02X\n", 1); // Signature generation cmd
+        write_file(fd, 16, MSG); // Write 64-byte Message to the file
+        write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
+        $fclose(fd);
+        //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
+        $system($sformatf("%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
+        `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
+        // Open the file for reading
+        fd = $fopen(input_file, "r");
+        if (fd == 0) begin
+          `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+          return;
+        end
+        else begin
+          // Skip the first line
+          void'($fgets(line, fd)); // Read a line from the file
+          $sscanf(line, "%02x\n", value);
+        end
+        // Skip the second line
+        void'($fgets(line, fd)); // Read a line from the file
+        $sscanf(line, "%08x\n", value);
+        read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+        SIG[0] = SIG[0] >> 8;
+        $fclose(fd);
+
       end
     endcase
   endfunction

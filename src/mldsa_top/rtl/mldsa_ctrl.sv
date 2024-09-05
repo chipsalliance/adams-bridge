@@ -91,7 +91,7 @@ module mldsa_ctrl
   input logic makehint_done_i,
   input logic makehint_reg_wren_i,
   input logic [3:0][7:0] makehint_reg_wrdata_i,
-  input logic [MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr_i,
+  input logic [MLDSA_MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr_i,
 
   output logic normcheck_enable_o,
   output logic [1:0] normcheck_mode_o,
@@ -350,7 +350,7 @@ module mldsa_ctrl
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       signature_reg <= '0;
-    end else if (zeroize | clear_signature_valid) begin
+    end else if (zeroize) begin
       signature_reg <= '0;
     end else begin
       for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
@@ -372,8 +372,10 @@ module mldsa_ctrl
       end
       //HW write h
       for (int dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
-        if (makehint_reg_wren_i & (makehint_reg_wr_addr_i == dword)) begin
-          signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
+        if (set_signature_valid) begin
+          signature_reg.enc.h[dword] <= '0;
+        end else if (makehint_reg_wren_i & (makehint_reg_wr_addr_i == dword)) begin
+          signature_reg.enc.h[dword] <= makehint_reg_wrdata_i;
         end
       end
     end
@@ -543,7 +545,8 @@ module mldsa_ctrl
   always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
   //FIXME jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
-  always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | (sigdecode_h_done_i & sigdecode_h_invalid_i));
+  always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
+                                   (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
 //Primary sequencer for keygen, signing, and verify
 
@@ -618,6 +621,7 @@ module mldsa_ctrl
         //Jump to signing process
         if (keygen_signing_process) begin
           prog_cntr_nxt = MLDSA_SIGN_S;
+          signing_process_nxt  = 1;
         end
         else begin
           prog_cntr_nxt = prog_cntr + 1;
@@ -926,7 +930,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
           end   
         endcase
         if (keygen_signing_process & (prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
-          sign_prog_cntr_nxt = MLDSA_SIGN_INIT_S+8; //FIXME
+          sign_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
         end
       end
       //START of C access - check if C is valid
