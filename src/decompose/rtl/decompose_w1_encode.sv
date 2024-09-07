@@ -40,26 +40,20 @@ module decompose_w1_encode
 
         output logic [63:0] w1_o,
         output logic buffer_en,
-        output logic keccak_en,
-        
-        input wire keccak_done,
+
         output logic w1_encode_done
     );
 
-    localparam KECCAK_LOOPS_FIRST = 9;
-    localparam KECCAK_LOOPS_SUBSEQ = 17;
     localparam BUFFER_CYC = 4;
 
     //Enable counter
-    logic [4:0] keccak_count;
     logic [1:0] buffer_count;
     logic [2:0] rounds_count;
 
     //Flags
     logic w1_en_reg;
-    logic init_count_first, init_count_subseq;
+    logic init_count_first;
     logic decr_buf_count;
-    logic decr_kec_count;
 
     //Generate a pulse to init counters
     always_ff @(posedge clk or negedge reset_n) begin
@@ -71,11 +65,9 @@ module decompose_w1_encode
             w1_en_reg <= w1_encode_enable;
     end
     assign init_count_first = w1_encode_enable & ~w1_en_reg;
-    assign init_count_subseq = w1_encode_enable & keccak_en;
 
     //Decr logic
     assign decr_buf_count = w1_en_reg;
-    assign decr_kec_count = buffer_en;
 
     //Buffer enable counter
     always_ff @(posedge clk or negedge reset_n) begin
@@ -89,20 +81,6 @@ module decompose_w1_encode
             buffer_count <= buffer_count - 'h1;
     end
 
-    //Keccak enable counter
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            keccak_count <= 'h0;
-        else if (zeroize)
-            keccak_count <= 'h0;
-        else if (init_count_first)
-            keccak_count <= KECCAK_LOOPS_FIRST-1;
-        else if (init_count_subseq)
-            keccak_count <= KECCAK_LOOPS_SUBSEQ-1;
-        else if (decr_kec_count && (keccak_count > 'h0))
-            keccak_count <= keccak_count - 'h1;
-    end
-
     //Rounds counter
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
@@ -111,14 +89,12 @@ module decompose_w1_encode
             rounds_count <= 'h0;
         else if (init_count_first)
             rounds_count <= MLDSA_K-1;
-        else if (keccak_en && (rounds_count > 0))
+        else if ((rounds_count > 0))
             rounds_count <= rounds_count - 'h1;
     end
 
     assign buffer_en        = w1_en_reg && (buffer_count == 'h0);
-    //TODO: delay keccak_en by 1 cyc to give time for buffer to latch values?
-    assign keccak_en        = w1_en_reg && (keccak_count == 'h0) && (buffer_count == 'h0);
-    assign w1_encode_done   = keccak_done && (rounds_count == 'h0);
+    assign w1_encode_done   = (rounds_count == 'h0);
 
     //r1 shift reg
     always_ff @(posedge clk or negedge reset_n) begin

@@ -54,10 +54,10 @@ module mldsa_sampler_top
 
   output logic                                        sampler_mem_dv_o,
   output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_mem_data_o,
-  output logic [MLDSA_MEM_ADDR_WIDTH-1:0]               sampler_mem_addr_o,
+  output logic [MLDSA_MEM_ADDR_WIDTH-1:0]             sampler_mem_addr_o,
 
   output logic                                        sampler_state_dv_o,
-  output logic [abr_sha3_pkg::StateW-1:0]                 sampler_state_data_o [Sha3Share]
+  output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o [Sha3Share]
 
   );
 

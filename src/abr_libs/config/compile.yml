@@ -9,7 +9,6 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/abr_sva.svh
       - $COMPILE_ROOT/rtl/abr_macros.svh
-      - $COMPILE_ROOT/rtl/abr_sram.sv
       - $COMPILE_ROOT/rtl/abr_1r1w_ram.sv
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
@@ -31,7 +30,6 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/abr_sva.svh
       - $COMPILE_ROOT/rtl/abr_macros.svh
-      - $COMPILE_ROOT/rtl/abr_sram.sv
       - $COMPILE_ROOT/rtl/abr_1r1w_ram.sv
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv

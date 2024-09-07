@@ -57,13 +57,15 @@ module norm_check_ctrl
             mem_rd_addr <= 'h0;
         else if (zeroize)
             mem_rd_addr <= 'h0;
+        else if (norm_check_enable)
+            mem_rd_addr <= mem_base_addr;
         else if (incr_rd_addr)
             mem_rd_addr <= last_poly_last_addr ? 'h0 :  mem_rd_addr + 'h1;
     end
 
     //Addr assignment
     always_comb begin
-        mem_rd_req.addr = mem_rd_addr + mem_base_addr;
+        mem_rd_req.addr = mem_rd_addr;
 
         mem_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
     end

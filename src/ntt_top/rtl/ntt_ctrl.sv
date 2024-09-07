@@ -119,7 +119,6 @@ logic wr_addr_wraparound;
 //PWO wires
 logic incr_pw_rd_addr, incr_pw_wr_addr; //TODO: need both?
 logic rst_pw_addr;
-logic [MEM_ADDR_WIDTH-1:0] pw_rd_addr, pw_wr_addr, pw_rd_addr_nxt, pw_wr_addr_nxt;
 
 //Twiddle ROM wires
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg;
@@ -253,10 +252,6 @@ always_comb begin
     mem_wr_addr_nxt    = mem_wr_addr + wr_addr_step;
     rd_addr_wraparound = mem_rd_addr_nxt > {1'b0,mem_rd_base_addr} + MEM_LAST_ADDR;
     wr_addr_wraparound = mem_wr_addr_nxt > {1'b0,mem_wr_base_addr} + MEM_LAST_ADDR;
-
-    //PWO addresses
-    pw_rd_addr_nxt        = pw_rd_addr + PWO_READ_ADDR_STEP;
-    pw_wr_addr_nxt        = pw_wr_addr + PWO_WRITE_ADDR_STEP;
 end
 
 //Read addr
@@ -294,33 +289,36 @@ end
 //PWO addr
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        pw_rd_addr <= 'h0;
-        pw_wr_addr <= 'h0;
+        pw_mem_rd_addr_a <= '0;
+        pw_mem_rd_addr_b <= '0;
+        pw_mem_rd_addr_c <= '0;
+        pw_mem_wr_addr_c <= '0;
     end
     else if (zeroize) begin
-        pw_rd_addr <= 'h0;
-        pw_wr_addr <= 'h0;
+        pw_mem_rd_addr_a <= '0;
+        pw_mem_rd_addr_b <= '0;
+        pw_mem_rd_addr_c <= '0;
+        pw_mem_wr_addr_c <= '0;
     end
     else if (rst_pw_addr) begin
-        pw_rd_addr <= 'h0;
-        pw_wr_addr <= 'h0;
+        pw_mem_rd_addr_a <= pw_base_addr_a;
+        pw_mem_rd_addr_b <= pw_base_addr_b;
+        pw_mem_rd_addr_c <= pw_base_addr_c;
+        pw_mem_wr_addr_c <= pw_base_addr_c;
     end
     else begin
         if (incr_pw_rd_addr) begin
-            pw_rd_addr <= pw_rd_addr_nxt;
+            pw_mem_rd_addr_a <= pw_mem_rd_addr_a + PWO_READ_ADDR_STEP;
+            pw_mem_rd_addr_b <= pw_mem_rd_addr_b + PWO_READ_ADDR_STEP;    
+            pw_mem_rd_addr_c <= accumulate ? pw_mem_rd_addr_c + PWO_READ_ADDR_STEP : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
+            
         end
         if (incr_pw_wr_addr) begin
-            pw_wr_addr <= pw_wr_addr_nxt;
+            pw_mem_wr_addr_c <= pw_mem_wr_addr_c + PWO_WRITE_ADDR_STEP;
         end
     end
 end
 
-always_comb begin
-    pw_mem_rd_addr_a = pw_base_addr_a + pw_rd_addr;
-    pw_mem_rd_addr_b = pw_base_addr_b + pw_rd_addr;    
-    pw_mem_rd_addr_c = accumulate ? pw_base_addr_c + pw_rd_addr : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
-    pw_mem_wr_addr_c = pw_base_addr_c + pw_wr_addr;
-end
 
 //------------------------------------------
 //Twiddle addr logic

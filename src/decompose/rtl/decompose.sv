@@ -49,9 +49,6 @@ module decompose
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
 
-        //Input from keccak to w1_encode
-        input wire keccak_done,
-
         //Output to memory - r0
         output mem_if_t mem_rd_req,
         output mem_if_t mem_wr_req,
@@ -69,7 +66,6 @@ module decompose
         //Output of w1_encode - r1
         output logic [63:0] w1_o,
         output logic buffer_en,
-        output logic keccak_en, //TODO: need to delay by 1 cycle?
 
         //TODO: check what high level controller requirement is
         output logic decompose_done,
@@ -238,8 +234,6 @@ module decompose
         .r1_i(r1_mux),
         .w1_o(w1_o),
         .buffer_en(buffer_en),
-        .keccak_en(keccak_en),
-        .keccak_done(keccak_done),
         .w1_encode_done(w1_encode_done)
     );
     

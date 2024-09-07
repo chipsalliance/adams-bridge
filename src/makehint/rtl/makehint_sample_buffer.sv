@@ -57,10 +57,8 @@ module makehint_sample_buffer
   //Buffer is full when it can't take a full write cycle
   //Check for at least N entries available, where N is the difference between WR/RD bandwidth
   generate 
-    begin : buffer_full_gen
     if (NUM_WR == NUM_RD)  always_comb buffer_full_o = '0;
     else                   always_comb buffer_full_o = buffer_valid[(BUFFER_DEPTH-(NUM_WR-NUM_RD))];
-    end
   endgenerate
   //Read when we have NUM_RD worth of valid data
   always_comb buffer_rd = buffer_valid[NUM_RD-1]; 

@@ -381,7 +381,7 @@ mldsa_sampler_top sampler_top_inst
 assign sampler_ntt_dv[1] = 0; //no sampler interface to secondary ntt
 
 generate
-  for (genvar g_inst = 0; g_inst < 2; g_inst++) begin
+  for (genvar g_inst = 0; g_inst < 2; g_inst++) begin : ntt_gen
     //NTT
     //gasket here, create common interfaces?
     always_comb begin
@@ -504,9 +504,6 @@ decompose_inst (
   .dest_base_addr(aux_dest_base_addr[0]),
   .hint_src_base_addr(aux_src1_base_addr[0]),
 
-  //Input from keccak to w1_encode
-  .keccak_done('1), //TODO remove
-
   //Output to memory - r0
   .mem_rd_req(decomp_mem_rd_req[0]),
   .mem_wr_req(decomp_mem_wr_req),
@@ -524,7 +521,6 @@ decompose_inst (
   //Output of w1_encode - r1
   .w1_o(decomp_msg_data[0]),
   .buffer_en(decomp_msg_valid),
-  .keccak_en(), //FIXME remove
 
   //TODO: check what high level controller requirement is
   .decompose_done(decompose_done),
@@ -988,7 +984,6 @@ end
 
 always_comb skencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
-//always_comb normcheck_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
@@ -996,7 +991,7 @@ abr_1r1w_ram
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_sram_inst0_bank0
+) mldsa_ram_inst0_bank0
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[0]),
@@ -1010,7 +1005,7 @@ abr_1r1w_ram
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_sram_inst0_bank1
+) mldsa_ram_inst0_bank1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[1]),
@@ -1025,7 +1020,7 @@ abr_1r1w_ram
 #(
   .DEPTH(MLDSA_MEM_INST1_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_sram_inst1
+) mldsa_ram_inst1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[1]),
@@ -1040,7 +1035,7 @@ abr_1r1w_ram
 #(
   .DEPTH(MLDSA_MEM_INST2_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_sram_inst2
+) mldsa_ram_inst2
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[2]),
@@ -1055,7 +1050,7 @@ abr_1r1w_ram
 #(
   .DEPTH(MLDSA_MEM_INST3_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_sram_inst3
+) mldsa_ram_inst3
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[3]),

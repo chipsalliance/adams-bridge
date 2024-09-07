@@ -115,8 +115,8 @@ module skdecode_ctrl
             mem_wr_addr <= 'h0;
         else if (zeroize)
             mem_wr_addr <= 'h0;
-        else if (rst_wr_addr)
-            mem_wr_addr <= 'h0;
+        else if (skdecode_enable)
+            mem_wr_addr <= dest_base_addr;
         else if (arc_SKDEC_WR_STAGE_SKDEC_WR_T0)
             mem_wr_addr <= mem_a_wr_req.addr; //Latch the last addr written, so we can continue from there for T0 poly //TODO revisit
         else if (incr_wr_addr)
@@ -131,8 +131,8 @@ module skdecode_ctrl
             kmem_rd_addr <= 'h0;
         else if (zeroize)
             kmem_rd_addr <= 'h0;
-        else if (rst_rd_addr)
-            kmem_rd_addr <= 'h0;
+        else if (skdecode_enable)
+            kmem_rd_addr <= src_base_addr;
         else if (incr_rd_addr)
             kmem_rd_addr <= kmem_rd_addr_nxt;
     end
@@ -354,16 +354,16 @@ module skdecode_ctrl
 
     //Outputs
     always_comb begin
-        mem_a_wr_req.addr       = t0_mode ? mem_wr_addr + dest_base_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + dest_base_addr : 'h0;
+        mem_a_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) : 'h0;
         mem_a_wr_req.rd_wr_en   = t0_mode & mem_a_wr_req.addr[0] ? RW_IDLE : mem_rw_mode;
 
-        mem_b_wr_req.addr       = t0_mode ? mem_wr_addr + dest_base_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 'h1 + dest_base_addr : 'h0;
+        mem_b_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 'h1 : 'h0;
         mem_b_wr_req.rd_wr_en   = t0_mode & ~mem_a_wr_req.addr[0]? RW_IDLE : mem_rw_mode;
 
-        kmem_a_rd_req.addr      = kmem_rd_addr + src_base_addr;
+        kmem_a_rd_req.addr      = kmem_rd_addr;
         kmem_a_rd_req.rd_wr_en  = kmem_rw_mode;
 
-        kmem_b_rd_req.addr      = t0_enable_fsm ? kmem_rd_addr + 'h1 + src_base_addr : 'h0;
+        kmem_b_rd_req.addr      = t0_enable_fsm ? kmem_rd_addr + 'h1 : 'h0;
         kmem_b_rd_req.rd_wr_en  = t0_enable_fsm ? kmem_rw_mode : RW_IDLE;
 
     end
