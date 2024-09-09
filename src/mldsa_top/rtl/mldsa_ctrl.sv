@@ -118,7 +118,11 @@ module mldsa_ctrl
   output logic sigdecode_z_enable_o, 
   input mem_if_t sigdecode_z_rd_req_i,
   output logic [1:0][3:0][19:0] sigdecode_z_rd_data_o,
-  input logic sigdecode_z_done_i
+  input logic sigdecode_z_done_i,
+
+  //Interrupts
+  output logic error_intr,
+  output logic notif_intr
 
   );
 
@@ -185,6 +189,9 @@ module mldsa_ctrl
   
   //shared aux functions
   logic [1:0] normcheck_enable;
+
+  //Interrupts
+  logic mldsa_status_done_d, mldsa_status_done_p;
   
   assign mldsa_reg_hwif_in_o = mldsa_reg_hwif_in;
   assign mldsa_reg_hwif_out = mldsa_reg_hwif_out_i;
@@ -205,9 +212,6 @@ module mldsa_ctrl
   
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
-  
-  always_comb mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0;
-  always_comb mldsa_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = '0;
   
   always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
   
@@ -251,6 +255,26 @@ module mldsa_ctrl
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++)begin
         mldsa_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
+  end
+
+  //Generate a pulse to trig the interrupt after finishing the operation
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b)
+      mldsa_status_done_d <= 1'b0;
+    else if (zeroize)
+      mldsa_status_done_d <= 1'b0;
+    else
+      mldsa_status_done_d <= mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next;
+  end
+
+  always_comb mldsa_status_done_p = mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next & !mldsa_status_done_d;
+
+  assign error_intr = mldsa_reg_hwif_out.intr_block_rf.error_global_intr_r.intr;
+  assign notif_intr = mldsa_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
+
+  always_comb begin
+    mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0; //TODO
+    mldsa_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
   end
   
   logic [1:0][10:0] skdecode_rdaddr;

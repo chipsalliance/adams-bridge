@@ -46,7 +46,10 @@ module mldsa_top
   //ahb output
   output logic                      hresp_o,
   output logic                      hreadyout_o,
-  output logic [AHB_DATA_WIDTH-1:0] hrdata_o
+  output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
+
+  output logic                      error_intr,
+  output logic                      notif_intr
 
 
   );
@@ -341,7 +344,10 @@ mldsa_ctrl mldsa_control_inst
   .sigdecode_z_enable_o(sigdecode_z_enable),
   .sigdecode_z_rd_req_i(sigdecode_z_mem_rd_req),
   .sigdecode_z_rd_data_o(sigdecode_z_mem_rd_data),
-  .sigdecode_z_done_i(sigdecode_z_done)
+  .sigdecode_z_done_i(sigdecode_z_done),
+
+  .error_intr(error_intr),
+  .notif_intr(notif_intr)
 
 );
 

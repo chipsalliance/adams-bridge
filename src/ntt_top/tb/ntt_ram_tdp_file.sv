@@ -14,14 +14,14 @@
 //
 //======================================================================
 //
-// ecc_ram_tdp_file.sv
+// ntt_ram_tdp_file.sv
 // --------
-// ECC Data Memory to store intermediate results from point multiplication.
+// Temp NTT Data Memory to store intermediate results from point multiplication.
 //
 //
 //======================================================================
 
-module ecc_ram_tdp_file #(
+module ntt_ram_tdp_file #(
     parameter ADDR_WIDTH = 10,
     parameter DATA_WIDTH = 32
     )

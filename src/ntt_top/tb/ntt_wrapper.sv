@@ -99,7 +99,7 @@ module ntt_wrapper
     assign pwm_mem_a_rden = (pwm_a_rd_req.rd_wr_en == RW_READ);
     assign pwm_mem_b_rden = (pwm_b_rd_req.rd_wr_en == RW_READ);
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) ntt_mem (
@@ -120,7 +120,7 @@ module ntt_wrapper
         .load_tb_addr(load_tb_addr)
     );
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_a (
@@ -141,7 +141,7 @@ module ntt_wrapper
         .load_tb_addr(load_tb_addr)
     );
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_b (
