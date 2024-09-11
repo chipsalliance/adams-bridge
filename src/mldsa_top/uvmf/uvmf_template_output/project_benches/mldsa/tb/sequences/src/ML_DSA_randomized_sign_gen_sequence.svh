@@ -101,7 +101,7 @@ class ML_DSA_randomized_sign_gen_sequence extends mldsa_bench_sequence_base;
     write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
     $fclose(fd);
     // Execute the key generation process
-    $system("test_dilithium5 keygen_input_for_test.hex keygen_output_for_test.hex");
+    $system("./test_dilithium5 keygen_input_for_test.hex keygen_output_for_test.hex");
 
     // Open the generated file for reading
     fd = $fopen(input_file, "r");
