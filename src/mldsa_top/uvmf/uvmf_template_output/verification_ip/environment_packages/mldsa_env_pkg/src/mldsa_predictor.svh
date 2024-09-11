@@ -356,7 +356,7 @@ class mldsa_predictor #(
         write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
         $fclose(fd);
         // $system("test_dilithium5 keygen_input.hex keygen_output.hex");
-        $system($sformatf("%s keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
+        $system($sformatf("%s.exe keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
         `uvm_info("PRED", $sformatf("%s is being executed", dilithium_command), UVM_MEDIUM)
         `uvm_info("PRED", "CTRL Reg is configured to perform KeyGen", UVM_MEDIUM)
         // Open the file for reading
@@ -388,7 +388,7 @@ class mldsa_predictor #(
         write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
         $fclose(fd);
         //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
-        $system($sformatf("%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
+        $system($sformatf("%s.exe signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
         `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
         // Open the file for reading
         fd = $fopen(input_file, "r");
@@ -425,7 +425,7 @@ class mldsa_predictor #(
         write_file(fd, 16, MSG); // Write 64-byte message to the file
         write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
         $fclose(fd);
-        $system($sformatf("%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
+        $system($sformatf("%s.exe verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
         `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
         // Open the file for reading
         fd = $fopen(input_file, "r");
@@ -474,7 +474,7 @@ class mldsa_predictor #(
         write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
         $fclose(fd);
         //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
-        $system($sformatf("%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
+        $system($sformatf("%s.exe signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
         `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
         // Open the file for reading
         fd = $fopen(input_file, "r");
