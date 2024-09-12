@@ -16,5 +16,6 @@
 `define ABR_CFG_SV
 
   `define ABR_ICG           abr_clk_gate
-
+  `define ABR_MEM           abr_1r1w_ram
+  
 `endif

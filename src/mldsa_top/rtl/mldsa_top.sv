@@ -723,7 +723,7 @@ sigdecode_h_inst (
 );
 
 //w1 memory
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(512), //FIXME params
   .DATA_WIDTH(4) //FIXME params
@@ -993,7 +993,7 @@ always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1007,7 +1007,7 @@ abr_1r1w_ram
   .raddr_i(mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:1]),
   .rdata_o(mldsa_mem_rdata0_bank[0])
 );
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1022,7 +1022,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata0_bank[1])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST1_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1037,7 +1037,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata[1])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST2_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1052,7 +1052,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata[2])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST3_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
