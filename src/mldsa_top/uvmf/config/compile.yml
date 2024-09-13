@@ -2,7 +2,7 @@
 provides: [uvmf_mldsa]
 schema_version: 2.4.0
 requires:
-  - uvmf_lib
+  - mldsa_uvmf_lib
   - mldsa_top
 targets:
   tb:

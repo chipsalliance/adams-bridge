@@ -138,7 +138,7 @@ class mldsa_scoreboard #(
         (t.address >= scbr_mldsa_rm.MLDSA_MSG[0].get_address(scbr_mldsa_map) &&
           t.address <= scbr_mldsa_rm.MLDSA_MSG[$size(scbr_mldsa_rm.MLDSA_MSG)-1].get_address(scbr_mldsa_map))
       ) begin
-        `uvm_info("SCBD_AHB", $sformatf("Skipping register access in scoreboard at address: 0x%x", t.address), UVM_LOW)
+        `uvm_info("SCBD_AHB", $sformatf("Skipping register access in scoreboard at address: 0x%x", t.address), UVM_NONE)
       end
       else if (ahb_expected_q.size() > 0) begin
           t_exp = ahb_expected_q.pop_front();
@@ -154,7 +154,7 @@ class mldsa_scoreboard #(
           end
       end
       else begin
-          `uvm_info("FIXME_CUSTOM_SCOREBOARD", "UVMF_CHANGE_ME: The mldsa_scoreboard::write_actual_ahb_analysis_export function needs to be completed with custom scoreboard functionality for unexpected actual transactions",UVM_LOW)
+          `uvm_info("FIXME_CUSTOM_SCOREBOARD", "UVMF_CHANGE_ME: The mldsa_scoreboard::write_actual_ahb_analysis_export function needs to be completed with custom scoreboard functionality for unexpected actual transactions",UVM_NONE)
           `uvm_error("SCBD_AHB",$sformatf("NO PREDICTED ENTRY TO COMPARE AGAINST:%s",t.convert2string()))
           nothing_to_compare_against_count++;
       end
@@ -195,7 +195,7 @@ class mldsa_scoreboard #(
         (t.address >= scbr_mldsa_rm.MLDSA_MSG[0].get_address(scbr_mldsa_map) &&
           t.address <= scbr_mldsa_rm.MLDSA_MSG[$size(scbr_mldsa_rm.MLDSA_MSG)-1].get_address(scbr_mldsa_map))
       ) begin
-        `uvm_info("SCBD_AHB", $sformatf("Skipping monitor message in scoreboard at address: 0x%x", t.address), UVM_LOW)
+        `uvm_info("SCBD_AHB", $sformatf("Skipping monitor message in scoreboard at address: 0x%x", t.address), UVM_NONE)
       end
       else begin
 
