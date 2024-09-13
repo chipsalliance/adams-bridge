@@ -13,6 +13,8 @@
 // limitations under the License.
 
 `include "config_defines.svh"
+`include "abr_prim_flop_macros.sv"
+`include "abr_prim_assert.sv"
 
 module mldsa_sampler_top
   import mldsa_sampler_pkg::*;

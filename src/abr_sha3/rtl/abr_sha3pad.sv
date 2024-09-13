@@ -5,6 +5,8 @@
 // ABR_SHA3 padding logic
 
 `include "abr_sva.svh"
+`include "abr_prim_flop_macros.sv"
+`include "abr_prim_assert.sv"
 
 module abr_sha3pad
   import abr_sha3_pkg::*;

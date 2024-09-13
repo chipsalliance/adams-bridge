@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 `ifndef ABR_CFG_SV
 `define ABR_CFG_SV
+`include "abr_sva.svh"
 
   `define ABR_ICG           abr_clk_gate
 

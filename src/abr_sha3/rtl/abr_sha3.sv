@@ -7,6 +7,8 @@
 // It instantiates a keccak_round with 1600 bits of the state.
 
 `include "abr_sva.svh"
+`include "abr_prim_flop_macros.sv"
+`include "abr_prim_assert.sv"
 
 module abr_sha3
   import abr_sha3_pkg::*;
