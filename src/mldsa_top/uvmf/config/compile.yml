@@ -58,3 +58,4 @@ global:
         - '-sv_lib libapb3_IN_SystemVerilog_VCS_full'
         # Report "MVC_ERROR" as "UVM_ERROR"
         - '+QVIP_UVM_REPORTING'
+        - '+UVM_VERBOSITY=UVM_LOW'  # Adding UVM verbosity level here

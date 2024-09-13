@@ -228,7 +228,7 @@ class mldsa_predictor #(
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_SIGN_RND[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_SIGN_RND[$size(p_mldsa_rm.MLDSA_SIGN_RND)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SIGN_RND at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SIGN_RND at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else begin
           `uvm_error("PRED_AHB", $sformatf("Unhandled register write at address: 0x%x", reg_addr))
@@ -289,33 +289,33 @@ class mldsa_predictor #(
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_NAME[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_NAME[$size(p_mldsa_rm.MLDSA_NAME)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_NAME at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_NAME at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_VERSION[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_VERSION[$size(p_mldsa_rm.MLDSA_VERSION)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_VERSION at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_VERSION at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_CTRL.get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_CTRL at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_CTRL at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_STATUS.get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_STATUS at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_STATUS at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_ENTROPY[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_ENTROPY[$size(p_mldsa_rm.MLDSA_ENTROPY)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_ENTROPY at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_ENTROPY at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_SEED[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_SEED[$size(p_mldsa_rm.MLDSA_SEED)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SEED at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SEED at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_SIGN_RND[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_SIGN_RND[$size(p_mldsa_rm.MLDSA_SIGN_RND)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SIGN_RND at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SIGN_RND at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_MSG[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_MSG[$size(p_mldsa_rm.MLDSA_MSG)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_MSG at address: 0x%x", reg_addr), UVM_NONE)
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_MSG at address: 0x%x", reg_addr), UVM_HIGH)
         end
         // Add more cases as needed for other registers
         else begin
