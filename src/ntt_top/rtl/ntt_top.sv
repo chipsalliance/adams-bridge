@@ -73,6 +73,8 @@ module ntt_top
     //Sampler IF
     input wire sampler_valid,
 
+    input wire [5:0] random,
+
     //Memory if
     //Reuse between pwm c, ntt
     output mem_if_t mem_wr_req,
@@ -96,6 +98,7 @@ module ntt_top
     logic mem_wren, mem_wren_reg, mem_wren_mux;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
     // logic [(4*REG_SIZE)-1:0] mem_wr_data;
+    logic [MEM_DATA_WIDTH-1:0] mem_wr_data_int, mem_wr_data_reg;
     
     //Read IF
     logic mem_rden;
@@ -111,7 +114,7 @@ module ntt_top
     logic buf0_valid;
 
     //Internal
-    logic [6:0] twiddle_addr;
+    logic [6:0] twiddle_addr, twiddle_addr_reg;
     logic buf_wren;
     logic buf_rden;
     logic buf_wr_rst_count, buf_rd_rst_count;
@@ -119,6 +122,7 @@ module ntt_top
     //buffer IF
     logic [(4*REG_SIZE)-1:0] buf_data_i, buf_data_o;
     logic [(3*NTT_REG_SIZE)-1:0] twiddle_factor, twiddle_factor_reg;
+    logic [1:0] buf_wrptr, buf_rdptr;
 
     //PWM mem IF
     pwo_uvwi_t pw_uvw_i;
@@ -159,8 +163,9 @@ module ntt_top
     assign mem_wr_req.rd_wr_en = !pwo_mode ? (mem_wren_mux ? RW_WRITE : RW_IDLE) //TODO convert mem_wren_mux to rw enum
                                     : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
     assign mem_wr_req.addr  = !pwo_mode ? mem_wr_addr_mux : pwm_wr_addr_c_reg;
-    assign mem_wr_data      = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
+    assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
+    assign mem_wr_data      = mem_wr_data_int; //ct_mode ? mem_wr_data_reg : mem_wr_data_int; //TODO: gs, pwo modes
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
     assign mem_rd_req.rd_wr_en = (ct_mode || gs_mode) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
@@ -190,6 +195,7 @@ module ntt_top
         .butterfly_ready(bf_ready),
         .buf0_valid(buf0_valid),
         .sampler_valid(sampler_valid),
+        .random(random),
 
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
@@ -198,6 +204,8 @@ module ntt_top
         .bf_enable(bf_enable),
         .buf_wren(buf_wren),
         .buf_rden(buf_rden),
+        .buf_wrptr(buf_wrptr),
+        .buf_rdptr(buf_rdptr),
         .twiddle_addr(twiddle_addr),
 
         .mem_rd_addr(mem_rd_addr),
@@ -230,6 +238,7 @@ module ntt_top
     always_comb begin
         unique case(mode)
             ct: begin
+                //with shuffling, twiddle factor needs to be delayed
                 uvw_i.w00_i = twiddle_factor[NTT_REG_SIZE-1:0];
                 uvw_i.w01_i = twiddle_factor[NTT_REG_SIZE-1:0];
                 uvw_i.w10_i = twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
@@ -274,6 +283,7 @@ module ntt_top
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
+            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -289,11 +299,13 @@ module ntt_top
             pwm_wr_addr_c_reg   <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            mem_wr_data_reg     <= 'h0;
             
         end
         else if (zeroize) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
+            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -308,10 +320,12 @@ module ntt_top
             pwm_wr_addr_c_reg   <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            mem_wr_data_reg     <= 'h0;
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data;
             bf_enable_reg       <= bf_enable;
+            twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
             uv_o_reg            <= uv_o;
@@ -327,6 +341,7 @@ module ntt_top
             pwm_wr_data_reg     <= {1'b0, pwo_uv_o.uv3, 1'b0, pwo_uv_o.uv2, 1'b0, pwo_uv_o.uv1, 1'b0, pwo_uv_o.uv0};
 
             pw_wren_reg         <= pw_wren;
+            mem_wr_data_reg     <= mem_wr_data_int;
         end
     end
 
@@ -417,9 +432,10 @@ module ntt_top
         endcase
     end
     assign bf_enable_mux    = ct_mode ? bf_enable       : bf_enable_reg;
-    assign mem_wren_mux     = ct_mode ? mem_wren_reg    : mem_wren;
-    assign mem_wr_addr_mux  = ct_mode ? mem_wr_addr_reg : mem_wr_addr;
+    assign mem_wren_mux     = mem_wren; //ct_mode ? mem_wren_reg    : mem_wren;
+    assign mem_wr_addr_mux  = mem_wr_addr; //ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 
+    /*
     ntt_buffer #(
         .REG_SIZE(REG_SIZE)
     ) buffer_inst0 (
@@ -433,6 +449,23 @@ module ntt_top
         .mode(mode),
         .data_i(buf_data_i),
         .buf0_valid(buf0_valid),
+        .data_o(buf_data_o)
+    );
+    */
+
+    ntt_shuffle_buffer #(
+        .REG_SIZE(REG_SIZE)
+    ) buffer_inst0 (
+        .clk(clk),
+        .reset_n(reset_n),
+        .zeroize(zeroize),
+        .wren(buf_wren),
+        .rden(buf_rden),
+        .wrptr(buf_wrptr),
+        .rdptr(buf_rdptr),
+        .wr_rst_count(buf_wr_rst_count),
+        .data_i(buf_data_i),
+        .buf_valid(buf0_valid),
         .data_o(buf_data_o)
     );
 
