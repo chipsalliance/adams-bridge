@@ -35,12 +35,6 @@
   output wire PWA_trigger,
   output wire INTT_trigger,
 
-  output mldsa_seq_instr_t data_o
-
-  output wire NTT_trigger,
-  output wire PWM_trigger,
-  output wire PWA_trigger,
-  output wire INTT_trigger,
 
     output mldsa_seq_instr_t data_o
   );
@@ -137,94 +131,6 @@
     (*rom_style = "block" *) mldsa_seq_instr_t data_o_rom;
     assign data_o = data_o_rom;
 
-    //===========================================================================
-    //
-    //      ************** TRIGER Functionality **************
-    //
-    //===========================================================================
-    logic NTT_raw_signal, PWM_raw_signal, PWA_raw_signal, INTT_raw_signal;
-    gen_pulse_custom NTT_pulse
-    (
-        .clk(clk),
-        .reset_n(rst_b),
-        .raw_signal(NTT_raw_signal),
-        .trigger_pulse(NTT_trigger)
-    );
-
-    gen_pulse_custom PWM_pulse
-    (
-        .clk(clk),
-        .reset_n(rst_b),
-        .raw_signal(PWM_raw_signal),
-        .trigger_pulse(PWM_trigger)
-    );
-    
-    gen_pulse_custom PWA_pulse
-    (
-        .clk(clk),
-        .reset_n(rst_b),
-        .raw_signal(PWA_raw_signal),
-        .trigger_pulse(PWA_trigger)
-    );
-
-    gen_pulse_custom INTT_pulse
-    (
-        .clk(clk),
-        .reset_n(rst_b),
-        .raw_signal(INTT_raw_signal),
-        .trigger_pulse(INTT_trigger)
-    );
-
-    always_ff @(posedge clk or negedge rst_b) begin
-        if (!rst_b) begin
-            NTT_raw_signal <= 'h0;
-            PWM_raw_signal <= 'h0;
-            PWA_raw_signal <= 'h0;
-            INTT_raw_signal <= 'h0;
-        end 
-        else if (zeroize) begin
-            NTT_raw_signal <= 'h0;
-            PWM_raw_signal <= 'h0;
-            PWA_raw_signal <= 'h0;
-            INTT_raw_signal <= 'h0;
-        end 
-        else begin
-            if (en_i) begin
-                unique case(addr_i)
-                    MLDSA_SIGN_VALID_S : begin //NTT(C)
-                        NTT_raw_signal <= 'h1;
-                        PWM_raw_signal <= 'h0;
-                        PWA_raw_signal <= 'h0;
-                        INTT_raw_signal <= 'h0;
-                    end
-                    MLDSA_SIGN_VALID_S+2 : begin
-                        NTT_raw_signal <= 'h0;
-                        PWM_raw_signal <= 'h1;
-                        PWA_raw_signal <= 'h0;
-                        INTT_raw_signal <= 'h0;
-                    end
-                    MLDSA_SIGN_VALID_S+4 : begin
-                        NTT_raw_signal <= 'h0;
-                        PWM_raw_signal <= 'h0;
-                        PWA_raw_signal <= 'h1;
-                        INTT_raw_signal <= 'h0;
-                    end
-                    MLDSA_SIGN_VALID_S+3 : begin
-                        NTT_raw_signal <= 'h0;
-                        PWM_raw_signal <= 'h0;
-                        PWA_raw_signal <= 'h0;
-                        INTT_raw_signal <= 'h1;
-                    end
-                    default : begin
-                        NTT_raw_signal <= 'h0;
-                        PWM_raw_signal <= 'h0;
-                        PWA_raw_signal <= 'h0;
-                        INTT_raw_signal <= 'h0;
-                    end
-                endcase 
-            end
-        end
-    end
 
 
   //----------------------------------------------------------------
