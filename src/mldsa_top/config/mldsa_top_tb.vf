@@ -25,7 +25,6 @@ ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sva.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_macros.svh
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sram.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_1r1w_ram.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ram_regout.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_icg.sv
@@ -53,7 +52,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ecc_ram_tdp_file.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_ram_tdp_file.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_wrapper.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/tb/mldsa_top_tb.sv

@@ -91,7 +91,7 @@ class ML_DSA_randomized_key_gen_and_sign_sequence extends mldsa_bench_sequence_b
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
       end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_LOW);
+        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
       end
       ready = data[0];
     end
@@ -103,7 +103,7 @@ class ML_DSA_randomized_key_gen_and_sign_sequence extends mldsa_bench_sequence_b
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SEED[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_SEED[%0d] written with %0h", i, data), UVM_LOW);
+        `uvm_info("REG_WRITE", $sformatf("MLDSA_SEED[%0d] written with %0h", i, SEED[i]), UVM_LOW);
       end
     end
 
@@ -145,7 +145,7 @@ class ML_DSA_randomized_key_gen_and_sign_sequence extends mldsa_bench_sequence_b
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
       end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_LOW);
+        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
       end
       valid = data[1];
     end

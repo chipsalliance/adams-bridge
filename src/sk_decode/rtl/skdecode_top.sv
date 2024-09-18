@@ -86,6 +86,8 @@ module skdecode_top
     logic s1s2_buf_stall_reg;
     logic s1s2_buf_full;
 
+    logic s1s2_keymem_b_valid;
+
     //Read address counters
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
 
@@ -104,6 +106,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= 'h0;
             mem_b_wr_data_reg           <= 'h0;
             t0_done_reg                 <= 'b0;
+            s1s2_keymem_b_valid         <= 'b0;
         end
         else if (zeroize) begin
             s1s2_enable_reg             <= 'h0;
@@ -117,6 +120,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= 'h0;
             mem_b_wr_data_reg           <= 'h0;
             t0_done_reg                 <= 'b0;
+            s1s2_keymem_b_valid         <= 'b0;
         end
         else begin
             s1s2_enable_reg             <= s1s2_enable;
@@ -128,6 +132,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= mem_a_wr_data_int;
             mem_b_wr_data_reg           <= mem_b_wr_data_int;
             t0_done_reg                 <= t0_done;
+            s1s2_keymem_b_valid         <= s1s2_enable & (keymem_b_rd_req.rd_wr_en == RW_READ);
         end
     end
 
@@ -142,10 +147,7 @@ module skdecode_top
             keymem_b_rd_data_reg <= 'h0;
         end
         else if (~t0_buf_full & ~s1s2_buf_full) begin
-            //Bit swizzle to match endianness
-            //Eg: sk dword = 0x01234567
-            //To process, it needs to be 0x6745230
-            keymem_a_rd_data_reg <= keymem_a_rd_data;
+            keymem_a_rd_data_reg <= s1s2_keymem_b_valid ? keymem_b_rd_data: keymem_a_rd_data;
             keymem_b_rd_data_reg <= keymem_b_rd_data;
 
         end

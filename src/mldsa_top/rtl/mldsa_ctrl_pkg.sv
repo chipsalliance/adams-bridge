@@ -35,6 +35,7 @@ package mldsa_ctrl_pkg;
     localparam SEED_NUM_DWORDS = 8;
     localparam MSG_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
+    localparam PRIVKEY_REG_NUM_DWORDS = 32;
     localparam SIGN_RND_NUM_DWORDS = 8;
     localparam PUBKEY_NUM_DWORDS = 648;
     localparam PUBKEY_NUM_BYTES = PUBKEY_NUM_DWORDS * 4;
@@ -49,9 +50,11 @@ package mldsa_ctrl_pkg;
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
 
+    localparam SK_MEM_DEPTH = 1192;
+    localparam SK_MEM_BANK_DEPTH = 596;
+    localparam SK_MEM_ADDR_W = $clog2(SK_MEM_BANK_DEPTH);
+
     typedef struct packed {
-        logic [415:0][63:0] t0;
-        logic [359:0][31:0] s1s2;
         logic [7:0][63:0] tr;
         logic [3:0][63:0] K;
         logic [3:0][63:0] rho;
@@ -59,7 +62,7 @@ package mldsa_ctrl_pkg;
 
     typedef union packed {
         mldsa_privkey_t enc;
-        logic [PRIVKEY_NUM_DWORDS-1:0][31:0] raw;
+        logic [PRIVKEY_REG_NUM_DWORDS-1:0][31:0] raw;
     } mldsa_privkey_u;
 
     typedef struct packed {
@@ -216,6 +219,7 @@ package mldsa_ctrl_pkg;
     
     //SK offsets in dwords
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SK_S1_OFFSET = 'd32;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SK_T0_OFFSET = 'd360;
 
     // MLDSA MEMORY LOCATIONS
     //COEFF DEPTH is 256/4
