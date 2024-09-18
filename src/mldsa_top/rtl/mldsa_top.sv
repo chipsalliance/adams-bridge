@@ -54,7 +54,10 @@ module mldsa_top
   //ahb output
   output logic                      hresp_o,
   output logic                      hreadyout_o,
-  output logic [AHB_DATA_WIDTH-1:0] hrdata_o
+  output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
+
+  output logic                      error_intr,
+  output logic                      notif_intr
 
 
   );
@@ -355,7 +358,10 @@ mldsa_ctrl mldsa_control_inst
   .sigdecode_z_enable_o(sigdecode_z_enable),
   .sigdecode_z_rd_req_i(sigdecode_z_mem_rd_req),
   .sigdecode_z_rd_data_o(sigdecode_z_mem_rd_data),
-  .sigdecode_z_done_i(sigdecode_z_done)
+  .sigdecode_z_done_i(sigdecode_z_done),
+
+  .error_intr(error_intr),
+  .notif_intr(notif_intr)
 
 );
 
@@ -731,7 +737,7 @@ sigdecode_h_inst (
 );
 
 //w1 memory
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(512), //FIXME params
   .DATA_WIDTH(4) //FIXME params
@@ -1001,7 +1007,7 @@ always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1015,7 +1021,7 @@ abr_1r1w_ram
   .raddr_i(mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:1]),
   .rdata_o(mldsa_mem_rdata0_bank[0])
 );
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1030,7 +1036,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata0_bank[1])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST1_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1045,7 +1051,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata[1])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST2_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
@@ -1060,7 +1066,7 @@ abr_1r1w_ram
   .rdata_o(mldsa_mem_rdata[2])
 );
 
-abr_1r1w_ram
+`ABR_MEM
 #(
   .DEPTH(MLDSA_MEM_INST3_DEPTH),
   .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)

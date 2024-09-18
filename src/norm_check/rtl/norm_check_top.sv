@@ -52,6 +52,7 @@ module norm_check_top
 
     logic [3:0] check_a_invalid, check_b_invalid;
     logic check_enable, check_enable_reg;
+    logic norm_check_done_int;
     
     generate 
         for (genvar i = 0; i < 4; i++) begin
@@ -63,6 +64,15 @@ module norm_check_top
             );
         end
     endgenerate
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            norm_check_done <= 'b0;
+        else if (zeroize)
+            norm_check_done <= 'b0;
+        else
+            norm_check_done <= norm_check_done_int;
+    end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if  (!reset_n) 
@@ -100,7 +110,7 @@ module norm_check_top
         .mode(mode),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),
-        .norm_check_done(norm_check_done),
+        .norm_check_done(norm_check_done_int),
         .check_enable(check_enable)
     );
 

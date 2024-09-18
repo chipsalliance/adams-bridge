@@ -4,7 +4,7 @@
 
 // // Macros and helper code for security countermeasures.
 
-`ifndef PRIM_ASSERT_SEC_CM_SVH
+`ifndef ABR_PRIM_ASSERT_SEC_CM_SVH
 `define ABR_PRIM_ASSERT_SEC_CM_SVH
 
 `define _ABR_SEC_CM_ALERT_MAX_CYC 30

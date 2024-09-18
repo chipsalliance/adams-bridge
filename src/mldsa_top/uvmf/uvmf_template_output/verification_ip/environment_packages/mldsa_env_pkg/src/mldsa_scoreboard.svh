@@ -231,6 +231,10 @@ class mldsa_scoreboard #(
      `uvm_info("SCBD_REPORT", $sformatf("Total Matches: %0d", match_count), UVM_LOW)
      `uvm_info("SCBD_REPORT", $sformatf("Total Mismatches: %0d", mismatch_count), UVM_LOW)
      `uvm_info("SCBD_REPORT", $sformatf("No Predicted Entries to Compare Against: %0d", nothing_to_compare_against_count), UVM_LOW)
+      if (mismatch_count == 0)
+          $display("* TESTCASE PASSED");
+      else
+          $display("* TESTCASE FAILED");
 // pragma uvmf custom report_phase end
   endfunction
 

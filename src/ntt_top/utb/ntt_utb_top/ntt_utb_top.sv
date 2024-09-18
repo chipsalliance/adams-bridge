@@ -85,7 +85,7 @@ module ntt_utb_top
     assign pwm_mem_a_rden = (pwm_a_mem_if_i.mem_port1_req.rd_wr_en == RW_READ);
     assign pwm_mem_b_rden = (pwm_b_mem_if_i.mem_port1_req.rd_wr_en == RW_READ);
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) ntt_mem (
@@ -106,7 +106,7 @@ module ntt_utb_top
         .load_tb_addr({MLDSA_MEM_ADDR_WIDTH{1'b0}})
     );
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_a (
@@ -127,7 +127,7 @@ module ntt_utb_top
         .load_tb_addr({MLDSA_MEM_ADDR_WIDTH{1'b0}})
     );
 
-    ecc_ram_tdp_file #(
+    ntt_ram_tdp_file #(
         .ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH),
         .DATA_WIDTH(4*REG_SIZE)
     ) pwm_mem_b (

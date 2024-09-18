@@ -6,7 +6,7 @@
 //  - Provides default clk and rst options to simplify code
 //  - Provides boiler plate template for common assertions
 
-`ifndef PRIM_ASSERT_SV
+`ifndef ABR_PRIM_ASSERT_SV
 `define ABR_PRIM_ASSERT_SV
 
 ///////////////////
