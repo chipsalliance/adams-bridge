@@ -19,7 +19,7 @@
 
 `include "config_defines.svh"
 
-module mldsa_ctrl
+(* keep_hierarchy = "yes" *) module mldsa_ctrl
   import mldsa_reg_pkg::*;
   import abr_sha3_pkg::*;
   import mldsa_sampler_pkg::*;
@@ -32,6 +32,12 @@ module mldsa_ctrl
   input logic clk,
   input logic rst_b,
   output logic zeroize,
+  
+
+  output wire NTT_trigger,
+  output wire PWM_trigger,
+  output wire PWA_trigger,
+  output wire INTT_trigger,
 
   output mldsa_reg__in_t mldsa_reg_hwif_in_o,
   input  mldsa_reg__out_t mldsa_reg_hwif_out_i,
@@ -1192,6 +1198,13 @@ mldsa_seq_sec mldsa_seq_sec_inst
   .clk(clk),
   .rst_b(rst_b),
   .zeroize(zeroize),
+
+  
+
+  .NTT_trigger(NTT_trigger),
+  .PWM_trigger(PWM_trigger),
+  .PWA_trigger(PWA_trigger),
+  .INTT_trigger(INTT_trigger),
 
   .en_i(seq_en),
   .addr_i(sign_prog_cntr_nxt),

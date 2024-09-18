@@ -15,7 +15,7 @@
 //Initial top level module
 `include "config_defines.svh"
 
-module mldsa_top
+(* keep_hierarchy = "yes" *) module mldsa_top
   import abr_prim_alert_pkg::*;
   import mldsa_reg_pkg::*;
   import mldsa_params_pkg::*;
@@ -33,6 +33,12 @@ module mldsa_top
   (
   input logic clk,
   input logic rst_b,
+  
+
+  output wire NTT_trigger,
+  output wire PWM_trigger,
+  output wire PWA_trigger,
+  output wire INTT_trigger,
 
   //ahb input
   input logic  [AHB_ADDR_WIDTH-1:0] haddr_i,
@@ -258,6 +264,11 @@ mldsa_ctrl mldsa_control_inst
   .clk(clk),
   .rst_b(rst_b),
   .zeroize(zeroize_reg),
+
+  .NTT_trigger(NTT_trigger),
+  .PWM_trigger(PWM_trigger),
+  .PWA_trigger(PWA_trigger),
+  .INTT_trigger(INTT_trigger),
 
   //control interface
   .mldsa_reg_hwif_in_o(mldsa_reg_hwif_in),

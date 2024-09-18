@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module abr_ahb_slv_sif 
+(* keep_hierarchy = "yes" *) module abr_ahb_slv_sif 
   import abr_ahb_defines_pkg::*; 
   #(
     parameter AHB_DATA_WIDTH = 64
