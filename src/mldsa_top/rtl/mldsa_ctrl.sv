@@ -276,16 +276,113 @@ module mldsa_ctrl
     mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0; //TODO
     mldsa_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
   end
-  
-  logic [1:0][10:0] skdecode_rdaddr;
-  logic [1:0] skdecode_rden;
+
+  //Private Key External Memory
+
+  //Request muxing
+  logic [1:0] sk_ram_we_bank, sk_ram_re_bank;
+  logic [1:0][SK_MEM_ADDR_W-1:0] sk_ram_waddr_bank, sk_ram_raddr_bank;
+  logic [1:0][DATA_WIDTH-1:0] sk_ram_wdata, sk_ram_rdata;
+
+  logic [1:0] skencode_keymem_we_bank, pwr2rnd_keymem_we_bank, api_keymem_we_bank;
+  logic [SK_MEM_ADDR_W:0] api_keymem_waddr, api_keymem_raddr;
+
+  logic [1:0] api_keymem_re_bank, api_keymem_re_bank_f;
+  logic [1:0] skdecode_re_bank;
+  logic [1:0][SK_MEM_ADDR_W:0] skdecode_rdaddr;
+
+  logic api_keymem_wr_dec, api_sk_reg_wr_dec;
+  logic api_keymem_rd_dec, api_sk_reg_rd_dec;
+  logic [DATA_WIDTH-1:0] privkey_reg_rdata;
+  logic [DATA_WIDTH-1:0] privkey_out_rdata;
+
+  always_comb api_keymem_waddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
+  always_comb api_keymem_raddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
+
+  always_comb api_sk_reg_wr_dec = api_keymem_waddr inside {[31:0]};
+  always_comb api_keymem_wr_dec = api_keymem_waddr inside {[PRIVKEY_NUM_DWORDS-1:32]};
+
+  always_comb api_sk_reg_rd_dec = api_keymem_waddr inside {[31:0]};
+  always_comb api_keymem_rd_dec = api_keymem_waddr inside {[PRIVKEY_NUM_DWORDS-1:32]};
 
   always_comb begin
-    for (int port = 0; port < 2; port++) begin
-      skdecode_rdaddr[port] = skdecode_keymem_if_i[port].addr[10:0];
-      skdecode_rden[port] = skdecode_keymem_if_i[port].rd_wr_en == RW_READ;
+    for (int i = 0; i < 2; i++) begin
+      skencode_keymem_we_bank[i] = ((skencode_keymem_if_i.rd_wr_en == RW_WRITE) & (skencode_keymem_if_i.addr[0] == i));
+      pwr2rnd_keymem_we_bank[i] = (pwr2rnd_keymem_if_i[i].rd_wr_en == RW_WRITE);
+      api_keymem_we_bank[i] = mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_keymem_wr_dec & (api_keymem_waddr[0] == i);
+
+      sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | api_keymem_we_bank[i];
+
+      sk_ram_waddr_bank[i] = ({SK_MEM_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_ADDR_W:1]) |
+                             ({SK_MEM_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_ADDR_W:1] ) |
+                             ({SK_MEM_ADDR_W{api_keymem_we_bank[i]}} & api_keymem_waddr[SK_MEM_ADDR_W:1]);
+                 
+      sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
+                        ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
+                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data);         
+    end
+  end     
+  
+  always_comb begin
+    for (int i = 0; i < 2; i++) begin
+      api_keymem_re_bank[i] = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
+                              mldsa_valid_reg & keygen_process &
+                              api_keymem_rd_dec & (api_keymem_raddr[0] == i);
+
+      skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
+
+      skdecode_rdaddr[i] = skdecode_keymem_if_i[i].addr[SK_MEM_ADDR_W:0];
+
+      sk_ram_re_bank[i] = skdecode_re_bank[i] | api_keymem_re_bank[i];
+
+      sk_ram_raddr_bank[i] = ({SK_MEM_ADDR_W{skdecode_re_bank[i]}} & skdecode_rdaddr[i][SK_MEM_ADDR_W:1]) |
+                             ({SK_MEM_ADDR_W{api_keymem_re_bank[i]}} & api_keymem_raddr[SK_MEM_ADDR_W:1]);
+
     end
   end
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      api_keymem_re_bank_f <= '0;
+    end begin
+      api_keymem_re_bank_f <= api_keymem_re_bank;
+    end
+  end
+
+  always_comb skdecode_rd_data_o = sk_ram_rdata;
+  always_comb privkey_out_rdata = {DATA_WIDTH{api_keymem_re_bank_f[0]}} & sk_ram_rdata[0] |
+                                  {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1] |
+                                  {DATA_WIDTH{api_sk_reg_rd_dec}} & privkey_reg_rdata;
+
+  `ABR_MEM
+  #(
+    .DEPTH(SK_MEM_BANK_DEPTH),
+    .DATA_WIDTH(DATA_WIDTH)
+  ) mldsa_sk_ram_bank0
+  (
+    .clk_i(clk),
+    .we_i(sk_ram_we_bank[0]),
+    .waddr_i(sk_ram_waddr_bank[0]),
+    .wdata_i(sk_ram_wdata[0]),
+    .re_i(sk_ram_re_bank[0]),
+    .raddr_i(sk_ram_raddr_bank[0]),
+    .rdata_o(sk_ram_rdata[0])
+  );
+
+  `ABR_MEM
+  #(
+    .DEPTH(SK_MEM_BANK_DEPTH),
+    .DATA_WIDTH(DATA_WIDTH)
+  ) mldsa_sk_ram_bank1
+  (
+    .clk_i(clk),
+    .we_i(sk_ram_we_bank[1]),
+    .waddr_i(sk_ram_waddr_bank[1]),
+    .wdata_i(sk_ram_wdata[1]),
+    .re_i(sk_ram_re_bank[1]),
+    .raddr_i(sk_ram_raddr_bank[1]),
+    .rdata_o(sk_ram_rdata[1])
+  );
 
   //Private Key External Memory
   always_ff @(posedge clk or negedge rst_b) begin
@@ -295,8 +392,8 @@ module mldsa_ctrl
       privatekey_reg <= '0;
     end else begin
       //SW write port
-      if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready) begin
-        privatekey_reg.raw[PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2]] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
+      if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_sk_reg_wr_dec) begin
+        privatekey_reg.raw[PRIVKEY_REG_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2]] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
       end
       //HW write rho
       if (sampler_state_dv_i) begin
@@ -316,35 +413,19 @@ module mldsa_ctrl
           privatekey_reg.enc.tr <= sampler_state_data_i[0][511:0];
         end
       end
-      //HW write s1s2
-      if (skencode_keymem_if_i.rd_wr_en == RW_WRITE) begin
-        privatekey_reg.enc.s1s2[skencode_keymem_if_i.addr[8:0]] <= skencode_wr_data_i;
-      end
-      //HW write t0
-      if (pwr2rnd_keymem_if_i[0].rd_wr_en == RW_WRITE) begin
-        privatekey_reg.enc.t0[pwr2rnd_keymem_if_i[0].addr[9:1]] <= pwr2rnd_wr_data_i; //fixme one interface
-      end
     end 
   end
 
   //private key read ports
-  logic [DATA_WIDTH-1:0] privkey_out_rdata;
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      skdecode_rd_data_o <= '0;
-      privkey_out_rdata <= '0;
+      privkey_reg_rdata <= '0;
     end else if (zeroize) begin
-      skdecode_rd_data_o <= '0;
-      privkey_out_rdata <= '0;
+      privkey_reg_rdata <= '0;
     end else begin
-      for (int i = 0; i < 2; i++) begin 
-        if (skdecode_rden[i]) begin
-          skdecode_rd_data_o[i] <= privatekey_reg.raw[skdecode_rdaddr[i]];
-        end
-      end
-      if (mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr) begin
-        privkey_out_rdata <= privatekey_reg.raw[PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2]];
+      if (mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & api_sk_reg_rd_dec) begin
+        privkey_reg_rdata <= privatekey_reg.raw[PRIVKEY_REG_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2]];
       end
     end
   end
@@ -361,7 +442,8 @@ module mldsa_ctrl
       mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= 0;
     end
     else begin
-      mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+      mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr &
+                                                    mldsa_valid_reg & keygen_process;
     end
   end
 
