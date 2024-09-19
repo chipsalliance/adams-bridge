@@ -459,6 +459,7 @@ module ntt_top
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),
+        .mode(mode),
         .wren(buf_wren),
         .rden(buf_rden),
         .wrptr(buf_wrptr),

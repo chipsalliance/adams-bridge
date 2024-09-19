@@ -14,10 +14,12 @@ class ntt_txn extends uvm_sequence_item;
     rand  bit                       accumulate;
     rand  bit                       sampler_valid;
     rand  bit                       sampler_mode;
-    rand  bit [MEM_DATA_WIDTH-1:0]  sampler_data;
+    rand  bit [MLDSA_MEM_DATA_WIDTH-1:0]  sampler_data;
     rand  bit                       ntt_done;
     rand  bit                       stage_done;
     rand  int                       stage_idx;
+
+    localparam MEM_DEPTH = MLDSA_MEM_MAX_DEPTH;
 
     constraint ntt_c {
         ntt_enable == 1;

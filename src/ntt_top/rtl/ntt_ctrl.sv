@@ -32,7 +32,7 @@ module ntt_ctrl
     parameter MLDSA_N = 256,
     parameter MLDSA_LOGN = 8,
     parameter MEM_ADDR_WIDTH = 15,
-    parameter BF_LATENCY = 10, //5 cycles per butterfly * 2 instances in serial = 10 clks
+    parameter BF_LATENCY = 11, //5 cycles per butterfly * 2 instances in serial = 10 clks
     parameter NTT_BUF_LATENCY = 4
 )
 (
@@ -109,7 +109,8 @@ logic [1:0] buf_count;
 logic [3:0] chunk_rand_offset; 
 logic [3:0] chunk_count; //goes from 1 to 16
 logic [1:0] index_rand_offset;
-logic [BF_LATENCY-1:0][1:0] index_rand_offset_reg, buf_rdptr_reg;
+logic [1:0] buf_rdptr_int;
+logic [BF_LATENCY-1:0][1:0] buf_rdptr_reg;
 logic [BF_LATENCY-1:0][3:0] chunk_count_reg;
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
@@ -184,7 +185,7 @@ logic arc_EXEC_WAIT_RD_EXEC;
 //Other signals
 logic buf_wren_ntt, buf_wren_ntt_reg;
 logic buf_wren_intt;
-logic buf_rden_ntt;
+logic buf_rden_ntt, buf_rden_ntt_reg;
 logic buf_rden_intt;
 
 //Write FSM
@@ -345,22 +346,22 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = ct_mode ? 'd0 : 'd63;
             twiddle_offset      = 'h0;
-            twiddle_rand_offset = 'h0;
+            twiddle_rand_offset = 'h0; //gs mode: (chunk_rand_offset)*4 + index_rand_offset
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? /*(chunk_count_reg[BF_LATENCY-1] % 'd4)*/ 'd0 : 'h0; //TODO gs mode
+            twiddle_rand_offset = ct_mode ? /*(chunk_count_reg[BF_LATENCY-1] % 'd4)*/ /*index_rand_offset*/buf_rdptr_int : 'h0; //gs mode: (chunk_rand_offset % 4)*4 + index_rand_offset
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
             twiddle_offset      = ct_mode ? 'd5 : 'd80;
-            twiddle_rand_offset = ct_mode ? (chunk_count_reg[BF_LATENCY-1] % 'd4)*'d4 : 'h0;
+            twiddle_rand_offset = ct_mode ? (chunk_count % 'd4)*'d4 + /*index_rand_offset*/buf_rdptr_int : 'h0; //gs mode: index_rand_offset
         end
         'h3: begin
             twiddle_end_addr    = ct_mode ? 'd63 : 'd0;
             twiddle_offset      = ct_mode ? 'd21 : 'd84;
-            twiddle_rand_offset = ct_mode ? (chunk_count_reg[BF_LATENCY-1] % 'd16)*4 : 'h0;
+            twiddle_rand_offset = ct_mode ? (chunk_count % 'd16)*4 + /*index_rand_offset*/buf_rdptr_int : 'h0; //gs mode: 0
         end
         default: begin
             twiddle_end_addr    = 'h0;
@@ -387,9 +388,9 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (zeroize)
         twiddle_addr_reg <= 'h0;
     else if (incr_twiddle_addr)
-        twiddle_addr_reg <= (twiddle_addr_reg == twiddle_end_addr) ? 'h0 : twiddle_addr_reg + 'd1;
+        twiddle_addr_reg <= /*buf0_valid ? twiddle_rand_offset :*/ gs_mode & (twiddle_addr_reg == twiddle_end_addr) ? 'h0 : ct_mode ? twiddle_rand_offset : twiddle_addr_reg + 'd1;
     else if (rst_twiddle_addr)
-        twiddle_addr_reg <= ct_mode ? twiddle_rand_offset : 'h0; //TODO: gs mode
+        twiddle_addr_reg <= /*ct_mode ? twiddle_rand_offset :*/ 'h0; //TODO: gs mode
 end
 
 assign twiddle_addr = twiddle_addr_reg + twiddle_offset;
@@ -492,8 +493,20 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (zeroize) begin
         buf_rdptr_reg <= 'h0;
     end
-    else if (buf_rden | butterfly_ready) begin
-        buf_rdptr_reg <= {buf_rdptr, buf_rdptr_reg[BF_LATENCY-1:1]};
+    else if (buf_rden_ntt | butterfly_ready) begin //TODO gs
+        buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[BF_LATENCY-1:1]};
+    end
+end
+logic [1:0] buf_rdptr_f;
+always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+        buf_rdptr_f <= 'h0;
+    end
+    else if (zeroize) begin
+        buf_rdptr_f <= 'h0;
+    end
+    else begin
+        buf_rdptr_f <= buf_rdptr_int;
     end
 end
 
@@ -504,7 +517,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (zeroize) begin
         chunk_count_reg <= 'h0;
     end
-    else if (buf_rden | butterfly_ready) begin
+    else if (buf_rden_ntt | butterfly_ready) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[BF_LATENCY-1:1]};
     end
 end
@@ -527,10 +540,11 @@ end
 
 always_comb begin
     last_rd_addr = ct_mode & (mem_rd_addr == mem_rd_base_addr + MEM_LAST_ADDR); //TODO: other modes
-    buf_rdptr  = ct_mode ? index_rand_offset + buf_count : buf_count; //TODO: flop
+    buf_rdptr_int  = ct_mode ? index_rand_offset + buf_count : buf_count; //TODO: flop
+    buf_rdptr      = ct_mode ? buf_rdptr_f : buf_count;
     // buf_wrptr  = gs_mode ? index_rand_offset + buf_count : buf_count;
-    latch_chunk_rand_offset = arc_IDLE_RD_STAGE;
-    latch_index_rand_offset = buf0_valid;
+    latch_chunk_rand_offset = arc_IDLE_WR_STAGE | arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE;
+    latch_index_rand_offset = ct_mode & (buf_wrptr == 'h3); //buf0_valid; //TODO: INTT
 end
 
 
@@ -793,8 +807,8 @@ end
 assign rst_rounds       = (read_fsm_state_ps == RD_IDLE) && (write_fsm_state_ps == WR_IDLE);
 assign incr_rounds      = arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE; //TODO: revisit for high-perf mode (if we go with above opt)
 assign buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt;
-assign buf_rden         = pwo_mode ? 1'b0 : buf_rden_ntt | buf_rden_intt;
-assign bf_enable        = (gs_mode || pwo_mode) ? bf_enable_reg : bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
+assign buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : /*buf_rden_ntt |*/ buf_rden_intt;
+assign bf_enable        = (gs_mode || pwo_mode) ? bf_enable_reg : bf_enable_reg; //bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
 assign buf_wr_rst_count = pwo_mode ? 1'b1 : buf_wr_rst_count_ntt | buf_wr_rst_count_intt;
 assign buf_rd_rst_count = pwo_mode ? 1'b1 : buf_rd_rst_count_ntt | buf_rd_rst_count_intt;
 assign mem_wr_en        = gs_mode ? mem_wr_en_fsm : mem_wr_en_reg; //TODO pwo mode, GS mode + shuffling
@@ -802,16 +816,19 @@ assign mem_wr_en        = gs_mode ? mem_wr_en_fsm : mem_wr_en_reg; //TODO pwo mo
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         buf_wren_ntt_reg <= 'b0;
+        buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= 'b0;
         mem_wr_en_reg <= 'b0;
     end
     else if (zeroize) begin
         buf_wren_ntt_reg <= 'b0;
+        buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= 'b0;
         mem_wr_en_reg <= 'b0;
     end
     else begin
         buf_wren_ntt_reg <= buf_wren_ntt;
+        buf_rden_ntt_reg <= buf_rden_ntt;
         bf_enable_reg <= bf_enable_fsm;
         mem_wr_en_reg <= mem_wr_en_fsm;
     end

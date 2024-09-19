@@ -45,22 +45,22 @@ module ntt_utb_top
     //NTT, PWM C memory IF
     mem_if_t mem_port0_req;
     mem_if_t mem_rd_req;
-    logic [MEM_DATA_WIDTH-1:0] mem_wr_data;
-    logic [MEM_DATA_WIDTH-1:0] mem_rd_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] mem_wr_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] mem_rd_data;
 
 
     //PWM A/B, PWA/S memory IF
     mem_if_t pwm_a_rd_req;
     mem_if_t pwm_b_rd_req;
-    logic [MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
-    logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
 
     //NTT/PWM muxes
     logic ntt_mem_wren, ntt_mem_rden;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_addr;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] ntt_mem_rd_addr;
-    logic [MEM_DATA_WIDTH-1:0] ntt_mem_wr_data;
-    logic [MEM_DATA_WIDTH-1:0] ntt_mem_rd_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data;
+    logic [MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_rd_data;
 
     logic pwm_mem_a_rden, pwm_mem_b_rden;
 
@@ -69,6 +69,8 @@ module ntt_utb_top
     logic gs_mode;
     logic pwo_mode;
     logic pwm_mode, pwa_mode, pws_mode;
+
+    logic [5:0] random_utb;
 
     assign ct_mode = (ntt_if_i.mode == ct);
     assign gs_mode = (ntt_if_i.mode == gs);
@@ -166,6 +168,7 @@ module ntt_utb_top
 
         .accumulate(ntt_if_i.accumulate),
         .sampler_valid(ntt_if_i.sampler_valid),
+        .random(random_utb),
         //NTT mem IF
         .mem_wr_req(ntt_mem_if_i.mem_port0_req),
         .mem_rd_req(ntt_mem_if_i.mem_port1_req),
@@ -188,6 +191,7 @@ module ntt_utb_top
 
     always begin
         #1 clk = ~clk;
+        random_utb = {4'h5, $urandom_range(0,3)};
     end
 
     initial begin

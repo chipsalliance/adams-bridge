@@ -38,6 +38,7 @@ module ntt_shuffle_buffer
         input wire clk,
         input wire reset_n,
         input wire zeroize,
+        input mode_t mode,
         input wire wren,
         input wire rden,
         input wire [1:0] wrptr,
@@ -53,7 +54,7 @@ module ntt_shuffle_buffer
         logic [1:0][3:0][3:0][REG_SIZE-1:0] buffer; //2x4x4 buffer [lo_hi][]
 
         logic [1:0] data_i_count, data_i_count_reg;
-        logic lo_hi, lo_hi_reg; //0 - lo, 1 - hi
+        logic lo_hi, lo_hi_reg, lo_hi_rd; //0 - lo, 1 - hi
 
         //Write
         always_ff @(posedge clk or negedge reset_n) begin
@@ -91,6 +92,7 @@ module ntt_shuffle_buffer
         always_comb begin
             buf_valid = (data_i_count_reg == 'd3);
             lo_hi = buf_valid ^ lo_hi_reg;
+            lo_hi_rd = (mode == 0) ? lo_hi_reg : lo_hi;
         end
 
         //lo hi
@@ -104,7 +106,7 @@ module ntt_shuffle_buffer
         end
 
         //assign output
-        always_comb data_o = rden ? {buffer[~lo_hi][3][rdptr], buffer[~lo_hi][2][rdptr], buffer[~lo_hi][1][rdptr], buffer[~lo_hi][0][rdptr]} : 'h0; //lo_hi points to buffer currently being written. So, read from the other section that's full
+        always_comb data_o = rden ? {buffer[~lo_hi_rd][3][rdptr], buffer[~lo_hi_rd][2][rdptr], buffer[~lo_hi_rd][1][rdptr], buffer[~lo_hi_rd][0][rdptr]} : 'h0; //lo_hi points to buffer currently being written. So, read from the other section that's full
 
         
 

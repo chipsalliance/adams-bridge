@@ -326,6 +326,14 @@ task ntt_ctrl_test();
 endtask
 
 task ntt_top_test();
+    fork
+        begin
+            while(ntt_done_tb == 1'b0) begin
+                random_tb = $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
     $display("NTT operation\n");
     operation = "NTT";
     mode_tb = ct;
@@ -335,20 +343,20 @@ task ntt_top_test();
     ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
     acc_tb = 1'b0;
     svalid_tb = 1'b1;
-    random_tb = {4'h5, 2'h0};
     @(posedge clk_tb);
     enable_tb = 1'b0;
-    while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h0)
-        @(posedge clk_tb);
-    random_tb = {4'h9, 2'h0};
 
-    while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h1)
-        @(posedge clk_tb);
-    random_tb = {4'h0, 2'h0};
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h0)
+    //     @(posedge clk_tb);
+    // random_tb = {4'h9, 2'h3};
 
-    while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h2)
-        @(posedge clk_tb);
-    random_tb = {4'hf, 2'h0};
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h1)
+    //     @(posedge clk_tb);
+    // random_tb = {4'h0, 2'h2};
+
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h2)
+    //     @(posedge clk_tb);
+    // random_tb = {4'hf, 2'h0};
 
     $display("Waiting for ntt_done\n");
     while(ntt_done_tb == 1'b0)
@@ -360,7 +368,16 @@ task ntt_top_test();
     //         $display("Error: NTT data mismatch at index %0d (dest_base addr = %0d). Actual data = %h, expected data = %h", i, dest_base_addr, dut.ntt_mem.mem[i+dest_base_addr], ntt_mem_tb[i]);
     //     @(posedge clk_tb);
     // end
-
+        end
+    join
+    fork
+            begin
+                while(ntt_done_tb == 1'b0) begin
+                    random_tb = $urandom();
+                    @(posedge clk_tb);
+                end
+            end
+            begin
     $display("INTT operation\n");
     operation = "INTT";
     mode_tb = gs;
@@ -375,7 +392,6 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received intt_done\n");
-
     /*
     $display("PWM operation 1\n");
     operation = "PWM 1 no acc";
@@ -528,7 +544,8 @@ task ntt_top_test();
         @(posedge clk_tb);
     $display("Received pwo_done\n");
     */
-
+        end
+    join
     $display("End of test\n");
 endtask
 
