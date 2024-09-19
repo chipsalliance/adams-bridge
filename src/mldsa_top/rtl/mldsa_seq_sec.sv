@@ -20,7 +20,7 @@
 
 `include "config_defines.svh"
 
-(* keep_hierarchy = "yes" *) module mldsa_seq_sec
+/*(* keep_hierarchy = "yes" *)*/ module mldsa_seq_sec
   import mldsa_ctrl_pkg::*;
   (
   input logic clk,
