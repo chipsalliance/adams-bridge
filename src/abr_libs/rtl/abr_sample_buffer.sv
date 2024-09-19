@@ -16,7 +16,7 @@
 // Valid samples are packed and shifted onto a buffer
 // Outputs are presented valid once NUM_RD entries are valid in the buffer
 
-(* keep_hierarchy = "yes" *) module abr_sample_buffer
+module abr_sample_buffer
   //    import ::*;
   #(
    parameter NUM_WR = 5

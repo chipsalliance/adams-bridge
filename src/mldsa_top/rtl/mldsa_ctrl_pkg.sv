@@ -36,6 +36,7 @@ package mldsa_ctrl_pkg;
     localparam MSG_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam PRIVKEY_REG_NUM_DWORDS = 32;
+    localparam PRIVKEY_MEM_NUM_DWORDS = PRIVKEY_NUM_DWORDS - PRIVKEY_REG_NUM_DWORDS;
     localparam SIGN_RND_NUM_DWORDS = 8;
     localparam PUBKEY_NUM_DWORDS = 648;
     localparam PUBKEY_NUM_BYTES = PUBKEY_NUM_DWORDS * 4;
