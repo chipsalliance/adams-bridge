@@ -539,14 +539,15 @@ module mldsa_ctrl
         end
       end
       //HW write h
-      for (int dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
-        if (set_signature_valid) begin
-          signature_reg.enc.h[dword] <= '0;
-        end else if (makehint_reg_wren_i & (makehint_reg_wr_addr_i == dword)) begin
-          signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
-        end else if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-          signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
+      if (set_signature_valid) begin
+        signature_reg.enc.h <= '0;
+      end else if (makehint_reg_wren_i) begin
+        for (int dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
+          if (makehint_reg_wr_addr_i == dword)
+            signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
         end
+      end else if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+        signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
     end
   end
