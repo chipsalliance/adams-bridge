@@ -238,7 +238,7 @@ module sigdecode_h_ctrl
     //-----------------
     always_comb begin
         arc_SDH_WR_IDLE_SDH_WR_INIT = (write_fsm_state_ps == SDH_WR_IDLE) & sigdecode_h_enable;
-        arc_SDH_WR_INIT_SDH_WR_MEM  = (write_fsm_state_ps == SDH_WR_INIT) & hint_rd_en; //hint_rd_en indicates bitmap is going to be constructed, so we can move to WR MEM state
+        arc_SDH_WR_INIT_SDH_WR_MEM  = (write_fsm_state_ps == SDH_WR_INIT) & (hint_rd_en | poly_done_rd); //hint_rd_en indicates bitmap is going to be constructed, so we can move to WR MEM state
         arc_SDH_WR_INIT_SDH_WR_IDLE = (write_fsm_state_ps == SDH_WR_INIT) & sigdecode_h_error;
         arc_SDH_WR_MEM_SDH_WR_INIT  = (write_fsm_state_ps == SDH_WR_MEM) & ~last_poly & poly_done_wr;
         arc_SDH_WR_MEM_SDH_WR_IDLE  = (write_fsm_state_ps == SDH_WR_MEM) & ((last_poly & poly_done_wr) | sigdecode_h_error);

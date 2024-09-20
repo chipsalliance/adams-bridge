@@ -152,13 +152,13 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
       end
     end
 
-    // Writing MLDSA_SIGNATURE register
-    foreach (reg_model.MLDSA_SIGNATURE[i]) begin
-      reg_model.MLDSA_SIGNATURE[i].write(status, SIG[i], UVM_FRONTDOOR, reg_model.default_map, this);
+    // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
+    for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.write(status, i, SIG[i], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
       end
     end
 

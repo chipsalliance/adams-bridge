@@ -218,15 +218,15 @@ module skdecode_top
     end
 
     abr_sample_buffer #(
-        .NUM_WR(64),
-        .NUM_RD(52),
-        .BUFFER_DATA_W(1)
+        .NUM_WR(16),
+        .NUM_RD(13),
+        .BUFFER_DATA_W(4)
     )
     t0_sample_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i((t0_buf_full | ~t0_enable) ? 64'h0 : {64{t0_enable_reg}}),
+        .data_valid_i((t0_buf_full | ~t0_enable) ? 16'h0 : {16{t0_enable_reg}}),
         .data_i({keymem_b_rd_data_reg, keymem_a_rd_data_reg}),
         .buffer_full_o(t0_buf_full),
         .data_valid_o(t0_data_valid),
@@ -234,15 +234,15 @@ module skdecode_top
     );
 
     abr_sample_buffer #(
-        .NUM_WR(32),
-        .NUM_RD(24),
-        .BUFFER_DATA_W(1)
+        .NUM_WR(4),
+        .NUM_RD(3),
+        .BUFFER_DATA_W(8)
     )
     s1s2_sample_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i(s1s2_buf_stall_reg/*(s1s2_buf_full | ~s1s2_enable)*/ ? 'h0 : {32{s1s2_enable_reg}}),
+        .data_valid_i(s1s2_buf_stall_reg/*(s1s2_buf_full | ~s1s2_enable)*/ ? 4'h0 : {4{s1s2_enable_reg}}),
         .data_i(keymem_a_rd_data_reg),
         .buffer_full_o(s1s2_buf_full),
         .data_valid_o(s1s2_data_valid),
