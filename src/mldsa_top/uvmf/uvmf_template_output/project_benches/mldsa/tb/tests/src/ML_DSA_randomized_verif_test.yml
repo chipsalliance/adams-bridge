@@ -1,6 +1,6 @@
 ---
 # Random seed desired...
-#seed: 1
+seed: 4098270334
 plusargs:
   - '+UVM_TESTNAME=ML_DSA_randomized_verif_test'
 testname: ML_DSA_randomized_verif_test

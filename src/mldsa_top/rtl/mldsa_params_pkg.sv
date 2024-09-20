@@ -51,6 +51,7 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
   parameter MLDSA_MEM_INST3_DEPTH = 128; //1.5 KB
   parameter MLDSA_MEM_INST3_ADDR_W = $clog2(MLDSA_MEM_INST3_DEPTH);
+  parameter MLDSA_MEM_W1_DEPTH = 512;
 
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;

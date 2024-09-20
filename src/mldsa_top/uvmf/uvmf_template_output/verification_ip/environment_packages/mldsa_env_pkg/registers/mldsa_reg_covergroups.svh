@@ -219,26 +219,6 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_SIGNATURE COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_SIGNATURE_bit_cg with function sample(input bit reg_bit);
-        option.per_instance = 1;
-        reg_bit_cp : coverpoint reg_bit {
-            bins value[2] = {0,1};
-        }
-        reg_bit_edge_cp : coverpoint reg_bit {
-            bins rise = (0 => 1);
-            bins fall = (1 => 0);
-        }
-
-    endgroup
-    covergroup mldsa_reg__MLDSA_SIGNATURE_fld_cg with function sample(
-    input bit [32-1:0] SIGNATURE
-    );
-        option.per_instance = 1;
-        SIGNATURE_cp : coverpoint SIGNATURE;
-
-    endgroup
-
     /*----------------------- MLDSA_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T COVERGROUPS -----------------------*/
     covergroup mldsa_reg__intr_block_t__global_intr_en_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;

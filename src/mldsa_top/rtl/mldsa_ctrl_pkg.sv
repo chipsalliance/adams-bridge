@@ -44,6 +44,7 @@ package mldsa_ctrl_pkg;
     localparam SIGNATURE_Z_NUM_DWORDS = 1120;
     localparam SIGNATURE_C_NUM_DWORDS = 16;
     localparam SIGNATURE_NUM_DWORDS = SIGNATURE_H_NUM_DWORDS + SIGNATURE_Z_NUM_DWORDS + SIGNATURE_C_NUM_DWORDS;
+    localparam SIGNATURE_REG_NUM_DWORDS = SIGNATURE_H_NUM_DWORDS + SIGNATURE_C_NUM_DWORDS;
     localparam VERIFY_RES_NUM_DWORDS = 16;
     localparam ENTROPY_NUM_DWORDS = 16;
 
@@ -51,8 +52,18 @@ package mldsa_ctrl_pkg;
     localparam T1_COEFF_W = 10;
 
     localparam SK_MEM_DEPTH = 1192;
-    localparam SK_MEM_BANK_DEPTH = 596;
+    localparam SK_MEM_BANK_DEPTH = 1192/2;
     localparam SK_MEM_ADDR_W = $clog2(SK_MEM_BANK_DEPTH);
+
+    localparam SIG_Z_MEM_DATA_W = 160;
+    localparam SIG_Z_MEM_NUM_DWORD = SIG_Z_MEM_DATA_W/32;
+    localparam SIG_Z_MEM_WSTROBE_W = SIG_Z_MEM_DATA_W/8;
+    localparam SIG_Z_MEM_DEPTH = (SIGNATURE_Z_NUM_DWORDS*32)/SIG_Z_MEM_DATA_W;
+    localparam SIG_ADDR_W = $clog2(SIGNATURE_NUM_DWORDS);
+    localparam SIG_Z_MEM_ADDR_W = $clog2(SIG_Z_MEM_DEPTH);
+    localparam SIG_Z_MEM_OFFSET_W = $clog2(SIG_Z_MEM_DATA_W/32);
+    localparam SIG_H_REG_ADDR_W = $clog2(SIGNATURE_H_NUM_DWORDS);
+    localparam SIG_C_REG_ADDR_W = $clog2(SIGNATURE_C_NUM_DWORDS);
 
     typedef struct packed {
         logic [7:0][63:0] tr;
@@ -66,14 +77,18 @@ package mldsa_ctrl_pkg;
     } mldsa_privkey_u;
 
     typedef struct packed {
+        logic [SIG_Z_MEM_ADDR_W-1:0] addr;
+        logic [SIG_Z_MEM_OFFSET_W-1:0] offset;
+    } mldsa_signature_z_addr_t;
+
+    typedef struct packed {
         logic [SIGNATURE_H_NUM_DWORDS-1:0][31:0] h;
-        logic [SIGNATURE_Z_NUM_DWORDS-1:0][31:0] z;
         logic [SIGNATURE_C_NUM_DWORDS-1:0][31:0] c;
     } mldsa_signature_t;
 
     typedef union packed {
         mldsa_signature_t enc;
-        logic [SIGNATURE_NUM_DWORDS-1:0][31:0] raw;
+        logic [SIGNATURE_REG_NUM_DWORDS-1:0][31:0] raw;
     } mldsa_signature_u;
 
     typedef struct packed {
