@@ -387,27 +387,19 @@ module mldsa_ctrl
     end else if (zeroize) begin
       privatekey_reg <= '0;
     end else begin
-      //SW write port
-      if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_sk_reg_wr_dec) begin
-        privatekey_reg.raw[api_sk_reg_waddr] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
-      end
-      //HW write rho
       if (sampler_state_dv_i) begin
         if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+          //HW write rho
           privatekey_reg.enc.rho <= sampler_state_data_i[0][255:0]; //FIXME optimize this to be shared with pubkey?
-        end
-      end
-      //HW write K
-      if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+          //HW write K
           privatekey_reg.enc.K <= sampler_state_data_i[0][1023:768];
-        end
-      end
-      //HW write tr
-      if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_TR_REG_ID) begin
+        end else if (instr.operand3 == MLDSA_DEST_TR_REG_ID) begin
+          //HW write tr
           privatekey_reg.enc.tr <= sampler_state_data_i[0][511:0];
         end
+      end else if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_sk_reg_wr_dec) begin
+        //SW write port
+        privatekey_reg.raw[api_sk_reg_waddr] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
       end
     end 
   end
@@ -538,20 +530,12 @@ module mldsa_ctrl
     end else if (zeroize) begin
       signature_reg <= '0;
     end else begin
-      if (mldsa_ready & api_sig_c_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+      //HW write c
+      if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
+        signature_reg.enc.c <= sampler_state_data_i[0][511:0];
+      end else if (mldsa_ready & api_sig_c_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
         for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
           signature_reg.enc.c[api_sig_c_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
-        end
-      end
-      if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-        for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-          signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
-        end
-      end
-      //HW write c
-      if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_SIG_C_REG_ID) begin
-          signature_reg.enc.c <= sampler_state_data_i[0][511:0];
         end
       end
       //HW write h
@@ -560,6 +544,8 @@ module mldsa_ctrl
           signature_reg.enc.h[dword] <= '0;
         end else if (makehint_reg_wren_i & (makehint_reg_wr_addr_i == dword)) begin
           signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
+        end else if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+          signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
         end
       end
     end
@@ -590,21 +576,21 @@ module mldsa_ctrl
     end else if (zeroize) begin
       publickey_reg <= '0;
     end else begin
-      for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
-        if (mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr) begin
-          publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].wr_data;
-        end
-      end
       //HW write rho
-      if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
-          publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
+      if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID)) begin
+        publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
+      end else if (pk_t1_wren_i) begin
+        //HW write t1
+        for (int coeff = 0; coeff < T1_NUM_COEFF; coeff++) begin 
+          if ((pk_t1_wr_addr_i == coeff[10:3])) begin //pubkey t1 write interface
+            publickey_reg.enc.t1[coeff] <= pk_t1_wrdata_i[coeff[2:0]];
+          end
         end
-      end
-      //HW write t1
-      for (int coeff = 0; coeff < T1_NUM_COEFF; coeff++) begin 
-        if (pk_t1_wren_i & (pk_t1_wr_addr_i == coeff[10:3])) begin //pubkey t1 write interface
-          publickey_reg.enc.t1[coeff] <= pk_t1_wrdata_i[coeff[2:0]];
+      end else if (mldsa_ready) begin
+        for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
+          if (mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr) begin
+            publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].wr_data;
+          end
         end
       end
     end
