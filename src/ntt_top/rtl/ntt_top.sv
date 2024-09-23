@@ -245,10 +245,10 @@ module ntt_top
                 uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
             end
             gs: begin
-                uvw_i.w11_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                uvw_i.w10_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                uvw_i.w01_i = twiddle_factor_reg[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
-                uvw_i.w00_i = twiddle_factor_reg[NTT_REG_SIZE-1:0];
+                uvw_i.w11_i = twiddle_factor/*_reg*/[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                uvw_i.w10_i = twiddle_factor/*_reg*/[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                uvw_i.w01_i = twiddle_factor/*_reg*/[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                uvw_i.w00_i = twiddle_factor/*_reg*/[NTT_REG_SIZE-1:0];
             end
             default: begin
                 uvw_i.w11_i = 'h0;
