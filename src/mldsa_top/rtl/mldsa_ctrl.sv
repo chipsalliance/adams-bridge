@@ -116,6 +116,7 @@ module mldsa_ctrl
   output logic [7:0][T1_COEFF_W-1:0] pkdecode_rd_data_o,
   input logic pkdecode_done_i,
 
+
   output logic sigdecode_h_enable_o, 
   output logic [SIGNATURE_H_VALID_NUM_BYTES-1:0][7:0] signature_h_o,
   input logic sigdecode_h_invalid_i,
@@ -241,12 +242,6 @@ module mldsa_ctrl
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
     end
   
-    for (int dword=0; dword < SIGNATURE_NUM_DWORDS; dword++)begin
-        mldsa_reg_hwif_in.MLDSA_SIGNATURE[dword].rd_ack = mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req_is_wr; //FIXME protect with signature done
-        mldsa_reg_hwif_in.MLDSA_SIGNATURE[dword].wr_ack = mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req & mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req_is_wr; //FIXME protect with busy
-        mldsa_reg_hwif_in.MLDSA_SIGNATURE[dword].rd_data = signature_reg.raw[SIGNATURE_NUM_DWORDS-1-dword]; 
-    end
-  
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin
       sign_rnd_reg[dword] = mldsa_reg_hwif_out.MLDSA_SIGN_RND[SIGN_RND_NUM_DWORDS-1-dword].SIGN_RND.value;
       mldsa_reg_hwif_in.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr = zeroize;
@@ -368,11 +363,8 @@ module mldsa_ctrl
                                   {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1] |
                                   {DATA_WIDTH{api_sk_reg_rd_dec}} & privkey_reg_rdata;
 
-  `ABR_MEM
-  #(
-    .DEPTH(SK_MEM_BANK_DEPTH),
-    .DATA_WIDTH(DATA_WIDTH)
-  ) mldsa_sk_ram_bank0
+  `ABR_MEM(SK_MEM_BANK_DEPTH,DATA_WIDTH)
+  mldsa_sk_ram_bank0
   (
     .clk_i(clk),
     .we_i(sk_ram_we_bank[0]),
@@ -383,11 +375,8 @@ module mldsa_ctrl
     .rdata_o(sk_ram_rdata[0])
   );
 
-  `ABR_MEM
-  #(
-    .DEPTH(SK_MEM_BANK_DEPTH),
-    .DATA_WIDTH(DATA_WIDTH)
-  ) mldsa_sk_ram_bank1
+  `ABR_MEM(SK_MEM_BANK_DEPTH,DATA_WIDTH)
+  mldsa_sk_ram_bank1
   (
     .clk_i(clk),
     .we_i(sk_ram_we_bank[1]),
@@ -445,9 +434,11 @@ module mldsa_ctrl
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= 0;
+      mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= 0;
     end
     else begin
       mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+      mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
     end
   end
 
@@ -456,39 +447,114 @@ module mldsa_ctrl
   //No write to PRIVKEY_OUT allowed - just ack it
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
 
-  //Signature
+  //Signature external mem
+  logic sig_z_ram_we, sig_z_ram_re;
+  logic [SIG_Z_MEM_ADDR_W-1:0] sig_z_ram_waddr, sig_z_ram_raddr;
+  logic [SIG_Z_MEM_NUM_DWORD-1:0][31:0] sig_z_ram_wdata, sig_z_ram_rdata;
+  logic [SIG_Z_MEM_WSTROBE_W-1:0] sig_z_ram_wstrobe;
+  logic api_sig_z_dec, api_sig_h_dec, api_sig_c_dec;
+  logic api_sig_z_re, api_sig_z_re_f, api_sig_z_we;
+  logic [SIG_ADDR_W-1:0] api_sig_addr;
+  mldsa_signature_z_addr_t api_sig_z_addr;
+  logic [SIG_C_REG_ADDR_W-1:0] api_sig_c_addr;
+  logic [SIG_H_REG_ADDR_W-1:0] api_sig_h_addr;
+  logic [DATA_WIDTH-1:0] signature_reg_rdata;
+
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      api_sig_z_re_f <= '0;
+    end else begin
+      api_sig_z_re_f <= api_sig_z_re;
+    end
+  end
+
+  always_comb api_sig_addr = SIGNATURE_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
+
+  always_comb api_sig_c_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
+  always_comb api_sig_z_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
+  always_comb api_sig_h_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
+
+  always_comb api_sig_z_addr.addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
+  always_comb api_sig_z_addr.offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD; //FIXME can this be done better?
+  always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
+  always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
+
+  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req &  mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb api_sig_z_we = api_sig_z_dec & mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
+
+  always_comb api_sig_z_re = api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+
+  `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W)
+  mldsa_sig_z_ram_bank1
+  (
+    .clk_i(clk),
+    .we_i(sig_z_ram_we),
+    .waddr_i(sig_z_ram_waddr),
+    .wstrobe_i(sig_z_ram_wstrobe),
+    .wdata_i(sig_z_ram_wdata),
+    .re_i(sig_z_ram_re),
+    .raddr_i(sig_z_ram_raddr),
+    .rdata_o(sig_z_ram_rdata)
+  );
+
+  //read requests
+  always_comb sig_z_ram_re = (sigdecode_z_rd_req_i.rd_wr_en == RW_READ) | api_sig_z_re;
+  always_comb sig_z_ram_raddr = ({SIG_Z_MEM_ADDR_W{(sigdecode_z_rd_req_i.rd_wr_en == RW_READ)}} & sigdecode_z_rd_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_re}} & api_sig_z_addr.addr);
+
+  always_comb sigdecode_z_rd_data_o = sig_z_ram_rdata;
+  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr.offset] : signature_reg_rdata;
+
+  //write requests
+  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we;
+  always_comb sig_z_ram_waddr = ({SIG_Z_MEM_ADDR_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr.addr);
+
+  always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
+                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*32));
+
+
+  always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
+                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32));
+
+  //signature reg read flop
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      signature_reg_rdata <= '0;
+    end else if (zeroize) begin
+      signature_reg_rdata <= '0;
+    end else begin
+      if (mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr)
+        signature_reg_rdata <= {DATA_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
+                               {DATA_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
+    end
+  end
+
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       signature_reg <= '0;
     end else if (zeroize) begin
       signature_reg <= '0;
     end else begin
-      for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-        if (mldsa_ready & mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req & mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].req_is_wr) begin
-          signature_reg.raw[SIGNATURE_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE[dword].wr_data;
+      //HW write c
+      if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
+        signature_reg.enc.c <= sampler_state_data_i[0][511:0];
+      end else if (mldsa_ready & api_sig_c_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+        for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
+          signature_reg.enc.c[api_sig_c_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
         end
       end
-      //HW write c
-      if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_SIG_C_REG_ID) begin
-          signature_reg.enc.c <= sampler_state_data_i[0][511:0];
-        end
-      end else if (sigencode_wr_req_i.rd_wr_en == RW_WRITE) begin
-        //HW write z
-        for (int chunk = 0; chunk < 224; chunk++) begin
-          if ((sigencode_wr_req_i.addr[8:1] == chunk)) begin
-            signature_reg.enc.z[chunk*5 +: 5] <= sigencode_wr_data_i;
-          end
-        end
-      end else if (set_signature_valid) begin
+      //HW write h
+      if (set_signature_valid) begin
         signature_reg.enc.h <= '0;
       end else if (makehint_reg_wren_i) begin
-        //HW write h
         for (int dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
-          if ((makehint_reg_wr_addr_i == dword)) begin
+          if (makehint_reg_wr_addr_i == dword)
             signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
-          end
         end
+      end else if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+        signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
     end
   end
@@ -503,12 +569,8 @@ module mldsa_ctrl
   //HW read z
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      sigdecode_z_rd_data_o <= '0;
       pkdecode_rd_data_o <= '0;
     end else begin
-      if ((sigdecode_z_rd_req_i.rd_wr_en == RW_READ)) begin
-        sigdecode_z_rd_data_o <= signature_reg.enc.z[sigdecode_z_rd_req_i.addr[8:1]*5 +: 5];
-      end
       if (1) begin //fixme read enable or remove flop
         pkdecode_rd_data_o <= publickey_reg.enc.t1[pkdecode_rd_addr_i*8 +: 8];
       end
