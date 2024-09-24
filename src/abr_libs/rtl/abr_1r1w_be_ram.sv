@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+`define RV_FPGA_OPTIMIZE
 module abr_1r1w_be_ram #(
      parameter DEPTH      = 64
     ,parameter DATA_WIDTH = 32
@@ -48,7 +48,8 @@ module abr_1r1w_be_ram #(
         .NUM_COL(DATA_WIDTH / STROBE_WIDTH),   // Number of columns (bytes)
         .COL_WIDTH(STROBE_WIDTH),              // Width of each column (byte width)
         .ADDR_WIDTH(ADDR_WIDTH),               // Address width
-        .DATA_WIDTH(DATA_WIDTH)                // Data width (total)
+        .DATA_WIDTH(DATA_WIDTH),                // Data width (total)
+        .DEPTH(DEPTH)
     ) bytewrite_ram_inst (
         .clkA(clk_i),                          // Clock for Port A (write)
         .enaA(we_i),                           // Enable for Port A (write enable)
@@ -68,7 +69,7 @@ module abr_1r1w_be_ram #(
 `else
 
     //storage element
-    (* ram_style = "block" *)logic [(DATA_WIDTH/STROBE_WIDTH)-1:0][STROBE_WIDTH-1:0] ram [DEPTH-1:0];
+   logic [(DATA_WIDTH/STROBE_WIDTH)-1:0][STROBE_WIDTH-1:0] ram [DEPTH-1:0];
 
     always @(posedge clk_i) begin
         if (we_i) begin
@@ -97,7 +98,8 @@ module bytewrite_tdp_ram_rf #(
     parameter NUM_COL   = 4,    // Number of columns (bytes)
     parameter COL_WIDTH = 8,    // Width of each column (byte)
     parameter ADDR_WIDTH = 10,  // Address width
-    parameter DATA_WIDTH = NUM_COL * COL_WIDTH  // Data width (total)
+    parameter DATA_WIDTH = NUM_COL * COL_WIDTH,  // Data width (total)
+    parameter DEPTH = 64
 ) (
     input  wire                      clkA,     // Clock for Port A
     input  wire                      enaA,     // Enable for Port A
@@ -115,7 +117,7 @@ module bytewrite_tdp_ram_rf #(
 );
 
     // Core memory storage (True Dual Port)
-    reg [DATA_WIDTH-1:0] ram_block [(2**ADDR_WIDTH)-1:0];  // Memory array
+     (* ram_style = "block" *) reg [DATA_WIDTH-1:0] ram_block [DEPTH-1:0];  // Memory array
 
     integer i;
 

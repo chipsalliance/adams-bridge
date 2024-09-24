@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+`define RV_FPGA_OPTIMIZE
 module abr_1r1w_512x4_ram #(
      parameter DEPTH      = 512
     ,parameter DATA_WIDTH = 4
@@ -30,7 +30,11 @@ module abr_1r1w_512x4_ram #(
     );
 
     //storage element
+`ifdef RV_FPGA_OPTIMIZE
     (* ram_style = "block" *) logic [DATA_WIDTH-1:0] ram [DEPTH-1:0];
+`else
+    logic [DEPTH-1:0][DATA_WIDTH-1:0] ram;
+`endif
 
     always @(posedge clk_i) begin
         if (we_i) begin
