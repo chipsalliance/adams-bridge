@@ -72,10 +72,8 @@ decompose dut(
     .z_neq_z(),
     .w1_o(),
     .buffer_en(),
-    .keccak_en(),
     .decompose_done(),
-    .w1_encode_done(),
-    .keccak_done(kdone_tb)
+    .w1_encode_done()
 );
 
 // w1_encode dut(

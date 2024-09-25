@@ -81,6 +81,7 @@ module decompose
     logic [3:0][REG_SIZE-2:0] r0_mod_q, r0, r0_reg; //23-bit value
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg, mem_hint_rd_data_reg;
     mem_if_t mem_wr_req_int;
+    logic [3:0] z_neq_z_d1, z_neq_z_d2, z_neq_z_int;
 
     //Control wires
     logic mod_enable, enable_reg, enable_d2;
@@ -94,14 +95,20 @@ module decompose
         if (!reset_n) begin
             enable_reg <= 'b0;
             enable_d2  <= 'b0;
+            z_neq_z_d1 <= 'h0;
+            z_neq_z_d2 <= 'h0;
         end
         else if (zeroize) begin
             enable_reg <= 'b0;
             enable_d2  <= 'b0;
+            z_neq_z_d1 <= 'h0;
+            z_neq_z_d2 <= 'h0;
         end
         else begin
             enable_reg <= mod_enable;
             enable_d2  <= enable_reg;
+            z_neq_z_d1 <= z_neq_z_int;
+            z_neq_z_d2 <= z_neq_z_d1;
         end
     end
 
@@ -129,7 +136,7 @@ module decompose
                 .r(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .r1(r1[i]),
                 .r_corner(r_corner[i]),
-                .z_nez(z_neq_z[i])
+                .z_nez(z_neq_z_int[i])
             );
         end
     endgenerate
@@ -214,6 +221,7 @@ module decompose
     endgenerate
 
     always_comb begin
+        z_neq_z                  = verify ? 'h0 : z_neq_z_d2;
         z_mem_wr_req.rd_wr_en    = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
         z_mem_wr_req.addr        = verify ? 'h0 : MLDSA_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                   = verify & (&usehint_ready) ? r1_usehint : r1_reg;

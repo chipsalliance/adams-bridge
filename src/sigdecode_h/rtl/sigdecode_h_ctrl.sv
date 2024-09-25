@@ -53,6 +53,7 @@ module sigdecode_h_ctrl
     // logic [3:0] poly_count;
     //poly_done_rd is asserted when all indices of curr poly are processed, i.e. rem_hintsum reaches 0
     //poly_done_wr is asserted when all 256 coeffs have been written for that poly to mem (equivalent to incr_poly if incr_poly is trigd by write fsm)
+    logic hint_rd_en_f;
     logic poly_done_rd, poly_done_wr;
     logic sigdecode_h_busy;
 
@@ -205,6 +206,16 @@ module sigdecode_h_ctrl
             read_fsm_state_ps <= read_fsm_state_ns;
     end
 
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            hint_rd_en_f <= '0;
+        else if (zeroize)
+            hint_rd_en_f <= '0;
+        else
+            hint_rd_en_f <= hint_rd_en;
+    end
+
     always_comb begin
         incr_rd_ptr         = 'b0;
         read_fsm_state_ns   = read_fsm_state_ps;
@@ -238,7 +249,7 @@ module sigdecode_h_ctrl
     //-----------------
     always_comb begin
         arc_SDH_WR_IDLE_SDH_WR_INIT = (write_fsm_state_ps == SDH_WR_IDLE) & sigdecode_h_enable;
-        arc_SDH_WR_INIT_SDH_WR_MEM  = (write_fsm_state_ps == SDH_WR_INIT) & (hint_rd_en | poly_done_rd); //hint_rd_en indicates bitmap is going to be constructed, so we can move to WR MEM state
+        arc_SDH_WR_INIT_SDH_WR_MEM  = (write_fsm_state_ps == SDH_WR_INIT) & (hint_rd_en_f | poly_done_rd); //hint_rd_en indicates bitmap is going to be constructed, so we can move to WR MEM state
         arc_SDH_WR_INIT_SDH_WR_IDLE = (write_fsm_state_ps == SDH_WR_INIT) & sigdecode_h_error;
         arc_SDH_WR_MEM_SDH_WR_INIT  = (write_fsm_state_ps == SDH_WR_MEM) & ~last_poly & poly_done_wr;
         arc_SDH_WR_MEM_SDH_WR_IDLE  = (write_fsm_state_ps == SDH_WR_MEM) & ((last_poly & poly_done_wr) | sigdecode_h_error);
@@ -269,7 +280,6 @@ module sigdecode_h_ctrl
             SDH_WR_INIT: begin
                 write_fsm_state_ns  = arc_SDH_WR_INIT_SDH_WR_MEM ? SDH_WR_MEM :
                                       arc_SDH_WR_INIT_SDH_WR_IDLE ? SDH_WR_IDLE : SDH_WR_INIT;
-                rst_bitmap          = ~arc_SDH_WR_INIT_SDH_WR_MEM;
             end
             SDH_WR_MEM: begin
                 write_fsm_state_ns  = arc_SDH_WR_MEM_SDH_WR_INIT ? SDH_WR_INIT :
@@ -277,6 +287,7 @@ module sigdecode_h_ctrl
                 incr_wr_addr        = 'b1;
                 incr_poly           = poly_done_wr; 
                 rd_wr_en            = RW_WRITE;
+                rst_bitmap          = arc_SDH_WR_MEM_SDH_WR_INIT | arc_SDH_WR_MEM_SDH_WR_IDLE;
             end
 
         endcase
