@@ -125,10 +125,10 @@ class mldsa_predictor #(
   // of DUT output values based on DUT input, configuration and state
   virtual function void write_ahb_slave_0_ae(mvc_sequence_item_base _t);
     logic [31:0] written_value, expected_value;
-    uvm_reg_addr_t privkey_out_base_addr, privkey_in_base_addr, signature_base_addr;
-    uvm_reg_addr_t privkey_out_size, privkey_in_size, signature_size;
+    uvm_reg_addr_t privkey_out_base_addr, privkey_in_base_addr, signature_base_addr, pubkey_base_addr;
+    uvm_reg_addr_t privkey_out_size, privkey_in_size, signature_size, pubkey_size;
     uvm_reg_addr_t reg_addr;
-    uvm_mem privkey_out_mem, privkey_in_mem, signature_mem;
+    uvm_mem privkey_out_mem, privkey_in_mem, signature_mem, pubkey_mem;
     uvm_reg reg_obj;
     bit MEM_range_true;
     // pragma uvmf custom ahb_slave_0_ae_predictor begin
@@ -192,12 +192,26 @@ class mldsa_predictor #(
       `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_SIGNATURE memory from sub-map")
     end
     
+    // Retrieve base address and memory object for MLDSA_PUBKEY
+    pubkey_base_addr = p_mldsa_rm.default_map.get_submap_offset(p_mldsa_rm.MLDSA_PUBKEY.default_map);
+    pubkey_mem = p_mldsa_rm.default_map.get_mem_by_offset(pubkey_base_addr);
+    pubkey_size = uvm_reg_addr_t'(pubkey_mem.get_size());
+
+    // Check if MLDSA_PUBKEY memory is correctly retrieved
+    if (pubkey_mem != null) begin
+      //`uvm_info("PRED_AHB", $sformatf("MLDSA_PUBKEY: Base Addr = 0x%0h, Size = %0d", pubkey_base_addr, pubkey_size), UVM_LOW)
+    end
+    else begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_PUBKEY memory from sub-map")
+    end
     reg_addr = t.address;
     MEM_range_true = (reg_addr >= privkey_in_base_addr && reg_addr < privkey_in_base_addr + privkey_in_size * 4)
                       ||
                      (reg_addr >= privkey_out_base_addr && reg_addr < privkey_out_base_addr + privkey_out_size * 4)
                       ||
-                     (reg_addr >= signature_base_addr && reg_addr < signature_base_addr + signature_size * 4);
+                     (reg_addr >= signature_base_addr && reg_addr < signature_base_addr + signature_size * 4)
+                      ||
+                     (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4);
 
 //===========================================================================================
     if (t.RnW == 1'b1) begin // write
@@ -225,11 +239,11 @@ class mldsa_predictor #(
           SK[idx] = t.data[0][31:0];
           //`uvm_info("PRED_AHB", $sformatf("Writing to MLDSA_PRIVKEY_IN: Addr = 0x%0h, Data = 0x%0h", reg_addr, t.data[0][31:0]), UVM_LOW)
         end
-        else if (reg_addr >= p_mldsa_rm.MLDSA_PUBKEY[0].get_address(p_mldsa_map) &&
-                 reg_addr <= p_mldsa_rm.MLDSA_PUBKEY[$size(p_mldsa_rm.MLDSA_PUBKEY)-1].get_address(p_mldsa_map)) begin
-          base_addr = p_mldsa_rm.MLDSA_PUBKEY[0].get_address(p_mldsa_map);
-          idx = (reg_addr - base_addr) / 4;
+        // Accessing data in MLDSA_PUBKEY
+        else if (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4) begin
+          idx = (reg_addr - pubkey_base_addr) / 4;
           PK[idx] = t.data[0][31:0];
+          //`uvm_info("PRED_AHB", $sformatf("Writing to MLDSA_PUBKEY: Addr = 0x%0h, Data = 0x%0h", reg_addr, t.data[0][31:0]), UVM_LOW)
         end
         // Accessing data in MLDSA_SIGNATURE
         else if (reg_addr >= signature_base_addr && reg_addr < signature_base_addr + signature_size * 4) begin
@@ -258,19 +272,8 @@ class mldsa_predictor #(
         uvm_reg_addr_t base_addr;
         // uvm_reg_addr_t reg_addr = t.address;
         int idx;
-        if (reg_addr >= p_mldsa_rm.MLDSA_PUBKEY[0].get_address(p_mldsa_map) &&
-            reg_addr <= p_mldsa_rm.MLDSA_PUBKEY[$size(p_mldsa_rm.MLDSA_PUBKEY)-1].get_address(p_mldsa_map)) begin
-          base_addr = p_mldsa_rm.MLDSA_PUBKEY[0].get_address(p_mldsa_map);
-          idx = (reg_addr - base_addr) / 4;
-          if (idx < $size(PK)) begin
-            t.data[0][31:0] = PK[idx];
-          end
-          else begin
-            `uvm_error("PRED_AHB", "Public key read out of bounds")
-          end
-        end
         // Accessing data in MLDSA_PRIVKEY_OUT
-        else if (reg_addr >= privkey_out_base_addr && reg_addr < privkey_out_base_addr + privkey_out_size * 4) begin
+        if (reg_addr >= privkey_out_base_addr && reg_addr < privkey_out_base_addr + privkey_out_size * 4) begin
             idx = (reg_addr - privkey_out_base_addr) / 4;
             if (idx < privkey_out_size) begin
                 t.data[0][31:0] = SK[idx]; // Example read from SK
@@ -278,6 +281,17 @@ class mldsa_predictor #(
             end
             else begin
                 `uvm_error("PRED_AHB", "Private key out read out of bounds")
+            end
+        end
+        // Accessing data in MLDSA_PUBKEY
+        else if (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4) begin
+            idx = (reg_addr - pubkey_base_addr) / 4;
+            if (idx < pubkey_size) begin
+                t.data[0][31:0] = PK[idx]; // Example read from SIG
+                //`uvm_info("PRED_AHB", $sformatf("Reading from MLDSA_PUBKEY: Addr = 0x%0h, Data = 0x%0h", reg_addr, t.data[0][31:0]), UVM_LOW)
+            end
+            else begin
+                `uvm_error("PRED_AHB", "Pubkey read out of bounds")
             end
         end
         // Accessing data in MLDSA_SIGNATURE
@@ -571,9 +585,9 @@ class mldsa_predictor #(
       //foreach (p_mldsa_rm.MLDSA_PRIVKEY_IN[i]) begin
       //  p_mldsa_rm.MLDSA_PRIVKEY_IN[i].set(zero_value);
       //end
-      foreach (p_mldsa_rm.MLDSA_PUBKEY[i]) begin
-        p_mldsa_rm.MLDSA_PUBKEY[i].set(zero_value);
-      end
+      //foreach (p_mldsa_rm.MLDSA_PUBKEY[i]) begin
+      //  p_mldsa_rm.MLDSA_PUBKEY[i].set(zero_value);
+      //end
       //foreach (p_mldsa_rm.MLDSA_SIGNATURE[i]) begin
       //  p_mldsa_rm.MLDSA_SIGNATURE[i].set(zero_value);
       //end

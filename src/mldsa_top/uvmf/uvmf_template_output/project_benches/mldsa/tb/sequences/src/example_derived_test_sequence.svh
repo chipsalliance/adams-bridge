@@ -93,14 +93,14 @@ class example_derived_test_sequence extends mldsa_bench_sequence_base;
     end
 
     // Reading MLDSA_PUBKEY register
-    foreach (reg_model.MLDSA_PUBKEY[i]) begin
-      reg_model.MLDSA_PUBKEY[i].read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
-      end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_PUBKEY[%0d]: %0h", i, data), UVM_LOW);
-      end
-    end
+    //foreach (reg_model.MLDSA_PUBKEY[i]) begin
+    //  reg_model.MLDSA_PUBKEY[i].read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    //  if (status != UVM_IS_OK) begin
+    //    `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
+    //  end else begin
+    //    `uvm_info("REG_READ", $sformatf("MLDSA_PUBKEY[%0d]: %0h", i, data), UVM_LOW);
+    //  end
+    //end
 
     // Reading MLDSA_PRIVKEY_OUT register
     //foreach (reg_model.MLDSA_PRIVKEY_OUT[i]) begin

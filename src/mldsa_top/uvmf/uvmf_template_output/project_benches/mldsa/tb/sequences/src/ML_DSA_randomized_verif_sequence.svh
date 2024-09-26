@@ -93,14 +93,14 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 1224, SK);
     $fclose(fd);
 
-    // Writing MLDSA_PUBKEY register
-    foreach (reg_model.MLDSA_PUBKEY[i]) begin
-      reg_model.MLDSA_PUBKEY[i].write(status, PK[i], UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
-      end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PK[i]), UVM_LOW);
-      end
+    // Writing the SK into the MLDSA_PUBKEY register array
+    for (int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+        reg_model.MLDSA_PUBKEY.m_mem.write(status, i, PK[i], UVM_FRONTDOOR, reg_model.default_map, this);
+        if (status != UVM_IS_OK) begin
+            `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
+        end else begin
+            `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, SK[i]), UVM_LOW);
+        end
     end
 
 //=========================================================

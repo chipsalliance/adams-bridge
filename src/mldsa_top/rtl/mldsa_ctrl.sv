@@ -109,7 +109,6 @@ module mldsa_ctrl
   output logic [7:0][T1_COEFF_W-1:0] pkdecode_rd_data_o,
   input logic pkdecode_done_i,
 
-
   output logic sigdecode_h_enable_o, 
   output logic [SIGNATURE_H_VALID_NUM_BYTES-1:0][7:0] signature_h_o,
   input logic sigdecode_h_invalid_i,
@@ -142,6 +141,7 @@ module mldsa_ctrl
   //assign appropriate data to msg interface
   logic [MLDSA_OPR_WIDTH-1:0]  sampler_src;
   logic [15:0]               sampler_src_offset;
+  logic [2:0]                sampler_src_offset_f;
   logic [15:0]               sampler_imm;
   
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
@@ -153,6 +153,8 @@ module mldsa_ctrl
   logic [15:0] kappa_reg;
   logic update_kappa;
 
+  logic [MsgWidth-1:0] msg_data, msg_data_nxt;
+
   logic seq_en;
   logic [MLDSA_PROG_ADDR_W-1 : 0] prog_cntr, prog_cntr_nxt;
   mldsa_seq_instr_t instr;
@@ -162,13 +164,14 @@ module mldsa_ctrl
   logic msg_done;
   logic [MsgStrbW-1:0] last_msg_strobe;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
-  logic vld_cycle;
+  logic msg_hold;
 
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
 
   mldsa_ctrl_fsm_state_e ctrl_fsm_ps, ctrl_fsm_ns;
+  logic msg_valid;
   mldsa_ctrl_fsm_state_e sign_ctrl_fsm_ps, sign_ctrl_fsm_ns;
 
   mldsa_reg__in_t mldsa_reg_hwif_in;
@@ -216,11 +219,6 @@ module mldsa_ctrl
   always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
   
   always_comb begin // mldsa reg writing 
-    for (int dword=0; dword < PUBKEY_NUM_DWORDS; dword++)begin
-        mldsa_reg_hwif_in.MLDSA_PUBKEY[dword].rd_ack = mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & ~mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr; //FIXME protect with key done
-        mldsa_reg_hwif_in.MLDSA_PUBKEY[dword].wr_ack = mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr; //FIXME protect with busy
-        mldsa_reg_hwif_in.MLDSA_PUBKEY[dword].rd_data = publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword]; 
-    end 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
@@ -428,10 +426,12 @@ module mldsa_ctrl
     if (!rst_b) begin
       mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= 0;
       mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= 0;
+      mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack <= 0;
     end
     else begin
       mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
       mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+      mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack <= mldsa_reg_hwif_out.MLDSA_PUBKEY.req & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
     end
   end
 
@@ -505,7 +505,7 @@ module mldsa_ctrl
                                 ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr.addr);
 
   always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
-                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*32));
+                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*4));
 
 
   always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
@@ -559,18 +559,116 @@ module mldsa_ctrl
     end
   end
 
-  //HW read z
+
+//public key memory
+  logic pubkey_ram_we, pubkey_ram_re;
+  logic [PK_MEM_ADDR_W-1:0] pubkey_ram_waddr, pubkey_ram_raddr;
+  logic [PK_MEM_NUM_DWORDS-1:0][31:0] pubkey_ram_wdata, pubkey_ram_rdata;
+  logic [31:0][T1_COEFF_W-1:0] pubkey_ram_rdata_t1;
+  logic [PK_MEM_WSTROBE_W-1:0] pubkey_ram_wstrobe;
+  logic api_pubkey_dec, api_pubkey_rho_dec;
+  logic api_pubkey_re, api_pubkey_re_f, api_pubkey_we;
+  logic [PK_ADDR_W-1:0] api_pubkey_addr;
+  mldsa_pubkey_mem_addr_t api_pubkey_mem_addr;
+  mldsa_pubkey_mem_addr_t sampler_pubkey_mem_addr;
+  logic [PK_RHO_REG_ADDR_W-1:0] api_pk_rho_addr;
+  logic [DATA_WIDTH-1:0] pk_reg_rdata;
+  logic sampler_pk_rd_en, sampler_pk_rd_en_f, pkdecode_rd_en;
+  logic [1:0] pkdecode_rd_offset_f;
+
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      pkdecode_rd_data_o <= '0;
+      api_pubkey_re_f <= '0;
+      sampler_pk_rd_en_f <= '0;
+      sampler_src_offset_f <= '0;
+      pkdecode_rd_offset_f <= '0;
     end else begin
-      if (1) begin //fixme read enable or remove flop
-        pkdecode_rd_data_o <= publickey_reg.enc.t1[pkdecode_rd_addr_i*8 +: 8];
-      end
+      api_pubkey_re_f <= api_pubkey_re;
+      sampler_pk_rd_en_f <= msg_hold ? sampler_pk_rd_en_f : sampler_pk_rd_en;
+      sampler_src_offset_f <= msg_hold ? sampler_src_offset_f : sampler_pubkey_mem_addr.offset[2:0];
+      pkdecode_rd_offset_f <= pkdecode_rd_addr_i[1:0];
     end
   end
 
-  //Public Key
+  always_comb api_pubkey_addr = PUBKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
+
+  always_comb api_pubkey_rho_dec = mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
+  always_comb api_pubkey_dec = mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
+
+  always_comb api_pubkey_mem_addr.addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
+  always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS; //FIXME can this be done better?
+
+  always_comb sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
+  always_comb sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
+  always_comb api_pk_rho_addr = api_pubkey_addr[2:0];
+
+  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack = mldsa_reg_hwif_out.MLDSA_PUBKEY.req &  mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_we = api_pubkey_dec & mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
+
+  always_comb api_pubkey_re = api_pubkey_dec & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+
+  `ABR_MEM_BE(64,320)
+  mldsa_pubkey_ram
+  (
+    .clk_i(clk),
+    .we_i(pubkey_ram_we),
+    .waddr_i(pubkey_ram_waddr),
+    .wstrobe_i(pubkey_ram_wstrobe),
+    .wdata_i(pubkey_ram_wdata),
+    .re_i(pubkey_ram_re),
+    .raddr_i(pubkey_ram_raddr),
+    .rdata_o(pubkey_ram_rdata)
+  );
+
+  assign pubkey_ram_rdata_t1 = pubkey_ram_rdata;
+
+  always_comb pkdecode_rd_en = instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
+
+  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:342]}) & ~msg_hold;
+
+  //read requests
+  always_comb pubkey_ram_re = sampler_pk_rd_en | pkdecode_rd_en | api_pubkey_re;
+  always_comb pubkey_ram_raddr = ({PK_MEM_ADDR_W{sampler_pk_rd_en}} & sampler_pubkey_mem_addr.addr) |
+                                 ({PK_MEM_ADDR_W{pkdecode_rd_en}} & pkdecode_rd_addr_i[PK_MEM_ADDR_W+1:2]) |
+                                 ({PK_MEM_ADDR_W{api_pubkey_re}} & api_pubkey_mem_addr.addr);
+
+  always_comb begin
+    unique case (pkdecode_rd_offset_f[1:0])
+      2'b00: pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
+      2'b01: pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
+      2'b10: pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
+      2'b11: pkdecode_rd_data_o = pubkey_ram_rdata_t1[31:24];
+    endcase
+  end
+
+  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr.offset] : pk_reg_rdata;
+
+  //write requests
+  always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we;
+  always_comb pubkey_ram_waddr = ({PK_MEM_ADDR_W{pk_t1_wren_i}} & pk_t1_wr_addr_i[PK_MEM_ADDR_W+1:2]) |
+                                ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr.addr);
+
+  always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & 'h3FF << pk_t1_wr_addr_i[1:0]*10) |
+                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & ('hF << api_pubkey_mem_addr.offset*4));
+
+
+  always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
+                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_pubkey_mem_addr.offset*32));
+
+
+  //pk reg read flop
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      pk_reg_rdata <= '0;
+    end else if (zeroize) begin
+      pk_reg_rdata <= '0;
+    end else begin
+      if (api_pubkey_rho_dec)
+        pk_reg_rdata <= publickey_reg.enc.rho[api_pk_rho_addr];
+    end
+  end
+
+  //Public Key rho
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       publickey_reg <= '0;
@@ -580,19 +678,8 @@ module mldsa_ctrl
       //HW write rho
       if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID)) begin
         publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
-      end else if (pk_t1_wren_i) begin
-        //HW write t1
-        for (int coeff = 0; coeff < T1_NUM_COEFF; coeff++) begin 
-          if ((pk_t1_wr_addr_i == coeff[10:3])) begin //pubkey t1 write interface
-            publickey_reg.enc.t1[coeff] <= pk_t1_wrdata_i[coeff[2:0]];
-          end
-        end
-      end else if (mldsa_ready) begin
-        for (int dword = 0; dword < PUBKEY_NUM_DWORDS; dword++) begin
-          if (mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req & mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].req_is_wr) begin
-            publickey_reg.raw[PUBKEY_NUM_DWORDS-1-dword] <= mldsa_reg_hwif_out.MLDSA_PUBKEY[dword].wr_data;
-          end
-        end
+      end else if (mldsa_ready & api_pubkey_rho_dec & mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr) begin
+        publickey_reg.enc.rho[api_pk_rho_addr] <= mldsa_reg_hwif_out.MLDSA_PUBKEY.wr_data;
       end
     end
   end
@@ -604,21 +691,34 @@ module mldsa_ctrl
 
   always_comb rho_reg = verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
 
-  always_comb begin : sampler_src_mux
-    unique case (sampler_src) inside
-      MLDSA_SEED_ID:        msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-      MLDSA_RHO_ID:         msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
-      MLDSA_RHO_P_ID:       msg_data_o[0] = msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
-      MLDSA_TR_ID:          msg_data_o[0] = privatekey_reg.enc.tr[sampler_src_offset[2:0]];
-      MLDSA_MSG_ID:         msg_data_o[0] = {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
-      MLDSA_K_ID:           msg_data_o[0] = privatekey_reg.enc.K[sampler_src_offset[1:0]];
-      MLDSA_MU_ID:          msg_data_o[0] = mu_reg[sampler_src_offset[2:0]];
-      MLDSA_SIGN_RND_ID:    msg_data_o[0] = {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-      MLDSA_RHO_P_KAPPA_ID: msg_data_o[0] = msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
-      MLDSA_SIG_C_REG_ID:   msg_data_o[0] = {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
-      MLDSA_PK_REG_ID:      msg_data_o[0] = {publickey_reg.raw[{sampler_src_offset[8:0],1'b1}],publickey_reg.raw[{sampler_src_offset[8:0],1'b0}]};
-      default:            msg_data_o[0] = '0;
-    endcase
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      msg_data <= '0;
+    end else begin
+      if (msg_hold) begin
+        msg_data <= msg_data;
+      end else begin
+        unique case (sampler_src) inside
+          MLDSA_SEED_ID:        msg_data <= msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
+          MLDSA_RHO_ID:         msg_data <= msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
+          MLDSA_RHO_P_ID:       msg_data <= msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
+          MLDSA_TR_ID:          msg_data <= privatekey_reg.enc.tr[sampler_src_offset[2:0]];
+          MLDSA_MSG_ID:         msg_data <= {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
+          MLDSA_K_ID:           msg_data <= privatekey_reg.enc.K[sampler_src_offset[1:0]];
+          MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
+          MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
+          MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
+          MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
+          MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.raw[{sampler_src_offset[1:0],1'b0}]};
+          default:              msg_data <= '0;
+        endcase
+      end
+    end 
+  end
+
+  always_comb begin
+    msg_data_o[0] = sampler_pk_rd_en_f ? {pubkey_ram_rdata[{sampler_src_offset_f[2:0],1'b1}],pubkey_ram_rdata[{sampler_src_offset_f[2:0],1'b0}]} : 
+                    msg_data;
   end
   
   //If we're storing state directly into registers, do that here
@@ -907,7 +1007,7 @@ module mldsa_ctrl
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << instr.length[$clog2(MsgStrbW)-1:0]);
  
-always_comb vld_cycle = msg_valid_o & msg_rdy_i;
+always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Done when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
@@ -916,13 +1016,21 @@ always_comb msg_done = msg_cnt >= instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
     msg_cnt <= 0;
+    msg_valid_o <= 0;
+    msg_strobe_o <= 0;
   end
   else if (zeroize) begin
     msg_cnt <= 0;
+    msg_valid_o <= 0;
+    msg_strobe_o <= 0;
   end
   else begin
     msg_cnt <= msg_done  ? 'd0 :
-               vld_cycle ? msg_cnt + 'd1 : msg_cnt;
+               msg_hold  ? msg_cnt : 
+               msg_valid ? msg_cnt + 'd1 : msg_cnt;
+    msg_valid_o <= msg_hold ? msg_valid_o : msg_valid;
+    msg_strobe_o <= msg_hold ? msg_strobe_o :
+                    msg_done ? last_msg_strobe : '1;
   end
 end
 
@@ -933,8 +1041,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
     ctrl_fsm_ns = ctrl_fsm_ps;
     sha3_start_o = 0;
     msg_start_o = 0;
-    msg_valid_o = 0;
-    msg_strobe_o = 0;
+    msg_valid = 0;
     sampler_start_o = 0;
     sampler_src = 0;
     sampler_imm = 0;
@@ -966,15 +1073,12 @@ always_comb begin : primary_ctrl_fsm_out_combo
         msg_start_o = 1;
       end
       MLDSA_CTRL_MSG_LOAD: begin
-        msg_valid_o = 1;
+        msg_valid = 1;
         sampler_src = instr.operand1;
         sampler_imm = instr.imm;
         if (msg_done) begin
-          msg_strobe_o = last_msg_strobe;
           if (instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
           else ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
-        end else begin
-          msg_strobe_o = '1;
         end
       end
       MLDSA_CTRL_MSG_WAIT: begin

@@ -284,33 +284,19 @@ package mldsa_reg_uvm;
         endfunction : build
     endclass : mldsa_reg__MLDSA_VERIFY_RES
 
-    // Reg - mldsa_reg::MLDSA_PUBKEY
-    class mldsa_reg__MLDSA_PUBKEY extends uvm_reg;
-        protected uvm_reg_data_t m_current;
-        protected uvm_reg_data_t m_data;
-        protected bit            m_is_read;
-
-        mldsa_reg__MLDSA_PUBKEY_bit_cg PUBKEY_bit_cg[32];
-        mldsa_reg__MLDSA_PUBKEY_fld_cg fld_cg;
-        rand uvm_reg_field PUBKEY;
-
+    // Mem - mldsa_reg::MLDSA_PUBKEY
+    class mldsa_reg__MLDSA_PUBKEY extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
         function new(string name = "mldsa_reg__MLDSA_PUBKEY");
-            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+            super.new(name);
         endfunction : new
-        extern virtual function void sample_values();
-        extern protected virtual function void sample(uvm_reg_data_t  data,
-                                                      uvm_reg_data_t  byte_en,
-                                                      bit             is_read,
-                                                      uvm_reg_map     map);
 
         virtual function void build();
-            this.PUBKEY = new("PUBKEY");
-            this.PUBKEY.configure(this, 32, 0, "RW", 1, 'h0, 1, 1, 0);
-            if (has_coverage(UVM_CVR_REG_BITS)) begin
-                foreach(PUBKEY_bit_cg[bt]) PUBKEY_bit_cg[bt] = new();
-            end
-            if (has_coverage(UVM_CVR_FIELD_VALS))
-                fld_cg = new();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 648, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
         endfunction : build
     endclass : mldsa_reg__MLDSA_PUBKEY
 
@@ -858,7 +844,7 @@ package mldsa_reg_uvm;
         rand mldsa_reg__MLDSA_SIGN_RND MLDSA_SIGN_RND[8];
         rand mldsa_reg__MLDSA_MSG MLDSA_MSG[16];
         rand mldsa_reg__MLDSA_VERIFY_RES MLDSA_VERIFY_RES[16];
-        rand mldsa_reg__MLDSA_PUBKEY MLDSA_PUBKEY[648];
+        rand mldsa_reg__MLDSA_PUBKEY MLDSA_PUBKEY;
         rand mldsa_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand mldsa_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
         rand mldsa_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
@@ -929,13 +915,10 @@ package mldsa_reg_uvm;
                 this.MLDSA_VERIFY_RES[i0].build();
                 this.default_map.add_reg(this.MLDSA_VERIFY_RES[i0], 'hd8 + i0*'h4);
             end
-            foreach(this.MLDSA_PUBKEY[i0]) begin
-                this.MLDSA_PUBKEY[i0] = new($sformatf("MLDSA_PUBKEY[%0d]", i0));
-                this.MLDSA_PUBKEY[i0].configure(this);
-                
-                this.MLDSA_PUBKEY[i0].build();
-                this.default_map.add_reg(this.MLDSA_PUBKEY[i0], 'h118 + i0*'h4);
-            end
+            this.MLDSA_PUBKEY = new("MLDSA_PUBKEY");
+            this.MLDSA_PUBKEY.configure(this);
+            this.MLDSA_PUBKEY.build();
+            this.default_map.add_submap(this.MLDSA_PUBKEY.default_map, 'h1000);
             this.MLDSA_SIGNATURE = new("MLDSA_SIGNATURE");
             this.MLDSA_SIGNATURE.configure(this);
             this.MLDSA_SIGNATURE.build();

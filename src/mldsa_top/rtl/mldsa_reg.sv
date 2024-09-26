@@ -92,7 +92,7 @@ module mldsa_reg (
         logic [8-1:0]MLDSA_SIGN_RND;
         logic [16-1:0]MLDSA_MSG;
         logic [16-1:0]MLDSA_VERIFY_RES;
-        logic [648-1:0]MLDSA_PUBKEY;
+        logic MLDSA_PUBKEY;
         logic MLDSA_SIGNATURE;
         logic MLDSA_PRIVKEY_OUT;
         logic MLDSA_PRIVKEY_IN;
@@ -148,10 +148,8 @@ module mldsa_reg (
         for(int i0=0; i0<16; i0++) begin
             decoded_reg_strb.MLDSA_VERIFY_RES[i0] = cpuif_req_masked & (cpuif_addr == 16'hd8 + i0*16'h4);
         end
-        for(int i0=0; i0<648; i0++) begin
-            decoded_reg_strb.MLDSA_PUBKEY[i0] = cpuif_req_masked & (cpuif_addr == 16'h118 + i0*16'h4);
-            is_external |= cpuif_req_masked & (cpuif_addr == 16'h118 + i0*16'h4);
-        end
+        decoded_reg_strb.MLDSA_PUBKEY = cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
         decoded_reg_strb.MLDSA_SIGNATURE = cpuif_req_masked & (cpuif_addr >= 16'h2000) & (cpuif_addr <= 16'h2000 + 16'h1213);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h2000) & (cpuif_addr <= 16'h2000 + 16'h1213);
         decoded_reg_strb.MLDSA_PRIVKEY_OUT = cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
@@ -613,13 +611,11 @@ module mldsa_reg (
         end
         assign hwif_out.MLDSA_VERIFY_RES[i0].VERIFY_RES.value = field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value;
     end
-    for(genvar i0=0; i0<648; i0++) begin
-
-        assign hwif_out.MLDSA_PUBKEY[i0].req = decoded_reg_strb.MLDSA_PUBKEY[i0];
-        assign hwif_out.MLDSA_PUBKEY[i0].req_is_wr = decoded_req_is_wr;
-        assign hwif_out.MLDSA_PUBKEY[i0].wr_data = decoded_wr_data;
-        assign hwif_out.MLDSA_PUBKEY[i0].wr_biten = decoded_wr_biten;
-    end
+    assign hwif_out.MLDSA_PUBKEY.req = decoded_reg_strb.MLDSA_PUBKEY;
+    assign hwif_out.MLDSA_PUBKEY.addr = decoded_addr[11:0];
+    assign hwif_out.MLDSA_PUBKEY.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLDSA_PUBKEY.wr_data = decoded_wr_data;
+    assign hwif_out.MLDSA_PUBKEY.wr_biten = decoded_wr_biten;
     assign hwif_out.MLDSA_SIGNATURE.req = decoded_reg_strb.MLDSA_SIGNATURE;
     assign hwif_out.MLDSA_SIGNATURE.addr = decoded_addr[12:0];
     assign hwif_out.MLDSA_SIGNATURE.req_is_wr = decoded_req_is_wr;
@@ -998,9 +994,7 @@ module mldsa_reg (
     always_comb begin
         automatic logic wr_ack;
         wr_ack = '0;
-        for(int i0=0; i0<648; i0++) begin
-            wr_ack |= hwif_in.MLDSA_PUBKEY[i0].wr_ack;
-        end
+        wr_ack |= hwif_in.MLDSA_PUBKEY.wr_ack;
         wr_ack |= hwif_in.MLDSA_SIGNATURE.wr_ack;
         wr_ack |= hwif_in.MLDSA_PRIVKEY_OUT.wr_ack;
         wr_ack |= hwif_in.MLDSA_PRIVKEY_IN.wr_ack;
@@ -1017,9 +1011,7 @@ module mldsa_reg (
     always_comb begin
         automatic logic rd_ack;
         rd_ack = '0;
-        for(int i0=0; i0<648; i0++) begin
-            rd_ack |= hwif_in.MLDSA_PUBKEY[i0].rd_ack;
-        end
+        rd_ack |= hwif_in.MLDSA_PUBKEY.rd_ack;
         rd_ack |= hwif_in.MLDSA_SIGNATURE.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_OUT.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_IN.rd_ack;
@@ -1035,7 +1027,7 @@ module mldsa_reg (
     logic [31:0] readback_data;
 
     // Assign readback values to a flattened array
-    logic [685-1:0][31:0] readback_array;
+    logic [38-1:0][31:0] readback_array;
     for(genvar i0=0; i0<2; i0++) begin
         assign readback_array[i0*1 + 0][31:0] = (decoded_reg_strb.MLDSA_NAME[i0] && !decoded_req_is_wr) ? hwif_in.MLDSA_NAME[i0].NAME.next : '0;
     end
@@ -1048,37 +1040,35 @@ module mldsa_reg (
     for(genvar i0=0; i0<16; i0++) begin
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.MLDSA_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end
-    for(genvar i0=0; i0<648; i0++) begin
-        assign readback_array[i0*1 + 21] = hwif_in.MLDSA_PUBKEY[i0].rd_ack ? hwif_in.MLDSA_PUBKEY[i0].rd_data : '0;
-    end
-    assign readback_array[669] = hwif_in.MLDSA_SIGNATURE.rd_ack ? hwif_in.MLDSA_SIGNATURE.rd_data : '0;
-    assign readback_array[670] = hwif_in.MLDSA_PRIVKEY_OUT.rd_ack ? hwif_in.MLDSA_PRIVKEY_OUT.rd_data : '0;
-    assign readback_array[671] = hwif_in.MLDSA_PRIVKEY_IN.rd_ack ? hwif_in.MLDSA_PRIVKEY_IN.rd_data : '0;
-    assign readback_array[672][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
-    assign readback_array[672][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
-    assign readback_array[672][31:2] = '0;
-    assign readback_array[673][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
-    assign readback_array[673][31:1] = '0;
-    assign readback_array[674][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
-    assign readback_array[674][31:1] = '0;
-    assign readback_array[675][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
-    assign readback_array[675][31:1] = '0;
-    assign readback_array[676][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
-    assign readback_array[676][31:1] = '0;
-    assign readback_array[677][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
-    assign readback_array[677][31:1] = '0;
-    assign readback_array[678][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
-    assign readback_array[678][31:1] = '0;
-    assign readback_array[679][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
-    assign readback_array[679][31:1] = '0;
-    assign readback_array[680][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
-    assign readback_array[680][31:1] = '0;
-    assign readback_array[681][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
-    assign readback_array[682][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
-    assign readback_array[683][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[683][31:1] = '0;
-    assign readback_array[684][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[684][31:1] = '0;
+    assign readback_array[21] = hwif_in.MLDSA_PUBKEY.rd_ack ? hwif_in.MLDSA_PUBKEY.rd_data : '0;
+    assign readback_array[22] = hwif_in.MLDSA_SIGNATURE.rd_ack ? hwif_in.MLDSA_SIGNATURE.rd_data : '0;
+    assign readback_array[23] = hwif_in.MLDSA_PRIVKEY_OUT.rd_ack ? hwif_in.MLDSA_PRIVKEY_OUT.rd_data : '0;
+    assign readback_array[24] = hwif_in.MLDSA_PRIVKEY_IN.rd_ack ? hwif_in.MLDSA_PRIVKEY_IN.rd_data : '0;
+    assign readback_array[25][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
+    assign readback_array[25][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
+    assign readback_array[25][31:2] = '0;
+    assign readback_array[26][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
+    assign readback_array[26][31:1] = '0;
+    assign readback_array[27][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
+    assign readback_array[27][31:1] = '0;
+    assign readback_array[28][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
+    assign readback_array[28][31:1] = '0;
+    assign readback_array[29][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
+    assign readback_array[29][31:1] = '0;
+    assign readback_array[30][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
+    assign readback_array[30][31:1] = '0;
+    assign readback_array[31][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
+    assign readback_array[31][31:1] = '0;
+    assign readback_array[32][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
+    assign readback_array[32][31:1] = '0;
+    assign readback_array[33][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
+    assign readback_array[33][31:1] = '0;
+    assign readback_array[34][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
+    assign readback_array[35][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
+    assign readback_array[36][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[36][31:1] = '0;
+    assign readback_array[37][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[37][31:1] = '0;
 
     // Reduce the array
     always_comb begin
@@ -1086,7 +1076,7 @@ module mldsa_reg (
         readback_done = decoded_req & ~decoded_req_is_wr & ~decoded_strb_is_external;
         readback_err = '0;
         readback_data_var = '0;
-        for(int i=0; i<685; i++) readback_data_var |= readback_array[i];
+        for(int i=0; i<38; i++) readback_data_var |= readback_array[i];
         readback_data = readback_data_var;
     end
 

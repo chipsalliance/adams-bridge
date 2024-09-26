@@ -66,6 +66,16 @@ package mldsa_ctrl_pkg;
     localparam SIG_H_REG_ADDR_W = $clog2(SIGNATURE_H_NUM_DWORDS);
     localparam SIG_C_REG_ADDR_W = $clog2(SIGNATURE_C_NUM_DWORDS);
 
+    localparam PK_MEM_DEPTH = 64;
+    localparam PK_MEM_DATA_W = 320;
+    localparam PK_MEM_NUM_DWORDS = (PK_MEM_DATA_W)/32;
+    localparam PK_MEM_WSTROBE_W = PK_MEM_DATA_W/8;
+    localparam PK_ADDR_W = $clog2(PUBKEY_NUM_DWORDS);
+    localparam PK_MEM_ADDR_W = $clog2(PK_MEM_DEPTH);
+    localparam PK_MEM_OFFSET_W = $clog2(PK_MEM_DATA_W/32);
+    localparam PK_RHO_REG_ADDR_W = $clog2(8); //fixme
+    
+
     typedef struct packed {
         logic [7:0][63:0] tr;
         logic [3:0][63:0] K;
@@ -93,13 +103,17 @@ package mldsa_ctrl_pkg;
     } mldsa_signature_u;
 
     typedef struct packed {
-        logic [T1_NUM_COEFF-1:0][T1_COEFF_W-1:0] t1;
+        logic [PK_MEM_ADDR_W-1:0] addr;
+        logic [PK_MEM_OFFSET_W-1:0] offset;
+    } mldsa_pubkey_mem_addr_t;
+
+    typedef struct packed {
         logic [7:0][31:0] rho;
     } mldsa_pubkey_t;
 
     typedef union packed {
         mldsa_pubkey_t enc;
-        logic [PUBKEY_NUM_DWORDS-1:0][31:0] raw;
+        logic [7:0][31:0] raw;
     } mldsa_pubkey_u;
 
     //FSM Controller for driving sampler 
