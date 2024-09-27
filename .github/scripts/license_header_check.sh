@@ -74,7 +74,7 @@ if [[ -z ${ADAMSBRIDGE_ROOT:+"empty"} ]]; then
     exit 1
 fi
 
-exclude_dir='{uvmf*,.git,__pycache__,templates,docs}'
+exclude_dir='{uvmf*,.git,cmark,__pycache__,templates,docs}'
 exclude_suffix='*.{tcl,txt,js,htm,html,json,vf,yml,woff,rsp,rdl,bashrc,waiver,cfg,hex,rc,exe,pdf,png,hvp,svg,log}'
 exclude_regs='*_reg*.{sv,rdl}'
 exclude_csr='*_csr*.*'
@@ -84,10 +84,6 @@ apache_patn='Licensed under the Apache License'
 # Recursive find through repository with some major exclusions
 # 'eval' is used to expand exclude vars into a usable glob pattern
 files_missing_header=$(eval grep -r -L -i  --exclude-dir=${exclude_dir} --exclude=${exclude_suffix} --exclude=${exclude_regs} --exclude=${exclude_csr} --exclude=${exclude_file} \"${apache_patn}\" "${ADAMSBRIDGE_ROOT}")
-
-# After excluding some crypto directories, re-scan specific directories therein
-# (can't specificy exclude-dir using '<patn>/<patn>' to catch nested directories)
-files_missing_header="${files_missing_header:+$files_missing_header }$(eval grep -r -L -i  --exclude-dir={rtl,uvmf_*} --exclude={aes_tb.v,doe_tb.v,sha256_tb.v} --exclude=${exclude_suffix} --exclude=${exclude_regs} --exclude=${exclude_csr} --exclude=${exclude_file} \"${apache_patn}\")"
 
 if [[ $files_missing_header != "" ]]; then
     echo -e "\n\n\tPlease add Apache license header to the following files and try again. \n"
