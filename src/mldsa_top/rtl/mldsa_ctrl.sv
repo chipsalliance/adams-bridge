@@ -479,7 +479,7 @@ module mldsa_ctrl
   always_comb api_sig_z_re = api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
   `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W)
-  mldsa_sig_z_ram_bank1
+  mldsa_sig_z_ram
   (
     .clk_i(clk),
     .we_i(sig_z_ram_we),
