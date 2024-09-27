@@ -286,18 +286,18 @@ module mldsa_ctrl
   logic [1:0][SK_MEM_ADDR_W:0] skdecode_rdaddr;
 
   logic api_keymem_wr_dec, api_sk_reg_wr_dec;
-  logic api_keymem_rd_dec, api_sk_reg_rd_dec;
+  logic api_keymem_rd_dec, api_sk_reg_rd_dec, api_sk_reg_rd_dec_f;
   logic [DATA_WIDTH-1:0] privkey_reg_rdata;
   logic [DATA_WIDTH-1:0] privkey_out_rdata;
 
   always_comb api_sk_waddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
   always_comb api_sk_raddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
-  always_comb api_sk_reg_wr_dec = api_sk_waddr inside {[0:31]};
-  always_comb api_keymem_wr_dec = api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_sk_reg_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
+  always_comb api_keymem_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
 
-  always_comb api_sk_reg_rd_dec = api_sk_raddr inside {[0:31]};
-  always_comb api_keymem_rd_dec = api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_sk_reg_rd_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
+  always_comb api_keymem_rd_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
 
   assign api_sk_reg_waddr = api_sk_waddr[4:0];
   assign api_sk_reg_raddr = api_sk_raddr[4:0];
@@ -344,15 +344,17 @@ module mldsa_ctrl
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       api_keymem_re_bank_f <= '0;
+      api_sk_reg_rd_dec_f <= '0;
     end else begin
       api_keymem_re_bank_f <= api_keymem_re_bank;
+      api_sk_reg_rd_dec_f <= api_sk_reg_rd_dec;
     end
   end
 
   always_comb skdecode_rd_data_o = sk_ram_rdata;
   always_comb privkey_out_rdata = {DATA_WIDTH{api_keymem_re_bank_f[0]}} & sk_ram_rdata[0] |
                                   {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1] |
-                                  {DATA_WIDTH{api_sk_reg_rd_dec}} & privkey_reg_rdata;
+                                  {DATA_WIDTH{api_sk_reg_rd_dec_f}} & privkey_reg_rdata;
 
   `ABR_MEM(SK_MEM_BANK_DEPTH,DATA_WIDTH)
   mldsa_sk_ram_bank0
@@ -409,7 +411,7 @@ module mldsa_ctrl
     end else if (zeroize) begin
       privkey_reg_rdata <= '0;
     end else begin
-      if (mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & api_sk_reg_rd_dec) begin
+      if (mldsa_valid_reg & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & api_sk_reg_rd_dec) begin
         privkey_reg_rdata <= privatekey_reg.raw[api_sk_reg_raddr];
       end
     end
@@ -474,9 +476,9 @@ module mldsa_ctrl
   always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
 
   always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req &  mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-  always_comb api_sig_z_we = api_sig_z_dec & mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
+  always_comb api_sig_z_we = mldsa_ready & api_sig_z_dec & mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
 
-  always_comb api_sig_z_re = api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb api_sig_z_re = mldsa_valid_reg & api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
   `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W)
   mldsa_sig_z_ram
@@ -518,7 +520,7 @@ module mldsa_ctrl
     end else if (zeroize) begin
       signature_reg_rdata <= '0;
     end else begin
-      if (mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr)
+      if (mldsa_valid_reg & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr)
         signature_reg_rdata <= {DATA_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
                                {DATA_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
     end
@@ -592,8 +594,8 @@ module mldsa_ctrl
 
   always_comb api_pubkey_addr = PUBKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
 
-  always_comb api_pubkey_rho_dec = mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
-  always_comb api_pubkey_dec = mldsa_ready & mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
+  always_comb api_pubkey_rho_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
+  always_comb api_pubkey_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
 
   always_comb api_pubkey_mem_addr.addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
   always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS; //FIXME can this be done better?
@@ -603,9 +605,9 @@ module mldsa_ctrl
   always_comb api_pk_rho_addr = api_pubkey_addr[2:0];
 
   always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack = mldsa_reg_hwif_out.MLDSA_PUBKEY.req &  mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
-  always_comb api_pubkey_we = api_pubkey_dec & mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
+  always_comb api_pubkey_we = mldsa_ready & api_pubkey_dec & mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
 
-  always_comb api_pubkey_re = api_pubkey_dec & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_re = mldsa_valid_reg & api_pubkey_dec & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
 
   `ABR_MEM_BE(64,320)
   mldsa_pubkey_ram
@@ -663,7 +665,7 @@ module mldsa_ctrl
     end else if (zeroize) begin
       pk_reg_rdata <= '0;
     end else begin
-      if (api_pubkey_rho_dec)
+      if (mldsa_valid_reg & api_pubkey_rho_dec)
         pk_reg_rdata <= publickey_reg.enc.rho[api_pk_rho_addr];
     end
   end
