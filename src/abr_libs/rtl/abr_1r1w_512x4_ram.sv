@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+`include "config_defines.svh"
 
 module abr_1r1w_512x4_ram #(
      parameter DEPTH      = 512
@@ -30,7 +31,11 @@ module abr_1r1w_512x4_ram #(
     );
 
     //storage element
+`ifndef RV_FPGA_OPTIMIZE
     logic [DEPTH-1:0][DATA_WIDTH-1:0] ram;
+`else
+    (* ram_style = "block" *) logic [DATA_WIDTH-1:0] ram [DEPTH-1:0];
+`endif
 
     always @(posedge clk_i) begin
         if (we_i) begin
