@@ -399,7 +399,7 @@ module mldsa_ctrl
         if (set_signature_valid) begin
           signature_reg.enc.h[dword] <= '0;
         end else if (makehint_reg_wren_i & (makehint_reg_wr_addr_i == dword)) begin
-          signature_reg.enc.h[dword] <= makehint_reg_wrdata_i;
+          signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
         end
       end
     end

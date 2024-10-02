@@ -52,7 +52,7 @@ class ML_DSA_randomized_sign_gen_sequence extends mldsa_bench_sequence_base;
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
       end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_LOW);
+        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
       end
       ready = data[0];
     end
@@ -101,7 +101,7 @@ class ML_DSA_randomized_sign_gen_sequence extends mldsa_bench_sequence_base;
     write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
     $fclose(fd);
     // Execute the key generation process
-    $system("test_dilithium5 keygen_input_for_test.hex keygen_output_for_test.hex");
+    $system("./test_dilithium5 keygen_input_for_test.hex keygen_output_for_test.hex");
 
     // Open the generated file for reading
     fd = $fopen(input_file, "r");
@@ -143,7 +143,7 @@ class ML_DSA_randomized_sign_gen_sequence extends mldsa_bench_sequence_base;
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
       end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_LOW);
+        `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
       end
       valid = data[1];
     end

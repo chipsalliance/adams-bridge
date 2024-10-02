@@ -5,7 +5,7 @@
 // This file is auto-generated.
 // Used parser: Verible
 
-`ifndef PRIM_DEFAULT_IMPL
+`ifndef ABR_PRIM_DEFAULT_IMPL
   `define ABR_PRIM_DEFAULT_IMPL abr_prim_pkg::ImplGeneric
 `endif
 
