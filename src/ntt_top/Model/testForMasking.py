@@ -376,6 +376,37 @@ def test_maskedBFU_CT(numTest = 10):
         if vNew != exp_v:
             print(f"CT Lower branch gives an Error; gotten = {vNew}, while exp = {exp_v}")
 
+def test_twoshare_mult(numTest = 10):
+    randomness = CustomUnsignedInteger(0, 0, MultMod-1)
+    operands = CustomUnsignedInteger(0, 0, DILITHIUM_Q-1) 
+    for i in range(0, numTest):         
+        #get a random number ranging [0, DILITHIUM_Q-1]
+        #generate inputs
+        operands.generate_random()
+        u = int(operands.value)
+        operands.generate_random()
+        v = int(operands.value)
+        #calculate expected result
+        exp_uv = u*v
+        #Split inputs to shares
+        randomness.generate_random()
+        r0 = int(randomness.value)
+        u0 = int(u-r0) % MultMod
+        u1 = r0
+        randomness.generate_random()
+        r1 = int(randomness.value)
+        v0 = int(v-r1) % MultMod
+        v1 = r1
+        #Test two share mult
+        uv0, uv1 = two_share_mult(u0, u1, v0, v1)
+        uv = int(uv0 + uv1) % MultMod
+        #Check result
+        if uv != exp_uv:
+            print(f"Incorrect mult op. Operands: {u, v}, Shares: {u0, u1, v0, v1} Exp = {exp_uv}, actual = {uv}")
+
+
+
 
 test_maskedBFU_CT(numTest = 100000)
 test_maskedBFU_GS(numTest = 100000)
+test_twoshare_mult(numTest = 100000)

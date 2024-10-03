@@ -26,6 +26,7 @@
 module ntt_top_tb 
 
     import ntt_defines_pkg::*;
+    import mldsa_params_pkg::*;
     
 #(
     parameter   TEST_VECTOR_NUM = 10,
@@ -63,7 +64,7 @@ reg [23:0] zeta_inv [255:0];
 reg [(4*(REG_SIZE+1))-1:0] ntt_mem_tb [63:0];
 
 reg load_tb_values;
-reg [MEM_ADDR_WIDTH-1:0] load_tb_addr;
+reg [MLDSA_MEM_ADDR_WIDTH-1:0] load_tb_addr;
 
 reg [7:0] src_base_addr, interim_base_addr, dest_base_addr;
 reg acc_tb, svalid_tb, sampler_mode_tb;
@@ -258,7 +259,7 @@ task init_sim;
         acc_tb = 1'b0;
         svalid_tb = 1'b0;
         sampler_mode_tb = 1'b0;
-        random_tb = 'h0;
+        random_tb <= 'h0;
 
         $display("End of init\n");
     end
@@ -328,8 +329,8 @@ endtask
 task ntt_top_test();
     fork
         begin
-            while(ntt_done_tb == 1'b0) begin
-                random_tb = $urandom();
+            while(1) begin
+                random_tb <= $urandom();
                 @(posedge clk_tb);
             end
         end
@@ -368,16 +369,16 @@ task ntt_top_test();
     //         $display("Error: NTT data mismatch at index %0d (dest_base addr = %0d). Actual data = %h, expected data = %h", i, dest_base_addr, dut.ntt_mem.mem[i+dest_base_addr], ntt_mem_tb[i]);
     //     @(posedge clk_tb);
     // end
-        end
-    join
-    fork
-            begin
-                while(ntt_done_tb == 1'b0) begin
-                    random_tb = $urandom();
-                    @(posedge clk_tb);
-                end
-            end
-            begin
+    //     end
+    // join
+    // fork
+    //         begin
+    //             while(ntt_done_tb == 1'b0) begin
+    //                 random_tb = $urandom();
+    //                 @(posedge clk_tb);
+    //             end
+    //         end
+    //         begin
     $display("INTT operation\n");
     operation = "INTT";
     mode_tb = gs;
@@ -392,7 +393,7 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received intt_done\n");
-    /*
+    
     $display("PWM operation 1\n");
     operation = "PWM 1 no acc";
     // $readmemh("pwm_iter1.hex", ntt_mem_tb);
@@ -519,6 +520,8 @@ task ntt_top_test();
     svalid_tb = 1'b0;
     @(posedge clk_tb);
 
+    
+
     $display("PWM + sampler operation 1\n");
     operation = "PWM sampler";
     mode_tb = pwm;
@@ -526,26 +529,26 @@ task ntt_top_test();
     acc_tb = 1'b0;
     sampler_mode_tb = 1'b1;
     repeat(2) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     @(posedge clk_tb);
     enable_tb = 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     repeat(45) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     $display("Waiting for pwo_done\n");
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received pwo_done\n");
-    */
+    
         end
-    join
+    join_any
     $display("End of test\n");
 endtask
 
