@@ -435,5 +435,5 @@ module ntt_top
         .buf0_valid(buf0_valid),
         .data_o(buf_data_o)
     );
-
+    
 endmodule
