@@ -36,6 +36,8 @@ module norm_check_ctrl
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
+        input wire shuffle_en,
+        input wire [5:0] random,
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         output logic check_enable,

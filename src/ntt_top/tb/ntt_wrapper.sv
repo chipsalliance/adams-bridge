@@ -37,6 +37,7 @@ module ntt_wrapper
 
     input mode_t mode,
     input wire ntt_enable,
+    input wire shuffle_en,
     input wire [5:0] random,
     
     //TB purpose - remove later TODO
@@ -179,6 +180,7 @@ module ntt_wrapper
         .pwo_mem_base_addr(pwo_mem_base_addr),
         .accumulate(accumulate),
         .sampler_valid(sampler_valid),
+        .shuffle_en(shuffle_en),
         .random(random),
         //NTT mem IF
         .mem_wr_req(mem_wr_req),

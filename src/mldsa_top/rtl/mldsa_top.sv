@@ -471,6 +471,7 @@ generate
     .pwo_mem_base_addr(pwo_mem_base_addr[g_inst]),
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
+    .shuffle_en(1'b0),
     .random(random),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),

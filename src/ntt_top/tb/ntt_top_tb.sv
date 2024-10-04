@@ -158,6 +158,7 @@ ntt_wrapper dut (
     .ntt_enable(enable_tb),
     .load_tb_values(load_tb_values),
     .load_tb_addr(load_tb_addr),
+    .shuffle_en(1'b0),
     .random(random_tb),
     // .src_base_addr(src_base_addr),
     // .interim_base_addr(interim_base_addr),

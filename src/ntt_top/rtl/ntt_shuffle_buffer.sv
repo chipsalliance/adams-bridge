@@ -39,6 +39,7 @@ module ntt_shuffle_buffer
         input wire reset_n,
         input wire zeroize,
         input mode_t mode,
+        input wire shuffle_en,
         input wire wren,
         input wire rden,
         input wire [1:0] wrptr,
@@ -92,7 +93,7 @@ module ntt_shuffle_buffer
         always_comb begin
             buf_valid = (data_i_count_reg == 'd3);
             lo_hi = buf_valid ^ lo_hi_reg;
-            lo_hi_rd = (mode == 0) ? lo_hi_reg : lo_hi;
+            lo_hi_rd = (shuffle_en & (mode == 0)) ? lo_hi_reg : lo_hi; //shuffling delays logic by a cycle, so that needs to be accounted for here as well
         end
 
         //lo hi
