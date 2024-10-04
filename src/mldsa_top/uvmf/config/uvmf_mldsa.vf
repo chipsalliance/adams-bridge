@@ -15,10 +15,8 @@
 +incdir+${UVMF_HOME}/common/uvm_co_emulation_utilities/uvm_co-emulation_utilities/utils/memload
 +incdir+${UVMF_HOME}/common/uvm_co_emulation_utilities/uvm_co-emulation_utilities/utils/reset
 +incdir+${UVMF_HOME}/uvmf_base_pkg
-+incdir+/home/ws/caliptra/michnorris/adams_bridge_mjn/chipsalliance/caliptra-rtl/src/libs/uvmf/qvip_ahb_lite_slave_dir/uvmf
-+incdir+/home/ws/caliptra/michnorris/adams_bridge_mjn/chipsalliance/caliptra-rtl/src/libs/uvmf/qvip_ahb_lite_slave_dir/config_policies
-+incdir+/home/ws/caliptra/michnorris/adams_bridge_mjn/chipsalliance/caliptra-rtl/src/libs/uvmf/qvip_apb5_slave_dir/uvmf
-+incdir+/home/ws/caliptra/michnorris/adams_bridge_mjn/chipsalliance/caliptra-rtl/src/libs/uvmf/qvip_apb5_slave_dir/config_policies
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/config_policies
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_sampler_top/rtl
@@ -92,7 +90,6 @@ ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sva.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_macros.svh
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sram.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_1r1w_ram.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ram_regout.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_icg.sv
@@ -120,7 +117,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ecc_ram_tdp_file.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_ram_tdp_file.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_wrapper.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_uvm.sv
