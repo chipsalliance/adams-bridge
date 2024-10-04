@@ -44,7 +44,7 @@ import rdl_post_process
 
 #output directory for dumping files
 rtl_output_dir = os.path.abspath(os.path.dirname(sys.argv[1]))
-repo_root = os.environ.get('ADAMS_BRIDGE_ROOT')
+repo_root = os.environ.get('ADAMSBRIDGE_ROOT')
 
 # Listener to retrieve the address width at the CPU IF and write as a param to the pkg
 class SVPkgAppendingListener(RDLListener):

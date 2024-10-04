@@ -87,10 +87,6 @@ module mldsa_sampler_top
   logic sha3_rst_storage_err;
 
   //rej sampler
-  logic                                            sha3_rejs_dv;
-  logic                                            rejs_sha3_hold;
-  logic [REJS_PISO_INPUT_RATE-1:0]                 sha3_rejs_data;
-
   logic                                            rejs_piso_dv;
   logic                                            rejs_piso_hold;
   logic [REJS_NUM_SAMPLERS-1:0][REJS_SAMPLE_W-1:0] rejs_piso_data;
@@ -100,10 +96,6 @@ module mldsa_sampler_top
   logic [REJS_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]  rejs_data_q;
 
   //rej bounded
-  logic                                               sha3_rejb_dv;
-  logic                                               rejb_sha3_hold;
-  logic [REJB_PISO_INPUT_RATE-1:0]                    sha3_rejb_data;
-
   logic                                               rejb_piso_dv;
   logic                                               rejb_piso_hold;
   logic [REJB_NUM_SAMPLERS-1:0][REJB_SAMPLE_W-1:0]    rejb_piso_data;
@@ -112,10 +104,6 @@ module mldsa_sampler_top
   logic [REJB_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]     rejb_data;
 
   //exp mask
-  logic                                             sha3_exp_dv;
-  logic                                             exp_sha3_hold;
-  logic [EXP_PISO_INPUT_RATE-1:0]                   sha3_exp_data;
-
   logic                                             exp_piso_dv;
   logic                                             exp_piso_hold;
   logic [EXP_NUM_SAMPLERS-1:0][EXP_SAMPLE_W-1:0]    exp_piso_data;
@@ -124,10 +112,6 @@ module mldsa_sampler_top
   logic [EXP_VLD_SAMPLES-1:0][EXP_VLD_SAMPLE_W-1:0] exp_data;
 
   //sample in ball
-  logic                                          sha3_sib_dv;
-  logic                                          sib_sha3_hold;
-  logic [SIB_PISO_INPUT_RATE-1:0]                sha3_sib_data;
-
   logic                                          sib_piso_dv;
   logic                                          sib_piso_hold;
   logic [SIB_NUM_SAMPLERS-1:0][SIB_SAMPLE_W-1:0] sib_piso_data;
@@ -147,6 +131,11 @@ module mldsa_sampler_top
 
   logic zeroize_sha3, zeroize_rejb, zeroize_rejs, zeroize_sib, zeroize_exp_mask;
   logic zeroize_sib_mem;
+  logic zeroize_piso;
+
+  logic [1:0] piso_mode;
+  logic piso_dv, piso_hold;
+  logic [REJS_PISO_OUTPUT_RATE-1:0] piso_data;
 
   //Sampler mode muxes
   always_comb begin
@@ -165,6 +154,8 @@ module mldsa_sampler_top
     zeroize_sib = zeroize;
     zeroize_sib_mem = zeroize;
     zeroize_sha3 = zeroize;
+    zeroize_piso = zeroize;
+    piso_mode = 0;
 
     unique case (sampler_mode_i) inside
       MLDSA_SHAKE256: begin
@@ -190,6 +181,8 @@ module mldsa_sampler_top
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
         zeroize_rejs |= sampler_done;
         zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = 0;
       end
       MLDSA_EXP_MASK: begin
         mode = abr_sha3_pkg::Shake;
@@ -201,6 +194,8 @@ module mldsa_sampler_top
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
         zeroize_exp_mask |= sampler_done;
         zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = 2;
       end
       MLDSA_REJ_BOUNDED: begin
         mode = abr_sha3_pkg::Shake;
@@ -212,6 +207,8 @@ module mldsa_sampler_top
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
         zeroize_rejb |= sampler_done;
         zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = 1;
       end
       MLDSA_SAMPLE_IN_BALL: begin
         mode = abr_sha3_pkg::Shake;
@@ -220,6 +217,8 @@ module mldsa_sampler_top
         sampler_done = sib_done;
         zeroize_sib |= sampler_done;
         zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = 3;
       end
       default: begin
 
@@ -379,39 +378,39 @@ always_comb sampler_ntt_data_o = rejs_data;
     .keccak_storage_rst_error_o (sha3_rst_storage_err)
   );
 
-  //FIXME just one PISO
-  //control logic to steer sha3 output to appropriate sampler
-  always_comb sha3_rejs_dv = sha3_state_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
-  always_comb sha3_rejb_dv = sha3_state_dv & (sampler_mode_i == MLDSA_REJ_BOUNDED);
-  always_comb sha3_exp_dv = sha3_state_dv & (sampler_mode_i == MLDSA_EXP_MASK);
-  always_comb sha3_sib_dv = sha3_state_dv & (sampler_mode_i == MLDSA_SAMPLE_IN_BALL);
-
-  always_comb sha3_state_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & rejs_sha3_hold) |
-                                ((sampler_mode_i == MLDSA_REJ_BOUNDED)    & rejb_sha3_hold) |
-                                ((sampler_mode_i == MLDSA_EXP_MASK)       & exp_sha3_hold)  |
-                                ((sampler_mode_i == MLDSA_SAMPLE_IN_BALL) & sib_sha3_hold);
-
-  always_comb sha3_rejs_data = sha3_state[0][REJS_PISO_INPUT_RATE-1:0];
-  always_comb sha3_rejb_data = sha3_state[0][REJB_PISO_INPUT_RATE-1:0];
-  always_comb sha3_exp_data = sha3_state[0][EXP_PISO_INPUT_RATE-1:0];
-  always_comb sha3_sib_data = sha3_state[0][SIB_PISO_INPUT_RATE-1:0];
-
-//rej sampler
+//one piso
   abr_piso #(
+    .PISO_NUM_MODE(4),
     .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(REJS_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE)
-  ) rej_sampler_piso_inst (
+    .PISO_INPUT_RATE({SIB_PISO_INPUT_RATE,EXP_PISO_INPUT_RATE,REJB_PISO_INPUT_RATE,REJS_PISO_INPUT_RATE}),
+    .PISO_OUTPUT_RATE({SIB_PISO_OUTPUT_RATE,EXP_PISO_OUTPUT_RATE,REJB_PISO_OUTPUT_RATE,REJS_PISO_OUTPUT_RATE})
+  ) abr_piso_inst (
     .clk(clk),
     .rst_b(rst_b),
-    .zeroize(zeroize_rejs),
-    .valid_i(sha3_rejs_dv),
-    .hold_o(rejs_sha3_hold),
-    .data_i(sha3_rejs_data),
-    .valid_o(rejs_piso_dv),
-    .hold_i(rejs_piso_hold),
-    .data_o(rejs_piso_data)
+    .zeroize(zeroize_piso),
+    .mode(piso_mode),
+    .valid_i(sha3_state_dv & sampler_mode_i inside {MLDSA_REJ_SAMPLER,MLDSA_REJ_BOUNDED,MLDSA_EXP_MASK,MLDSA_SAMPLE_IN_BALL}),
+    .hold_o(sha3_state_hold),
+    .data_i(sha3_state[0][REJS_PISO_INPUT_RATE-1:0]),
+    .valid_o(piso_dv),
+    .hold_i(piso_hold),
+    .data_o(piso_data)
   );
+
+  always_comb rejs_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
+  always_comb rejb_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_BOUNDED);
+  always_comb exp_piso_dv = piso_dv & (sampler_mode_i == MLDSA_EXP_MASK);
+  always_comb sib_piso_dv = piso_dv & (sampler_mode_i == MLDSA_SAMPLE_IN_BALL);
+
+  always_comb piso_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & rejs_piso_hold) |
+                          ((sampler_mode_i == MLDSA_REJ_BOUNDED)    & rejb_piso_hold) |
+                          ((sampler_mode_i == MLDSA_EXP_MASK)       & exp_piso_hold)  |
+                          ((sampler_mode_i == MLDSA_SAMPLE_IN_BALL) & sib_piso_hold);
+
+  always_comb rejs_piso_data = piso_data[REJS_PISO_OUTPUT_RATE-1:0];
+  always_comb rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
+  always_comb exp_piso_data = piso_data[EXP_PISO_OUTPUT_RATE-1:0];
+  always_comb sib_piso_data = piso_data[SIB_PISO_OUTPUT_RATE-1:0];
 
   rej_sampler_ctrl#(
     .REJ_NUM_SAMPLERS(REJS_NUM_SAMPLERS),
@@ -446,22 +445,6 @@ always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
 end  
 
 //rej bounded
-  abr_piso #(
-    .PISO_BUFFER_W(REJB_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(REJB_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(REJB_PISO_OUTPUT_RATE)
-  ) rej_bounded_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize_rejb),
-    .valid_i(sha3_rejb_dv),
-    .hold_o(rejb_sha3_hold),
-    .data_i(sha3_rejb_data),
-    .valid_o(rejb_piso_dv),
-    .hold_i(rejb_piso_hold),
-    .data_o(rejb_piso_data)
- );
-
   rej_bounded_ctrl #(
     .REJ_NUM_SAMPLERS(REJB_NUM_SAMPLERS),
     .REJ_SAMPLE_W(REJB_SAMPLE_W),
@@ -482,23 +465,6 @@ end
   );
 
 //exp mask
-  abr_piso #(
-    .PISO_BUFFER_W(EXP_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(EXP_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(EXP_PISO_OUTPUT_RATE)
-  ) exp_mask_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize_exp_mask),
-    .valid_i(sha3_exp_dv),
-    .hold_o(exp_sha3_hold),
-    .data_i(sha3_exp_data),
-    .valid_o(exp_piso_dv),
-    .hold_i(exp_piso_hold),
-    .data_o(exp_piso_data)
- );
-
-
   exp_mask_ctrl #(
     .EXP_NUM_SAMPLERS(EXP_NUM_SAMPLERS),
     .EXP_SAMPLE_W(EXP_SAMPLE_W),
@@ -544,22 +510,6 @@ end
     .wdata_i(sib_mem_wrdata),
 
     .rdata_o(sib_mem_rddata)
-  );
-
-  abr_piso #(
-    .PISO_BUFFER_W(SIB_PISO_BUFFER_W),
-    .PISO_INPUT_RATE(SIB_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE(SIB_PISO_OUTPUT_RATE)
-  ) sib_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize_sib),
-    .valid_i(sha3_sib_dv),
-    .hold_o(sib_sha3_hold),
-    .data_i(sha3_sib_data),
-    .valid_o(sib_piso_dv),
-    .hold_i(sib_piso_hold),
-    .data_o(sib_piso_data)
   );
 
   sample_in_ball_ctrl #(

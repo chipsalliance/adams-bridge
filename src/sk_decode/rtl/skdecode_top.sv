@@ -86,6 +86,8 @@ module skdecode_top
     logic s1s2_buf_stall_reg;
     logic s1s2_buf_full;
 
+    logic s1s2_keymem_b_valid;
+
     //Read address counters
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
 
@@ -104,6 +106,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= 'h0;
             mem_b_wr_data_reg           <= 'h0;
             t0_done_reg                 <= 'b0;
+            s1s2_keymem_b_valid         <= 'b0;
         end
         else if (zeroize) begin
             s1s2_enable_reg             <= 'h0;
@@ -117,6 +120,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= 'h0;
             mem_b_wr_data_reg           <= 'h0;
             t0_done_reg                 <= 'b0;
+            s1s2_keymem_b_valid         <= 'b0;
         end
         else begin
             s1s2_enable_reg             <= s1s2_enable;
@@ -128,6 +132,7 @@ module skdecode_top
             mem_a_wr_data_reg           <= mem_a_wr_data_int;
             mem_b_wr_data_reg           <= mem_b_wr_data_int;
             t0_done_reg                 <= t0_done;
+            s1s2_keymem_b_valid         <= s1s2_enable & (keymem_b_rd_req.rd_wr_en == RW_READ);
         end
     end
 
@@ -142,10 +147,7 @@ module skdecode_top
             keymem_b_rd_data_reg <= 'h0;
         end
         else if (~t0_buf_full & ~s1s2_buf_full) begin
-            //Bit swizzle to match endianness
-            //Eg: sk dword = 0x01234567
-            //To process, it needs to be 0x6745230
-            keymem_a_rd_data_reg <= keymem_a_rd_data;
+            keymem_a_rd_data_reg <= s1s2_keymem_b_valid ? keymem_b_rd_data: keymem_a_rd_data;
             keymem_b_rd_data_reg <= keymem_b_rd_data;
 
         end
@@ -216,15 +218,15 @@ module skdecode_top
     end
 
     abr_sample_buffer #(
-        .NUM_WR(64),
-        .NUM_RD(52),
-        .BUFFER_DATA_W(1)
+        .NUM_WR(16),
+        .NUM_RD(13),
+        .BUFFER_DATA_W(4)
     )
     t0_sample_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i((t0_buf_full | ~t0_enable) ? 64'h0 : {64{t0_enable_reg}}),
+        .data_valid_i((t0_buf_full | ~t0_enable) ? 16'h0 : {16{t0_enable_reg}}),
         .data_i({keymem_b_rd_data_reg, keymem_a_rd_data_reg}),
         .buffer_full_o(t0_buf_full),
         .data_valid_o(t0_data_valid),
@@ -232,15 +234,15 @@ module skdecode_top
     );
 
     abr_sample_buffer #(
-        .NUM_WR(32),
-        .NUM_RD(24),
-        .BUFFER_DATA_W(1)
+        .NUM_WR(4),
+        .NUM_RD(3),
+        .BUFFER_DATA_W(8)
     )
     s1s2_sample_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i(s1s2_buf_stall_reg/*(s1s2_buf_full | ~s1s2_enable)*/ ? 'h0 : {32{s1s2_enable_reg}}),
+        .data_valid_i(s1s2_buf_stall_reg/*(s1s2_buf_full | ~s1s2_enable)*/ ? 4'h0 : {4{s1s2_enable_reg}}),
         .data_i(keymem_a_rd_data_reg),
         .buffer_full_o(s1s2_buf_full),
         .data_valid_o(s1s2_data_valid),

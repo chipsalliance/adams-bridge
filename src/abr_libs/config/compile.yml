@@ -10,6 +10,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_sva.svh
       - $COMPILE_ROOT/rtl/abr_macros.svh
       - $COMPILE_ROOT/rtl/abr_1r1w_ram.sv
+      - $COMPILE_ROOT/rtl/abr_1r1w_be_ram.sv
+      - $COMPILE_ROOT/rtl/abr_1r1w_512x4_ram.sv
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
@@ -31,6 +33,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_sva.svh
       - $COMPILE_ROOT/rtl/abr_macros.svh
       - $COMPILE_ROOT/rtl/abr_1r1w_ram.sv
+      - $COMPILE_ROOT/rtl/abr_1r1w_be_ram.sv
+      - $COMPILE_ROOT/rtl/abr_1r1w_512x4_ram.sv
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv

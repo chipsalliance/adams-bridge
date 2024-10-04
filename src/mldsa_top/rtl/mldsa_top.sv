@@ -14,6 +14,7 @@
 
 //Initial top level module
 `include "config_defines.svh"
+`include "abr_prim_assert.sv"
 
 module mldsa_top
   import abr_prim_alert_pkg::*;
@@ -33,6 +34,13 @@ module mldsa_top
   (
   input logic clk,
   input logic rst_b,
+
+`ifdef RV_FPGA_SCA
+  output wire NTT_trigger,
+  output wire PWM_trigger,
+  output wire PWA_trigger,
+  output wire INTT_trigger,
+`endif
 
   //ahb input
   input logic  [AHB_ADDR_WIDTH-1:0] haddr_i,
@@ -262,6 +270,13 @@ mldsa_ctrl mldsa_control_inst
   .clk(clk),
   .rst_b(rst_b),
   .zeroize(zeroize_reg),
+
+`ifdef RV_FPGA_SCA
+  .NTT_trigger(NTT_trigger),
+  .PWM_trigger(PWM_trigger),
+  .PWA_trigger(PWA_trigger),
+  .INTT_trigger(INTT_trigger),
+`endif
 
   //control interface
   .mldsa_reg_hwif_in_o(mldsa_reg_hwif_in),
@@ -729,7 +744,6 @@ sigdecode_h_inst (
   .sigdecode_h_error(sigdecode_h_invalid)
 );
 
-
 abr_prim_lfsr
 #(
   .LfsrType("FIB_XNOR"),
@@ -763,11 +777,8 @@ abr_prim_lfsr
 );
 
 //w1 memory
-`ABR_MEM
-#(
-  .DEPTH(512), //FIXME params
-  .DATA_WIDTH(4) //FIXME params
-) mldsa_w1_mem_inst
+`ABR_MEM_TEST(512, 4)
+mldsa_w1_mem_inst
 (
   .clk_i(clk),
   .we_i(w1_mem_wr_req.rd_wr_en == RW_WRITE),
@@ -1033,11 +1044,8 @@ always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst0_bank0
+`ABR_MEM(MLDSA_MEM_INST0_DEPTH/2,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst0_bank0
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[0]),
@@ -1047,11 +1055,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .raddr_i(mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:1]),
   .rdata_o(mldsa_mem_rdata0_bank[0])
 );
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst0_bank1
+`ABR_MEM(MLDSA_MEM_INST0_DEPTH/2,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst0_bank1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[1]),
@@ -1062,11 +1067,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata0_bank[1])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST1_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst1
+`ABR_MEM(MLDSA_MEM_INST1_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[1]),
@@ -1077,11 +1079,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata[1])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST2_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst2
+`ABR_MEM(MLDSA_MEM_INST2_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst2
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[2]),
@@ -1092,11 +1091,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata[2])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST3_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst3
+`ABR_MEM(MLDSA_MEM_INST3_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst3
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[3]),

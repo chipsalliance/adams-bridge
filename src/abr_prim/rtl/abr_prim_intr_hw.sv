@@ -6,7 +6,8 @@
 // controller registers: INTR_ENABLE, INTR_STATE, INTR_TEST.
 // This module can be instantiated once per interrupt field, or
 // "bussified" with all fields of the interrupt vector.
-
+`include "abr_sva.svh"
+`include "abr_prim_assert.sv"
 module abr_prim_intr_hw # (
   parameter int unsigned Width = 1,
   parameter bit FlopOutput = 1,

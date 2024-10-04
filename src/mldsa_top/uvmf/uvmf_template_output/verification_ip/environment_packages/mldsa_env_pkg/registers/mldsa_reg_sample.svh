@@ -244,56 +244,6 @@
         end
     endfunction
 
-    /*----------------------- MLDSA_REG__MLDSA_PUBKEY SAMPLE FUNCTIONS -----------------------*/
-    function void mldsa_reg__MLDSA_PUBKEY::sample(uvm_reg_data_t  data,
-                                                   uvm_reg_data_t  byte_en,
-                                                   bit             is_read,
-                                                   uvm_reg_map     map);
-        m_current = get();
-        m_data    = data;
-        m_is_read = is_read;
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(PUBKEY_bit_cg[bt]) this.PUBKEY_bit_cg[bt].sample(data[0 + bt]);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( data[31:0]/*PUBKEY*/   );
-        end
-    endfunction
-
-    function void mldsa_reg__MLDSA_PUBKEY::sample_values();
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(PUBKEY_bit_cg[bt]) this.PUBKEY_bit_cg[bt].sample(PUBKEY.get_mirrored_value() >> bt);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( PUBKEY.get_mirrored_value()   );
-        end
-    endfunction
-
-    /*----------------------- MLDSA_REG__MLDSA_SIGNATURE SAMPLE FUNCTIONS -----------------------*/
-    function void mldsa_reg__MLDSA_SIGNATURE::sample(uvm_reg_data_t  data,
-                                                   uvm_reg_data_t  byte_en,
-                                                   bit             is_read,
-                                                   uvm_reg_map     map);
-        m_current = get();
-        m_data    = data;
-        m_is_read = is_read;
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(SIGNATURE_bit_cg[bt]) this.SIGNATURE_bit_cg[bt].sample(data[0 + bt]);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( data[31:0]/*SIGNATURE*/   );
-        end
-    endfunction
-
-    function void mldsa_reg__MLDSA_SIGNATURE::sample_values();
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(SIGNATURE_bit_cg[bt]) this.SIGNATURE_bit_cg[bt].sample(SIGNATURE.get_mirrored_value() >> bt);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( SIGNATURE.get_mirrored_value()   );
-        end
-    endfunction
-
     /*----------------------- MLDSA_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T SAMPLE FUNCTIONS -----------------------*/
     function void mldsa_reg__intr_block_t__global_intr_en_t::sample(uvm_reg_data_t  data,
                                                    uvm_reg_data_t  byte_en,

@@ -61,7 +61,8 @@ module skdecode_ctrl
     logic last_poly_last_addr;
     logic skdecode_busy;
     logic [3:0] num_poly, num_inst;
-    mem_rw_mode_e mem_rw_mode, kmem_rw_mode;
+    mem_rw_mode_e mem_rw_mode, kmem_a_rw_mode;
+    mem_rw_mode_e kmem_b_rw_mode;
     logic [8:0] skdecode_count;
     logic [3:0] poly_count;
     logic s1s2_enable_fsm, t0_enable_fsm;
@@ -234,7 +235,8 @@ module skdecode_ctrl
         read_fsm_state_ns   = read_fsm_state_ps;
         incr_rd_addr        = 'b0;
         rst_rd_addr         = 'b0;
-        kmem_rw_mode        = RW_IDLE;
+        kmem_a_rw_mode      = RW_IDLE;
+        kmem_b_rw_mode      = RW_IDLE;
         incr_stall_count    = 'b0;
         rst_stall_count     = 'b0;
         incr_skdec_count    = 'b0;
@@ -255,7 +257,8 @@ module skdecode_ctrl
                 read_fsm_state_ns   = arc_SKDEC_RD_S1_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_S1;
                 incr_stall_count    = 'b1;
                 incr_rd_addr        = ~s1s2_buf_stall_fsm;
-                kmem_rw_mode        = ~s1s2_buf_stall_fsm ? RW_READ : RW_IDLE;
+                kmem_a_rw_mode      = ~s1s2_buf_stall_fsm & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~s1s2_buf_stall_fsm &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 s1s2_enable_fsm     = 'b1;
                 num_poly            = MLDSA_L;
@@ -265,7 +268,8 @@ module skdecode_ctrl
                 read_fsm_state_ns   = arc_SKDEC_RD_S2_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_S2;
                 incr_stall_count    = 'b1;
                 incr_rd_addr        = ~s1s2_buf_stall_fsm;
-                kmem_rw_mode        = ~s1s2_buf_stall_fsm ? RW_READ : RW_IDLE;
+                kmem_a_rw_mode      = ~s1s2_buf_stall_fsm & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~s1s2_buf_stall_fsm &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 s1s2_enable_fsm     = 'b1;
                 num_poly            = MLDSA_K;
@@ -275,7 +279,8 @@ module skdecode_ctrl
                 read_fsm_state_ns   = arc_SKDEC_RD_T0_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_T0;
                 incr_stall_count    = 'b1;
                 incr_rd_addr        = ~t0_buf_stall;
-                kmem_rw_mode        = ~t0_buf_stall ? RW_READ : RW_IDLE;
+                kmem_a_rw_mode      = ~t0_buf_stall ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~t0_buf_stall ? RW_READ : RW_IDLE;
                 incr_skdec_count    = 'b1;
                 t0_enable_fsm       = 'b1;
                 num_poly            = MLDSA_K;
@@ -360,11 +365,11 @@ module skdecode_ctrl
         mem_b_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 'h1 : 'h0;
         mem_b_wr_req.rd_wr_en   = t0_mode & ~mem_a_wr_req.addr[0]? RW_IDLE : mem_rw_mode;
 
-        kmem_a_rd_req.addr      = kmem_rd_addr;
-        kmem_a_rd_req.rd_wr_en  = kmem_rw_mode;
+        kmem_a_rd_req.addr      = t0_enable_fsm ? kmem_rd_addr   : kmem_rd_addr;
+        kmem_a_rd_req.rd_wr_en  = t0_enable_fsm ? kmem_a_rw_mode : kmem_a_rw_mode;
 
-        kmem_b_rd_req.addr      = t0_enable_fsm ? kmem_rd_addr + 'h1 : 'h0;
-        kmem_b_rd_req.rd_wr_en  = t0_enable_fsm ? kmem_rw_mode : RW_IDLE;
+        kmem_b_rd_req.addr      = t0_enable_fsm ? kmem_rd_addr + 'h1 : kmem_rd_addr;
+        kmem_b_rd_req.rd_wr_en  = t0_enable_fsm ? kmem_b_rw_mode     : kmem_b_rw_mode;
 
     end
 

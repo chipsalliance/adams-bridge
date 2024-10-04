@@ -105,11 +105,11 @@ module sample_in_ball_ctrl
     sib_done_o = 0;
     unique case (sib_fsm_ps)
         SIB_IDLE: begin
-          sign_buffer_en = 1;
+          sign_buffer_en = data_valid_i;
           sign_buffer_ph = 0;
         end
         SIB_SIGN_BUFFER: begin
-          sign_buffer_en = 1;
+          sign_buffer_en = data_valid_i;
           sign_buffer_ph = 1;
         end
         SIB_ACTIVE: begin
