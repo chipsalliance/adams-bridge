@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "config_defines.svh"
+`include "mldsa_config_defines.svh"
 
 module mldsa_sampler_top
   import mldsa_sampler_pkg::*;
