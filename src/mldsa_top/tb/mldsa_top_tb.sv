@@ -21,7 +21,7 @@
 
 import "DPI-C" function string getenv(input string env_name);
 
-`include "config_defines.svh"
+`include "mldsa_config_defines.svh"
 
 module mldsa_top_tb
   import mldsa_params_pkg::*;
