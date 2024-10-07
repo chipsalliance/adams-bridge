@@ -13,7 +13,7 @@
 // limitations under the License.
 
 //Initial top level module
-`include "config_defines.svh"
+`include "mldsa_config_defines.svh"
 
 module mldsa_top
   import abr_prim_alert_pkg::*;

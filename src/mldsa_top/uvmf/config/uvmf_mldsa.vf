@@ -85,7 +85,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/qvip_ahb_lite
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/hdl_qvip_ahb_lite_slave.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_clk_gen.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/config_defines.svh
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sva.svh

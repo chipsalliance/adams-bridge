@@ -3,7 +3,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/config_defines.svh
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sva.svh
