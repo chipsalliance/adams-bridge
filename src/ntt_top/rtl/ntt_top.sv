@@ -73,6 +73,9 @@ module ntt_top
     //Sampler IF
     input wire sampler_valid,
 
+    input wire shuffle_en,
+    input wire [5:0] random,
+
     //Memory if
     //Reuse between pwm c, ntt
     output mem_if_t mem_wr_req,
@@ -96,6 +99,7 @@ module ntt_top
     logic mem_wren, mem_wren_reg, mem_wren_mux;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
     // logic [(4*REG_SIZE)-1:0] mem_wr_data;
+    logic [MEM_DATA_WIDTH-1:0] mem_wr_data_int, mem_wr_data_reg, mem_wr_data_reg_d2;
     
     //Read IF
     logic mem_rden;
@@ -111,7 +115,7 @@ module ntt_top
     logic buf0_valid;
 
     //Internal
-    logic [6:0] twiddle_addr;
+    logic [6:0] twiddle_addr, twiddle_addr_reg;
     logic buf_wren;
     logic buf_rden;
     logic buf_wr_rst_count, buf_rd_rst_count;
@@ -119,12 +123,15 @@ module ntt_top
     //buffer IF
     logic [(4*REG_SIZE)-1:0] buf_data_i, buf_data_o;
     logic [(3*NTT_REG_SIZE)-1:0] twiddle_factor, twiddle_factor_reg;
+    logic [1:0] buf_wrptr, buf_rdptr;
 
     //PWM mem IF
     pwo_uvwi_t pw_uvw_i;
     pwo_t pwo_uv_o;
     logic pw_wren, pw_wren_reg;
     logic pw_rden, pw_rden_dest_mem;
+    logic sampler_valid_reg;
+    logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
 
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
@@ -159,8 +166,10 @@ module ntt_top
     assign mem_wr_req.rd_wr_en = !pwo_mode ? (mem_wren_mux ? RW_WRITE : RW_IDLE) //TODO convert mem_wren_mux to rw enum
                                     : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
     assign mem_wr_req.addr  = !pwo_mode ? mem_wr_addr_mux : pwm_wr_addr_c_reg;
-    assign mem_wr_data      = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
+    assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
+    assign mem_wr_data      = shuffle_en ? pwm_mode ? mem_wr_data_reg/*_d2*/ : (pwa_mode | pws_mode) ? mem_wr_data_reg : mem_wr_data_int
+                                        : mem_wr_data_int; //ct_mode ? mem_wr_data_reg : mem_wr_data_int; //TODO: gs, pwo modes
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
     assign mem_rd_req.rd_wr_en = (ct_mode || gs_mode) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
@@ -173,9 +182,18 @@ module ntt_top
     assign pwm_rd_data_a         = pwo_mode ? pwm_a_rd_data : 'h0; //TODO: clean up mux. Just connect input directly to logic
 
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
-    assign pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? pw_mem_rd_addr_b : 'h0;
-    assign pwm_rd_data_b         = pwm_b_rd_data;
+    always_comb begin
+        if (shuffle_en) begin
+            pwm_b_rd_req.rd_wr_en = sampler_valid_reg & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE; //pw_rden is delayed a clk due to shuffling, so use delayed sampler_valid to line it up
+            pwm_b_rd_req.addr     = sampler_valid_reg & pwo_mode ? pw_mem_rd_addr_b : 'h0;
+            pwm_rd_data_b         = pwm_b_rd_data_reg; //sampler_valid_reg ? pwm_b_rd_data_reg : pwm_b_rd_data;
+        end
+        else begin
+            pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+            pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? pw_mem_rd_addr_b : 'h0;
+            pwm_rd_data_b         = pwm_b_rd_data;
+        end
+    end
 
     
     ntt_ctrl #(
@@ -190,6 +208,8 @@ module ntt_top
         .butterfly_ready(bf_ready),
         .buf0_valid(buf0_valid),
         .sampler_valid(sampler_valid),
+        .shuffle_en(shuffle_en),
+        .random(random),
 
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
@@ -198,6 +218,8 @@ module ntt_top
         .bf_enable(bf_enable),
         .buf_wren(buf_wren),
         .buf_rden(buf_rden),
+        .buf_wrptr(buf_wrptr),
+        .buf_rdptr(buf_rdptr),
         .twiddle_addr(twiddle_addr),
 
         .mem_rd_addr(mem_rd_addr),
@@ -236,10 +258,18 @@ module ntt_top
                 uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
             end
             gs: begin
-                uvw_i.w11_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                uvw_i.w10_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                uvw_i.w01_i = twiddle_factor_reg[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
-                uvw_i.w00_i = twiddle_factor_reg[NTT_REG_SIZE-1:0];
+                if (shuffle_en) begin
+                    uvw_i.w11_i = twiddle_factor/*_reg*/[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w10_i = twiddle_factor/*_reg*/[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w01_i = twiddle_factor/*_reg*/[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                    uvw_i.w00_i = twiddle_factor/*_reg*/[NTT_REG_SIZE-1:0];
+                end
+                else begin
+                    uvw_i.w11_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w10_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w01_i = twiddle_factor_reg[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                    uvw_i.w00_i = twiddle_factor_reg[NTT_REG_SIZE-1:0];
+                end
             end
             default: begin
                 uvw_i.w11_i = 'h0;
@@ -274,6 +304,7 @@ module ntt_top
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
+            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -289,11 +320,16 @@ module ntt_top
             pwm_wr_addr_c_reg   <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            mem_wr_data_reg     <= 'h0;
+            mem_wr_data_reg_d2  <= 'h0;
+            sampler_valid_reg   <= 'h0;
+            pwm_b_rd_data_reg   <= 'h0;
             
         end
         else if (zeroize) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
+            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -308,10 +344,15 @@ module ntt_top
             pwm_wr_addr_c_reg   <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            mem_wr_data_reg     <= 'h0;
+            mem_wr_data_reg_d2  <= 'h0;
+            sampler_valid_reg   <= 'h0;
+            pwm_b_rd_data_reg   <= 'h0;
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data;
             bf_enable_reg       <= bf_enable;
+            twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
             uv_o_reg            <= uv_o;
@@ -327,11 +368,16 @@ module ntt_top
             pwm_wr_data_reg     <= {1'b0, pwo_uv_o.uv3, 1'b0, pwo_uv_o.uv2, 1'b0, pwo_uv_o.uv1, 1'b0, pwo_uv_o.uv0};
 
             pw_wren_reg         <= pw_wren;
+            mem_wr_data_reg     <= mem_wr_data_int;
+            mem_wr_data_reg_d2  <= mem_wr_data_reg;
+            sampler_valid_reg   <= sampler_valid;
+            pwm_b_rd_data_reg   <= pwm_b_rd_data;
         end
     end
 
     //Buffer (input or output side)
-    assign buf_data_i = ct_mode ? mem_rd_data : {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
+    assign buf_data_i = ct_mode ? mem_rd_data : shuffle_en ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.u20_o}
+                                                            : {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
 
     always_comb begin
         unique case(mode)
@@ -362,10 +408,18 @@ module ntt_top
             pw_uvw_i.u2_i    = pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
             pw_uvw_i.u3_i    = pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
 
-            pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
-            pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
-            pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-            pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            if (shuffle_en) begin
+                pw_uvw_i.v0_i    = pwm_rd_data_b/*_reg*/[REG_SIZE-2:0];
+                pw_uvw_i.v1_i    = pwm_rd_data_b/*_reg*/[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.v2_i    = pwm_rd_data_b/*_reg*/[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.v3_i    = pwm_rd_data_b/*_reg*/[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            end
+            else begin
+                pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
+                pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            end
 
             pw_uvw_i.w0_i    = pwm_rd_data_c_reg[REG_SIZE-2:0];
             pw_uvw_i.w1_i    = pwm_rd_data_c_reg[(2*REG_SIZE)-2:REG_SIZE];
@@ -383,10 +437,18 @@ module ntt_top
             pw_uvw_i.u2_i    = pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
             pw_uvw_i.u3_i    = pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
 
-            pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
-            pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
-            pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-            pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            if (shuffle_en) begin
+                pw_uvw_i.v0_i    = pwm_rd_data_b/*_reg*/[REG_SIZE-2:0];
+                pw_uvw_i.v1_i    = pwm_rd_data_b/*_reg*/[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.v2_i    = pwm_rd_data_b/*_reg*/[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.v3_i    = pwm_rd_data_b/*_reg*/[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            end
+            else begin
+                pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
+                pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            end
 
             pw_uvw_i.w0_i    = 'h0;
             pw_uvw_i.w1_i    = 'h0;
@@ -417,9 +479,10 @@ module ntt_top
         endcase
     end
     assign bf_enable_mux    = ct_mode ? bf_enable       : bf_enable_reg;
-    assign mem_wren_mux     = ct_mode ? mem_wren_reg    : mem_wren;
-    assign mem_wr_addr_mux  = ct_mode ? mem_wr_addr_reg : mem_wr_addr;
+    assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
+    assign mem_wr_addr_mux  = ~shuffle_en & ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 
+    /*
     ntt_buffer #(
         .REG_SIZE(REG_SIZE)
     ) buffer_inst0 (
@@ -433,6 +496,25 @@ module ntt_top
         .mode(mode),
         .data_i(buf_data_i),
         .buf0_valid(buf0_valid),
+        .data_o(buf_data_o)
+    );
+    */
+
+    ntt_shuffle_buffer #(
+        .REG_SIZE(REG_SIZE)
+    ) buffer_inst0 (
+        .clk(clk),
+        .reset_n(reset_n),
+        .zeroize(zeroize),
+        .mode(mode),
+        .shuffle_en(shuffle_en),
+        .wren(buf_wren),
+        .rden(buf_rden),
+        .wrptr(buf_wrptr),
+        .rdptr(buf_rdptr),
+        .wr_rst_count(buf_wr_rst_count),
+        .data_i(buf_data_i),
+        .buf_valid(buf0_valid),
         .data_o(buf_data_o)
     );
 
