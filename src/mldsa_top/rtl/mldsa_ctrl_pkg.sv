@@ -48,6 +48,9 @@ package mldsa_ctrl_pkg;
 
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
+    
+    localparam RND_W = 236; //5*46 + 6
+    localparam LFSR_W = RND_W / 2;
 
     typedef struct packed {
         logic [415:0][63:0] t0;
@@ -120,7 +123,8 @@ package mldsa_ctrl_pkg;
         MLDSA_SIGDEC_H,
         MLDSA_SIGDEC_Z,
         MLDSA_HINTSUM,
-        MLDSA_DECOMP
+        MLDSA_DECOMP,
+        MLDSA_LFSR
     } mldsa_aux_mode_e;
 
 
@@ -181,6 +185,7 @@ package mldsa_ctrl_pkg;
     localparam mldsa_opcode_t MLDSA_UOP_HINTSUM    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_HINTSUM,  sca_en:1'b0};
     localparam mldsa_opcode_t MLDSA_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  sca_en:1'b0};
     localparam mldsa_opcode_t MLDSA_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  sca_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_LFSR       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     sca_en:1'b0};
 
     //Immediate encodings
     localparam [MLDSA_IMM_WIDTH-1:0] MLDSA_NORMCHK_Z = 'h0000;
@@ -200,6 +205,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_SIG_C_REG_ID = 'd5;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_TR_REG_ID    = 'd6;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_VERIFY_RES_REG_ID = 'd7;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_DEST_LFSR_SEED_REG_ID = 'd8;
 
     //SRC register IDs
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_MSG_ID         = 'd15;
@@ -213,6 +219,8 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_RHO_P_KAPPA_ID = 'd23;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SIG_C_REG_ID   = 'd24;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_PK_REG_ID      = 'd25;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_ENTROPY_ID     = 'd26;
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_CNT_ID         = 'd27;
     
     //SK offsets in dwords
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_SK_S1_OFFSET = 'd32;
@@ -354,14 +362,16 @@ package mldsa_ctrl_pkg;
     //KG
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_RESET        = 'd0;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = MLDSA_RESET + 2;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 98;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_S + 99;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_KG_E + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_RND_S        = MLDSA_KG_E + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_SIGN_RND_S + 3;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_CLR  = MLDSA_SIGN_S+ 5;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_CHECK_Y_CLR + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_CHECK_Y_CLR + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 3;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_CLR = MLDSA_SIGN_MAKE_Y_S+ 14;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_MAKE_Y_S+ 15;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_CHECK_W0_CLR+ 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_Y        = MLDSA_SIGN_MAKE_W_S+ 64;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 66;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_W0       = MLDSA_SIGN_MAKE_W+ 1;
