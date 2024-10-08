@@ -43,8 +43,7 @@ module ntt_mult_reduction #(
     logic [10:0] d;
     logic [REG_SIZE-1:0] e;
     logic [13:0] f;
-    logic [REG_SIZE:0] g;
-    logic [REG_SIZE:0] g_reduced;
+    logic [REG_SIZE-1:0] g_reduced;
     logic [REG_SIZE-1:0] res;
     logic ready;
     logic ready_e, ready_g_reduced;
@@ -93,25 +92,19 @@ module ntt_mult_reduction #(
         .res_o(e),
         .ready_o() //(ready_e)
     );
-    
-
-    //Calculate g, g_reduced, g_reduced_f
-    //--------------------
-    always_comb g = (REG_SIZE+1)'(d[10:0] << 'd13);
 
     //Mod add
-    abr_add_sub_mod #(
-        .REG_SIZE(REG_SIZE+1)
+    ntt_special_adder #(
+        .REG_SIZE(REG_SIZE)
         )
         mod_add_inst_1(
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),
         .add_en_i(1'b1), //(enable_reg),
-        .sub_i(1'b0),
-        .opa_i(g),
-        .opb_i({{REG_SIZE-12{1'b0}},z_f[12:0]}), //24 bit input
-        .prime_i({1'b0,PRIME}),
+        .opa_i(d[10:0]),
+        .opb_i(z_f[12:0]), //24 bit input
+        .prime_i(PRIME),
         .res_o(g_reduced),
         .ready_o() //(ready_g_reduced)
     );
@@ -128,7 +121,7 @@ module ntt_mult_reduction #(
         .zeroize(zeroize),
         .add_en_i(1'b1), //(ready_e && ready_g_reduced),
         .sub_i(1'b1),
-        .opa_i(g_reduced[REG_SIZE-1:0]),
+        .opa_i(g_reduced),
         .opb_i(e[22:0]),
         .prime_i(PRIME),
         .res_o(res),
