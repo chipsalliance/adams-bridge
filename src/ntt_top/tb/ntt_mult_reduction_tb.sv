@@ -23,7 +23,8 @@
 module ntt_mult_reduction_tb 
     #(
     parameter   PRIME     = 23'd8380417,
-    parameter   REG_SIZE  = 23
+    parameter   REG_SIZE  = 23,
+    parameter   numOfTest = 1000
     )
 ();
 
@@ -97,6 +98,27 @@ task reset_dut;
     end
 endtask // reset_dut
 
+  //----------------------------------------------------------------
+  // display_test_result()
+  //
+  // Display the accumulated test results.
+  //----------------------------------------------------------------
+  task display_test_result;
+    begin
+      if (error_ctr == 0)
+        begin
+          $display("*** All %02d test cases completed successfully.", tc_ctr);
+          $display("* TESTCASE PASSED");
+        end
+      else
+        begin
+          $display("*** %02d test cases completed.", tc_ctr);
+          $display("*** %02d errors detected during testing.", error_ctr);
+          $display("* TESTCASE FAILED");
+        end
+    end
+  endtask // display_test_result
+
 
 //----------------------------------------------------------------
 // init_sim()
@@ -155,7 +177,7 @@ initial begin
 
     @(posedge clk_tb);
 
-    $display("Starting ntt test\n");
+    $display("Starting ntt_mult reduction test\n");
     
     a = 30;
     b = 40;
@@ -169,7 +191,16 @@ initial begin
     b = 5637242;
     ntt_mult_test(a, b);
 
+    for (int i = 0; i < numOfTest; i++) begin
+        a = $urandom_range(0, PRIME - 1);
+        b = $urandom_range(0, PRIME - 1);
+        ntt_mult_test(a, b);
+    end
+
+    display_test_result();
+
     repeat(10) @(posedge clk_tb);
+    $display("   -- Testbench for ntt_mult reduction done. --");
     $finish;
 end
 
