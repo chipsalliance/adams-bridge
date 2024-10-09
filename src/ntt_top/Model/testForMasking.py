@@ -379,3 +379,77 @@ def test_maskedBFU_CT(numTest = 10):
 
 test_maskedBFU_CT(numTest = 100000)
 test_maskedBFU_GS(numTest = 100000)
+
+def test_masked_inv_NTT2x2_div2(numTest = 10):
+    for test_i in range(numTest):
+        r_init = {}
+        for i in range (DILITHIUM_N):
+            r_init[i] = random.randrange(DILITHIUM_Q)  #
+
+        #using ref model
+        r_in_ntt = fwd_NTT(r_init)
+
+        #using 2x2 div2 architecture
+        r_from_ntt2x2_div2 = inv_NTT2x2_div2(r_in_ntt)
+        r_from_ntt2x2_div2_masked = masked_inv_NTT2x2_div2(r_in_ntt)
+        #check 2x2 div2 architecture
+        if (r_from_ntt2x2_div2 != r_init):
+            print("Error in inv_ntt2x2 div2 model")
+        if (r_from_ntt2x2_div2_masked != r_init):
+            print("Error in masked inv_ntt2x2 div2 model")
+
+def test_nonMaskedmodularOps(numTest = 10):
+    randomness = CustomUnsignedInteger(0, 0, DILITHIUM_Q-1)
+    for i in range(numTest):
+        randomness.generate_random()
+        a = int(randomness.value)
+        randomness.generate_random()
+        b = int(randomness.value)
+        exp_sub = (a-b) % DILITHIUM_Q
+        exp_add = (a+b) % DILITHIUM_Q
+        actual_sub = modular_sub_with_MUX(a, b)
+        actual_add = modular_add_with_MUX(a, b)
+        if (exp_sub != actual_sub):
+            print(f"Error in sub model({a},{b}) exp={exp_sub} and actual={actual_sub}")
+            actual_sub = modular_sub_with_MUX(a, b, 1)
+        if (exp_add != actual_add):
+            print(f"Error in add model({a},{b}) exp={exp_add} and actual={actual_add}")
+            actual_add = modular_add_with_MUX(a, b, 1)
+
+# test_masked_inv_NTT2x2_div2(numTest = 100)
+# test_nonMaskedmodularOps(numTest = 100000)
+
+def test_MaskedmodularOps(numTest = 10):
+    randomness0 = CustomUnsignedInteger(0, 0, DILITHIUM_Q-1)
+    randomness1 = CustomUnsignedInteger(0, 0, BooleanMod-1)
+    for i in range(numTest):
+        randomness0.generate_random()
+        a = int(randomness0.value)
+        randomness1.generate_random()
+        r0 = int(randomness1.value)
+        a1 = r0
+        a0 = a ^ r0
+        randomness0.generate_random()
+        b = int(randomness0.value)
+        randomness1.generate_random()
+        r0 = int(randomness1.value)
+        b1 = r0
+        b0 = b ^ r0
+        #### TBD #############
+        exp_sub = (a-b) % DILITHIUM_Q
+        exp_add = (a+b) % DILITHIUM_Q
+        actual_sub0, actual_sub1 = masked_modular_add_sub_with_MUX(a0, a1, b0, b1, k=ModulArithBits, sub=1, debug =0)
+        actual_add0, actual_add1 = masked_modular_add_sub_with_MUX(a0, a1, b0, b1, k=ModulArithBits, sub=0, debug =0)
+        if (exp_sub != (actual_sub0 ^ actual_sub1)):
+            print(f"Error in sub model({a},{b}) exp={exp_sub} and actual={(actual_sub0 ^ actual_sub1)}")
+            actual_sub0, actual_sub1 = masked_modular_add_sub_with_MUX(a0, a1, b0, b1, k=ModulArithBits, sub=1, debug =1)
+        if (exp_add != (actual_add0 ^ actual_add1)):
+            print(f"Error in add model({a},{b}) exp={exp_add} and actual={(actual_add0 ^ actual_add1)}")
+            actual_add0, actual_add1 = masked_modular_add_sub_with_MUX(a0, a1, b0, b1, k=ModulArithBits, sub=0, debug =1)
+
+
+
+# test_MaskedmodularOps(numTest = 100000)
+test_maskedReduction46(numTest = 1000000)
+
+
