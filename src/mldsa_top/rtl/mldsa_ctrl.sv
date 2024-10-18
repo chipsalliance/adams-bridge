@@ -17,7 +17,7 @@
 //  Keygen
 //  Signing
 
-`include "config_defines.svh"
+`include "mldsa_config_defines.svh"
 
 module mldsa_ctrl
   import mldsa_reg_pkg::*;
@@ -109,6 +109,7 @@ module mldsa_ctrl
   output logic [7:0][T1_COEFF_W-1:0] pkdecode_rd_data_o,
   input logic pkdecode_done_i,
 
+
   output logic sigdecode_h_enable_o, 
   output logic [SIGNATURE_H_VALID_NUM_BYTES-1:0][7:0] signature_h_o,
   input logic sigdecode_h_invalid_i,
@@ -118,6 +119,9 @@ module mldsa_ctrl
   input mem_if_t sigdecode_z_rd_req_i,
   output logic [1:0][3:0][19:0] sigdecode_z_rd_data_o,
   input logic sigdecode_z_done_i,
+
+  output logic lfsr_enable_o,
+  output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
   //Interrupts
   output logic error_intr,
@@ -144,6 +148,7 @@ module mldsa_ctrl
   logic [2:0]                sampler_src_offset_f;
   logic [15:0]               sampler_imm;
   
+  logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
@@ -164,14 +169,13 @@ module mldsa_ctrl
   logic msg_done;
   logic [MsgStrbW-1:0] last_msg_strobe;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
-  logic msg_hold;
+  logic vld_cycle;
 
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
 
   mldsa_ctrl_fsm_state_e ctrl_fsm_ps, ctrl_fsm_ns;
-  logic msg_valid;
   mldsa_ctrl_fsm_state_e sign_ctrl_fsm_ps, sign_ctrl_fsm_ns;
 
   mldsa_reg__in_t mldsa_reg_hwif_in;
@@ -195,11 +199,22 @@ module mldsa_ctrl
 
   //Interrupts
   logic mldsa_status_done_d, mldsa_status_done_p;
+
+  logic set_entropy;
+  logic [7:0][63:0] lfsr_entropy_reg;
+  logic [MsgWidth-1:0] counter_reg;
   
   assign mldsa_reg_hwif_in_o = mldsa_reg_hwif_in;
   assign mldsa_reg_hwif_out = mldsa_reg_hwif_out_i;
 
   always_comb mldsa_ready = (prog_cntr == MLDSA_RESET);
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b)
+      counter_reg <= '0;
+    else
+      counter_reg <= counter_reg + 1;
+  end
 
 //HWIF to reg block
   always_comb mldsa_reg_hwif_in.reset_b = rst_b;
@@ -219,6 +234,12 @@ module mldsa_ctrl
   always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
   
   always_comb begin // mldsa reg writing 
+
+    for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++)begin
+      entropy_reg[dword] = mldsa_reg_hwif_out.MLDSA_ENTROPY[ENTROPY_NUM_DWORDS-1-dword].ENTROPY.value;
+      mldsa_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
+    end
+
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
@@ -712,6 +733,8 @@ module mldsa_ctrl
           MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
           MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
           MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.raw[{sampler_src_offset[1:0],1'b0}]};
+      	  MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
+      	  MLDSA_CNT_ID:         msg_data <= counter_reg;
           default:              msg_data <= '0;
         endcase
       end
@@ -742,6 +765,23 @@ module mldsa_ctrl
       end
       else if (instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][511:0];
+      end
+    end
+  end
+
+  // without zeroize to make it more complex
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      lfsr_seed_o <= '0;
+      lfsr_entropy_reg <= '0;
+    end
+    else if (set_entropy) begin
+      lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
+    end
+    else if (sampler_state_dv_i) begin
+      if (instr.operand3 == MLDSA_DEST_LFSR_SEED_REG_ID) begin
+          lfsr_seed_o <= sampler_state_data_i[0][2*LFSR_W-1:0];
+          lfsr_entropy_reg <= sampler_state_data_i[0][2*LFSR_W+511:2*LFSR_W];
       end
     end
   end
@@ -858,6 +898,7 @@ module mldsa_ctrl
     set_c_valid = 0;
     update_kappa = 0;
     set_verify_valid = 0;
+    set_entropy = 0;
     prog_cntr_nxt = MLDSA_RESET;
 
     unique case (prog_cntr) inside
@@ -867,10 +908,12 @@ module mldsa_ctrl
           MLDSA_KEYGEN : begin  // keygen
             prog_cntr_nxt = MLDSA_KG_S;
             keygen_process_nxt = 1;
+            set_entropy = 1;
           end   
           MLDSA_SIGN : begin  // signing
-            prog_cntr_nxt = MLDSA_SIGN_S;
+            prog_cntr_nxt = MLDSA_SIGN_RND_S;
             signing_process_nxt  = 1;
+            set_entropy = 1;
           end                                   
           MLDSA_VERIFY : begin  // verifying
             prog_cntr_nxt = MLDSA_VERIFY_S;
@@ -880,6 +923,7 @@ module mldsa_ctrl
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
             prog_cntr_nxt = MLDSA_KG_S;
             keygen_signing_process_nxt  = 1;
+            set_entropy = 1;
           end
           default : begin
             prog_cntr_nxt = MLDSA_RESET;
@@ -1055,6 +1099,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
     sigdecode_h_enable_o = 0;
     sigdecode_z_enable_o = 0;
     normcheck_enable[0] = 0;
+    lfsr_enable_o = 0;
 
     unique case (ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
@@ -1102,7 +1147,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
           sigdecode_h_enable_o = (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H);
           sigdecode_z_enable_o = (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z);
           normcheck_enable[0] = (instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
-          
+          lfsr_enable_o = (instr.opcode.mode.aux_mode == MLDSA_LFSR);
         end
       end
       MLDSA_CTRL_DONE: begin
@@ -1113,7 +1158,8 @@ always_comb begin : primary_ctrl_fsm_out_combo
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_PKDECODE) & pkdecode_done_i) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_done_i) |
             (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z) & sigdecode_z_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i)) begin
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
+            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
           
               ctrl_fsm_ns = MLDSA_CTRL_IDLE;
 

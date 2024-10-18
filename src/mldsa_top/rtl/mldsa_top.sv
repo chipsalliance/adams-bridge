@@ -13,7 +13,7 @@
 // limitations under the License.
 
 //Initial top level module
-`include "config_defines.svh"
+`include "mldsa_config_defines.svh"
 
 module mldsa_top
   import abr_prim_alert_pkg::*;
@@ -183,6 +183,10 @@ module mldsa_top
   mem_if_t                       sib_mem_rd_req;
   logic [MLDSA_MEM_DATA_WIDTH-1:0] sib_mem_rd_data;
 
+  logic lfsr_enable;
+  logic [1:0][LFSR_W-1:0] lfsr_seed;
+  logic [RND_W-1:0] rand_bits;
+
   //gasket to assemble reg requests
   logic mldsa_reg_dv;
   logic mldsa_reg_hold;
@@ -345,6 +349,9 @@ mldsa_ctrl mldsa_control_inst
   .sigdecode_z_rd_req_i(sigdecode_z_mem_rd_req),
   .sigdecode_z_rd_data_o(sigdecode_z_mem_rd_data),
   .sigdecode_z_done_i(sigdecode_z_done),
+
+  .lfsr_enable_o(lfsr_enable),
+  .lfsr_seed_o(lfsr_seed),
 
   .error_intr(error_intr),
   .notif_intr(notif_intr)
@@ -720,6 +727,39 @@ sigdecode_h_inst (
   .mem_wr_data(sigdecode_h_mem_wr_data),
 
   .sigdecode_h_error(sigdecode_h_invalid)
+);
+
+
+abr_prim_lfsr
+#(
+  .LfsrType("FIB_XNOR"),
+  .LfsrDw(LFSR_W),
+  .StateOutDw(LFSR_W)
+) abr_prim_lfsr_inst0 
+(
+  .clk_i(clk),
+  .rst_b(rst_b),
+  .seed_en_i(lfsr_enable),
+  .seed_i(lfsr_seed[0]),
+  .lfsr_en_i(1'b1),
+  .entropy_i('0),
+  .state_o(rand_bits[LFSR_W-1:0])
+);
+
+abr_prim_lfsr
+#(
+  .LfsrType("FIB_XNOR"),
+  .LfsrDw(LFSR_W),
+  .StateOutDw(LFSR_W)
+) abr_prim_lfsr_inst1 
+(
+  .clk_i(clk),
+  .rst_b(rst_b),
+  .seed_en_i(lfsr_enable),
+  .seed_i(lfsr_seed[1]),
+  .lfsr_en_i(1'b1),
+  .entropy_i('0),
+  .state_o(rand_bits[RND_W-1 : LFSR_W])
 );
 
 //w1 memory
