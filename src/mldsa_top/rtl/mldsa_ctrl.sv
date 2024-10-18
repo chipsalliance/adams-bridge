@@ -169,13 +169,14 @@ module mldsa_ctrl
   logic msg_done;
   logic [MsgStrbW-1:0] last_msg_strobe;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
-  logic vld_cycle;
+  logic msg_hold;
 
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
 
   mldsa_ctrl_fsm_state_e ctrl_fsm_ps, ctrl_fsm_ns;
+  logic msg_valid;
   mldsa_ctrl_fsm_state_e sign_ctrl_fsm_ps, sign_ctrl_fsm_ns;
 
   mldsa_reg__in_t mldsa_reg_hwif_in;
