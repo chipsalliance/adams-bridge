@@ -443,7 +443,7 @@ module mldsa_seq_prim
                 MLDSA_VERIFY_RES+ 2         : data_o_rom <= '{opcode:MLDSA_UOP_USEHINT, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:MLDSA_HINT_R_0_BASE, operand3:MLDSA_NOP};
                 MLDSA_VERIFY_RES+ 3         : data_o_rom <= '{opcode:MLDSA_UOP_RUN_SHAKE256, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_DEST_VERIFY_RES_REG_ID};
                 MLDSA_VERIFY_E              : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
-
+                WAIT_SEC                    : data_o_rom <= '{opcode: MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 default :              data_o_rom <= '{opcode: MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
             endcase 
     end

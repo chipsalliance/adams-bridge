@@ -430,6 +430,10 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_E        = MLDSA_SIGN_GEN_S + 9;
 
 
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] WAIT_PRIM              = MLDSA_VERIFY_E+100;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] WAIT_SEC               = MLDSA_VERIFY_E+100;
+
+
 endpackage
 
 `endif

@@ -102,12 +102,13 @@ module sigdecode_z_top
                 next_state = READ_EXEC_and_WRITE;
             end
             READ_EXEC_and_WRITE: begin
-                if ((num_api_operands+1) == THE_LAST_ADDR) begin
-                    next_state = EXEC_and_WRITE;
-                end
-                else begin
-                    next_state = READ_EXEC_and_WRITE;
-                end
+                // if ((num_api_operands+1) == THE_LAST_ADDR) begin
+                //     next_state = EXEC_and_WRITE;
+                // end
+                // else begin
+                //     next_state = READ_EXEC_and_WRITE;
+                // end
+                next_state = READ_EXEC_and_WRITE;
             end
             EXEC_and_WRITE: begin
                 next_state = WRITE;
@@ -148,18 +149,18 @@ module sigdecode_z_top
             end
 
             
-            if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
-                num_api_operands    <= num_api_operands +2'h2;
-            end
-            else begin
-                num_api_operands    <= 'h0;
-            end
-            if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
-                num_mem_operands    <= num_mem_operands +2'h2;
-            end
-            else begin
-                num_mem_operands    <= 'h0;
-            end
+            // if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
+            //     num_api_operands    <= num_api_operands +2'h2;
+            // end
+            // else begin
+            //     num_api_operands    <= 'h0;
+            // end
+            // if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
+            //     num_mem_operands    <= num_mem_operands +2'h2;
+            // end
+            // else begin
+            //     num_mem_operands    <= 'h0;
+            // end
             if (state == DONE) begin
                 sigdecode_z_done      <= 'h1;
             end
@@ -170,72 +171,93 @@ module sigdecode_z_top
     end
 
     // Write request generation
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
-        else if (zeroize) begin
-            mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
-        else if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
-            mem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands};
-            mem_b_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands + 1};
-        end
-        else begin
-            mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
+    // always_ff @(posedge clk or negedge reset_n) begin
+    //     if (!reset_n) begin
+    //         mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    //     else if (zeroize) begin
+    //         mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    //     else if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
+    //         mem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands};
+    //         mem_b_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands + 1};
+    //     end
+    //     else begin
+    //         mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    // end
+
+    // Memory read request generation
+    // always_ff @(posedge clk or negedge reset_n) begin
+    //     if (!reset_n) begin
+    //         sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    //     else if (zeroize) begin
+    //         sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    //     else if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
+    //         sigmem_a_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands};
+    //         sigmem_b_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands + 1};
+    //     end else begin
+    //         sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //         sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+    //     end
+    // end
+
+    //8 decoding instances
+    // generate
+    //     for (genvar i = 0; i < 4; i++) begin : dec_unit
+    //         sigdecode_z_unit #(
+    //             .REG_SIZE(REG_SIZE),
+    //             .GAMMA1(GAMMA1)
+    //         )
+    //         upper_encode (
+    //             .clk(clk),
+    //             .reset_n(reset_n),
+    //             .zeroize(zeroize),
+    //             .data_i(sigmem_a_rd_data[i]),
+    //             .data_o(mem_a_wr_data[i])
+    //         );
+    //         sigdecode_z_unit #(
+    //             .REG_SIZE(REG_SIZE),
+    //             .GAMMA1(GAMMA1)
+    //         )
+    //         lower_encode (
+    //             .clk(clk),
+    //             .reset_n(reset_n),
+    //             .zeroize(zeroize),
+    //             .data_i(sigmem_b_rd_data[i]),
+    //             .data_o(mem_b_wr_data[i])
+    //         );
+    //     end : dec_unit
+    // endgenerate
+
+
+    always_ff @(posedge clk) begin
+        mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
     end
 
     // Memory read request generation
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
-        else if (zeroize) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
-        else if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands + 1};
-        end else begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-        end
+    always_ff @(posedge clk) begin
+        sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+        sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
     end
 
     //8 decoding instances
-    generate
+    // generate
         for (genvar i = 0; i < 4; i++) begin : dec_unit
-            sigdecode_z_unit #(
-                .REG_SIZE(REG_SIZE),
-                .GAMMA1(GAMMA1)
-            )
-            upper_encode (
-                .clk(clk),
-                .reset_n(reset_n),
-                .zeroize(zeroize),
-                .data_i(sigmem_a_rd_data[i]),
-                .data_o(mem_a_wr_data[i])
-            );
-            sigdecode_z_unit #(
-                .REG_SIZE(REG_SIZE),
-                .GAMMA1(GAMMA1)
-            )
-            lower_encode (
-                .clk(clk),
-                .reset_n(reset_n),
-                .zeroize(zeroize),
-                .data_i(sigmem_b_rd_data[i]),
-                .data_o(mem_b_wr_data[i])
-            );
+            assign mem_a_wr_data[i] = 'h0;
+            assign mem_b_wr_data[i] = 'h0;
         end : dec_unit
-    endgenerate
+    // endgenerate
 
+    
 
 
 endmodule

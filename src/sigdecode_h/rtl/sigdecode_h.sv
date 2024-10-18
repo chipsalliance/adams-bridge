@@ -48,96 +48,68 @@ module sigdecode_h
 
     localparam SIG_H_NUM_DWORDS = ((MLDSA_OMEGA + MLDSA_K + 1)*8)/32;
 
-    // logic [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h;
-    // logic [SIG_H_NUM_DWORDS-1:0][31:0] encoded_h_reg;
-    logic [MLDSA_OMEGA-1:0] hint_array;
-    logic [7:0] hintsum, hintsum_prev_poly, hintsum_curr_poly;
-    logic [3:0] poly_count;
-    logic [6:0] rd_ptr;
-    logic [MLDSA_N-1:0] bitmap;
-    logic rst_bitmap;
-    logic [3:0][7:0] hint;
-    logic [3:0] curr_poly_map;
-    logic [$clog2(MLDSA_N)-1:0] bitmap_ptr;
-    logic hint_rd_en;
-    mem_if_t mem_wr_req_int;
-
     //TODO: look into remaining_zero - to save some latency, we can save y[w-1:0] as we read them and
     //keep track of what coeffs are being written to memory. If we see that the last y[i] coeff has been written
     //to memory, we don't need to continue and can exit and move to the next poly. Assumption is that memory contains 0s
     //and it's ok for this operation to be non-constant time.
 
     //Delay flops
+    always_ff @(posedge clk) begin   
+        mem_wr_data         <= 'h0;
+        mem_wr_req.addr     <= 'h0;
+        mem_wr_req.rd_wr_en <= RW_IDLE;
+        sigdecode_h_error   <= 'b0;
+    end
+
+
+    // State and counter declaration
+    typedef enum logic [1:0] {
+        IDLE,
+        COUNTING,
+        DONE
+    } sigdecode_hstate_t;
+
+    sigdecode_hstate_t current_state, next_state;
+    logic [3:0] cycle_count;  // 4-bit counter to count up to 10 cycles
+
+    // Sequential logic for state transition and cycle counting
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            hintsum             <= 'h0;
-            hintsum_prev_poly   <= 'h0;
-            mem_wr_data         <= 'h0;
-            hint                <= 'h0;
-            mem_wr_req.addr     <= 'h0;
-            mem_wr_req.rd_wr_en <= RW_IDLE;
-            sigdecode_h_error   <= 'b0;
-        end
-        else if (zeroize) begin
-            hintsum             <= 'h0;
-            hintsum_prev_poly   <= 'h0;
-            mem_wr_data         <= 'h0;
-            hint                <= 'h0;
-            mem_wr_req.addr     <= 'h0;
-            mem_wr_req.rd_wr_en <= RW_IDLE;
-            sigdecode_h_error   <= 'b0;
-        end
-        else begin
-            hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[MLDSA_OMEGA+poly_count];
-            hintsum_prev_poly   <= hintsum;
-            mem_wr_data         <= {REG_SIZE'(bitmap[8'(bitmap_ptr+3)]), REG_SIZE'(bitmap[8'(bitmap_ptr+2)]), REG_SIZE'(bitmap[8'(bitmap_ptr+1)]), REG_SIZE'(bitmap[8'(bitmap_ptr)])};
-            hint                <= hint_rd_en ? {encoded_h_i[7'(rd_ptr+3)], encoded_h_i[7'(rd_ptr+2)], encoded_h_i[7'(rd_ptr+1)], encoded_h_i[7'(rd_ptr)]} : 'h0;
-            mem_wr_req          <= mem_wr_req_int;
-            sigdecode_h_error   <= ~sigdecode_h_done & (hintsum < hintsum_prev_poly);
+            current_state <= IDLE;
+            cycle_count <= 4'd0;
+        end else begin
+            current_state <= next_state;
+            if (current_state == COUNTING) begin
+                cycle_count <= cycle_count + 1;
+            end else begin
+                cycle_count <= 4'd0;
+            end
         end
     end
 
-    //bitmap construction
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            bitmap <= 'h0;
-        end
-        else if (zeroize) begin
-            bitmap <= 'h0;
-        end
-        else if (rst_bitmap) begin
-            bitmap <= 'h0;
-        end
-        else begin
-            if (curr_poly_map[0])
-                bitmap[hint[0]] <= 'b1;
-            if (curr_poly_map[1])
-                bitmap[hint[1]] <= 'b1;
-            if (curr_poly_map[2])
-                bitmap[hint[2]] <= 'b1;
-            if (curr_poly_map[3])
-                bitmap[hint[3]] <= 'b1;
-        end
+    // Combinational logic for next state and output
+    always_comb begin
+        next_state = current_state;
+        sigdecode_h_done = 1'b0;
+
+        case (current_state)
+            IDLE: begin
+                if (sigdecode_h_enable) begin
+                    next_state = COUNTING;
+                end
+            end
+
+            COUNTING: begin
+                if (cycle_count == 4'd9) begin  // 10 cycles (0-9)
+                    next_state = DONE;
+                end
+            end
+
+            DONE: begin
+                sigdecode_h_done = 1'b1;
+                next_state = IDLE;  // Go back to IDLE after setting sigdecode_h_done for 1 cycle
+            end
+        endcase
     end
-
-    always_comb hintsum_curr_poly = hintsum - hintsum_prev_poly;
-
-    sigdecode_h_ctrl sdh_ctrl_inst (
-        .clk(clk),
-        .reset_n(reset_n),
-        .zeroize(zeroize),
-        .sigdecode_h_enable(sigdecode_h_enable),
-        .dest_base_addr(dest_base_addr),
-        .hintsum_i(hintsum_curr_poly),
-        .sigdecode_h_error(sigdecode_h_error),
-        .mem_wr_req(mem_wr_req_int),
-        .sigdecode_h_done(sigdecode_h_done),
-        .poly_count(poly_count),
-        .rd_ptr(rd_ptr),
-        .rst_bitmap(rst_bitmap),
-        .curr_poly_map(curr_poly_map),
-        .bitmap_ptr(bitmap_ptr),
-        .hint_rd_en(hint_rd_en)
-    );
 
 endmodule

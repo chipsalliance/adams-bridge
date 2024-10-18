@@ -399,6 +399,152 @@ mldsa_sampler_top sampler_top_inst
   .sampler_state_data_o(sampler_state_data)
 );
 
+`ifdef RV_FPGA_SCA_NTT
+
+ // Internal signals for NTT module
+    logic ntt_start;
+    mldsa_ntt_mode_e ntt_mode_o;
+    ntt_mem_addr_t ntt_mem_base_addr_o;
+    pwo_mem_addr_t pwo_mem_base_addr_o;
+    logic sampler_valid_o;
+
+
+// Assign default values to sampler_ntt_dv[1] since there is no sampler interface to secondary NTT
+assign sampler_ntt_dv[1] = 0;
+
+// Instantiate the ntt_optimizer
+ntt_optimizer ntt_opt_inst (
+  .clk(clk),
+  .reset_n(rst_b),
+  // Inputs from controller
+  .ntt_enable(ntt_enable),
+  .ntt_mode(ntt_mode),
+  .ntt_mem_base_addr(ntt_mem_base_addr),
+  .pwo_mem_base_addr(pwo_mem_base_addr),
+  // Outputs to controller
+  .ntt_busy(ntt_busy),
+  // Interface to NTT engine
+  .ntt_start(ntt_start),
+  .ntt_mode_o(ntt_mode_o),
+  .ntt_mem_base_addr_o(ntt_mem_base_addr_o),
+  .pwo_mem_base_addr_o(pwo_mem_base_addr_o),
+  .sampler_valid_o(sampler_valid_o),
+  .ntt_done(ntt_done[0]) // From NTT module
+);
+
+// Generate loop that loops only once (g_inst = 0)
+generate
+  for (genvar g_inst = 0; g_inst < 1; g_inst++) begin : ntt_gen
+    // NTT Control Logic
+    always_comb begin
+      mode[g_inst] = '0;
+      accumulate[g_inst] = '0;
+      sampler_valid[g_inst] = 0;
+      sampler_ntt_mode[g_inst] = 0;
+
+      unique case (ntt_mode_o) inside
+        MLDSA_NTT_NONE: begin
+          // Do nothing
+        end
+        MLDSA_NTT: begin
+          mode[g_inst] = ct;
+        end
+        MLDSA_INTT: begin
+          mode[g_inst] = gs;
+        end
+        MLDSA_PWM_SMPL: begin
+          mode[g_inst] = pwm;
+          sampler_valid[g_inst] = sampler_valid_o ? sampler_ntt_dv[g_inst] : 0;
+          sampler_ntt_mode[g_inst] = 1;
+        end
+        MLDSA_PWM_ACCUM_SMPL: begin
+          mode[g_inst] = pwm;
+          accumulate[g_inst] = 1;
+          sampler_valid[g_inst] = sampler_valid_o ? sampler_ntt_dv[g_inst] : 0;
+          sampler_ntt_mode[g_inst] = 1;
+        end
+        MLDSA_PWM: begin
+          mode[g_inst] = pwm;
+          sampler_valid[g_inst] = 1;
+        end
+        MLDSA_PWM_ACCUM: begin
+          mode[g_inst] = pwm;
+          accumulate[g_inst] = 1;
+          sampler_valid[g_inst] = 1;
+        end
+        MLDSA_PWA: begin
+          mode[g_inst] = pwa;
+          sampler_valid[g_inst] = 1;
+        end
+        MLDSA_PWS: begin
+          mode[g_inst] = pws;
+          sampler_valid[g_inst] = 1;
+        end
+        default: begin
+          // Default case
+        end
+      endcase
+    end
+
+    // Instantiate the NTT module
+    ntt_top #(
+      .REG_SIZE(REG_SIZE),
+      .MLDSA_Q(MLDSA_Q),
+      .MLDSA_N(MLDSA_N),
+      .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
+    )
+    ntt_top_inst (
+      .clk(clk),
+      .reset_n(rst_b),
+      .zeroize(zeroize_reg),
+
+      .mode(mode[g_inst]),
+      .ntt_enable(ntt_start),                        // From ntt_optimizer
+      .ntt_mem_base_addr(ntt_mem_base_addr_o),       // From ntt_optimizer
+      .pwo_mem_base_addr(pwo_mem_base_addr_o),       // From ntt_optimizer
+      .accumulate(accumulate[g_inst]),
+      .sampler_valid(sampler_valid[g_inst]),
+      // NTT memory interface
+      .mem_wr_req(ntt_mem_wr_req[g_inst]),
+      .mem_rd_req(ntt_mem_rd_req[g_inst]),
+      .mem_wr_data(ntt_mem_wr_data[g_inst]),
+      .mem_rd_data(ntt_mem_rd_data[g_inst]),
+      // PWM memory interface
+      .pwm_a_rd_req(pwm_a_rd_req[g_inst]),
+      .pwm_b_rd_req(pwm_b_rd_req[g_inst]),
+      .pwm_a_rd_data(pwm_a_rd_data[g_inst]),
+      .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? sampler_ntt_data : pwm_b_rd_data[g_inst]),
+      .ntt_busy(),          // Not used; handled by ntt_optimizer
+      .ntt_done(ntt_done[g_inst])  // ntt_done[0]
+    );
+  end
+endgenerate
+
+// Assign default values or handle signals for g_inst = 1 (since we have an array of size [1:0])
+always_comb begin
+  // For NTT instance 1 (non-existent), set default or zero values
+  mode[1] = '0;
+  accumulate[1] = '0;
+  sampler_valid[1] = 0;
+  sampler_ntt_mode[1] = 0;
+
+  ntt_mem_wr_req[1].rd_wr_en = RW_IDLE;
+  ntt_mem_wr_req[1].addr = 'h0;
+  ntt_mem_rd_req[1].rd_wr_en = RW_IDLE;
+  ntt_mem_rd_req[1].addr = 'h0;
+  ntt_mem_wr_data[1] = '0;
+
+  pwm_a_rd_req[1].rd_wr_en = RW_IDLE;
+  pwm_a_rd_req[1].addr = 'h0;
+  pwm_b_rd_req[1].rd_wr_en = RW_IDLE;
+  pwm_b_rd_req[1].addr = 'h0;
+
+  ntt_done[1] = 0; // Since there is no NTT instance 1
+  // ntt_busy[1] is driven by ntt_optimizer; ensure it's connected correctly
+end
+
+`else
+
 assign sampler_ntt_dv[1] = 0; //no sampler interface to secondary ntt
 
 generate
@@ -485,6 +631,8 @@ generate
   );
   end
 endgenerate
+
+`endif
 
 //aux functions
 power2round_top

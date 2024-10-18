@@ -224,7 +224,7 @@ module mldsa_ctrl
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
   
-  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
+  always_comb zeroize = 'h0;
   
   always_comb begin // mldsa reg writing 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
@@ -904,6 +904,13 @@ module mldsa_ctrl
           prog_cntr_nxt = prog_cntr + 1;
         end
       end
+      (MLDSA_SIGN_S+ 4) : begin
+          prog_cntr_nxt = WAIT_SEC;
+      end
+      WAIT_SEC : begin
+        if (sign_prog_cntr == MLDSA_SIGN_INIT_S+23)
+          prog_cntr_nxt = (MLDSA_SIGN_S+ 5);
+      end
       MLDSA_KG_E : begin // end of keygen
         //prog_cntr_nxt = MLDSA_RESET;
         keygen_done = 1;
@@ -1214,6 +1221,19 @@ mldsa_seq_prim mldsa_seq_prim_inst
           sign_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
         end
       end
+      
+      //WAIT
+      // (MLDSA_SIGN_INIT_S+23) : begin
+      //   sign_prog_cntr_nxt = WAIT_PRIM;
+      // end
+      // WAIT_PRIM : begin
+      //   if (prog_cntr == 131) begin
+      //     sign_prog_cntr_nxt = (MLDSA_SIGN_INIT_S+24);
+      //   end
+      //   else  begin
+      //     sign_prog_cntr_nxt = WAIT_PRIM;
+      //   end
+      // end
       //START of C access - check if C is valid
       MLDSA_SIGN_CHECK_C_VLD : begin
         if (c_valid) begin
