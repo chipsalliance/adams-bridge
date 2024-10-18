@@ -51,7 +51,7 @@ module mldsa_seq_sec
                 MLDSA_RESET      : data_o <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
 
                 //Signing initial steps start
-                MLDSA_SIGN_INIT_S   : data_o <= '{opcode:MLDSA_UOP_SKDECODE, imm:'h0000, length:'d00, operand1:MLDSA_SK_S1_OFFSET, operand2:MLDSA_NOP, operand3:MLDSA_S1_0_BASE};
+                MLDSA_SIGN_INIT_S   : data_o <= '{opcode:MLDSA_UOP_SKDECODE, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_S1_0_BASE};
                 //NTT(t0)
                 MLDSA_SIGN_INIT_S+1 : data_o <= '{opcode:MLDSA_UOP_NTT, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:MLDSA_TEMP0_BASE, operand3:MLDSA_T0_BASE};
                 MLDSA_SIGN_INIT_S+2 : data_o <= '{opcode:MLDSA_UOP_NTT, imm:'h0000, length:'d00, operand1:MLDSA_T1_BASE, operand2:MLDSA_TEMP0_BASE, operand3:MLDSA_T1_BASE};

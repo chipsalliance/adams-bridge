@@ -162,15 +162,15 @@ module power2round_top
     
 
     abr_sample_buffer #(
-        .NUM_WR(104),
-        .NUM_RD(64),
-        .BUFFER_DATA_W(1)
+        .NUM_WR(13),
+        .NUM_RD(8),
+        .BUFFER_DATA_W(8)
     )
     sk_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i({104{sk_buff_enable}}),
+        .data_valid_i({13{sk_buff_enable}}),
         .data_i(r0_packed_reg),
         .buffer_full_o(sk_buff_full),
         .data_valid_o(sk_buff_valid),

@@ -16,6 +16,17 @@
 `define ABR_CFG_SV
 
   `define ABR_ICG           abr_clk_gate
-  `define ABR_MEM           abr_1r1w_ram
-  
+
+  `define ABR_MEM_TEST(_depth, _width) abr_1r1w_``_depth``x``_width``_ram 
+
+  `define ABR_MEM(_depth, _width) \
+  abr_1r1w_ram \
+  #( .DEPTH(``_depth``), \
+     .DATA_WIDTH(``_width``)) 
+
+  `define ABR_MEM_BE(_depth, _width) \
+  abr_1r1w_be_ram \
+  #( .DEPTH(``_depth``), \
+     .DATA_WIDTH(``_width``)) 
+
 `endif

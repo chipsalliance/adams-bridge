@@ -43,14 +43,15 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH;
   parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
 
-  parameter MLDSA_MEM_INST0_DEPTH = 1664;
+  parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
   parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
-  parameter MLDSA_MEM_INST1_DEPTH = 576;
+  parameter MLDSA_MEM_INST1_DEPTH = 576; //6.75 KB
   parameter MLDSA_MEM_INST1_ADDR_W = $clog2(MLDSA_MEM_INST1_DEPTH);
-  parameter MLDSA_MEM_INST2_DEPTH = 1408;
+  parameter MLDSA_MEM_INST2_DEPTH = 1408; //16.5 KB
   parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
-  parameter MLDSA_MEM_INST3_DEPTH = 128;
+  parameter MLDSA_MEM_INST3_DEPTH = 128; //1.5 KB
   parameter MLDSA_MEM_INST3_ADDR_W = $clog2(MLDSA_MEM_INST3_DEPTH);
+  parameter MLDSA_MEM_W1_DEPTH = 512;
 
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;
@@ -61,7 +62,7 @@ package mldsa_params_pkg;
   parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h0;  //FIXME
 
   // Implementation parameters
-  parameter DATA_WIDTH           = 32;
+  parameter DATA_WIDTH = 32;
 
   //Common structs
   typedef enum logic [1:0] {RW_IDLE = 2'b00, RW_READ = 2'b01, RW_WRITE = 2'b10} mem_rw_mode_e;

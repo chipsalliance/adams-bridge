@@ -181,7 +181,7 @@ module mldsa_seq_prim
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 97   : data_o <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
                 //(t1,t0)←Power2Round(t,d) AND pk ←pkEncode(ρ,t1)
-                MLDSA_KG_S+ 98   : data_o <= '{opcode:MLDSA_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_KG_S+ 98   : data_o <= '{opcode:MLDSA_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:MLDSA_NOP, operand3:MLDSA_SK_T0_OFFSET};
                 //tr ←H(BytesToBits(pk),512)
                 MLDSA_KG_S+ 99   : data_o <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_TR_REG_ID};
                 //sk ←skEncode(ρ,K,tr,s1,s2,t0)

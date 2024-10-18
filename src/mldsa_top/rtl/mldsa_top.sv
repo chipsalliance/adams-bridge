@@ -763,11 +763,8 @@ abr_prim_lfsr
 );
 
 //w1 memory
-`ABR_MEM
-#(
-  .DEPTH(512), //FIXME params
-  .DATA_WIDTH(4) //FIXME params
-) mldsa_w1_mem_inst
+`ABR_MEM_TEST(512, 4)
+mldsa_w1_mem_inst
 (
   .clk_i(clk),
   .we_i(w1_mem_wr_req.rd_wr_en == RW_WRITE),
@@ -1033,11 +1030,8 @@ always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst0_bank0
+`ABR_MEM(MLDSA_MEM_INST0_DEPTH/2,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst0_bank0
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[0]),
@@ -1047,11 +1041,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .raddr_i(mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:1]),
   .rdata_o(mldsa_mem_rdata0_bank[0])
 );
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST0_DEPTH/2),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst0_bank1
+`ABR_MEM(MLDSA_MEM_INST0_DEPTH/2,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst0_bank1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we0_bank[1]),
@@ -1062,11 +1053,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata0_bank[1])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST1_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst1
+`ABR_MEM(MLDSA_MEM_INST1_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst1
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[1]),
@@ -1077,11 +1065,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata[1])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST2_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst2
+`ABR_MEM(MLDSA_MEM_INST2_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst2
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[2]),
@@ -1092,11 +1077,8 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .rdata_o(mldsa_mem_rdata[2])
 );
 
-`ABR_MEM
-#(
-  .DEPTH(MLDSA_MEM_INST3_DEPTH),
-  .DATA_WIDTH(MLDSA_MEM_DATA_WIDTH)
-) mldsa_ram_inst3
+`ABR_MEM(MLDSA_MEM_INST3_DEPTH,MLDSA_MEM_DATA_WIDTH)
+mldsa_ram_inst3
 (
   .clk_i(clk),
   .we_i(mldsa_mem_we[3]),
