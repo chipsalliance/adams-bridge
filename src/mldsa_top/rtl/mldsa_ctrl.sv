@@ -123,21 +123,94 @@ module mldsa_ctrl
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
+  `MLDSA_CUSTOM_INF
+
   //Interrupts
   output logic error_intr,
   output logic notif_intr
 
   );
 
-  logic [2:0] cmd_reg;
-
+  mldsa_reg__in_t mldsa_reg_hwif_in;
+  mldsa_reg__out_t mldsa_reg_hwif_out;
   logic mldsa_ready;
+  logic mldsa_valid_reg;
+
+//Custom keyvault logic for Caliptra
+
+  logic kv_seed_write_en;
+  logic [$clog2(SEED_NUM_DWORDS)-1:0] kv_seed_write_offset;
+  logic [DATA_WIDTH-1:0] kv_seed_write_data;
+  kv_read_ctrl_reg_t kv_seed_read_ctrl_reg;
+  kv_error_code_e kv_seed_error;
+  logic kv_seed_ready, kv_seed_done;
+  //KV Seed Data Present
+  logic kv_seed_data_present;
+  logic kv_seed_data_present_set, kv_seed_data_present_reset;
+
+  always_comb begin: mldsa_kv_ctrl_reg
+    //ready when fsm is not busy
+    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.ERROR.next = kv_seed_error;
+    //ready when fsm is not busy
+    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.READY.next = kv_seed_ready;
+    //set valid when fsm is done
+    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.VALID.hwset = kv_seed_done;
+    //clear valid when new request is made
+    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
+    //clear enable when busy
+    mldsa_reg_hwif_in.ecc_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
+  end
+
+  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
+
+  //Detect keyvault data coming in to lock api registers and protect outputs
+  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en;
+  always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
+
+  //Read SEED
+  kv_read_client #(
+    .DATA_WIDTH(SEED_NUM_DWORDS*32),
+    .PAD(0)
+  )
+  mldsa_seed_kv_read
+  (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize),
+
+    //client control register
+    .read_ctrl_reg(kv_seed_read_ctrl_reg),
+
+    //interface with kv
+    .kv_read(kv_read),
+    .kv_resp(kv_rd_resp),
+
+    //interface with client
+    .write_en(kv_seed_write_en),
+    .write_offset(kv_seed_write_offset),
+    .write_data(kv_seed_write_data),
+
+    .error_code(kv_seed_error),
+    .kv_ready(kv_seed_ready),
+    .read_done(kv_seed_done)
+);
+
+always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
+  if (!rst_b) begin
+    kv_seed_data_present <= '0;
+  end else begin
+    kv_seed_data_present <= kv_seed_data_present_set ? '1 :
+                            kv_seed_data_present_reset ? '0 : kv_seed_data_present;
+  end
+end
+
+
+  logic [2:0] cmd_reg;
 
   logic keygen_process, keygen_process_nxt;
   logic signing_process, signing_process_nxt;
   logic verifying_process, verifying_process_nxt;
   logic keygen_signing_process, keygen_signing_process_nxt;
-  logic mldsa_valid_reg;
   logic keygen_done;
   logic signature_done;
   logic verify_done;
@@ -174,9 +247,6 @@ module mldsa_ctrl
 
   mldsa_ctrl_fsm_state_e ctrl_fsm_ps, ctrl_fsm_ns;
   mldsa_ctrl_fsm_state_e sign_ctrl_fsm_ps, sign_ctrl_fsm_ns;
-
-  mldsa_reg__in_t mldsa_reg_hwif_in;
-  mldsa_reg__out_t mldsa_reg_hwif_out;
 
   mldsa_privkey_u privatekey_reg;
   mldsa_signature_u signature_reg;
@@ -244,9 +314,11 @@ module mldsa_ctrl
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = '0;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize;
+
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (kv_seed_write_en & (kv_seed_write_offset == dword)) & ~zeroize;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = kv_seed_write_data;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready & ~kv_seed_data_present;
     end
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++)begin

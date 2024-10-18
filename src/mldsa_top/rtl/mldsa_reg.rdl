@@ -127,7 +127,7 @@ addrmap mldsa_reg {
         default hw = rw;
         default we = true;
         default resetsignal = reset_b;
-        field {desc = "Input seed field"; swwe = mldsa_ready; hwclr;} SEED[32] = 32'b0;
+        field {desc = "Input seed field"; swwe; hwclr;} SEED[32] = 32'b0;
     
     } MLDSA_SEED[8];
 
@@ -229,6 +229,7 @@ addrmap mldsa_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
+`include "mldsa_custom_reg.rdl"
 
     ////////////////////////////////////////////////////////////////
     // Interrupts
@@ -496,5 +497,5 @@ addrmap mldsa_reg {
     /* -----------------------
      * Register File instance
      * ----------------------- */
-    intr_block_t intr_block_rf @0x6000;
+    intr_block_t intr_block_rf @0x7000;
 };

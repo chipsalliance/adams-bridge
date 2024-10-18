@@ -54,6 +54,7 @@ package mldsa_reg_pkg;
     typedef struct packed{
         logic [31:0] next;
         logic we;
+        logic swwe;
         logic hwclr;
     } mldsa_reg__MLDSA_SEED__SEED__in_t;
 
@@ -114,6 +115,33 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } kv_read_ctrl_reg__read_en__in_t;
+
+    typedef struct packed{
+        kv_read_ctrl_reg__read_en__in_t read_en;
+    } kv_read_ctrl_reg__in_t;
+
+    typedef struct packed{
+        logic next;
+    } kv_status_reg__READY__in_t;
+
+    typedef struct packed{
+        logic hwclr;
+        logic hwset;
+    } kv_status_reg__VALID__in_t;
+
+    typedef struct packed{
+        logic [7:0] next;
+    } kv_status_reg__ERROR__in_t;
+
+    typedef struct packed{
+        kv_status_reg__READY__in_t READY;
+        kv_status_reg__VALID__in_t VALID;
+        kv_status_reg__ERROR__in_t ERROR;
+    } kv_status_reg__in_t;
+
+    typedef struct packed{
         logic hwset;
     } mldsa_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02__error_internal_sts_enable_d33001bb_next_52b75ffa_resetsignal_0d7eaa27__in_t;
 
@@ -151,6 +179,8 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGNATURE__external__in_t [1157-1:0]MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__in_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t MLDSA_PRIVKEY_IN;
+        kv_read_ctrl_reg__in_t mldsa_kv_rd_seed_ctrl;
+        kv_status_reg__in_t mldsa_kv_rd_seed_status;
         mldsa_reg__intr_block_t__in_t intr_block_rf;
     } mldsa_reg__in_t;
 
@@ -238,6 +268,29 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t;
 
     typedef struct packed{
+        logic value;
+    } kv_read_ctrl_reg__read_en__out_t;
+
+    typedef struct packed{
+        logic [4:0] value;
+    } kv_read_ctrl_reg__read_entry__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_read_ctrl_reg__pcr_hash_extend__out_t;
+
+    typedef struct packed{
+        logic [24:0] value;
+    } kv_read_ctrl_reg__rsvd__out_t;
+
+    typedef struct packed{
+        kv_read_ctrl_reg__read_en__out_t read_en;
+        kv_read_ctrl_reg__read_entry__out_t read_entry;
+        kv_read_ctrl_reg__pcr_hash_extend__out_t pcr_hash_extend;
+        kv_read_ctrl_reg__rsvd__out_t rsvd;
+    } kv_read_ctrl_reg__out_t;
+
+    typedef struct packed{
         logic intr;
     } mldsa_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a__out_t;
 
@@ -271,8 +324,15 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGNATURE__external__out_t [1157-1:0]MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t MLDSA_PRIVKEY_IN;
+        kv_read_ctrl_reg__out_t mldsa_kv_rd_seed_ctrl;
         mldsa_reg__intr_block_t__out_t intr_block_rf;
     } mldsa_reg__out_t;
+
+    typedef enum logic [31:0] {
+        kv_status_reg__ERROR__kv_error_e__SUCCESS = 'h0,
+        kv_status_reg__ERROR__kv_error_e__KV_READ_FAIL = 'h1,
+        kv_status_reg__ERROR__kv_error_e__KV_WRITE_FAIL = 'h2
+    } kv_status_reg__ERROR__kv_error_e_e;
 
     localparam MLDSA_REG_ADDR_WIDTH = 32'd15;
 

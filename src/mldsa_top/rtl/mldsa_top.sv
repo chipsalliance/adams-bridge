@@ -48,6 +48,8 @@ module mldsa_top
   output logic                      hreadyout_o,
   output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
 
+  `MLDSA_CUSTOM_INF
+
   output logic                      error_intr,
   output logic                      notif_intr
 
@@ -354,8 +356,8 @@ mldsa_ctrl mldsa_control_inst
   .lfsr_seed_o(lfsr_seed),
 
   .error_intr(error_intr),
-  .notif_intr(notif_intr)
-
+  .notif_intr(notif_intr),
+  .* //custom interface connects by name
 );
 
 mldsa_sampler_top sampler_top_inst
@@ -1106,9 +1108,6 @@ always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
   .raddr_i(mldsa_mem_raddr[3][MLDSA_MEM_INST3_ADDR_W-1:0]),
   .rdata_o(mldsa_mem_rdata[3])
 );
-
-
-
 
 `ABR_ASSERT_MUTEX(ERR_MEM_0_0_RD_ACCESS_MUTEX, {ntt_mem_re0_bank[0][0],pwo_a_mem_re0_bank[0][0],pwo_b_mem_re0_bank[0][0],ntt_mem_re0_bank[1][0],
                                                 pwo_a_mem_re0_bank[1][0],pwo_b_mem_re0_bank[1][0],decomp_mem_re0_bank[0][0],decomp_mem_re0_bank[1][0],

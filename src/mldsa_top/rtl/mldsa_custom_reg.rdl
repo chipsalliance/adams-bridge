@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-`ifndef ABR_CFG_SV
-`define ABR_CFG_SV
+////////////////////////////////////////////////////////////////
+// Custom Registers
+// Integrators can customize this file to Instantiate
+// any additional registers needed for their design
 
-  `define ABR_ICG           abr_clk_gate
-  `define ABR_MEM           abr_1r1w_ram
-  
-  `define MLDSA_CUSTOM_INF // KV interface\
-                           output kv_read_t kv_read,\
-                           input kv_rd_resp_t kv_rd_resp,
+`include "kv_def.rdl"
 
-`endif
+    kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl @0x6000;
+    kv_status_reg mldsa_kv_rd_seed_status;
