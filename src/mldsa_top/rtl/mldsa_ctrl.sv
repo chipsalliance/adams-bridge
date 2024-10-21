@@ -34,10 +34,10 @@ module mldsa_ctrl
   output logic zeroize,
 
 `ifdef RV_FPGA_SCA
-  output wire NTT_trigger,
-  output wire PWM_trigger,
-  output wire PWA_trigger,
-  output wire INTT_trigger,
+  output logic NTT_trigger,
+  output logic PWM_trigger,
+  output logic PWA_trigger,
+  output logic INTT_trigger,
 `endif
 
   output mldsa_reg__in_t mldsa_reg_hwif_in_o,
@@ -1413,18 +1413,104 @@ mldsa_seq_sec mldsa_seq_sec_inst
   .clk(clk),
   .rst_b(rst_b),
   .zeroize(zeroize),
-
-`ifdef RV_FPGA_SCA
-  .NTT_trigger(NTT_trigger),
-  .PWM_trigger(PWM_trigger),
-  .PWA_trigger(PWA_trigger),
-  .INTT_trigger(INTT_trigger),
-`endif
-
+  
   .en_i(seq_en),
   .addr_i(sign_prog_cntr_nxt),
   .data_o(sign_instr)
 );
+
+
+  
+`ifdef RV_FPGA_SCA
+    //===========================================================================
+    //
+    //      ************** TRIGER Functionality **************
+    //
+    //===========================================================================
+    logic NTT_raw_signal, PWM_raw_signal, PWA_raw_signal, INTT_raw_signal;
+    gen_pulse_custom NTT_pulse
+    (
+        .clk(clk),
+        .reset_n(rst_b),
+        .raw_signal(NTT_raw_signal),
+        .trigger_pulse(NTT_trigger)
+    );
+
+    gen_pulse_custom PWM_pulse
+    (
+        .clk(clk),
+        .reset_n(rst_b),
+        .raw_signal(PWM_raw_signal),
+        .trigger_pulse(PWM_trigger)
+    );
+    
+    gen_pulse_custom PWA_pulse
+    (
+        .clk(clk),
+        .reset_n(rst_b),
+        .raw_signal(PWA_raw_signal),
+        .trigger_pulse(PWA_trigger)
+    );
+
+    gen_pulse_custom INTT_pulse
+    (
+        .clk(clk),
+        .reset_n(rst_b),
+        .raw_signal(INTT_raw_signal),
+        .trigger_pulse(INTT_trigger)
+    );
+
+    always_ff @(posedge clk or negedge rst_b) begin
+        if (!rst_b) begin
+            NTT_raw_signal <= 'h0;
+            PWM_raw_signal <= 'h0;
+            PWA_raw_signal <= 'h0;
+            INTT_raw_signal <= 'h0;
+        end 
+        else if (zeroize) begin
+            NTT_raw_signal <= 'h0;
+            PWM_raw_signal <= 'h0;
+            PWA_raw_signal <= 'h0;
+            INTT_raw_signal <= 'h0;
+        end 
+        else begin
+            if (seq_en) begin
+                unique case(sign_prog_cntr_nxt)
+                    MLDSA_SIGN_VALID_S : begin //NTT(C)
+                        NTT_raw_signal <= 'h1;
+                        PWM_raw_signal <= 'h0;
+                        PWA_raw_signal <= 'h0;
+                        INTT_raw_signal <= 'h0;
+                    end
+                    MLDSA_SIGN_VALID_S+2 : begin
+                        NTT_raw_signal <= 'h0;
+                        PWM_raw_signal <= 'h1;
+                        PWA_raw_signal <= 'h0;
+                        INTT_raw_signal <= 'h0;
+                    end
+                    MLDSA_SIGN_VALID_S+4 : begin
+                        NTT_raw_signal <= 'h0;
+                        PWM_raw_signal <= 'h0;
+                        PWA_raw_signal <= 'h1;
+                        INTT_raw_signal <= 'h0;
+                    end
+                    MLDSA_SIGN_VALID_S+3 : begin
+                        NTT_raw_signal <= 'h0;
+                        PWM_raw_signal <= 'h0;
+                        PWA_raw_signal <= 'h0;
+                        INTT_raw_signal <= 'h1;
+                    end
+                    default : begin
+                        NTT_raw_signal <= 'h0;
+                        PWM_raw_signal <= 'h0;
+                        PWA_raw_signal <= 'h0;
+                        INTT_raw_signal <= 'h0;
+                    end
+                endcase 
+            end
+        end
+    end
+`endif
 
   `ABR_ASSERT_KNOWN(ERR_CTRL_FSM_X, {ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SIGN_CTRL_FSM_X, {sign_ctrl_fsm_ps}, clk, !rst_b)
