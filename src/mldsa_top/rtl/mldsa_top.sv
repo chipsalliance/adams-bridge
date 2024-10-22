@@ -411,6 +411,7 @@ mldsa_sampler_top sampler_top_inst
 
 assign sampler_ntt_dv[1] = 0; //no sampler interface to secondary ntt
 
+`ifndef RV_CW305_FPGA_SCA
 generate
   for (genvar g_inst = 0; g_inst < 2; g_inst++) begin : ntt_gen
     //NTT
@@ -495,6 +496,94 @@ generate
   );
   end
 endgenerate
+
+`else
+
+  logic ntt_busy_f_NTT, ntt_done_f_NTT;
+  mem_if_t ntt_mem_wr_req_i, ntt_mem_rd_req_i, pwm_a_rd_req_i,pwm_b_rd_req_i;
+  logic [MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data_i;
+  // Outputs to NTT
+  logic ntt_enable_o;
+  mode_t ntt_mode_o;
+  logic accumulate_o;
+  logic sampler_valid_o;
+  logic sampler_ntt_mode_o;
+  ntt_mem_addr_t ntt_mem_base_addr_o;
+  pwo_mem_addr_t pwo_mem_base_addr_o;
+
+  ntt_top #(
+    .REG_SIZE(REG_SIZE),
+    .MLDSA_Q(MLDSA_Q),
+    .MLDSA_N(MLDSA_N),
+    .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
+  )
+  ntt_top_inst0 (
+    .clk(clk),
+    .reset_n(rst_b),
+    .zeroize(zeroize_reg),
+
+    .mode(ntt_mode_o),
+    .ntt_enable(ntt_enable_o),
+    .ntt_mem_base_addr(ntt_mem_base_addr_o),
+    .pwo_mem_base_addr(pwo_mem_base_addr_o),
+    .accumulate(accumulate_o),
+    .sampler_valid(sampler_valid_o),
+
+    //NTT mem IF
+    .mem_wr_req(ntt_mem_wr_req_i),
+    .mem_rd_req(ntt_mem_rd_req_i),
+    .mem_wr_data(ntt_mem_wr_data_i),
+    .mem_rd_data(ntt_mem_rd_data[0]),
+    //PWM mem IF
+    .pwm_a_rd_req(pwm_a_rd_req_i),
+    .pwm_b_rd_req(pwm_b_rd_req_i),
+    .pwm_a_rd_data(pwm_a_rd_data[0]),
+    .pwm_b_rd_data(sampler_ntt_mode_o ? sampler_ntt_data : pwm_b_rd_data[0]),
+    .ntt_busy(ntt_busy_f_NTT),
+    .ntt_done(ntt_done_f_NTT)
+  );
+
+  ntt_optimizer ntt_engine_reducer
+  (
+    .clk(clk),
+    .reset_n(rst_b),
+
+    .ntt_enable(ntt_enable),
+    .ntt_mode(ntt_mode),
+    .ntt_mem_base_addr(ntt_mem_base_addr),
+    .pwo_mem_base_addr(pwo_mem_base_addr),
+
+    .sampler_ntt_dv(sampler_ntt_dv),
+
+    .ntt_busy(ntt_busy_f_NTT),
+    .ntt_done(ntt_done_f_NTT),
+
+    .ntt_mem_wr_req_i(ntt_mem_wr_req_i),
+    .ntt_mem_rd_req_i(ntt_mem_rd_req_i),
+    .ntt_mem_wr_data_i(ntt_mem_wr_data_i),
+    .pwm_a_rd_req_i(pwm_a_rd_req_i),
+    .pwm_b_rd_req_i(pwm_b_rd_req_i),
+
+
+    .ntt_mem_wr_req_o(ntt_mem_wr_req),
+    .ntt_mem_rd_req_o(ntt_mem_rd_req),
+    .ntt_mem_wr_data_o(ntt_mem_wr_data),
+    .pwm_a_rd_req_o(pwm_a_rd_req),
+    .pwm_b_rd_req_o(pwm_b_rd_req),
+
+    .ntt_busy_o(ntt_busy),
+    .ntt_done_o(ntt_done),
+
+    .ntt_enable_o(ntt_enable_o),
+    .ntt_mode_o(ntt_mode_o),
+    .accumulate_o(accumulate_o),
+    .sampler_valid_o(sampler_valid_o),
+    .sampler_ntt_mode_o(sampler_ntt_mode_o),
+    .ntt_mem_base_addr_o(ntt_mem_base_addr_o),
+    .pwo_mem_base_addr_o(pwo_mem_base_addr_o)
+
+  );
+`endif
 
 //aux functions
 power2round_top

@@ -941,8 +941,14 @@ module mldsa_ctrl
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
         if (keygen_signing_process) begin
-          prog_cntr_nxt = MLDSA_SIGN_S;
-          signing_process_nxt  = 1;
+          if (sign_prog_cntr == MLDSA_SIGN_CHECK_C_VLD) begin
+            prog_cntr_nxt = MLDSA_SIGN_S;
+            signing_process_nxt  = 1;
+          end
+          else begin
+            prog_cntr_nxt = MLDSA_KG_JUMP_SIGN;
+            signing_process_nxt  = 0;
+          end
         end
         else begin
           prog_cntr_nxt = prog_cntr + 1;

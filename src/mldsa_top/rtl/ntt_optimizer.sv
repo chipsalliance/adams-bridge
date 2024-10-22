@@ -1,18 +1,30 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//Sequencer for MLDSA
+//MLDSA functions
+//  Signing initial steps
+//  Signing validity checks
+//  Signing signature generation
+
+`include "mldsa_config_defines.svh"
+
 module ntt_optimizer 
-  import abr_prim_alert_pkg::*;
-  import mldsa_reg_pkg::*;
-  import mldsa_params_pkg::*;
-  import mldsa_ctrl_pkg::*;
-  import mldsa_sampler_pkg::*;
-  import abr_sha3_pkg::*;
-  import ntt_defines_pkg::*;
-  import decompose_defines_pkg::*;
-  #(
-    // Top-level parameters
-    parameter AHB_ADDR_WIDTH   = 32,
-    parameter AHB_DATA_WIDTH   = 64,
-    parameter CLIENT_DATA_WIDTH = 32
-  ) (
+    import mldsa_params_pkg::*;
+    import mldsa_ctrl_pkg::*;
+    import ntt_defines_pkg::*;
+  (
     input logic clk,
     input logic reset_n,
 
@@ -22,285 +34,167 @@ module ntt_optimizer
     input ntt_mem_addr_t [1:0] ntt_mem_base_addr,
     input pwo_mem_addr_t [1:0] pwo_mem_base_addr,
 
+    // Inputs from sampler
+    input logic [1:0] sampler_ntt_dv, 
+
+    // Inputs from NTT
+    input logic ntt_busy,
+    input logic ntt_done,
+
+    input mem_if_t ntt_mem_wr_req_i,
+    input mem_if_t ntt_mem_rd_req_i,
+    input logic [MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data_i,
+
+    input mem_if_t pwm_a_rd_req_i,
+    input mem_if_t pwm_b_rd_req_i,
+
+
+    // Outputs to memory MUX
+    output mem_if_t [1:0] ntt_mem_wr_req_o,
+    output mem_if_t [1:0] ntt_mem_rd_req_o,
+    output logic [1:0][MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data_o,
+
+    output mem_if_t [1:0] pwm_a_rd_req_o,
+    output mem_if_t [1:0] pwm_b_rd_req_o,
+
     // Outputs to controller
-    output logic [1:0] ntt_busy,
+    output logic [1:0] ntt_busy_o,
+    output logic [1:0] ntt_done_o,
 
-    // Interface to NTT engine
-    output logic ntt_start,
-    output mldsa_ntt_mode_e ntt_mode_o,
+    // Outputs to NTT
+    output logic ntt_enable_o,
+    output mode_t ntt_mode_o,
+    output logic accumulate_o,
+    output logic sampler_valid_o,
+    output logic sampler_ntt_mode_o,
     output ntt_mem_addr_t ntt_mem_base_addr_o,
-    output pwo_mem_addr_t pwo_mem_base_addr_o,
-    output logic sampler_valid_o,   // Added sampler_valid_o
-    input logic ntt_done            // Signal from NTT engine indicating operation is done
-);
-
-    // Constants
-    localparam DELAY_CYCLES = 4;
-
-    // Type definitions
-    typedef enum logic [3:0] {
-        NTT_IDLE,
-        NTT_RUNNING0,
-        NTT_RUNNING1,
-        NTT_DELAY_BEFORE_START1,
-        NTT_DELAY_BEFORE_START0,
-        NTT_RUNNING01,
-        NTT_RUNNING10,
-        NTT_WAITING_TO_RELEASE_BUSY0,
-        NTT_WAITING_TO_RELEASE_BUSY1,
-        NTT_WAITING_TO_RELEASE_BUSY10,
-        NTT_WAITING_TO_RELEASE_BUSY01
-    } ntt_engine_state_t;
-
-    typedef struct {
-        mldsa_ntt_mode_e ntt_mode;
-        ntt_mem_addr_t ntt_mem_base_addr;
-        pwo_mem_addr_t pwo_mem_base_addr;
-        logic valid; // Indicates whether a valid request is stored
-    } ntt_request_t;
-
-    // Internal signals
-    ntt_engine_state_t ntt_engine_state;
-    logic ntt_active_request; // 0 for NTT_0, 1 for NTT_1
-    ntt_request_t ntt0_req, ntt1_req;
-    logic [3:0] delay_counter; // For delay cycles before releasing busy signals
-
-    // Internal registers for outputs
-    logic ntt_start_reg;
-    mldsa_ntt_mode_e ntt_mode_o_reg;
-    ntt_mem_addr_t ntt_mem_base_addr_o_reg;
-    pwo_mem_addr_t pwo_mem_base_addr_o_reg;
-    logic sampler_valid_o_reg;
-    logic [1:0] busy_valid_disable;
-    // Assign outputs
-    assign ntt_start             = ntt_start_reg;
-    assign ntt_mode_o            = ntt_mode_o_reg;
-    assign ntt_mem_base_addr_o   = ntt_mem_base_addr_o_reg;
-    assign pwo_mem_base_addr_o   = pwo_mem_base_addr_o_reg;
-    assign sampler_valid_o       = sampler_valid_o_reg;
-
-    // Reset and request capturing
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            ntt_engine_state       <= NTT_IDLE;
-            ntt_active_request     <= 0;
-            ntt_start_reg          <= 0;
-            ntt0_req.valid         <= 0;
-            ntt_busy[0]            <= 0;
-            ntt1_req.valid         <= 0;
-            ntt_busy[1]            <= 0;
-            delay_counter          <= 0;
-            sampler_valid_o_reg    <= 0;
-            busy_valid_disable     <= 0;
-        end else begin
-            // Capture incoming requests
+    output pwo_mem_addr_t pwo_mem_base_addr_o
+  );
+  
+  // Internal registers
+  logic using_ntt0;
+  
+  logic ntt_enable_r;
+  mldsa_ntt_mode_e ntt_mode_r;
+  logic accumulate_r;
+  logic sampler_valid_r;
+  ntt_mem_addr_t ntt_mem_base_addr_r;
+  pwo_mem_addr_t pwo_mem_base_addr_r;
+  
+  // Latch inputs and select NTT based on ntt_enable signals
+  always_ff @(posedge clk or negedge reset_n) begin
+      if (!reset_n) begin
+          using_ntt0 <= 0;
+          ntt_enable_r <= 0;
+          ntt_mode_r <= MLDSA_NTT_NONE;
+          ntt_mem_base_addr_r <= '0;
+          pwo_mem_base_addr_r <= '0;
+      end else begin
+            ntt_enable_r <= ntt_enable[0] | ntt_enable[1];
             if (ntt_enable[0]) begin
-                ntt0_req.valid               <= 1;
-                ntt0_req.ntt_mode            <= ntt_mode[0];
-                ntt0_req.ntt_mem_base_addr   <= ntt_mem_base_addr[0];
-                ntt0_req.pwo_mem_base_addr   <= pwo_mem_base_addr[0];
-                ntt_busy[0]                  <= 3;
+                using_ntt0 <= 1;
+                ntt_mode_r <= ntt_mode[0];
+                ntt_mem_base_addr_r <= ntt_mem_base_addr[0];
+                pwo_mem_base_addr_r <= pwo_mem_base_addr[0];
+            end else if (ntt_enable[1]) begin
+                using_ntt0 <= 0;
+                ntt_mode_r <= ntt_mode[1];
+                ntt_mem_base_addr_r <= ntt_mem_base_addr[1];
+                pwo_mem_base_addr_r <= pwo_mem_base_addr[1];
             end
-            else if (busy_valid_disable[0]==1'b1)begin
-                ntt0_req.valid               <= 0;
-                ntt0_req.ntt_mode            <= ntt_mode[1];
-                ntt0_req.ntt_mem_base_addr   <= 0;
-                ntt0_req.pwo_mem_base_addr   <= 0;
-                ntt_busy[0]                  <= 0;
-            end
+      end
+  end
+  
+  // Output logic to NTT engine
+  always_comb begin
+      if (using_ntt0) begin
+          ntt_enable_o = ntt_enable_r;
+          ntt_mem_base_addr_o = ntt_mem_base_addr_r;
+          pwo_mem_base_addr_o = pwo_mem_base_addr_r;
+      end else begin
+          ntt_enable_o = ntt_enable[1];
+          ntt_mem_base_addr_o = ntt_mem_base_addr[1];
+          pwo_mem_base_addr_o = pwo_mem_base_addr[1];
+      end
+  end
+  
+  // Output logic to controller
+  always_comb begin
+      ntt_busy_o = 2'b00;
+      ntt_done_o = 2'b00;
+      if (using_ntt0) begin
+          ntt_busy_o[0] = ntt_busy;
+          ntt_done_o[0] = ntt_done;
+      end else begin
+          ntt_busy_o[1] = ntt_busy;
+          ntt_done_o[1] = ntt_done;
+      end
+  end
 
-            if (ntt_enable[1]) begin
-                ntt1_req.valid               <= 1;
-                ntt1_req.ntt_mode            <= ntt_mode[1];
-                ntt1_req.ntt_mem_base_addr   <= ntt_mem_base_addr[1];
-                ntt1_req.pwo_mem_base_addr   <= pwo_mem_base_addr[1];
-                ntt_busy[1]                  <= 1;
-            end
-            else if (busy_valid_disable[1]==1'b1)begin
-                ntt1_req.valid               <= 0;
-                ntt1_req.ntt_mode            <= ntt_mode[1];
-                ntt1_req.ntt_mem_base_addr   <= 0;
-                ntt1_req.pwo_mem_base_addr   <= 0;
-                ntt_busy[1]                  <= 0;
-            end
+  always_comb begin
+
+    ntt_mem_wr_req_o[0] = ntt_mem_wr_req_i;
+    ntt_mem_rd_req_o[0] = ntt_mem_rd_req_i;
+    ntt_mem_wr_data_o[0] = ntt_mem_wr_data_i;
+    pwm_a_rd_req_o[0] = pwm_a_rd_req_i;
+    pwm_b_rd_req_o[0] = pwm_b_rd_req_i;
+
+    ntt_mem_wr_req_o[1] = '{rd_wr_en: RW_IDLE, addr: '0};
+    ntt_mem_rd_req_o[1] = '{rd_wr_en: RW_IDLE, addr: '0};
+    ntt_mem_wr_data_o[1] = '0;
+    pwm_a_rd_req_o[1]    = '{rd_wr_en: RW_IDLE, addr: '0};
+    pwm_b_rd_req_o[1]    = '{rd_wr_en: RW_IDLE, addr: '0};
+
+  end
 
 
-            // NTT engine state machine
-            case (ntt_engine_state)
-                NTT_IDLE: begin
-                    busy_valid_disable     <= 0;
-                    if (ntt0_req.valid) begin
-                        // Start processing NTT_0 request
-                        ntt_mode_o_reg            <= ntt0_req.ntt_mode;
-                        ntt_mem_base_addr_o_reg   <= ntt0_req.ntt_mem_base_addr;
-                        pwo_mem_base_addr_o_reg   <= ntt0_req.pwo_mem_base_addr;
-                        ntt_start_reg             <= 1;
-                        sampler_valid_o_reg       <= 1; // Enable sampler_valid_o for NTT_0
-                        ntt_engine_state          <= NTT_RUNNING0;
-                    end else if (ntt1_req.valid) begin
-                        // Start processing NTT_1 request
-                        ntt_mode_o_reg            <= ntt1_req.ntt_mode;
-                        ntt_mem_base_addr_o_reg   <= ntt1_req.ntt_mem_base_addr;
-                        pwo_mem_base_addr_o_reg   <= ntt1_req.pwo_mem_base_addr;
-                        ntt_start_reg             <= 1;
-                        sampler_valid_o_reg       <= 0; // Disable sampler_valid_o for NTT_1
-                        ntt_engine_state          <= NTT_RUNNING1;
-                    end else begin
-                        ntt_start_reg             <= 0;
-                    end
-                end
-                NTT_RUNNING0: begin
-                    ntt_start_reg <= 0; // Deassert start
-                    busy_valid_disable     <= 0;
-                    if (ntt_done && ~ntt_start_reg) begin
-                        // Operation completed
-                        if (ntt1_req.valid) begin
-                            // Start processing NTT_1 request                            
-                            delay_counter       <= 0;
-                            sampler_valid_o_reg       <= 0; // Disable sampler_valid_o for NTT_1
-                            ntt_engine_state          <= NTT_DELAY_BEFORE_START1;
-                        end else begin
-                            // No more requests
-                            ntt_engine_state    <= NTT_WAITING_TO_RELEASE_BUSY0;
-                            delay_counter       <= 0;
-                        end
-                    end
-                end
-                NTT_RUNNING1: begin
-                    busy_valid_disable     <= 0;
-                    ntt_start_reg <= 0; // Deassert start
-                    if (ntt_done && ~ntt_start_reg) begin
-                        // Operation completed
-                        if (ntt0_req.valid) begin
-                        // Start processing NTT_0 request                            
-                            delay_counter       <= 0;
-                            sampler_valid_o_reg <= 1; // Disable sampler_valid_o when done
-                            ntt_engine_state          <= NTT_DELAY_BEFORE_START0;
-                        end else begin
-                            // No more requests
-                            ntt_engine_state    <= NTT_WAITING_TO_RELEASE_BUSY1;
-                            delay_counter       <= 0;
-                            sampler_valid_o_reg <= 0; // Disable sampler_valid_o when done
-                        end
-                    end
-                end
-                // Delay before starting NTT_1
-                NTT_DELAY_BEFORE_START1: begin
-                    ntt_start_reg <= 0;
-                    busy_valid_disable     <= 0;
-                    if (delay_counter < DELAY_CYCLES - 1) begin
-                        delay_counter <= delay_counter + 1;
-                    end else begin
-                        // Start processing NTT_1 request
-                        ntt_mode_o_reg            <= ntt1_req.ntt_mode;
-                        ntt_mem_base_addr_o_reg   <= ntt1_req.ntt_mem_base_addr;
-                        pwo_mem_base_addr_o_reg   <= ntt1_req.pwo_mem_base_addr;
-                        ntt_start_reg             <= 1;
-                        sampler_valid_o_reg       <= 0; // Disable sampler_valid_o for NTT_1
-                        ntt_engine_state          <= NTT_RUNNING01;
-                    end
-                end
-                // Delay before starting NTT_0
-                NTT_DELAY_BEFORE_START0: begin
-                    ntt_start_reg <= 0;
-                    busy_valid_disable     <= 0;
-                    if (delay_counter < DELAY_CYCLES - 1) begin
-                        delay_counter <= delay_counter + 1;
-                    end else begin
-                        // Start processing NTT_0 request
-                        ntt_mode_o_reg            <= ntt0_req.ntt_mode;
-                        ntt_mem_base_addr_o_reg   <= ntt0_req.ntt_mem_base_addr;
-                        pwo_mem_base_addr_o_reg   <= ntt0_req.pwo_mem_base_addr;
-                        ntt_start_reg             <= 1;
-                        sampler_valid_o_reg       <= 1; // Enable sampler_valid_o for NTT_0
-                        ntt_engine_state          <= NTT_RUNNING10;
-                    end
-                end
-                
-                NTT_RUNNING10: begin
-                    busy_valid_disable     <= 0;
-                    ntt_start_reg <= 0; // Deassert start
-                    if (ntt_done && ~ntt_start_reg) begin
-                        // Operation completed
-                        ntt_engine_state    <= NTT_WAITING_TO_RELEASE_BUSY10;
-                        delay_counter       <= 0;
-                        sampler_valid_o_reg <= 0; // Disable sampler_valid_o when done
-                    end
-                end
-                
-                NTT_RUNNING01: begin
-                    busy_valid_disable     <= 0;
-                    ntt_start_reg <= 0; // Deassert start
-                    if (ntt_done && ~ntt_start_reg) begin
-                        // Operation completed
-                        ntt_engine_state    <= NTT_WAITING_TO_RELEASE_BUSY01;
-                        delay_counter       <= 0;
-                        sampler_valid_o_reg <= 0; // Disable sampler_valid_o when done
-                    end
-                end
+    always_comb begin
+        ntt_mode_o = '0;
+        accumulate_o = '0;
+        sampler_valid_o = 0;
+        sampler_ntt_mode_o = 0;
 
-                NTT_WAITING_TO_RELEASE_BUSY0: begin
-                    if (delay_counter < DELAY_CYCLES) begin
-                        delay_counter <= delay_counter + 1;
-                    end else begin
-                        ntt_engine_state       <= NTT_IDLE;
-                        delay_counter          <= 0;
-                    end
-                    if (delay_counter == 0) begin
-                        busy_valid_disable     <= 1;
-                    end else begin
-                        busy_valid_disable     <= 0;
-                    end
-                end
-
-                NTT_WAITING_TO_RELEASE_BUSY1: begin
-                    if (delay_counter < DELAY_CYCLES) begin
-                        delay_counter <= delay_counter + 1;
-                    end else begin
-                        ntt_engine_state       <= NTT_IDLE;
-                        delay_counter          <= 0;
-                    end
-                    if (delay_counter == 0) begin
-                        busy_valid_disable     <= 2;
-                    end else begin
-                        busy_valid_disable     <= 0;
-                    end
-                end
-
-                
-                NTT_WAITING_TO_RELEASE_BUSY10: begin
-                    if (delay_counter < DELAY_CYCLES) begin
-                        delay_counter <= delay_counter + 1;
-                    end else begin
-                        ntt_engine_state       <= NTT_WAITING_TO_RELEASE_BUSY0;
-                        delay_counter          <= 0;
-                    end
-                    if (delay_counter == 0) begin
-                        busy_valid_disable     <= 2;
-                    end else begin
-                        busy_valid_disable     <= 0;
-                    end
-                end
-                NTT_WAITING_TO_RELEASE_BUSY01: begin
-                    if (delay_counter < DELAY_CYCLES) begin
-                        delay_counter <= delay_counter + 1;
-                        // busy_valid_disable     <= 1;
-                    end else begin
-                        ntt_engine_state       <= NTT_WAITING_TO_RELEASE_BUSY1;
-                        delay_counter          <= 0;
-                    end
-                    if (delay_counter == 0) begin
-                        busy_valid_disable     <= 1;
-                    end else begin
-                        busy_valid_disable     <= 0;
-                    end
-                end
-
-                default: begin
-                    ntt_engine_state <= NTT_IDLE;
-                end
-            endcase
+      unique case (ntt_mode_r) inside
+        MLDSA_NTT_NONE: begin
         end
+        MLDSA_NTT: begin
+            ntt_mode_o = ct;
+        end
+        MLDSA_INTT: begin
+            ntt_mode_o = gs;
+        end
+        MLDSA_PWM_SMPL: begin
+            ntt_mode_o = pwm;
+            sampler_valid_o = sampler_ntt_dv[using_ntt0];
+            sampler_ntt_mode_o = 1;
+        end
+        MLDSA_PWM_ACCUM_SMPL: begin
+            ntt_mode_o = pwm;
+            accumulate_o = 1;
+            sampler_valid_o = sampler_ntt_dv[using_ntt0];
+            sampler_ntt_mode_o = 1;
+        end
+        MLDSA_PWM: begin
+            ntt_mode_o = pwm;
+            sampler_valid_o = 1;
+        end
+        MLDSA_PWM_ACCUM: begin
+            ntt_mode_o = pwm;
+            accumulate_o = 1;
+            sampler_valid_o = 1;
+        end
+        MLDSA_PWA: begin
+            ntt_mode_o = pwa;
+            sampler_valid_o = 1;
+        end
+        MLDSA_PWS: begin
+            ntt_mode_o = pws;
+            sampler_valid_o = 1;
+        end
+        default: begin
+        end
+      endcase 
     end
-
-endmodule
+  
+  endmodule
+  
