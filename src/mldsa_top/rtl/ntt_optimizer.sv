@@ -72,7 +72,7 @@ module ntt_optimizer
   );
   
   // Internal registers
-  logic using_ntt0;
+  logic [1:0] using_ntt;
   
   logic ntt_enable_r;
   mldsa_ntt_mode_e ntt_mode_r;
@@ -84,20 +84,20 @@ module ntt_optimizer
   // Latch inputs and select NTT based on ntt_enable signals
   always_ff @(posedge clk or negedge reset_n) begin
       if (!reset_n) begin
-          using_ntt0 <= 0;
+          using_ntt <= 0;
           ntt_enable_r <= 0;
           ntt_mode_r <= MLDSA_NTT_NONE;
           ntt_mem_base_addr_r <= '0;
           pwo_mem_base_addr_r <= '0;
       end else begin
-            ntt_enable_r <= ntt_enable[0] | ntt_enable[1];
+            ntt_enable_o <= ntt_enable[0] | ntt_enable[1];
             if (ntt_enable[0]) begin
-                using_ntt0 <= 1;
+                using_ntt <= 1;
                 ntt_mode_r <= ntt_mode[0];
                 ntt_mem_base_addr_r <= ntt_mem_base_addr[0];
                 pwo_mem_base_addr_r <= pwo_mem_base_addr[0];
             end else if (ntt_enable[1]) begin
-                using_ntt0 <= 0;
+                using_ntt <= 2;
                 ntt_mode_r <= ntt_mode[1];
                 ntt_mem_base_addr_r <= ntt_mem_base_addr[1];
                 pwo_mem_base_addr_r <= pwo_mem_base_addr[1];
@@ -107,12 +107,12 @@ module ntt_optimizer
   
   // Output logic to NTT engine
   always_comb begin
-      if (using_ntt0) begin
-          ntt_enable_o = ntt_enable_r;
+      if (using_ntt[0]) begin
+          //ntt_enable_o = ntt_enable_r;
           ntt_mem_base_addr_o = ntt_mem_base_addr_r;
           pwo_mem_base_addr_o = pwo_mem_base_addr_r;
       end else begin
-          ntt_enable_o = ntt_enable[1];
+        //   ntt_enable_o = ntt_enable[1];
           ntt_mem_base_addr_o = ntt_mem_base_addr[1];
           pwo_mem_base_addr_o = pwo_mem_base_addr[1];
       end
@@ -122,11 +122,11 @@ module ntt_optimizer
   always_comb begin
       ntt_busy_o = 2'b00;
       ntt_done_o = 2'b00;
-      if (using_ntt0) begin
-          ntt_busy_o[0] = ntt_busy;
+      if (using_ntt[0]) begin
+          ntt_busy_o[0] = ntt_busy | (using_ntt[0] & ntt_enable_o);
           ntt_done_o[0] = ntt_done;
       end else begin
-          ntt_busy_o[1] = ntt_busy;
+          ntt_busy_o[1] = ntt_busy | (using_ntt[1] & ntt_enable_o);
           ntt_done_o[1] = ntt_done;
       end
   end
@@ -165,13 +165,13 @@ module ntt_optimizer
         end
         MLDSA_PWM_SMPL: begin
             ntt_mode_o = pwm;
-            sampler_valid_o = sampler_ntt_dv[using_ntt0];
+            sampler_valid_o = using_ntt[0] ? sampler_ntt_dv[0]: '0;
             sampler_ntt_mode_o = 1;
         end
         MLDSA_PWM_ACCUM_SMPL: begin
             ntt_mode_o = pwm;
             accumulate_o = 1;
-            sampler_valid_o = sampler_ntt_dv[using_ntt0];
+            sampler_valid_o = using_ntt[0]? sampler_ntt_dv[0]: '0;
             sampler_ntt_mode_o = 1;
         end
         MLDSA_PWM: begin

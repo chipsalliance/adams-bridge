@@ -884,6 +884,8 @@ mldsa_w1_mem_inst
 
 //Decode request to sample in ball memory
 logic [1:0] sib_mem_re, sib_mem_re_f;
+
+`ifndef RV_CW305_FPGA_SCA
 always_comb sib_mem_re[0] = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == 3'b100);
 always_comb sib_mem_re[1] = (ntt_mem_rd_req[1].rd_wr_en == RW_READ) & (ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == 3'b100);
 
@@ -891,6 +893,15 @@ always_comb sib_mem_rd_req.addr = sib_mem_re[0] ? ntt_mem_rd_req[0].addr :
                                   sib_mem_re[1] ? ntt_mem_rd_req[1].addr : '0;
 always_comb sib_mem_rd_req.rd_wr_en = sib_mem_re[0] ? ntt_mem_rd_req[0].rd_wr_en : 
                                       sib_mem_re[1] ? ntt_mem_rd_req[1].rd_wr_en : RW_IDLE;
+`else
+always_comb sib_mem_re[0] = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == 3'b100);
+always_comb sib_mem_re[1] = 'h0;
+
+always_comb sib_mem_rd_req.addr = sib_mem_re[0] ? ntt_mem_rd_req[0].addr :
+                                  sib_mem_re[1] ? ntt_mem_rd_req[1].addr : '0;
+always_comb sib_mem_rd_req.rd_wr_en = sib_mem_re[0] ? ntt_mem_rd_req[0].rd_wr_en : 
+                                      sib_mem_re[1] ? ntt_mem_rd_req[1].rd_wr_en : RW_IDLE;
+`endif
 
 
 //MUX memory accesses
@@ -944,7 +955,11 @@ always_comb begin
       for (int bank = 0; bank < 2; bank++) begin
         sampler_mem_we0_bank[bank] = sampler_mem_dv & (sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (sampler_mem_addr[0] == bank);
         ntt_mem_we0_bank[0][bank] = (ntt_mem_wr_req[0].rd_wr_en == RW_WRITE) & (ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_wr_req[0].addr[0] == bank);
+`ifndef RV_CW305_FPGA_SCA
         ntt_mem_we0_bank[1][bank] = (ntt_mem_wr_req[1].rd_wr_en == RW_WRITE) & (ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_wr_req[1].addr[0] == bank);
+`else
+        ntt_mem_we0_bank[1][bank] = '0;
+`endif
         decomp_mem_we0_bank[bank] = (decomp_mem_wr_req.rd_wr_en == RW_WRITE) & (decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (decomp_mem_wr_req.addr[0] == bank);
         sigdecode_h_mem_we0_bank[bank] = (sigdecode_h_mem_wr_req.rd_wr_en == RW_WRITE) & (sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (sigdecode_h_mem_wr_req.addr[0] == bank);
         skdecode_mem_we0_bank[bank] = (skdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
@@ -956,8 +971,12 @@ always_comb begin
                                  sigdecode_h_mem_we0_bank[bank] | sigdecode_z_mem_we0_bank[bank] ;
 
         mldsa_mem_waddr0_bank[bank] = ({MLDSA_MEM_ADDR_WIDTH-3{sampler_mem_we0_bank[bank] }} & sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`ifndef RV_CW305_FPGA_SCA
                                     ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we0_bank[1][bank]  }} & ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`else
+                                    ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`endif
                                     ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_we0_bank[bank]  }} & decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_h_mem_we0_bank[bank]  }} & sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{skdecode_mem_we0_bank[bank]}} & skdecode_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
@@ -965,8 +984,12 @@ always_comb begin
                                     ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_z_mem_we0_bank[bank]}} & sigdecode_z_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]);
 
         mldsa_mem_wdata0_bank[bank] = ({MLDSA_MEM_DATA_WIDTH{sampler_mem_we0_bank[bank] }} & sampler_mem_data) |
+`ifndef RV_CW305_FPGA_SCA
                                     ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_data[0]) |
                                     ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we0_bank[1][bank]  }} & ntt_mem_wr_data[1]) |
+`else
+                                    ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_data[0]) |
+`endif
                                     ({MLDSA_MEM_DATA_WIDTH{decomp_mem_we0_bank[bank]  }} & decomp_mem_wr_data) |
                                     ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we0_bank[bank]}} & sigdecode_h_mem_wr_data) |
                                     ({MLDSA_MEM_DATA_WIDTH{skdecode_mem_we0_bank[bank]}} & skdecode_mem_wr_data[bank]) |
@@ -976,20 +999,32 @@ always_comb begin
     end else begin
       sampler_mem_we[i] = sampler_mem_dv & (sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       ntt_mem_we[0][i] = (ntt_mem_wr_req[0].rd_wr_en == RW_WRITE) & (ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
+`ifndef RV_CW305_FPGA_SCA
       ntt_mem_we[1][i] = (ntt_mem_wr_req[1].rd_wr_en == RW_WRITE) & (ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
+`else
+      ntt_mem_we[1][i] = '0;
+`endif
       decomp_mem_we[i] = (decomp_mem_wr_req.rd_wr_en == RW_WRITE) & (decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       sigdecode_h_mem_we[i] = (sigdecode_h_mem_wr_req.rd_wr_en == RW_WRITE) & (sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
   
       mldsa_mem_we[i] = sampler_mem_we[i] | ntt_mem_we[0][i] | ntt_mem_we[1][i] | decomp_mem_we[i] | sigdecode_h_mem_we[i];
       mldsa_mem_waddr[i] = ({MLDSA_MEM_ADDR_WIDTH-3{sampler_mem_we[i]}} & sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`ifndef RV_CW305_FPGA_SCA
                          ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we[0][i]}}  & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we[1][i]}}  & ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`else
+                         ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we[0][i]}}  & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`endif
                          ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_we[i]}}  & decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]);
 
       mldsa_mem_wdata[i] = ({MLDSA_MEM_DATA_WIDTH{sampler_mem_we[i]}}     & sampler_mem_data) |
+`ifndef RV_CW305_FPGA_SCA
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[0][i]}}      & ntt_mem_wr_data[0]) |
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[1][i]}}      & ntt_mem_wr_data[1]) |
+`else
+                         ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[0][i]}}      & ntt_mem_wr_data[0]) |
+`endif
                          ({MLDSA_MEM_DATA_WIDTH{decomp_mem_we[i]}}      & decomp_mem_wr_data) |
                          ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_data);
     end
@@ -1001,6 +1036,7 @@ always_comb begin
   for (int i = 0; i < 4; i++) begin
     if (i == 0) begin
       for (int bank = 0; bank < 2; bank++) begin
+`ifndef RV_CW305_FPGA_SCA
         ntt_mem_re0_bank[0][bank]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_rd_req[0].addr[0] == bank);
         pwo_a_mem_re0_bank[0][bank] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_a_rd_req[0].addr[0] == bank);
         pwo_b_mem_re0_bank[0][bank] = ~sampler_ntt_dv & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_b_rd_req[0].addr[0] == bank);
@@ -1008,7 +1044,15 @@ always_comb begin
         ntt_mem_re0_bank[1][bank]   = (ntt_mem_rd_req[1].rd_wr_en == RW_READ) & (ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_rd_req[1].addr[0] == bank);
         pwo_a_mem_re0_bank[1][bank] = (pwm_a_rd_req[1].rd_wr_en == RW_READ) & (pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_a_rd_req[1].addr[0] == bank);
         pwo_b_mem_re0_bank[1][bank] = (pwm_b_rd_req[1].rd_wr_en == RW_READ) & (pwm_b_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_b_rd_req[1].addr[0] == bank);
+`else
+        ntt_mem_re0_bank[0][bank]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_rd_req[0].addr[0] == bank);
+        pwo_a_mem_re0_bank[0][bank] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_a_rd_req[0].addr[0] == bank);
+        pwo_b_mem_re0_bank[0][bank] = ~sampler_ntt_dv & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_b_rd_req[0].addr[0] == bank);
     
+        ntt_mem_re0_bank[1][bank]   = '0;
+        pwo_a_mem_re0_bank[1][bank] = '0;
+        pwo_b_mem_re0_bank[1][bank] = '0;
+`endif
         decomp_mem_re0_bank[0][bank]   = (decomp_mem_rd_req[0].rd_wr_en == RW_READ) & (decomp_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (decomp_mem_rd_req[0].addr[0] == bank);
         decomp_mem_re0_bank[1][bank]   = (decomp_mem_rd_req[1].rd_wr_en == RW_READ) & (decomp_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (decomp_mem_rd_req[1].addr[0] == bank);
         normcheck_mem_re0_bank[bank] = (normcheck_mem_rd_req.rd_wr_en == RW_READ) & (normcheck_mem_rd_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (normcheck_mem_rd_req.addr[0] == bank);
@@ -1024,9 +1068,11 @@ always_comb begin
         mldsa_mem_raddr0_bank[bank] = ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_re0_bank[0][bank]}}    & ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{pwo_a_mem_re0_bank[0][bank]}} & pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{pwo_b_mem_re0_bank[0][bank]}} & pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
+`ifndef RV_CW305_FPGA_SCA
                                     ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_re0_bank[1][bank]}}   & ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{pwo_a_mem_re0_bank[1][bank]}} & pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{pwo_b_mem_re0_bank[1][bank]}} & pwm_b_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
+`endif
                                     ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_re0_bank[0][bank]}}   & decomp_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_re0_bank[1][bank]}}   & decomp_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{skencode_mem_re0_bank[bank]}} & skencode_mem_rd_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
@@ -1038,11 +1084,16 @@ always_comb begin
       ntt_mem_re[0][i]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_a_mem_re[0][i] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_b_mem_re[0][i] = ~sampler_ntt_dv & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
-  
+
+`ifndef RV_CW305_FPGA_SCA  
       ntt_mem_re[1][i]   = (ntt_mem_rd_req[1].rd_wr_en == RW_READ) & (ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_a_mem_re[1][i] = (pwm_a_rd_req[1].rd_wr_en == RW_READ) & (pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_b_mem_re[1][i] = (pwm_b_rd_req[1].rd_wr_en == RW_READ) & (pwm_b_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
-  
+`else
+      ntt_mem_re[1][i]   = '0;
+      pwo_a_mem_re[1][i] = '0;
+      pwo_b_mem_re[1][i] = '0;
+`endif
       decomp_mem_re[0][i]   = (decomp_mem_rd_req[0].rd_wr_en == RW_READ) & (decomp_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       decomp_mem_re[1][i]   = (decomp_mem_rd_req[1].rd_wr_en == RW_READ) & (decomp_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       normcheck_mem_re[i] = (normcheck_mem_rd_req.rd_wr_en == RW_READ) & (normcheck_mem_rd_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
@@ -1055,9 +1106,11 @@ always_comb begin
       mldsa_mem_raddr[i] = ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_re[0][i]}}   & ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
                          ({MLDSA_MEM_ADDR_WIDTH-3{pwo_a_mem_re[0][i]}} & pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{pwo_b_mem_re[0][i]}} & pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`ifndef RV_CW305_FPGA_SCA  
                          ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_re[1][i]}}   & ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0])   |
                          ({MLDSA_MEM_ADDR_WIDTH-3{pwo_a_mem_re[1][i]}} & pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{pwo_b_mem_re[1][i]}} & pwm_b_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+`endif
                          ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_re[0][i]}}   & decomp_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_re[1][i]}}   & decomp_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{normcheck_mem_re[i]}} & normcheck_mem_rd_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
@@ -1107,7 +1160,11 @@ always_comb begin
   for (int i = 0; i < 4; i++) begin
     if (i == 0) begin
       for (int bank = 0; bank < 2; bank++) begin
+`ifndef RV_CW305_FPGA_SCA  
         for (int j = 0; j < 2; j++) begin
+`else
+        for (int j = 0; j < 1; j++) begin
+`endif
           ntt_mem_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
           pwm_a_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
           pwm_b_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
@@ -1117,7 +1174,11 @@ always_comb begin
         normcheck_mem_rd_data |= ({MLDSA_MEM_DATA_WIDTH{normcheck_mem_re0_bank_f[bank]}} & mldsa_mem_rdata0_bank[bank]);
       end
     end else begin
-      for (int j = 0; j < 2; j++) begin
+`ifndef RV_CW305_FPGA_SCA  
+        for (int j = 0; j < 2; j++) begin
+`else
+        for (int j = 0; j < 1; j++) begin
+`endif
         ntt_mem_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
         pwm_a_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
         pwm_b_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
@@ -1127,7 +1188,11 @@ always_comb begin
       normcheck_mem_rd_data |= ({MLDSA_MEM_DATA_WIDTH{normcheck_mem_re_f[i]}} & mldsa_mem_rdata[i]);
     end
   end
-  for (int j = 0; j < 2; j++) begin
+`ifndef RV_CW305_FPGA_SCA  
+        for (int j = 0; j < 2; j++) begin
+`else
+        for (int j = 0; j < 1; j++) begin
+`endif
     ntt_mem_rd_data[j] |= ({MLDSA_MEM_DATA_WIDTH{sib_mem_re_f[j]}} & sib_mem_rd_data);
   end
 end
