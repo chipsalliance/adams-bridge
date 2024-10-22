@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//Sequencer for MLDSA
-//MLDSA functions
-//  Signing initial steps
-//  Signing validity checks
-//  Signing signature generation
-
 `include "mldsa_config_defines.svh"
 
 module ntt_arbiter 
