@@ -47,7 +47,7 @@ module sigdecode_h
     );
 
     localparam SIG_H_NUM_DWORDS = ((MLDSA_OMEGA + MLDSA_K + 1)*8)/32;
-
+`ifndef RV_CW305_FPGA_SCA
     // logic [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h;
     // logic [SIG_H_NUM_DWORDS-1:0][31:0] encoded_h_reg;
     logic [MLDSA_OMEGA-1:0] hint_array;
@@ -140,4 +140,13 @@ module sigdecode_h
         .hint_rd_en(hint_rd_en)
     );
 
+
+`else
+    always_comb begin
+        mem_wr_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_wr_data = '0;
+        sigdecode_h_done = '0;
+        sigdecode_h_error = '0;
+    end
+`endif
 endmodule

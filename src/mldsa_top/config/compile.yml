@@ -40,6 +40,7 @@ targets:
       - $COMPILE_ROOT/rtl/mldsa_seq_prim.sv
       - $COMPILE_ROOT/rtl/mldsa_seq_sec.sv
       - $COMPILE_ROOT/rtl/mldsa_ctrl.sv
+      - $COMPILE_ROOT/rtl/ntt_arbiter.sv
       - $COMPILE_ROOT/rtl/mldsa_top.sv
       - $COMPILE_ROOT/rtl/mldsa_reg.sv
     tops: [mldsa_top]

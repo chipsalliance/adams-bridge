@@ -50,6 +50,7 @@ module pkdecode
         output logic pkdecode_done
     );
 
+`ifndef RV_CW305_FPGA_SCA
     localparam COEFF_WIDTH = 10;
     localparam SHIFT_LEFT = 13;
     localparam NUM_COEFFS_PER_CYCLE = 8;
@@ -227,5 +228,16 @@ module pkdecode
             end
         end
     end
+
+`else
+    always_comb begin
+        mem_a_wr_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_b_wr_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_a_wr_data = '0;
+        mem_b_wr_data = '0;
+        API_rd_address = '0;
+        pkdecode_done = '0;
+    end
+`endif
 
 endmodule

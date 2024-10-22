@@ -543,7 +543,7 @@ endgenerate
     .ntt_done(ntt_done_f_NTT)
   );
 
-  ntt_optimizer ntt_engine_reducer
+  ntt_arbiter ntt_engine_reducer
   (
     .clk(clk),
     .reset_n(rst_b),

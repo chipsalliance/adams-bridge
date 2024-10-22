@@ -57,7 +57,7 @@ module sigdecode_z_top
         input wire sigdecode_z_enable,
         output logic sigdecode_z_done
     );
-
+`ifndef RV_CW305_FPGA_SCA
     localparam THE_LAST_ADDR = ((MLDSA_L * MLDSA_N)/4)-1;
     // State Machine States
     localparam  IDLE                = 3'b000,
@@ -236,6 +236,16 @@ module sigdecode_z_top
         end : dec_unit
     endgenerate
 
-
+`else
+    always_comb begin
+        mem_a_wr_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_b_wr_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        mem_a_wr_data = '0;
+        mem_b_wr_data = '0;
+        sigmem_a_rd_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        sigmem_b_rd_req = '{rd_wr_en: RW_IDLE, addr: '0};
+        sigdecode_z_done = '0;
+    end
+`endif
 
 endmodule

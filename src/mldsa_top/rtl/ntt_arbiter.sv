@@ -20,7 +20,7 @@
 
 `include "mldsa_config_defines.svh"
 
-module ntt_optimizer 
+module ntt_arbiter 
     import mldsa_params_pkg::*;
     import mldsa_ctrl_pkg::*;
     import ntt_defines_pkg::*;
