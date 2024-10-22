@@ -445,21 +445,27 @@ module mldsa_ctrl
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_data = '0;
 
 
+  logic privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
+
+  always_comb  mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack;
+  always_comb  mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack;
+  always_comb  mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack;
+
   //ack the read request one clock later
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= 0;
-      mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= 0;
-      mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack <= 0;
+      privkey_out_rd_ack <= 0;
+      signature_rd_ack <= 0;
+      pubkey_rd_ack <= 0;
     end
     else begin
-      mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
-      mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-      mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack <= mldsa_reg_hwif_out.MLDSA_PUBKEY.req & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+      privkey_out_rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+      signature_rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+      pubkey_rd_ack <= mldsa_reg_hwif_out.MLDSA_PUBKEY.req & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
     end
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack & mldsa_valid_reg & keygen_process ? privkey_out_rdata : 0;
+  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & keygen_process ? privkey_out_rdata : 0;
 
   //No write to PRIVKEY_OUT allowed - just ack it
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
