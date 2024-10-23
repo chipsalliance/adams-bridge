@@ -376,6 +376,9 @@ mldsa_ctrl mldsa_control_inst
 
 );
 
+logic [MsgWidth-1:0] msg_data_i[Sha3Share];
+assign msg_data_i = decomp_msg_valid ? decomp_msg_data : msg_data;
+
 mldsa_sampler_top sampler_top_inst
 (
   .clk(clk),
@@ -388,7 +391,7 @@ mldsa_sampler_top sampler_top_inst
   .msg_valid_i(msg_valid | decomp_msg_valid), //msg interface valid //FIXME
   .msg_rdy_o(msg_rdy),  //msg interface rdy (~hold)
   .msg_strobe_i(decomp_msg_valid ? '1 : msg_strobe), //msg byte enables //FIXME
-  .msg_data_i(decomp_msg_valid ? decomp_msg_data : msg_data), //msg data/ /FIXME
+  .msg_data_i(msg_data_i), //msg data/ /FIXME
 
   .sib_mem_rd_req_i(sib_mem_rd_req),
   .sib_mem_rd_data_o(sib_mem_rd_data),
