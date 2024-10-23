@@ -32,6 +32,8 @@
 // 2. r1 --> pass to sample inball/hash interface
 // 3. z_neq_z -->  store in a buffer that is ready by makehint simultaneously when it reads main mem
 
+`include "abr_prim_assert.sv"
+
 module decompose 
     import mldsa_params_pkg::*;
     import decompose_defines_pkg::*;
@@ -245,4 +247,9 @@ module decompose
         .w1_encode_done(w1_encode_done)
     );
     
+
+    `ABR_ASSERT_MUTEX(ASSERT_R0_CORNER_MUTEX, {r_corner[0], r1[0]}, clk, reset_n)
+    `ABR_ASSERT_MUTEX(ASSERT_R1_CORNER_MUTEX, {r_corner[1], r1[1]}, clk, reset_n)
+    `ABR_ASSERT_MUTEX(ASSERT_R2_CORNER_MUTEX, {r_corner[2], r1[2]}, clk, reset_n)
+    `ABR_ASSERT_MUTEX(ASSERT_R3_CORNER_MUTEX, {r_corner[3], r1[3]}, clk, reset_n)
 endmodule
