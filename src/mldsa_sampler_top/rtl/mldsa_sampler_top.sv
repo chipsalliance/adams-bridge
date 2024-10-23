@@ -379,7 +379,7 @@ always_comb sampler_ntt_data_o = rejs_data;
   );
 
 //one piso
-  abr_piso #(
+  abr_piso_4 #(
     .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
     .PISO_INPUT_RATE0(REJS_PISO_INPUT_RATE),
     .PISO_INPUT_RATE1(REJB_PISO_INPUT_RATE),

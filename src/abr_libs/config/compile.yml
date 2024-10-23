@@ -15,6 +15,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
+      - $COMPILE_ROOT/rtl/abr_piso_4.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
@@ -38,6 +39,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
+      - $COMPILE_ROOT/rtl/abr_piso_4.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
