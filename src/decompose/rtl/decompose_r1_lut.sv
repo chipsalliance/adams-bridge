@@ -33,6 +33,7 @@ module decompose_r1_lut
     );
 
     always_comb begin
+        r_corner = 'b0;
         if      (r <=   MLDSA_GAMMA2)  r1 = 'd0;
         else if (r <= 3*MLDSA_GAMMA2)  r1 = 'd1;
         else if (r <= 5*MLDSA_GAMMA2)  r1 = 'd2;
@@ -49,14 +50,13 @@ module decompose_r1_lut
         else if (r <= 27*MLDSA_GAMMA2) r1 = 'd13;
         else if (r <= 29*MLDSA_GAMMA2) r1 = 'd14;
         else if (r <= 31*MLDSA_GAMMA2) r1 = 'd15;
-        else                     r1 = 'd0;
+        else 
+            begin                     
+                r1 = 'd0;
+                r_corner = 'b1;
+            end
     end
 
     always_comb z_nez = (r1 != 'h0);
-
-    always_comb begin
-        if (r >= 31*MLDSA_GAMMA2) r_corner = 'b1;
-        else r_corner = 'b0;
-    end
 
 endmodule
