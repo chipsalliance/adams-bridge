@@ -1,0 +1,15 @@
+document:
+  schema: 1.0
+
+contents:
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 2
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_key_gen_and_sign_test   : { weight 50 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_test      : { weight 50 }

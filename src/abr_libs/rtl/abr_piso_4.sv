@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// PISO supports 1 mode of operation
+// PISO supports 4 modes of operation, each with unique input and output rates
 
-module abr_piso
+module abr_piso_4
   #( parameter PISO_BUFFER_W    = 1344
     ,parameter PISO_PTR_W = $clog2(PISO_BUFFER_W)
-    ,parameter PISO_INPUT_RATE = 1088
-    ,parameter PISO_OUTPUT_RATE = 80
+    ,parameter PISO_INPUT_RATE0 = 1088
+    ,parameter PISO_INPUT_RATE1 = 1088
+    ,parameter PISO_INPUT_RATE2 = 1088
+    ,parameter PISO_INPUT_RATE3 = 1088
+    ,parameter PISO_OUTPUT_RATE0 = 80
+    ,parameter PISO_OUTPUT_RATE1 = 80
+    ,parameter PISO_OUTPUT_RATE2 = 80
+    ,parameter PISO_OUTPUT_RATE3 = 80
+    ,parameter PISO_ACT_INPUT_RATE = 1088
+    ,parameter PISO_ACT_OUTPUT_RATE = 80
   )
   (
     input logic                          clk,
@@ -26,17 +34,19 @@ module abr_piso
     input logic                          zeroize,
     
     //input data
+    input  logic [1:0]                       mode,
     input  logic                             valid_i,
     output logic                             hold_o,
-    input  logic [PISO_INPUT_RATE-1:0]   data_i,
+    input  logic [PISO_ACT_INPUT_RATE-1:0]   data_i,
 
     //Output data 
     output logic                             valid_o,
     input  logic                             hold_i,
-    output logic [PISO_OUTPUT_RATE-1:0]  data_o
+    output logic [PISO_ACT_OUTPUT_RATE-1:0]  data_o
 
   );
-  parameter BUFFER_W_DELTA = PISO_BUFFER_W - PISO_INPUT_RATE;
+
+  parameter BUFFER_W_DELTA = PISO_BUFFER_W - PISO_ACT_INPUT_RATE;
 
   logic [PISO_BUFFER_W-1:0] buffer, buffer_d;
   logic [PISO_PTR_W-1:0] buffer_wr_ptr, buffer_wr_ptr_d;
@@ -46,13 +56,26 @@ module abr_piso
   logic buffer_wr, buffer_rd;
   logic update_buffer;
 
-  always_comb current_input_rate = PISO_INPUT_RATE;
-  always_comb current_output_rate = PISO_OUTPUT_RATE;
+  always_comb begin
+    unique case (mode)
+      2'b00: current_input_rate = PISO_INPUT_RATE0;
+      2'b01: current_input_rate = PISO_INPUT_RATE1;
+      2'b10: current_input_rate = PISO_INPUT_RATE2;
+      2'b11: current_input_rate = PISO_INPUT_RATE3;
+    endcase
+
+    unique case (mode)
+      2'b00: current_output_rate = PISO_OUTPUT_RATE0;
+      2'b01: current_output_rate = PISO_OUTPUT_RATE1;
+      2'b10: current_output_rate = PISO_OUTPUT_RATE2;
+      2'b11: current_output_rate = PISO_OUTPUT_RATE3;
+    endcase
+  end
 
   //hold when not enough room for full input data
   always_comb hold_o = buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate);
 
-  always_comb data_o = buffer[PISO_OUTPUT_RATE-1:0];
+  always_comb data_o = buffer[PISO_ACT_OUTPUT_RATE-1:0];
   always_comb valid_o = buffer_wr_ptr >= current_output_rate;
 
   always_comb buffer_wr = valid_i & ~hold_o;
