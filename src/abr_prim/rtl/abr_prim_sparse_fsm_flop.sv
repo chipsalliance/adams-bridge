@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 `include "abr_prim_assert.sv"
-`timescale 1ns / 1ps
 
 module abr_prim_sparse_fsm_flop
   import abr_prim_sparse_fsm_pkg::*;
