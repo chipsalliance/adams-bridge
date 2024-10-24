@@ -21,7 +21,6 @@
 // unchanged. The counter is also protected against under- and overflows.
 
 `include "abr_prim_assert.sv"
-`timescale 1ns / 1ps
 
 module abr_prim_count #(
   parameter int Width = 2,
