@@ -17,6 +17,10 @@ MultMod = 2**numOfBits
 DILITHIUM_Q = 8380417
 BooleanMod = 2**int(numOfBits/2)
 Roller = (2**13)-1
+DILITHIUM_N = 256
+DILITHIUM_LOGN = 8
+DILITHIUM_ROOT_OF_UNITY = 1753
+ModulArithBits = int(numOfBits/2)
 
 # numOfBits = 8
 # MultMod = 2**numOfBits

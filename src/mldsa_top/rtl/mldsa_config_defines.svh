@@ -15,11 +15,26 @@
 `ifndef ABR_CFG_SV
 `define ABR_CFG_SV
 
+   `include "abr_sva.svh"
+   // `define RV_FPGA_OPTIMIZE
+   // `define RV_FPGA_SCA
+
+
   `define ABR_ICG           abr_clk_gate
-  `define ABR_MEM           abr_1r1w_ram
+
+  `define ABR_MEM_TEST(_depth, _width) abr_1r1w_``_depth``x``_width``_ram 
+
+  `define ABR_MEM(_depth, _width) \
+  abr_1r1w_ram \
+  #( .DEPTH(``_depth``), \
+     .DATA_WIDTH(``_width``)) 
+
+  `define ABR_MEM_BE(_depth, _width) \
+  abr_1r1w_be_ram \
+  #( .DEPTH(``_depth``), \
+     .DATA_WIDTH(``_width``)) 
   
   `define MLDSA_CUSTOM_INF // KV interface\
                            output kv_read_t kv_read,\
                            input kv_rd_resp_t kv_rd_resp,
-
 `endif

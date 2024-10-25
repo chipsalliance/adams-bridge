@@ -112,8 +112,8 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
     end
 
     // Reading MLDSA_PUBKEY register
-    foreach (reg_model.MLDSA_PUBKEY[i]) begin
-      reg_model.MLDSA_PUBKEY[i].read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    for(int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PUBKEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
       end else begin
@@ -231,8 +231,8 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
     end
 
     // Reading MLDSA_SIGNATURE register
-    foreach (reg_model.MLDSA_SIGNATURE[i]) begin
-      reg_model.MLDSA_SIGNATURE[i].read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    for(int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_SIGNATURE[%0d]", i));
       end else begin
@@ -277,16 +277,6 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
       ready = data[0];
     end
 
-    // Writing MLDSA_PUBKEY register
-    foreach (reg_model.MLDSA_PUBKEY[i]) begin
-      reg_model.MLDSA_PUBKEY[i].write(status, PUBKEY[i], UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
-      end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PUBKEY[i]), UVM_LOW);
-      end
-    end
-
     // Writing MLDSA_MSG register
     foreach (reg_model.MLDSA_MSG[i]) begin
       reg_model.MLDSA_MSG[i].write(status, MSG_IN[i], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -297,13 +287,23 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
       end
     end
 
-    // Writing MLDSA_SIGNATURE register
-    foreach (reg_model.MLDSA_SIGNATURE[i]) begin
-      reg_model.MLDSA_SIGNATURE[i].write(status, SIGNATURE[i], UVM_FRONTDOOR, reg_model.default_map, this);
+    // Writing the PUBKEY into the MLDSA_PUBKEY register array
+    for (int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PUBKEY.m_mem.write(status, i, PUBKEY[i], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIGNATURE[i]), UVM_LOW);
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PUBKEY[i]), UVM_LOW);
+      end
+    end
+
+    // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
+    for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.write(status, i, SIGNATURE[i], UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
+      end else begin
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIGNATURE[i]), UVM_LOW);
       end
     end
 
