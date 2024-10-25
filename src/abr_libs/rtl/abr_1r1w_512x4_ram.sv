@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 `include "mldsa_config_defines.svh"
-`ifndef RV_FPGA_OPTIMIZE
-module abr_1r1w_ram #(
-     parameter DEPTH      = 64
-    ,parameter DATA_WIDTH = 32
+
+module abr_1r1w_512x4_ram #(
+     parameter DEPTH      = 512
+    ,parameter DATA_WIDTH = 4
     ,parameter ADDR_WIDTH = $clog2(DEPTH)
 
     )
@@ -33,7 +32,11 @@ module abr_1r1w_ram #(
     );
 
     //storage element
+`ifndef RV_FPGA_OPTIMIZE
     logic [DEPTH-1:0][DATA_WIDTH-1:0] ram;
+`else
+    (* ram_style = "block" *) logic [DATA_WIDTH-1:0] ram [DEPTH-1:0];
+`endif
 
     always @(posedge clk_i) begin
         if (we_i) begin
@@ -48,39 +51,3 @@ module abr_1r1w_ram #(
     end
 
 endmodule
-
-`else
-module abr_1r1w_ram #(
-     parameter DEPTH      = 64
-    ,parameter DATA_WIDTH = 32
-    ,parameter ADDR_WIDTH = $clog2(DEPTH)
-
-    )
-    (
-    input  logic                       clk_i,
-
-    input  logic                       we_i,
-    input  logic [ADDR_WIDTH-1:0]      waddr_i,
-    input  logic [DATA_WIDTH-1:0]      wdata_i,
-    input  logic                       re_i,
-    input  logic [ADDR_WIDTH-1:0]      raddr_i,
-    output logic [DATA_WIDTH-1:0]      rdata_o
-    );
-
-    (* ram_style = "block" *) reg [DATA_WIDTH-1:0] ram [DEPTH-1:0];
-    
-    always @(posedge clk_i) begin
-        if (we_i) begin
-            if (we_i)
-                ram[waddr_i] <= wdata_i;
-        end
-    end
-    
-    always @(posedge clk_i) begin
-        if (re_i)
-            rdata_o <= ram[raddr_i];
-    end
-
-endmodule
-
-`endif

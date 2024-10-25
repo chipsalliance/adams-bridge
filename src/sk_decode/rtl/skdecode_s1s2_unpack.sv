@@ -43,6 +43,11 @@ module skdecode_s1s2_unpack
     logic [REG_SIZE-1:0] eta_minus_data;
 
     always_comb begin
+        data_o  = '0;
+        valid_o = '0;
+        error_o = '0;
+        eta_minus_data = '0;
+        
         if (enable) begin
             error_o = 'b0;
             eta_minus_data = REG_SIZE'(MLDSA_ETA - data_i);
@@ -62,11 +67,6 @@ module skdecode_s1s2_unpack
             endcase
 
             valid_o = 'b1;
-        end
-        else begin
-            data_o  = '0;
-            valid_o = '0;
-            error_o = '0;
         end
     end
 

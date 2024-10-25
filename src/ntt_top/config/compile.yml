@@ -49,6 +49,7 @@ targets:
       # - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
       # - $COMPILE_ROOT/rtl/ntt_adder.sv
       - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
+      - $COMPILE_ROOT/rtl/ntt_special_adder.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
       - $COMPILE_ROOT/rtl/ntt_buffer.sv
       - $COMPILE_ROOT/rtl/ntt_shuffle_buffer.sv
@@ -82,6 +83,18 @@ targets:
     tops: [ntt_top_tb]
   sim:
     pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
+
+---
+provides: [ntt_mult_reduction_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_mult_reduction_tb.sv
+    tops: [ntt_mult_reduction_tb]
 
 ---
 provides: [ntt_utb]  

@@ -289,7 +289,9 @@ module sigdecode_h_ctrl
                 rd_wr_en            = RW_WRITE;
                 rst_bitmap          = arc_SDH_WR_MEM_SDH_WR_INIT | arc_SDH_WR_MEM_SDH_WR_IDLE;
             end
-
+            default: begin
+                
+            end
         endcase
     end
 
