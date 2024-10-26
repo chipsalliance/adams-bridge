@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define challenge DILITHIUM_NAMESPACE(challenge)
 void challenge(poly *c, const uint8_t seed[SEEDBYTES]);
@@ -57,6 +57,8 @@ void print_polyveck(const char *label, const polyveck *v) ;
 
 // Function to print a polyvecl structure in hex format
 void print_poly(const char *label, const poly *v);
+void print_poly_c(const poly *v);
+void print_poly_s1_0(const polyvecl *v);
 
 int crypto_sign_keypair_with_external_seed(uint8_t *pk, uint8_t *sk, const uint8_t *external_seed);
 

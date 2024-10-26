@@ -84,6 +84,44 @@ void print_poly(const char *label, const poly *v) {
     printf("\n");
 }
 
+
+void print_poly_c(const poly *v) {
+    FILE *output_file;
+    output_file = fopen("chipertex.csv", "a");
+    
+    if (!output_file) {
+        perror("Error opening output file");
+        return;
+    }
+
+    for (size_t j = 0; j < N; ++j) {
+        fprintf(output_file, "%08X,", caddq(v->coeffs[j]));
+    }
+    fprintf(output_file, "\n");
+    fclose(output_file);
+    return;
+}
+
+void print_poly_s1_0(const polyvecl *v) {
+    FILE *output_file;
+    output_file = fopen("secret_key.csv", "a");
+    
+    if (!output_file) {
+        perror("Error opening output file");
+        return;
+    }
+
+    
+    for (size_t i = 0; i < 1; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            fprintf(output_file, "%08X,", caddq(v->vec[i].coeffs[j]));
+        }
+    }
+    fprintf(output_file, "\n");
+    fclose(output_file);
+    return;
+}
+
 int crypto_sign_keypair_with_external_seed(uint8_t *pk, uint8_t *sk, const uint8_t *external_seed) {
   uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   // UPDATED because tr is 512-bit
@@ -321,7 +359,7 @@ int crypto_sign_signature(uint8_t *sig,
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
-
+  int first_c_cnt = 0;
 rej:
   /* Sample intermediate vector y */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
@@ -370,6 +408,11 @@ rej:
 #if DEBUG == 1
   print_poly("c_hat", &cp);
 #endif
+  if (first_c_cnt == 0) {
+    print_poly_c(&cp);
+    print_poly_s1_0(&s1);
+  }
+  first_c_cnt = 1;
 
   /* Compute z, reject if it reveals secret */
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
