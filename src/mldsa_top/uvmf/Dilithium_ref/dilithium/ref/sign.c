@@ -87,38 +87,55 @@ void print_poly(const char *label, const poly *v) {
 
 void print_poly_c(const poly *v) {
     FILE *output_file;
+    FILE *output_file2;
     output_file = fopen("chipertex.csv", "a");
+    output_file2 = fopen("chipertex_onthefly.csv", "w");
     
     if (!output_file) {
         perror("Error opening output file");
+        return;
+    }
+    if (!output_file2) {
+        perror("Error opening output file 2");
         return;
     }
 
     for (size_t j = 0; j < N; ++j) {
         fprintf(output_file, "%08X,", caddq(v->coeffs[j]));
+        fprintf(output_file2, "%08X,", caddq(v->coeffs[j]));
     }
     fprintf(output_file, "\n");
+    fprintf(output_file2, "\n");
     fclose(output_file);
+    fclose(output_file2);
     return;
 }
 
 void print_poly_s1_0(const polyvecl *v) {
     FILE *output_file;
+    FILE *output_file2;
     output_file = fopen("secret_key.csv", "a");
+    output_file2 = fopen("secret_key_onthefly.csv", "w");
     
     if (!output_file) {
         perror("Error opening output file");
         return;
     }
-
+    if (!output_file2) {
+        perror("Error opening output file 2");
+        return;
+    }
     
     for (size_t i = 0; i < 1; ++i) {
         for (size_t j = 0; j < N; ++j) {
             fprintf(output_file, "%08X,", caddq(v->vec[i].coeffs[j]));
+            fprintf(output_file2, "%08X,", caddq(v->vec[i].coeffs[j]));
         }
     }
     fprintf(output_file, "\n");
+    fprintf(output_file2, "\n");
     fclose(output_file);
+    fclose(output_file2);
     return;
 }
 
