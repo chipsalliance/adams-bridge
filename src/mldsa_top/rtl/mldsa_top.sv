@@ -51,7 +51,6 @@ module mldsa_top
   input logic                       hready_i,
   input logic  [1:0]                htrans_i,
   input logic  [2:0]                hsize_i,
-  input logic  [5:0]                random,
 
   //ahb output
   output logic                      hresp_o,
@@ -508,7 +507,7 @@ generate
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(shuffle_en[g_inst]),
-    .random(random),
+    .random(rand_bits[g_inst*6+5:g_inst*6]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),

@@ -54,16 +54,13 @@ import uvmf_base_pkg_hdl::*;
 
 // pragma uvmf custom clock_generator begin
   bit clk;
-  logic [5:0] random_tb;
   // Instantiate a clk driver 
   // tbx clkgen
   initial begin
     clk = 0;
-    random_tb = 0;
     #0ns;
     forever begin
       clk = ~clk;
-      random_tb = $urandom();
       #5ns;
     end
   end
@@ -104,8 +101,7 @@ import uvmf_base_pkg_hdl::*;
       .hsize_i    (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HSIZE      ),
       .hresp_o    (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRESP      ),
       .hreadyout_o(uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HREADY     ),
-      .hrdata_o   (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRDATA     ),
-      .random     (random_tb)
+      .hrdata_o   (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRDATA     )
     );
 
     assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HBURST    = 3'b0;
