@@ -271,7 +271,7 @@ always_comb begin
 
     if (shuffle_en) begin
         mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step; //TODO pwo modes
-        mem_wr_addr_nxt    = ct_mode ? (4*(chunk_count_reg[0])) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr : gs_mode ? mem_wr_addr + wr_addr_step : (4*(chunk_count_reg[4])) + (wr_addr_step*buf_rdptr_reg[4]); //TODO: pwo modes
+        mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
     end
     else begin
         mem_rd_addr_nxt = mem_rd_addr + rd_addr_step;
@@ -383,22 +383,22 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = ct_mode ? 'd0 : 'd63;
             twiddle_offset      = 'h0;
-            twiddle_rand_offset = ct_mode ? 'h0 : (chunk_count_reg[BF_LATENCY])*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1];
+            twiddle_rand_offset = ct_mode ? 'h0 : 7'((4*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? buf_rdptr_int : (chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1];
+            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : 7'((chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
             twiddle_offset      = ct_mode ? 'd5 : 'd80;
-            twiddle_rand_offset = ct_mode ? (chunk_count % 'd4)*'d4 + buf_rdptr_int : buf_wrptr_reg[INTT_WRBUF_LATENCY-1];
+            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd4)*'d4 + buf_rdptr_int) : 7'(buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h3: begin
             twiddle_end_addr    = ct_mode ? 'd63 : 'd0;
             twiddle_offset      = ct_mode ? 'd21 : 'd84;
-            twiddle_rand_offset = ct_mode ? (chunk_count % 'd16)*4 + buf_rdptr_int : 'h0;
+            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd16)*4 + buf_rdptr_int) : 'h0;
         end
         default: begin
             twiddle_end_addr    = 'h0;

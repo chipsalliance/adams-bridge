@@ -45,8 +45,6 @@ module norm_check_top
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         input [4*REG_SIZE-1:0] mem_rd_data,
-        input wire shuffle_en,
-        input wire [5:0] random,
         output logic invalid,
         output logic norm_check_ready,
         output logic norm_check_done
