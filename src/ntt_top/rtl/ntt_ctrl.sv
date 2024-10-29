@@ -32,7 +32,7 @@ module ntt_ctrl
     parameter MLDSA_N = 256,
     parameter MLDSA_LOGN = 8,
     parameter MEM_ADDR_WIDTH = 15,
-    parameter BF_LATENCY = 10, //11 //TODO: change back to 10 and test shuffling //5 cycles per butterfly * 2 instances in serial = 10 clks
+    parameter BF_LATENCY = 10, //5 cycles per butterfly * 2 instances in serial = 10 clks
     parameter NTT_BUF_LATENCY = 4
 )
 (
@@ -46,14 +46,8 @@ module ntt_ctrl
     input wire sampler_valid,
     input wire accumulate,
     //NTT/INTT base addr
-    // input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
-    // input wire [MEM_ADDR_WIDTH-1:0] interim_base_addr,
-    // input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
     input ntt_mem_addr_t ntt_mem_base_addr,
     //PWO base addr
-    // input wire [MEM_ADDR_WIDTH-1:0] pw_base_addr_a,
-    // input wire [MEM_ADDR_WIDTH-1:0] pw_base_addr_b,
-    // input wire [MEM_ADDR_WIDTH-1:0] pw_base_addr_c, //result
     input pwo_mem_addr_t pwo_mem_base_addr,
     input wire shuffle_en,
     input wire   [5:0] random, //4+2 bits
@@ -122,7 +116,7 @@ logic last_rd_addr, last_wr_addr;
 logic mem_wr_en_fsm, mem_wr_en_reg;
 logic mem_rd_en_fsm, mem_rd_en_reg;
 logic pw_rden_fsm, pw_rden_reg;
-logic pw_wren_fsm, pw_wren_reg, pw_wren_reg_d2;
+logic pw_wren_fsm, pw_wren_reg;
 
 //Mode flags
 logic ct_mode, gs_mode, pwo_mode; //point-wise operations mode
@@ -364,9 +358,9 @@ always_ff @(posedge clk or negedge reset_n) begin
     else begin
         if (incr_pw_rd_addr) begin
             if (shuffle_en) begin
-                pw_mem_rd_addr_a <= pw_mem_rd_addr_a_nxt;//pw_mem_rd_addr_a + PWO_READ_ADDR_STEP;
-                pw_mem_rd_addr_b <= pw_mem_rd_addr_b_nxt;//pw_mem_rd_addr_b + PWO_READ_ADDR_STEP;    
-                pw_mem_rd_addr_c <= accumulate ? pw_mem_rd_addr_c_nxt : 'h0;//accumulate ? pw_mem_rd_addr_c + PWO_READ_ADDR_STEP : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
+                pw_mem_rd_addr_a <= pw_mem_rd_addr_a_nxt;
+                pw_mem_rd_addr_b <= pw_mem_rd_addr_b_nxt;
+                pw_mem_rd_addr_c <= accumulate ? pw_mem_rd_addr_c_nxt : 'h0; //addr in sync with a, b. However, the data is flopped 4 cycles inside BF to align with mul result
             end
             else begin
                 pw_mem_rd_addr_a <= pw_mem_rd_addr_a + PWO_READ_ADDR_STEP;
@@ -404,7 +398,7 @@ always_comb begin
         'h3: begin
             twiddle_end_addr    = ct_mode ? 'd63 : 'd0;
             twiddle_offset      = ct_mode ? 'd21 : 'd84;
-            twiddle_rand_offset = ct_mode ? (chunk_count % 'd16)*4 + buf_rdptr_int : 'h0; //gs mode: 0
+            twiddle_rand_offset = ct_mode ? (chunk_count % 'd16)*4 + buf_rdptr_int : 'h0;
         end
         default: begin
             twiddle_end_addr    = 'h0;
@@ -420,13 +414,17 @@ always_ff @(posedge clk or negedge reset_n) begin
         incr_twiddle_addr_reg <= 'b0;
         incr_twiddle_addr_reg_d2 <= 'b0;
     end
+    else if (zeroize) begin
+        incr_twiddle_addr_reg <= 'b0;
+        incr_twiddle_addr_reg_d2 <= 'b0;
+    end
     else begin
         incr_twiddle_addr_reg <= incr_twiddle_addr_fsm;
         incr_twiddle_addr_reg_d2 <= incr_twiddle_addr_reg;
     end
 end
 
-assign incr_twiddle_addr = ct_mode ? incr_twiddle_addr_fsm : incr_twiddle_addr_reg; //_d2;
+assign incr_twiddle_addr = ct_mode ? incr_twiddle_addr_fsm : incr_twiddle_addr_reg;
 
 
 always_ff @(posedge clk or negedge reset_n) begin
@@ -514,7 +512,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_rand_offset <= random[5:2];
         chunk_count <= random[5:2];
     end
-    else if ((ct_mode & (buf_count == 'h3)) | ((gs_mode | (pwo_mode & incr_pw_rd_addr)) & /*(buf_wrptr_reg[10] == 'h3)*/(index_count == 'h3))) begin //update chunk after every 4 cycles - TODO: stop chunk counting when there's no incr_rd_addr in ntt/intt modes
+    else if ((ct_mode & (buf_count == 'h3)) | ((gs_mode | (pwo_mode & incr_pw_rd_addr)) & (index_count == 'h3))) begin //update chunk after every 4 cycles - TODO: stop chunk counting when there's no incr_rd_addr in ntt/intt modes
         chunk_count <= (chunk_count == 'hf) ? 'h0 : chunk_count + 'h1;
     end
 end
@@ -610,14 +608,13 @@ always_ff @(posedge clk or negedge reset_n) begin
 end
 
 always_comb begin
-    last_rd_addr = /*ct_mode &*/ (mem_rd_addr == mem_rd_base_addr + MEM_LAST_ADDR); //TODO: other modes
-    last_wr_addr = /*ct_mode &*/ (mem_wr_addr == mem_wr_base_addr + MEM_LAST_ADDR); //TODO: other modes
-    buf_rdptr_int  = (shuffle_en & ct_mode) ? index_rand_offset + buf_count : buf_count; //TODO: flop
+    last_rd_addr   = (mem_rd_addr == mem_rd_base_addr + MEM_LAST_ADDR);
+    last_wr_addr   = (mem_wr_addr == mem_wr_base_addr + MEM_LAST_ADDR);
+    buf_rdptr_int  = (shuffle_en & ct_mode) ? index_rand_offset + buf_count : buf_count; //TODO: flop?
     buf_rdptr      = (shuffle_en & ct_mode) ? buf_rdptr_f : buf_count;
-    // buf_wrptr  = gs_mode ? index_rand_offset + buf_count : buf_count;
     latch_chunk_rand_offset = arc_IDLE_WR_STAGE | arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE;
-    latch_index_rand_offset = ct_mode ? (buf_wrptr == 'h3) : (gs_mode | (pwo_mode & incr_pw_rd_addr)) & (arc_RD_STAGE_RD_EXEC | (index_count == 'h3)); //TODO pwo mode
-    mem_rd_index_ofst = (pwo_mode | gs_mode) ? (index_count + index_rand_offset) : 'h0; //TODO: pwo mode, not used in ct mode
+    latch_index_rand_offset = ct_mode ? (buf_wrptr == 'h3) : (gs_mode | (pwo_mode & incr_pw_rd_addr)) & (arc_RD_STAGE_RD_EXEC | (index_count == 'h3));
+    mem_rd_index_ofst = (pwo_mode | gs_mode) ? (index_count + index_rand_offset) : 'h0;
 end
 
 
@@ -734,7 +731,7 @@ always_comb begin
             else
                 mem_rd_en_fsm       = (ntt_mode inside {ct, gs}) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) : 1'b0;
             bf_enable_fsm           = pwo_mode ? sampler_valid : 1'b1;
-            incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs}; //1'b1;
+            incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs};
             rd_addr_step            = ct_mode ? NTT_READ_ADDR_STEP : INTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = sampler_valid & pwo_mode;
             pw_rden_fsm             = sampler_valid & pwo_mode;
@@ -852,11 +849,11 @@ always_comb begin
                                     arc_WR_STAGE_WR_BUF ? WR_BUF :
                                     arc_WR_STAGE_WR_WAIT? WR_WAIT :
                                     arc_WR_STAGE_IDLE   ? WR_IDLE : WR_STAGE;
-            rst_wr_addr         = 1'b1;
-            rst_wr_valid_count  = 1'b1;
-            buf_wr_rst_count_intt  = gs_mode;
-            buf_rd_rst_count_intt  = gs_mode;
-            rst_pw_addr         = pwo_mode;
+            rst_wr_addr             = 1'b1;
+            rst_wr_valid_count      = 1'b1;
+            buf_wr_rst_count_intt   = gs_mode;
+            buf_rd_rst_count_intt   = gs_mode;
+            rst_pw_addr             = pwo_mode;
         end
         WR_BUF: begin
             write_fsm_state_ns  = arc_WR_BUF_WR_MEM ? WR_MEM : WR_BUF;
@@ -880,19 +877,19 @@ always_comb begin
         end
         WR_WAIT: begin
             if (shuffle_en) begin
-                write_fsm_state_ns  = arc_WR_WAIT_WR_STAGE ? WR_STAGE : /*arc_WR_WAIT_WR_MEM ? WR_MEM :*/ WR_WAIT;
+                write_fsm_state_ns  = arc_WR_WAIT_WR_STAGE ? WR_STAGE : WR_WAIT;
                 wr_addr_step        = gs_mode ? INTT_WRITE_ADDR_STEP : NTT_WRITE_ADDR_STEP;
             end
             else begin
                 write_fsm_state_ns  = arc_WR_WAIT_WR_STAGE ? WR_STAGE : arc_WR_WAIT_WR_MEM ? WR_MEM : WR_WAIT;
                 wr_addr_step        = INTT_WRITE_ADDR_STEP;
             end
-            buf_wren_intt       = shuffle_en ? 'b0 : (buf_count <= 'h3); //1'b0;
+            buf_wren_intt       = shuffle_en ? 'b0 : (buf_count <= 'h3);
             buf_rden_intt       = shuffle_en ? gs_mode : 'b1;
-            incr_mem_wr_addr    = (ct_mode | gs_mode); //1'b1;
-            mem_wr_en_fsm       = shuffle_en ? gs_mode : (ct_mode | gs_mode); //1'b1;
+            incr_mem_wr_addr    = (ct_mode | gs_mode);
+            mem_wr_en_fsm       = shuffle_en ? gs_mode : (ct_mode | gs_mode);
             
-            incr_pw_wr_addr     = shuffle_en ? pwo_mode & arc_WR_WAIT_WR_STAGE : arc_WR_WAIT_WR_MEM; //MEM;
+            incr_pw_wr_addr     = shuffle_en ? pwo_mode & arc_WR_WAIT_WR_STAGE : arc_WR_WAIT_WR_MEM;
             pw_wren_fsm         = shuffle_en ? 'b0 : arc_WR_WAIT_WR_MEM;
         end
         default: begin
@@ -906,13 +903,13 @@ always_comb begin
     incr_rounds      = arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE; //TODO: revisit for high-perf mode (if we go with above opt)
     if (shuffle_en) begin
         buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt_reg;
-        buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : /*buf_rden_ntt |*/ buf_rden_intt;
+        buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         bf_enable        = (gs_mode || pwo_mode) ? bf_enable_reg_d2 : bf_enable_reg; //bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
-        mem_wr_en        = gs_mode ? mem_wr_en_fsm : mem_wr_en_reg; //TODO pwo mode, GS mode + shuffling
+        mem_wr_en        = gs_mode ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = (gs_mode | pwo_mode) ? mem_rd_en_reg : mem_rd_en_fsm;
         twiddle_addr     = gs_mode ? twiddle_addr_reg_d3 : twiddle_addr_int;
         pw_rden          = pw_rden_reg;
-        pw_wren          = pwm_mode ? pw_wren_reg/*_d2*/ : pw_wren_reg;
+        pw_wren          = pwm_mode ? pw_wren_reg : pw_wren_reg;
     end
     else begin
         buf_wren = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt;
@@ -943,7 +940,6 @@ always_ff @(posedge clk or negedge reset_n) begin
         twiddle_addr_reg_d3 <= 'h0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
-        pw_wren_reg_d2 <= '0;
     end
     else if (zeroize) begin
         buf_wren_ntt_reg <= 'b0;
@@ -957,7 +953,6 @@ always_ff @(posedge clk or negedge reset_n) begin
         twiddle_addr_reg_d3 <= 'h0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
-        pw_wren_reg_d2 <= '0;
     end
     else begin
         buf_wren_ntt_reg <= buf_wren_ntt;
@@ -971,7 +966,6 @@ always_ff @(posedge clk or negedge reset_n) begin
         twiddle_addr_reg_d3 <= twiddle_addr_reg_d2;
         pw_rden_reg <= pw_rden_fsm;
         pw_wren_reg <= pw_wren_fsm;
-        pw_wren_reg_d2 <= pw_wren_reg;
     end
 end
 

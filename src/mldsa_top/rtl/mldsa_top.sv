@@ -90,7 +90,7 @@ module mldsa_top
   logic [1:0]                                  sampler_ntt_dv, sampler_ntt_dv_f;
   logic [1:0]                                  sampler_ntt_mode;
   logic [1:0]                                  sampler_valid;
-  logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data, sampler_ntt_data_reg;
+  logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data;
 
   mldsa_ntt_mode_e [1:0] ntt_mode;
   mode_t [1:0] mode;
@@ -415,15 +415,12 @@ mldsa_sampler_top sampler_top_inst
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
-    sampler_ntt_data_reg <= 0;
     sampler_ntt_dv_f <= 0;
   end
   else if (zeroize_reg) begin
-    sampler_ntt_data_reg <= 0;
     sampler_ntt_dv_f <= 0;
   end
   else begin
-    sampler_ntt_data_reg <= sampler_ntt_data;
     sampler_ntt_dv_f <= sampler_ntt_dv;
   end
 end
@@ -439,7 +436,7 @@ generate
       accumulate[g_inst] = '0;
       sampler_valid[g_inst] = 0;
       sampler_ntt_mode[g_inst] = 0;
-      shuffle_en[g_inst] = 0;
+      shuffle_en[g_inst] = 0; //TODO: temp change for testing, remove and add to opcodes
 
       unique case (ntt_mode[g_inst]) inside
         MLDSA_NTT_NONE: begin
