@@ -108,8 +108,6 @@ module norm_check_top
         .zeroize(zeroize),
         .norm_check_enable(norm_check_enable),
         .mode(mode),
-        .shuffle_en(shuffle_en),
-        .random(random),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),
         .norm_check_done(norm_check_done_int),
