@@ -36,7 +36,7 @@ module norm_check_ctrl
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
-        
+
         input wire [5:0] randomness,
 
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
@@ -106,7 +106,7 @@ module norm_check_ctrl
     always_comb begin
         mem_rd_req.addr = mem_rd_addr+locked_based_addr;
 
-        mem_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
+        mem_rd_req.rd_wr_en = ((read_fsm_state_ps == CHK_RD_MEM) | (read_fsm_state_ps == CHK_WAIT)) ? RW_READ : RW_IDLE;
     end
 
     //Last addr flag
