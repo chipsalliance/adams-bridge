@@ -270,7 +270,7 @@ always_comb begin
     mem_wr_base_addr   = rounds_count[0] ? dest_base_addr : interim_base_addr;
 
     if (shuffle_en) begin
-        mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step; //TODO pwo modes
+        mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
         mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
     end
     else begin
@@ -292,7 +292,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if (rst_rd_addr) begin
         if (shuffle_en)
-            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode | pwo_mode) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr; //TODO: pwo
+            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode | pwo_mode) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr;
         else
             mem_rd_addr <= mem_rd_base_addr;
     end
@@ -704,7 +704,7 @@ always_comb begin
                                         arc_RD_STAGE_IDLE       ? RD_IDLE : RD_STAGE;
             rst_rd_addr             = 1'b1;
             rst_rd_valid_count      = 1'b1;
-            //reset if in ntt mode, since writes won't use the buffer, it's safe to reset buffer - TODO: in shuffled NTT, the buffer is sram style, so reset may not be an option. Check on this!
+            //reset if in ntt mode, since writes won't use the buffer, it's safe to reset buffer
             buf_wr_rst_count_ntt    = ct_mode;
             buf_rd_rst_count_ntt    = ct_mode;
             rst_twiddle_addr        = !butterfly_ready;
