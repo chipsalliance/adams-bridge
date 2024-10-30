@@ -42,6 +42,10 @@ module norm_check_top
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
+
+        input wire shuffling_enable,
+        input wire [5:0] randomness,
+
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         input [4*REG_SIZE-1:0] mem_rd_data,
@@ -50,7 +54,7 @@ module norm_check_top
         output logic norm_check_done
     );
 
-    logic [3:0] check_a_invalid, check_b_invalid;
+    logic [3:0] check_a_invalid;
     logic check_enable, check_enable_reg;
     logic norm_check_done_int;
     
@@ -107,6 +111,8 @@ module norm_check_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .norm_check_enable(norm_check_enable),
+        .shuffling_enable(shuffling_enable),
+        .randomness(randomness),
         .mode(mode),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),

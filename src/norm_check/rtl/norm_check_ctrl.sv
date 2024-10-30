@@ -36,52 +36,82 @@ module norm_check_ctrl
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
+
+        input wire shuffling_enable,
+        input wire [5:0] randomness,
+
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         output logic check_enable,
         output logic norm_check_done
     );
+
     
     chk_read_state_e read_fsm_state_ps, read_fsm_state_ns;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
-    logic [3:0] num_poly;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, locked_based_addr;
 
     //Flags
     logic incr_rd_addr;
     logic last_poly_last_addr;
     logic norm_check_busy;
 
-    //Read addr counter
+    logic [4:0] latched_out_randomness;
+    logic latched_in_randomness;
+    logic [4:0] increment_addr;
+    logic [6:0] neutral_cnt;
+
     always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            mem_rd_addr <= 'h0;
-        else if (zeroize)
-            mem_rd_addr <= 'h0;
-        else if (norm_check_enable)
-            mem_rd_addr <= mem_base_addr;
-        else if (incr_rd_addr)
-            mem_rd_addr <= last_poly_last_addr ? 'h0 :  mem_rd_addr + 'h1;
+        if (!reset_n) begin
+            latched_out_randomness  <= 'h0;
+            latched_in_randomness   <= 'h0;
+            increment_addr          <= 'h0;
+            mem_rd_addr             <= 'h0;
+            neutral_cnt             <= 'h0;
+            locked_based_addr       <= 'h0;
+        end
+        else if (zeroize) begin
+            latched_out_randomness  <= 'h0;
+            latched_in_randomness   <= 'h0;
+            increment_addr          <= 'h0;
+            mem_rd_addr             <= 'h0;
+            neutral_cnt             <= 'h0;
+            locked_based_addr       <= 'h0;
+        end
+        else begin
+            if (norm_check_enable) begin
+                latched_out_randomness  <= randomness[5:1];
+                latched_in_randomness   <= randomness[0];
+                increment_addr          <= randomness[5:1];
+                mem_rd_addr             <= randomness;
+                neutral_cnt             <= 'h0;
+                locked_based_addr       <=  mem_base_addr;
+            end
+            else if (incr_rd_addr) begin
+                latched_in_randomness   <= latched_in_randomness;
+                latched_out_randomness  <= latched_out_randomness;
+                increment_addr          <= increment_addr;
+                mem_rd_addr             <= {mem_rd_addr[MLDSA_MEM_ADDR_WIDTH-1:6], increment_addr, latched_in_randomness};
+                neutral_cnt             <= neutral_cnt + 'h1;
+            end
+            else if (~incr_rd_addr) begin
+                latched_in_randomness   <= randomness[0];
+                latched_out_randomness  <= latched_out_randomness;
+                increment_addr          <= increment_addr + 'h1;
+                mem_rd_addr             <= {mem_rd_addr[MLDSA_MEM_ADDR_WIDTH-1:1], ~latched_in_randomness};
+                neutral_cnt             <= neutral_cnt + 'h1;
+            end
+        end
     end
 
     //Addr assignment
     always_comb begin
-        mem_rd_req.addr = mem_rd_addr;
+        mem_rd_req.addr = mem_rd_addr+locked_based_addr;
 
         mem_rd_req.rd_wr_en = (read_fsm_state_ps == CHK_RD_MEM) ? RW_READ : RW_IDLE;
     end
 
-    //Mode mux
-    always_comb begin
-        case(mode)
-            z_bound:    num_poly = MLDSA_L;
-            r0_bound:   num_poly = MLDSA_K;
-            ct0_bound:  num_poly = MLDSA_K;
-            default:    num_poly = 0;
-        endcase
-    end
-
     //Last addr flag
-    always_comb last_poly_last_addr = (mem_rd_req.addr == (mem_base_addr + ((MLDSA_N/4))-1));
+    always_comb last_poly_last_addr = (neutral_cnt == ((MLDSA_N/4))-1);
 
     //Ctrl flags
     always_comb begin
@@ -108,6 +138,10 @@ module norm_check_ctrl
                 read_fsm_state_ns = norm_check_enable ? CHK_RD_MEM : CHK_IDLE;
             end
             CHK_RD_MEM: begin
+                read_fsm_state_ns = last_poly_last_addr ? CHK_DONE : CHK_WAIT;
+                incr_rd_addr = 'b0;
+            end
+            CHK_WAIT: begin
                 read_fsm_state_ns = last_poly_last_addr ? CHK_DONE : CHK_RD_MEM;
                 incr_rd_addr = 'b1;
             end
@@ -121,6 +155,6 @@ module norm_check_ctrl
         endcase
     end
 
-    always_comb check_enable = (read_fsm_state_ps == CHK_RD_MEM);
+    always_comb check_enable = (read_fsm_state_ps == CHK_RD_MEM) | (read_fsm_state_ps == CHK_WAIT);
 
 endmodule
