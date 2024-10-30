@@ -81,7 +81,7 @@ module norm_check_ctrl
                 latched_out_randomness  <= randomness[5:1];
                 latched_in_randomness   <= randomness[0];
                 increment_addr          <= randomness[5:1];
-                mem_rd_addr             <= randomness;
+                mem_rd_addr             <= {{(MLDSA_MEM_ADDR_WIDTH-6){1'b0}}, randomness};
                 neutral_cnt             <= 'h0;
                 locked_based_addr       <=  mem_base_addr;
             end
