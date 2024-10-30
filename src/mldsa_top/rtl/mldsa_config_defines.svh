@@ -19,7 +19,6 @@
    // `define RV_FPGA_OPTIMIZE
    // `define RV_FPGA_SCA
 
-
   `define ABR_ICG           abr_clk_gate
 
   `define ABR_MEM_TEST(_depth, _width) abr_1r1w_``_depth``x``_width``_ram 

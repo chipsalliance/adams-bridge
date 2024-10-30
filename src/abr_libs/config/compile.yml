@@ -52,7 +52,6 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
-
 ---
 provides: [masking_tb]
 schema_version: 2.4.0
@@ -76,10 +75,64 @@ targets:
       
     tops: [abr_masked_N_bit_mult_tb]
 ---
+provides: [mldsa_uvm_lib]
+schema_version: 2.4.0
+targets:
+  tb:
+    directories:
+      - $UVM_HOME/src
+      - $UVM_HOME/src/dpi
+    files:
+      - $UVM_HOME/src/uvm_pkg.sv
+    tops: []
+  dpi_compile:
+    directories:
+      - $UVM_HOME/src/dpi
+    files:
+      - $UVM_HOME/src/dpi/uvm_dpi.cc
+      - $UVM_HOME/src/dpi/uvm_regex.cc
+    options:
+      - '-Wno-unused-variable'
+      - '-Wno-unused-function'
+      - tool:
+          vcs:
+            - '-DVCS'
+          ius:
+            - '-DXCELIUM'
+---
+provides: [mldsa_mvc_lib]
+schema_version: 2.4.0
+requires:
+  - mldsa_uvm_lib
+targets:
+  tb:
+    directories:
+      [
+        $QUESTA_MVC_HOME/questa_mvc_src/sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/ahb,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/ahb/modules,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3/modules,
+      ]
+    files:
+      [
+        $QUESTA_MVC_HOME/include/questa_mvc_svapi.svh,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/mvc_pkg.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3/mgc_apb3_v1_0_pkg.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/ahb/mgc_ahb_v2_0_pkg.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/ahb/modules/ahb_lite_slave.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/ahb/modules/ahb_lite_monitor.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3/modules/apb5_master.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3/modules/apb_monitor.sv,
+        $QUESTA_MVC_HOME/questa_mvc_src/sv/apb3/modules/apb5_monitor.sv,
+      ]
+    options:
+      - +define+MAP_PROT_ATTR
+---
 provides: [mldsa_uvmf_lib]
 schema_version: 2.4.0
 requires:
-  - mvc_lib
+  - mldsa_mvc_lib
 targets:
   tb:
     directories:

@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+//`include "kv_def.rdl" //fixme
 
 addrmap mldsa_reg {
     desc="address maps for adams bridge register space";
@@ -223,6 +224,8 @@ addrmap mldsa_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
+    kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl @0x8000;
+    kv_status_reg mldsa_kv_rd_seed_status;
 
     ////////////////////////////////////////////////////////////////
     // Interrupts
@@ -486,9 +489,8 @@ addrmap mldsa_reg {
 
     };
 
-
     /* -----------------------
      * Register File instance
      * ----------------------- */
-    intr_block_t intr_block_rf @0x8000;
+    intr_block_t intr_block_rf @0x8100;
 };

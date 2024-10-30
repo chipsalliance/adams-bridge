@@ -25,6 +25,9 @@ module mldsa_top
   import abr_sha3_pkg::*;
   import ntt_defines_pkg::*;
   import decompose_defines_pkg::*;
+  `ifdef CALIPTRA
+  import kv_defines_pkg::*; 
+  `endif
   #(
   //top level params
     parameter AHB_ADDR_WIDTH = 32,
@@ -57,7 +60,11 @@ module mldsa_top
   output logic                      hreadyout_o,
   output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
 
-  `MLDSA_CUSTOM_INF
+  `ifdef CALIPTRA
+  // KV interface
+  output kv_read_t kv_read,
+  input kv_rd_resp_t kv_rd_resp,
+  `endif
 
   output logic                      error_intr,
   output logic                      notif_intr
@@ -268,7 +275,7 @@ mldsa_reg mldsa_reg_inst (
   .hwif_out(mldsa_reg_hwif_out)
 );
 
-mldsa_ctrl mldsa_control_inst
+mldsa_ctrl mldsa_ctrl_inst
 (
   .clk(clk),
   .rst_b(rst_b),

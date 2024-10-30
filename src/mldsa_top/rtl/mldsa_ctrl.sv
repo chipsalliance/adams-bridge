@@ -26,6 +26,9 @@ module mldsa_ctrl
   import mldsa_ctrl_pkg::*;
   import mldsa_params_pkg::*;
   import ntt_defines_pkg::*;
+  `ifdef CALIPTRA
+  import kv_defines_pkg::*; 
+  `endif
   #(
   )
   (
@@ -130,7 +133,11 @@ module mldsa_ctrl
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
-  `MLDSA_CUSTOM_INF
+  `ifdef CALIPTRA
+  // KV interface
+  output kv_read_t kv_read,
+  input kv_rd_resp_t kv_rd_resp,
+  `endif
 
   //Interrupts
   output logic error_intr,
@@ -142,7 +149,9 @@ module mldsa_ctrl
   mldsa_reg__out_t mldsa_reg_hwif_out;
   logic mldsa_ready;
   logic mldsa_valid_reg;
+  logic mldsa_privkey_lock;
 
+  `ifdef CALIPTRA
 //Custom keyvault logic for Caliptra
 
   logic kv_seed_write_en;
@@ -157,15 +166,15 @@ module mldsa_ctrl
 
   always_comb begin: mldsa_kv_ctrl_reg
     //ready when fsm is not busy
-    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.ERROR.next = kv_seed_error;
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
     //ready when fsm is not busy
-    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.READY.next = kv_seed_ready;
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
     //set valid when fsm is done
-    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.VALID.hwset = kv_seed_done;
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
     //clear valid when new request is made
-    mldsa_reg_hwif_in.ecc_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
     //clear enable when busy
-    mldsa_reg_hwif_in.ecc_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
   end
 
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
@@ -211,6 +220,24 @@ always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
   end
 end
 
+always_comb mldsa_privkey_lock = kv_seed_data_present;
+
+`else
+always_comb begin: mldsa_kv_ctrl_reg
+  //ready when fsm is not busy
+  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = '0;
+  //ready when fsm is not busy
+  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = '0;
+  //set valid when fsm is done
+  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = '0;
+  //clear valid when new request is made
+  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = '0;
+  //clear enable when busy
+  mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
+end
+
+always_comb mldsa_privkey_lock = '0;
+`endif
 
   logic [2:0] cmd_reg;
 
@@ -321,10 +348,17 @@ end
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++)begin
       seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
 
+      `ifdef CALIPTRA
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (kv_seed_write_en & (kv_seed_write_offset == dword)) & ~zeroize;
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = kv_seed_write_data;
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready & ~kv_seed_data_present;
+      `else
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = '0;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready;
+      `endif
     end
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++)begin
@@ -544,7 +578,7 @@ end
     end
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & keygen_process ? privkey_out_rdata : 0;
+  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & keygen_process & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
 
   //No write to PRIVKEY_OUT allowed - just ack it
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
