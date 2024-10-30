@@ -125,6 +125,7 @@ task init_sim;
         zeroize_tb = 0;
         en_tb = 0;
         src_base_tb = 'h0;
+        shuffling_enable_tb = '0;
     end
 endtask
 
@@ -419,6 +420,9 @@ initial begin
     begin
       init_sim();
       reset_dut();
+      shuffling_enable_tb = '0;
+      norm_check_test();
+      shuffling_enable_tb = '1;
       norm_check_test();
     end
     begin
