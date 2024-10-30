@@ -69,7 +69,6 @@ module decompose
         output logic [63:0] w1_o,
         output logic buffer_en,
 
-        //TODO: check what high level controller requirement is
         output logic decompose_done,
         output logic w1_encode_done
 
@@ -87,7 +86,7 @@ module decompose
 
     //Control wires
     logic mod_enable; 
-    logic [1:0] enable_reg; //, enable_d2;
+    logic [1:0] enable_reg;
     logic [3:0] mod_ready;
     logic verify;
     logic [3:0] usehint_ready;
@@ -97,19 +96,16 @@ module decompose
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             enable_reg <= 'b0;
-            // enable_d2  <= 'b0;
             z_neq_z_d1 <= 'h0;
             z_neq_z_d2 <= 'h0;
         end
         else if (zeroize) begin
             enable_reg <= 'b0;
-            // enable_d2  <= 'b0;
             z_neq_z_d1 <= 'h0;
             z_neq_z_d2 <= 'h0;
         end
         else begin
             enable_reg <= {mod_enable, enable_reg[1]};
-            // enable_d2  <= enable_reg;
             z_neq_z_d1 <= z_neq_z_int;
             z_neq_z_d2 <= z_neq_z_d1;
         end
@@ -125,7 +121,7 @@ module decompose
         .dest_base_addr(dest_base_addr),
         .r0_ready(&mod_ready), //all redux units must be ready at the same time
         .mem_rd_req(mem_rd_req),
-        .mem_wr_req(mem_wr_req_int), //TODO: flop?
+        .mem_wr_req(mem_wr_req_int),
         .mod_enable(mod_enable),
         .decompose_done(decompose_done)
     );
@@ -229,9 +225,6 @@ module decompose
         z_mem_wr_req_int.addr     = verify ? 'h0 : MLDSA_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                    = verify & (&usehint_ready) ? r1_usehint : r1_reg;
 
-        // mem_wr_req.addr           = verify ? 'h0 : mem_wr_req_int.addr;
-        // mem_wr_req.rd_wr_en       = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-
         mem_hint_rd_req.addr     = verify ? MLDSA_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
         mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
     end
@@ -241,7 +234,6 @@ module decompose
         if (!reset_n) begin
             z_mem_wr_req    <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_wr_req      <= '{rd_wr_en: RW_IDLE, addr: '0};
-            // mem_hint_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
 
             z_neq_z         <= '0;
             mem_wr_data     <= '0;
@@ -249,7 +241,6 @@ module decompose
         else if (zeroize) begin
             z_mem_wr_req    <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_wr_req      <= '{rd_wr_en: RW_IDLE, addr: '0};
-            // mem_hint_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
 
             z_neq_z         <= '0;
             mem_wr_data     <= '0;
@@ -258,7 +249,6 @@ module decompose
             z_mem_wr_req        <= z_mem_wr_req_int;
             mem_wr_req.addr     <= verify ? 'h0 : mem_wr_req_int.addr;
             mem_wr_req.rd_wr_en <= verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-            // mem_hint_rd_req     <= mem_hint_rd_req_int;
 
             z_neq_z             <= z_neq_z_mux;
             mem_wr_data         <= mem_wr_data_int;
