@@ -26,7 +26,6 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/hintgen.sv
       - $COMPILE_ROOT/rtl/makehint.sv
-      - $COMPILE_ROOT/rtl/makehint_sample_buffer.sv
       
     tops: [makehint]
   rtl_lint:
