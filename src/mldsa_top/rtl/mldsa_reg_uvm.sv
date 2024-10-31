@@ -348,6 +348,91 @@ package mldsa_reg_uvm;
         endfunction : build
     endclass : mldsa_reg__MLDSA_PRIVKEY_IN
 
+    // Reg - kv_read_ctrl_reg
+    class kv_read_ctrl_reg extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        kv_read_ctrl_reg_bit_cg read_en_bit_cg[1];
+        kv_read_ctrl_reg_bit_cg read_entry_bit_cg[5];
+        kv_read_ctrl_reg_bit_cg pcr_hash_extend_bit_cg[1];
+        kv_read_ctrl_reg_bit_cg rsvd_bit_cg[25];
+        kv_read_ctrl_reg_fld_cg fld_cg;
+        rand uvm_reg_field read_en;
+        rand uvm_reg_field read_entry;
+        rand uvm_reg_field pcr_hash_extend;
+        rand uvm_reg_field rsvd;
+
+        function new(string name = "kv_read_ctrl_reg");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.read_en = new("read_en");
+            this.read_en.configure(this, 1, 0, "RW", 1, 'h0, 1, 1, 0);
+            this.read_entry = new("read_entry");
+            this.read_entry.configure(this, 5, 1, "RW", 0, 'h0, 1, 1, 0);
+            this.pcr_hash_extend = new("pcr_hash_extend");
+            this.pcr_hash_extend.configure(this, 1, 6, "RW", 0, 'h0, 1, 1, 0);
+            this.rsvd = new("rsvd");
+            this.rsvd.configure(this, 25, 7, "RW", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(read_en_bit_cg[bt]) read_en_bit_cg[bt] = new();
+                foreach(read_entry_bit_cg[bt]) read_entry_bit_cg[bt] = new();
+                foreach(pcr_hash_extend_bit_cg[bt]) pcr_hash_extend_bit_cg[bt] = new();
+                foreach(rsvd_bit_cg[bt]) rsvd_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : kv_read_ctrl_reg
+
+    // Reg - kv_status_reg
+    class kv_status_reg extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        kv_status_reg_bit_cg READY_bit_cg[1];
+        kv_status_reg_bit_cg VALID_bit_cg[1];
+        kv_status_reg_bit_cg ERROR_bit_cg[8];
+        kv_status_reg_fld_cg fld_cg;
+        rand uvm_reg_field READY;
+        rand uvm_reg_field VALID;
+        rand uvm_reg_field ERROR;
+
+        function new(string name = "kv_status_reg");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.READY = new("READY");
+            this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            this.VALID = new("VALID");
+            this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            this.ERROR = new("ERROR");
+            this.ERROR.configure(this, 8, 2, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
+                foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
+                foreach(ERROR_bit_cg[bt]) ERROR_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : kv_status_reg
+
     // Reg - mldsa_reg::intr_block_t::global_intr_en_t
     class mldsa_reg__intr_block_t__global_intr_en_t extends uvm_reg;
         protected uvm_reg_data_t m_current;
@@ -848,6 +933,8 @@ package mldsa_reg_uvm;
         rand mldsa_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand mldsa_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
         rand mldsa_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
+        rand kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
+        rand kv_status_reg mldsa_kv_rd_seed_status;
         rand mldsa_reg__intr_block_t intr_block_rf;
 
         function new(string name = "mldsa_reg");
@@ -931,10 +1018,20 @@ package mldsa_reg_uvm;
             this.MLDSA_PRIVKEY_IN.configure(this);
             this.MLDSA_PRIVKEY_IN.build();
             this.default_map.add_submap(this.MLDSA_PRIVKEY_IN.default_map, 'h6000);
+            this.mldsa_kv_rd_seed_ctrl = new("mldsa_kv_rd_seed_ctrl");
+            this.mldsa_kv_rd_seed_ctrl.configure(this);
+
+            this.mldsa_kv_rd_seed_ctrl.build();
+            this.default_map.add_reg(this.mldsa_kv_rd_seed_ctrl, 'h8000);
+            this.mldsa_kv_rd_seed_status = new("mldsa_kv_rd_seed_status");
+            this.mldsa_kv_rd_seed_status.configure(this);
+
+            this.mldsa_kv_rd_seed_status.build();
+            this.default_map.add_reg(this.mldsa_kv_rd_seed_status, 'h8004);
             this.intr_block_rf = new("intr_block_rf");
             this.intr_block_rf.configure(this);
             this.intr_block_rf.build();
-            this.default_map.add_submap(this.intr_block_rf.default_map, 'h8000);
+            this.default_map.add_submap(this.intr_block_rf.default_map, 'h8100);
         endfunction : build
     endclass : mldsa_reg
 
