@@ -26,7 +26,6 @@
 // TODO: see if this needs any changes
 
 // TODO: embed z and r0 checks in decompose?
-// TODO: ct0 needs shuffling countermeasure - confirm with Emre
 // TODO: need a restart input (other than zeroize)
 
 module norm_check_top
@@ -42,6 +41,10 @@ module norm_check_top
 
         input wire norm_check_enable,
         input chk_norm_mode_t mode,
+
+        input wire shuffling_enable,
+        input wire [5:0] randomness,
+
         input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         input [4*REG_SIZE-1:0] mem_rd_data,
@@ -50,10 +53,17 @@ module norm_check_top
         output logic norm_check_done
     );
 
-    logic [3:0] check_a_invalid, check_b_invalid;
+    logic [3:0] check_a_invalid;
     logic check_enable, check_enable_reg;
     logic norm_check_done_int;
+    logic latched_shuffling_enable;
+    logic randomness_enable;
+    logic [5:0] controller_randomness;
+
     
+    assign randomness_enable = latched_shuffling_enable | shuffling_enable;
+    assign controller_randomness = randomness_enable ? randomness: '0;
+
     generate 
         for (genvar i = 0; i < 4; i++) begin
             norm_check check_inst (
@@ -87,16 +97,22 @@ module norm_check_top
     //Give one cycle for HLC to capture invalid flag
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)  begin
-            norm_check_ready <= 'b0;
-            check_enable_reg <= 'b0;
+            norm_check_ready         <= 'b0;
+            check_enable_reg         <= 'b0;
+            latched_shuffling_enable <= 'b0;
         end
         else if (zeroize)  begin
-            norm_check_ready <= 'b0;
-            check_enable_reg <= 'b0;
+            norm_check_ready         <= 'b0;
+            check_enable_reg         <= 'b0;
+            latched_shuffling_enable <= 'b0;
         end
         else  begin
-            norm_check_ready <= norm_check_done;
-            check_enable_reg <= check_enable;
+            norm_check_ready         <= norm_check_done;
+            check_enable_reg         <= check_enable;
+            if (norm_check_enable)
+                latched_shuffling_enable <= shuffling_enable;
+            else if  (norm_check_done)
+                latched_shuffling_enable <= 'b0;
         end
 
     end
@@ -107,6 +123,7 @@ module norm_check_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .norm_check_enable(norm_check_enable),
+        .randomness(controller_randomness),
         .mode(mode),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),
