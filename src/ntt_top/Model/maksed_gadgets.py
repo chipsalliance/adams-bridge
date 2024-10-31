@@ -20,13 +20,34 @@ def one_share_mult(a0, a1, b):
     randomness = CustomUnsignedInteger(0, 0, MultMod-1)    
     #get a random number ranging [0, MultMod-1]
     randomness.generate_random()
-    r1 = int(randomness.value)
+    r1 = int(randomness.value) #optional
     #refresh the shares
     a00 = int(a0+r1) % MultMod
     a10 = int(a1-r1) % MultMod
     c0 = int(a00*b) % MultMod
     c1 = int(a10*b) % MultMod
     return c0, c1
+
+def two_share_mult(a0, a1, b0, b1):
+    # Construct randomness class
+    randomness = CustomUnsignedInteger(0, 0, MultMod-1)    
+    #get a random number ranging [0, MultMod-1]
+    randomness.generate_random()
+    r1 = int(randomness.value)
+    # #refresh the shares
+    # a00 = int(a0+r1) % MultMod
+    # a10 = int(a1-r1) % MultMod
+    # c0 = int(a00*b) % MultMod
+    # c1 = int(a10*b) % MultMod
+    c0 = int(a0*b0) % MultMod
+    d0 = int(a1*b0) % MultMod
+    c1 = int(a0*b1) % MultMod
+    d1 = int(a1*b1) % MultMod
+    e0 = int(c1+r1) % MultMod
+    e1 = int(d0-r1) % MultMod
+    final_res0 = int(c0+e0) % MultMod
+    final_res1 = int(d1+e1) % MultMod
+    return final_res0, final_res1
 
 def maskedAdder(a0, a1, b0, b1):
     # Construct randomness class
@@ -205,7 +226,7 @@ def unMaskedModAddition(x0, x1, y0, y1):
     y = y0 ^ y1
     z = (x+y) % DILITHIUM_Q
     randomness = CustomUnsignedInteger(0, 0, (2**23)-1)
-    # Refresh the shares
+    # Refresh the shares -- not optional
     randomness.generate_random()
     r1 = int(randomness.value)
     z0 = z ^ r1
