@@ -22,6 +22,7 @@
 
 module skdecode_tb
     import mldsa_params_pkg::*;
+    import skdecode_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter MEM_ADDR_WIDTH = 15
@@ -34,6 +35,8 @@ parameter CLK_PERIOD      = 2 * CLK_HALF_PERIOD;
 //----------------------------------------------------------------
 // Register and Wire declarations.
 //----------------------------------------------------------------
+reg [31 : 0]  error_ctr;
+
 reg           clk_tb;
 reg           reset_n_tb;
 reg           cptra_pwrgood_tb;
@@ -44,13 +47,13 @@ reg [3:0][12:0] t0_data_i;
 reg [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_tb;
 reg [31:0] ahb_data_tb, keymem_a_data_tb, keymem_b_data_tb;
 reg [167:0][3:0][7:0] s1_array, s1_array_rev;
-reg [191:0][3:0][7:0] s2_array_tb;
-reg [831:0][3:0][7:0] t0_array_tb;
-reg [2:0] stall_count; 
-reg [9:0] byte_index;
-reg [6:0] buf_count;
+reg [191:0][3:0][7:0] s2_array;
+reg [831:0][3:0][7:0] t0_array;
 reg [(256*8)-1:0][REG_SIZE-1:0] t0_out_array, s2_out_array;
 reg [(256*7)-1:0][REG_SIZE-1:0] s1_out_array;
+
+mem_if_t keymem_a_rd_req_tb;
+mem_if_t keymem_b_rd_req_tb;
 
 skdecode_top dut (
     .clk(clk_tb),
@@ -61,8 +64,8 @@ skdecode_top dut (
     .dest_base_addr(dest_base_tb),
     .keymem_a_rd_data(keymem_a_data_tb),
     .keymem_b_rd_data(keymem_b_data_tb),
-    .keymem_a_rd_req(),
-    .keymem_b_rd_req(),
+    .keymem_a_rd_req(keymem_a_rd_req_tb),
+    .keymem_b_rd_req(keymem_b_rd_req_tb),
     .mem_a_wr_req(),
     .mem_b_wr_req(),
     .mem_a_wr_data(),
@@ -88,6 +91,8 @@ end // clk_gen
 task init_sim;
     begin
         $display("Start of init\n");
+        error_ctr = 32'h00000000;
+        
         clk_tb = 0;
         reset_n_tb = 0;
         cptra_pwrgood_tb = 0;
@@ -101,11 +106,28 @@ task init_sim;
         ahb_data_tb = 'h0;
         keymem_a_data_tb = 'h0;
         keymem_b_data_tb = 'h0;
-        stall_count = 'h0;
-        byte_index = 'h0;
-        buf_count = 'h0;
     end
 endtask
+
+  //----------------------------------------------------------------
+  // display_test_result()
+  //
+  // Display the accumulated test results.
+  //----------------------------------------------------------------
+  task display_test_result;
+    begin
+      if (error_ctr == 0)
+        begin
+          $display("*** All test cases completed successfully.");
+          $display("* TESTCASE PASSED");
+        end
+      else
+        begin
+          $display("*** %02d errors detected during testing.", error_ctr);
+          $display("* TESTCASE FAILED");
+        end
+    end
+  endtask // display_test_result
 
 //----------------------------------------------------------------
 // reset_dut()
@@ -128,6 +150,10 @@ task reset_dut;
     end
 endtask // reset_dut
 
+//----------------------------------------------------------------
+// read_test_vectors()
+//
+//----------------------------------------------------------------
 task read_test_vectors();
     string fname = "s1_bytes.hex";
     string s2_name = "s2_bytes.hex";
@@ -160,7 +186,7 @@ task read_test_vectors();
     i = 0;
     while (!$feof(file2)) begin
         if($fgets(line,file2)) begin
-            ret = $sscanf(line, "%02x%02x%02x%02x", s2_array_tb[i][0],s2_array_tb[i][1],s2_array_tb[i][2],s2_array_tb[i][3]);
+            ret = $sscanf(line, "%02x%02x%02x%02x", s2_array[i][0],s2_array[i][1],s2_array[i][2],s2_array[i][3]);
             i = i+1;
         end
     end
@@ -169,7 +195,7 @@ task read_test_vectors();
     i = 0;
     while (!$feof(file3)) begin
         if($fgets(line,file3)) begin
-            ret = $sscanf(line, "%02x%02x%02x%02x", t0_array_tb[i][0],t0_array_tb[i][1],t0_array_tb[i][2],t0_array_tb[i][3]);
+            ret = $sscanf(line, "%02x%02x%02x%02x", t0_array[i][0],t0_array[i][1],t0_array[i][2],t0_array[i][3]);
             i = i+1;
         end
     end
@@ -209,7 +235,13 @@ task read_test_vectors();
     $fclose(file);
 endtask
 
-task skdecode_ref_test(input logic [167:0][31:0] s_array_tb);
+//----------------------------------------------------------------
+// skdecode_ref_test()
+//
+//----------------------------------------------------------------
+task skdecode_ref_test(input logic [167:0][31:0] s1_array_tb, 
+                       input logic [167:0][31:0] s2_array_tb, 
+                       input logic [831:0][31:0] t0_array_tb);
     
     int i;
     string sval;
@@ -226,161 +258,135 @@ task skdecode_ref_test(input logic [167:0][31:0] s_array_tb);
     $display("Wait a cycle to emulate mem read\n");
     @(posedge clk_tb);
     
-        $display("Starting s1 poly\n");
-        fork
-            begin
-                for (i = 0; i < 224; i++) begin
-                    if (stall_count < 'h3) begin
-                    // if ((!dut.s1s2_buf_full) && (byte_index < 'd167)) begin
-                        keymem_a_data_tb <= s_array_tb[byte_index];
-                        stall_count++;
-                        byte_index++;
-                    end
-                    else begin
-                        stall_count = 'h0;
-                        // keymem_a_data_tb <= 'h0;
-                    end
-                    @(posedge clk_tb);
-                end
-            end
-            begin
-                $display("Waiting for s1s2 valid\n");
-                while (!dut.s1s2_valid[0]) @(posedge clk_tb);
-                $display("Received s1s2 valid\n");
-                for (int k = 0; k < 224; k++) begin
-                for (int j = 0; j < 8; j++) begin
-                    if (dut.s1s2_data[j] != s1_out_array[(8*k)+j])
-                        $display("Error: s1 data mismatch. Exp: %6h, Obs: %6h", s1_out_array[(8*k)+j], dut.s1s2_data[j]);
-                    else check_count++;
-                end
+    $display("Starting s1 poly\n");
+    fork
+        begin
+            while ((keymem_a_rd_req_tb.addr < 168) & (keymem_b_rd_req_tb.addr < 168)) begin
+                if (keymem_a_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_a_data_tb <= s1_array_tb[keymem_a_rd_req_tb.addr];
+                
+                if (keymem_b_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_b_data_tb <= s1_array_tb[keymem_b_rd_req_tb.addr];
+                    
                 @(posedge clk_tb);
-                end
             end
-        join
-if (check_count == 1792) $display("s1 unpack passed, check count = %d", check_count);
-else $display("s1 unpack failed, check count = %d", check_count);
-        byte_index = 'h0;
-        $display("Waiting for s1 done, value = %0d\n", dut.s1_done);
-        @(posedge clk_tb iff (dut.s1_done == 1'b1));
-        // $display("Waiting for s1 done, value = %0d\n", dut.s1_done);
-
-        @(posedge clk_tb); //Wait a cycle to emulate delay in fsm for last mem write
-
-        //------------------------------------------------------------------------
-
-    // begin
-        byte_index = 'h0;
-        stall_count = 'h0;
-        check_count = 'h0;
-        $display("Starting s2 poly\n");
-        fork 
-            begin
-                for (i = 0; i < 256; i++) begin
-                    if (stall_count < 'h3) begin
-                    // if ((!dut.s1s2_buf_full) && (byte_index < 'd191)) begin
-                        keymem_a_data_tb <= s2_array_tb[byte_index]; //s1_array[i];
-                        stall_count++;
-                        byte_index++;
-                    end
-                    else begin
-                        stall_count = 'h0;
-                        // keymem_a_data_tb <= 'h0; //TODO remove and validate
-                    end
-                    @(posedge clk_tb);
+        end
+        begin
+            $display("Waiting for s1s2 valid\n");
+            while (!dut.s1s2_valid[0]) @(posedge clk_tb);
+            $display("Received s1s2 valid\n");
+            for (int k = 0; k < 224; k++) begin
+            for (int j = 0; j < 8; j++) begin
+                if (dut.s1s2_data[j] != s1_out_array[(8*k)+j]) begin
+                    $display("Error: s1 data mismatch. Exp: %6h, Obs: %6h", s1_out_array[(8*k)+j], dut.s1s2_data[j]);
+                    error_ctr = error_ctr + 1;
                 end
+                else check_count++;
             end
-            begin
-                $display("Waiting for s1s2 valid\n");
-                while (!dut.s1s2_valid[0]) @(posedge clk_tb);
-                $display("Received s1s2 valid\n");
-                for (int k = 0; k < 256; k++) begin
-                for (int j = 0; j < 8; j++) begin
-                    if (dut.s1s2_data[j] != s2_out_array[(8*k)+j])
-                        $display("Error: s2 data mismatch. Exp: %6h, Obs: %6h", s2_out_array[(8*k)+j], dut.s1s2_data[j]);
-                    else check_count++;
-                end
+            @(posedge clk_tb);
+            end
+        end
+    join
+
+    if (check_count == 1792) $display("s1 unpack passed, check count = %d", check_count);
+    else $display("s1 unpack failed, check count = %d", check_count);
+
+    $display("Waiting for s1 done, value = %0d\n", dut.s1_done);
+    @(posedge clk_tb iff (dut.s1_done == 1'b1));
+
+    @(posedge clk_tb); //Wait a cycle to emulate delay in fsm for last mem write
+
+
+    check_count = 'h0;
+    $display("Starting s2 poly\n");
+    fork 
+        begin
+            while ((keymem_a_rd_req_tb.addr < 360) & (keymem_b_rd_req_tb.addr < 360)) begin
+                if (keymem_a_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_a_data_tb <= s2_array_tb[keymem_a_rd_req_tb.addr - 168];
+                
+                if (keymem_b_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_b_data_tb <= s2_array_tb[keymem_b_rd_req_tb.addr - 168];
+                    
                 @(posedge clk_tb);
-                end
-
             end
-        join
-
-        if (check_count == 2048) $display("s2 unpack passed, check count = %d", check_count);
-        else $display("s2 unpack failed, check count = %d", check_count);
-    
-
-    // end
-
-    // while (dut.s2_done == 1'b0) begin
-        $display("Waiting for s2 done, value = %0d\n", dut.s2_done);
-        // @(posedge clk_tb);
-    // end
-        @(posedge clk_tb iff (dut.s2_done == 1'b1));
-        // $display("Waiting for s2 done, value = %0d\n", dut.s2_done);
-
-        @(posedge clk_tb); //Wait a cycle to emulate delay in fsm for last mem write
-
-        //------------------------------------------------------------------------
-
-    // begin
-        byte_index = 'h0;
-        stall_count = 'h0;
-        check_count = 0;
-        $display("Starting t0 poly\n");
-        fork
-            begin
-                for (i = 0; i < 512; i++) begin
-                    // if ((buf_count <= 104) && (byte_index < 'd831)) begin
-                    if ((!dut.t0_buf_full) & (byte_index < 'd831)) begin
-                    // if (buf_count < 'd60) begin
-                        keymem_a_data_tb <= t0_array_tb[byte_index];
-                        keymem_b_data_tb <= t0_array_tb[byte_index+1];
-                        stall_count++;
-                        byte_index = byte_index+2;
-                        if (i == 0)
-                            buf_count <= buf_count + 'd64;
-                        else
-                            buf_count <= buf_count - 'd52 + 'd64;
-                    end
-                    // else begin
-                    //     stall_count = 'h0;
-                    //     // keymem_a_data_tb <= 'h0; //TODO remove and validate
-                    //     // keymem_b_data_tb <= 'h0;
-                    //     buf_count <= buf_count - 'd52;
-                    // end
-                    @(posedge clk_tb);
+        end
+        begin
+            $display("Waiting for s1s2 valid\n");
+            while (!dut.s1s2_valid[0]) @(posedge clk_tb);
+            $display("Received s1s2 valid\n");
+            for (int k = 0; k < 256; k++) begin
+            for (int j = 0; j < 8; j++) begin
+                if (dut.s1s2_data[j] != s2_out_array[(8*k)+j]) begin
+                    $display("Error: s2 data mismatch. Exp: %6h, Obs: %6h", s2_out_array[(8*k)+j], dut.s1s2_data[j]); 
+                    error_ctr = error_ctr + 1;
                 end
+                else check_count++;
             end
-            begin
-                $display("Waiting for t0 valid\n");
-                while (!dut.t0_valid[0]) @(posedge clk_tb);
-                $display("Received t0 valid\n");
-                for (int k = 0; k < 512; k++) begin
-                for (int j = 0; j < 4; j++) begin
-                    if (dut.t0_data[j] != t0_out_array[(4*k)+j])
-                        $display("Error: t0 data mismatch. Exp: %6h, Obs: %6h", t0_out_array[(4*k)+j], dut.t0_data[j]);
-                    else check_count++;
-                end
+            @(posedge clk_tb);
+            end
+
+        end
+    join
+
+    if (check_count == 2048) $display("s2 unpack passed, check count = %d", check_count);
+    else $display("s2 unpack failed, check count = %d", check_count);
+
+    $display("Waiting for s2 done, value = %0d\n", dut.s2_done);
+
+    @(posedge clk_tb iff (dut.s2_done == 1'b1));
+
+    @(posedge clk_tb); //Wait a cycle to emulate delay in fsm for last mem write
+
+    //------------------------------------------------------------------------
+
+    check_count = 0;
+    $display("Starting t0 poly\n");
+    fork
+        begin
+            while ((keymem_a_rd_req_tb.addr < 1192) & (keymem_b_rd_req_tb.addr < 1192)) begin
+                if (keymem_a_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_a_data_tb <= t0_array_tb[keymem_a_rd_req_tb.addr-360];
+                
+                if (keymem_b_rd_req_tb.rd_wr_en == RW_READ)
+                    keymem_b_data_tb <= t0_array_tb[keymem_b_rd_req_tb.addr-360];
+                    
                 @(posedge clk_tb);
-                end
             end
-        join
+        end
+        begin
+            $display("Waiting for t0 valid\n");
+            while (!dut.t0_valid[0]) @(posedge clk_tb);
+            $display("Received t0 valid\n");
+            for (int k = 0; k < 512; k++) begin
+            for (int j = 0; j < 4; j++) begin
+                if (dut.t0_data[j] != t0_out_array[(4*k)+j]) begin
+                    $display("Error: t0 data mismatch. Exp: %6h, Obs: %6h", t0_out_array[(4*k)+j], dut.t0_data[j]);
+                    error_ctr = error_ctr + 1;
+                end
+                else check_count++;
+            end
+            @(posedge clk_tb);
+            end
+        end
+    join
+
     if (check_count == 2048) $display("T0 unpack passed, check count = %d", check_count);
     else $display("T0 unpack failed, check count = %d", check_count);
-    // end
 
-    // while (dut.s2_done == 1'b0) begin
-        $display("Waiting for t0 done, value = %0d\n", dut.t0_done);
-        // @(posedge clk_tb);
-    // end
-        @(posedge clk_tb iff (dut.t0_done == 1'b1));
-        // $display("Waiting for t0 done, value = %0d\n", dut.t0_done);
+    $display("Waiting for t0 done, value = %0d\n", dut.t0_done);
+
+    @(posedge clk_tb iff (dut.t0_done == 1'b1));
 
     while (!dut.skdecode_done) @(posedge clk_tb);
     $display("Test done\n");
 
 endtask
 
+//----------------------------------------------------------------
+// skdecode_test()
+//
+//----------------------------------------------------------------
 task skdecode_test;
     $display("Starting skdecode test\n");
     @(posedge clk_tb);
@@ -393,50 +399,28 @@ task skdecode_test;
     for (int poly = 0; poly < 7; poly++) begin
         $display("Starting poly %0d", poly);
         for (int i = 0; i < 256; i=i+8) begin
-            // for (int j = 0; j < 8; j++) begin
-                // s1s2_data_i[j] <= $urandom_range(1,4); //{$urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4)};
-                // ahb_data_tb <= $urandom();
-                keymem_a_data_tb <= {$urandom_range(1,4), $urandom_range(1,4),
-                                     $urandom_range(1,4), $urandom_range(1,4),
-                                     $urandom_range(1,4), $urandom_range(1,4),
-                                     $urandom_range(1,4), $urandom_range(1,4)};
-            // end
+            keymem_a_data_tb <= {$urandom_range(1,4), $urandom_range(1,4),
+                                    $urandom_range(1,4), $urandom_range(1,4),
+                                    $urandom_range(1,4), $urandom_range(1,4),
+                                    $urandom_range(1,4), $urandom_range(1,4)};
             @(posedge clk_tb);
         end
     end
 
-    // $display("Polys done, waiting\n");
-    // while(!dut.s1_done | !dut.skdecode_error) @(posedge clk_tb);
-    // if (dut.skdecode_error)
-    //     $error("s1 invalid\n");
-    // else
-    //     $display("s1 done\n");
     $display("Starting s2 poly\n");
     for (int poly = 0; poly < 8; poly++) begin
         $display("Starting poly %0d", poly);
         for (int i = 0; i < 256; i=i+8) begin
-            // for (int j = 0; j < 8; j++) begin
-                // s1s2_data_i[j] <= $urandom_range(1,4); //{$urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4), $urandom_range(0,4)};
-            // end
             keymem_a_data_tb <= $urandom_range(1,4);
             @(posedge clk_tb);
         end
     end
 
-    // while(!dut.s2_done | !dut.skdecode_error) @(posedge clk_tb);
-    // if (dut.skdecode_error)
-    //     $error("s2 invalid\n");
-    // else
-        // $display("s2 done\n");
     repeat(2) @(posedge clk_tb);
     $display("Starting t0 poly\n");
     for (int poly = 0; poly < 8; poly++) begin
         $display("Starting poly %0d", poly);
         for (int i = 0; i < 256; i=i+8) begin
-            // for (int j = 0; j < 8; j++) begin
-                // t0_data_i[j] <= $random; //{$random, $random, $random, $random, $random, $random, $random, $random};
-
-            // end
             keymem_a_data_tb <= $urandom();
             keymem_b_data_tb <= $urandom();
             @(posedge clk_tb);
@@ -453,19 +437,20 @@ task skdecode_test;
     for (int poly = 0; poly < 7; poly++) begin
         $display("Starting poly %0d", poly);
         for (int i = 0; i < 256; i=i+8) begin
-            // for (int j = 0; j < 8; j++) begin
-                // s1s2_data_i[j] <= $random; //{$random, $random, $random, $random, $random, $random, $random, $random};
-            // end
             keymem_a_data_tb <= $urandom();
             @(posedge clk_tb);
         end
     end
 
-    // while(!dut.t0_done) @(posedge clk_tb);
-    // $display("t0 done\n");
     while (!dut.skdecode_done) @(posedge clk_tb);
     $display("Test done\n");
 endtask
+
+//----------------------------------------------------------------
+// skdecode_test
+// The main test functionality.
+//
+//----------------------------------------------------------------
 
 initial begin
     init_sim();
@@ -473,10 +458,10 @@ initial begin
     // skdecode_test();
     $display("Reading test vectors from hex\n");
     read_test_vectors();
-    skdecode_ref_test(s1_array);
+    skdecode_ref_test(s1_array, s2_array, t0_array);
     repeat(100) @(posedge clk_tb);
-    // skdecode_ref_test(s1_array_rev);
-    // repeat(1000) @(posedge clk_tb);
+
+    display_test_result();
     $finish;
 end
 
