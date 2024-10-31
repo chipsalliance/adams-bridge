@@ -28,7 +28,7 @@ package norm_check_defines_pkg;
     parameter z_bound = 2'h0, r0_bound = 2'h1, ct0_bound = 2'h2;
     typedef logic [1:0] chk_norm_mode_t;
 
-    typedef enum logic [1:0] {CHK_IDLE, CHK_RD_MEM, CHK_DONE} chk_read_state_e;
+    typedef enum logic [1:0] {CHK_IDLE, CHK_RD_MEM, CHK_WAIT, CHK_DONE} chk_read_state_e;
 endpackage
 
 `endif
