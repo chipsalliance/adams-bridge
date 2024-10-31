@@ -452,11 +452,11 @@ generate
         end
         MLDSA_NTT: begin
           mode[g_inst] = ct;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         MLDSA_INTT: begin
           mode[g_inst] = gs;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWM_SMPL: begin
           mode[g_inst] = pwm;
@@ -472,23 +472,23 @@ generate
         MLDSA_PWM: begin
           mode[g_inst] = pwm;
           sampler_valid[g_inst] = 1;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWM_ACCUM: begin
           mode[g_inst] = pwm;
           accumulate[g_inst] = 1;
           sampler_valid[g_inst] = 1;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWA: begin
           mode[g_inst] = pwa;
           sampler_valid[g_inst] = 1;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWS: begin
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
-          // shuffle_en[g_inst] = 1;
+          shuffle_en[g_inst] = 1;
         end
         default: begin
         end
@@ -513,7 +513,7 @@ generate
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(shuffle_en[g_inst]),
-    .random(rand_bits[g_inst*6+5:g_inst*6]),
+    .random(rand_bits[5:0]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
