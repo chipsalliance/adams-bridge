@@ -25,6 +25,9 @@ module mldsa_top
   import abr_sha3_pkg::*;
   import ntt_defines_pkg::*;
   import decompose_defines_pkg::*;
+  `ifdef CALIPTRA
+  import kv_defines_pkg::*; 
+  `endif
   #(
   //top level params
     parameter AHB_ADDR_WIDTH = 32,
@@ -56,6 +59,12 @@ module mldsa_top
   output logic                      hresp_o,
   output logic                      hreadyout_o,
   output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
+
+  `ifdef CALIPTRA
+  // KV interface
+  output kv_read_t kv_read,
+  input kv_rd_resp_t kv_rd_resp,
+  `endif
 
   output logic                      error_intr,
   output logic                      notif_intr
@@ -266,7 +275,7 @@ mldsa_reg mldsa_reg_inst (
   .hwif_out(mldsa_reg_hwif_out)
 );
 
-mldsa_ctrl mldsa_control_inst
+mldsa_ctrl mldsa_ctrl_inst
 (
   .clk(clk),
   .rst_b(rst_b),
@@ -372,8 +381,8 @@ mldsa_ctrl mldsa_control_inst
   .lfsr_seed_o(lfsr_seed),
 
   .error_intr(error_intr),
-  .notif_intr(notif_intr)
-
+  .notif_intr(notif_intr),
+  .* //custom interface connects by name
 );
 
 logic [MsgWidth-1:0] msg_data_i[Sha3Share];
@@ -1113,9 +1122,6 @@ mldsa_ram_inst3
   .raddr_i(mldsa_mem_raddr[3][MLDSA_MEM_INST3_ADDR_W-1:0]),
   .rdata_o(mldsa_mem_rdata[3])
 );
-
-
-
 
 `ABR_ASSERT_MUTEX(ERR_MEM_0_0_RD_ACCESS_MUTEX, {ntt_mem_re0_bank[0][0],pwo_a_mem_re0_bank[0][0],pwo_b_mem_re0_bank[0][0],ntt_mem_re0_bank[1][0],
                                                 pwo_a_mem_re0_bank[1][0],pwo_b_mem_re0_bank[1][0],decomp_mem_re0_bank[0][0],decomp_mem_re0_bank[1][0],
