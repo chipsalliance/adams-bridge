@@ -659,6 +659,10 @@ norm_check_inst
 
   .mode(normcheck_mode),
   .norm_check_enable(normcheck_enable),
+
+  .shuffling_enable(1'b1), // This signal can be controlled by the controller
+  .randomness(rand_bits[5:0]),
+
   .norm_check_ready(),
   .norm_check_done(normcheck_done),
   
