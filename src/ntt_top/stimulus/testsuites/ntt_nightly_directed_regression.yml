@@ -5,4 +5,4 @@ contents:
   - tests:
       tags: ["L0", "directed", "nightly", "NTT"]
       paths:
-        - ${CALIPTRA_ROOT}/src/ntt_top/stimulus/tests/directed/ntt_normal_test.yml
+        - ${ADAMSBRIDGE_ROOT}/src/ntt_top/stimulus/tests/directed/ntt_normal_test.yml
