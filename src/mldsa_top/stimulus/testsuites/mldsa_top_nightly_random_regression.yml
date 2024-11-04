@@ -11,5 +11,5 @@ contents:
         generate: "reseed {template}.yml -seed {seed}"
         path: "{template_basename}__{seed}.yml"
       templates:
-        $CALIPTRA_ROOT/../adams-bridge/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_key_gen_and_sign_test   : { weight 65 }
-        $CALIPTRA_ROOT/../adams-bridge/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_test   : { weight 35 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_key_gen_and_sign_test   : { weight 65 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_test   : { weight 35 }
