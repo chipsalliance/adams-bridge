@@ -107,8 +107,6 @@ module ntt_shuffle_buffer
         end
 
         //assign output
-        //always_comb data_o = rden ? {buffer[~lo_hi_rd][3][rdptr], buffer[~lo_hi_rd][2][rdptr], buffer[~lo_hi_rd][1][rdptr], buffer[~lo_hi_rd][0][rdptr]} : 'h0; //lo_hi points to buffer currently being written. So, read from the other section that's full
-
         always_comb begin
             data_o = '0;
             if (lo_hi_rd) begin
