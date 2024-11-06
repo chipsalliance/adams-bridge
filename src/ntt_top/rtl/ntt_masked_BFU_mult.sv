@@ -69,17 +69,17 @@ module ntt_masked_BFU_mult
     );
 
     //redux46
-    abr_masked_N_bit_Boolean_adder #(
-        .WIDTH(10) //TODO: ask Emre - inputs are 10 bit, output should be 12 bits. Is it ok to put inputs at 12 too?
-    ) bool_adder_inst0 (
-        .clk(clk),
-        .rst_n(reset_n),
-        .zeroize(zeroize),
-        .x({12'(mul_res_bool[22:13][1]), 12'(mul_res_bool[22:13][0])}),
-        .y({12'(mul_res_bool[32:23][1]), 12'(mul_res_bool[32:23][0])}),
-        .rnd(rnd4),
-        .s()
-    );
+    // abr_masked_N_bit_Boolean_adder #(
+    //     .WIDTH(10) //TODO: ask Emre - inputs are 10 bit, output should be 12 bits. Is it ok to put inputs at 12 too?
+    // ) bool_adder_inst0 (
+    //     .clk(clk),
+    //     .rst_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .x({12'(mul_res_bool[22:13][1]), 12'(mul_res_bool[22:13][0])}),
+    //     .y({12'(mul_res_bool[32:23][1]), 12'(mul_res_bool[32:23][0])}),
+    //     .rnd(rnd4),
+    //     .s()
+    // );
 
     //B2A
     abr_masked_B2A_conv #(
