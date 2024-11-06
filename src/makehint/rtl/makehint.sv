@@ -98,8 +98,6 @@ module makehint
     //Read fsm
     mh_read_state_e read_fsm_state_ps, read_fsm_state_ns;
     logic arc_MH_IDLE_MH_RD_MEM;
-    logic arc_MH_RD_MEM_MH_IDLE;
-    logic arc_MH_RD_MEM_MH_FLUSH_SBUF;
     logic arc_MH_RD_MEM_MH_WAIT1;
     logic arc_MH_WAIT2_MH_IDLE;
     // logic arc_MH_WAIT_MH_RD_MEM; //TODO don't need wait if we do all polys back to back? check this later
@@ -108,7 +106,6 @@ module makehint
     //Hint sum
     logic [7:0] hintsum;
     logic busy_reg;
-    logic incr_reg_wr_addr;
     logic latch_hintsum_addr;
 
     //Busy flag
