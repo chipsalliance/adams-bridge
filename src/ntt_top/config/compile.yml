@@ -46,8 +46,6 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_butterfly2x2.sv
       - $COMPILE_ROOT/rtl/ntt_butterfly.sv
       - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
-      # - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
-      # - $COMPILE_ROOT/rtl/ntt_adder.sv
       - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_special_adder.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
@@ -55,6 +53,7 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_twiddle_lookup.sv
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_BFU_add_sub.sv
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -66,8 +65,6 @@ targets:
     directories: []
     waiver_files:
       - $MSFT_REPO_ROOT/src/ntt/config/design_lint/ntt_top/sglint_waivers
-    # black_box:
-    #   - ecc_reg
 ---
 provides: [ntt_top_tb]  
 schema_version: 2.4.0

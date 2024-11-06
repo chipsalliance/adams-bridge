@@ -74,6 +74,13 @@ pwo_mem_addr_t pwo_mem_base_addr_tb;
 
 string operation;
 
+logic [45:0] actual_u, actual_v;
+logic [1:0][45:0] u;
+logic [1:0][45:0] v;
+logic [1:0] actual_sum [45:0];
+logic [46:0] exp_sum;
+logic [45:0] rnd0, rnd1, rnd2, rnd3;
+
 //----------------------------------------------------------------
 // Device Under Test.
 //----------------------------------------------------------------
@@ -131,28 +138,35 @@ string operation;
 //     .sampler_valid(svalid_tb)
 // );
 
-ntt_wrapper dut (
+// ntt_wrapper dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .mode(mode_tb),
+//     .ntt_enable(enable_tb),
+//     .load_tb_values(load_tb_values),
+//     .load_tb_addr(load_tb_addr),
+//     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
+//     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
+//     .accumulate(acc_tb),
+//     .sampler_valid(svalid_tb),
+//     .sampler_mode(sampler_mode_tb),
+//     .sampler_data(96'hFFFFFF),
+//     .ntt_done(ntt_done_tb),
+//     .ntt_busy()
+// );
+
+ntt_masked_BFU_add_sub dut (
     .clk(clk_tb),
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
-    .mode(mode_tb),
-    .ntt_enable(enable_tb),
-    .load_tb_values(load_tb_values),
-    .load_tb_addr(load_tb_addr),
-    // .src_base_addr(src_base_addr),
-    // .interim_base_addr(interim_base_addr),
-    // .dest_base_addr(dest_base_addr),
-    // .pw_base_addr_a(8'd0),
-    // .pw_base_addr_b(8'd0),
-    // .pw_base_addr_c(8'd0),
-    .ntt_mem_base_addr(ntt_mem_base_addr_tb),
-    .pwo_mem_base_addr(pwo_mem_base_addr_tb),
-    .accumulate(acc_tb),
-    .sampler_valid(svalid_tb),
-    .sampler_mode(sampler_mode_tb),
-    .sampler_data(96'hFFFFFF),
-    .ntt_done(ntt_done_tb),
-    .ntt_busy()
+    .u(u),
+    .v(v),
+    .rnd0(rnd0),
+    .rnd1(rnd1),
+    .rnd2(rnd2),
+    .rnd3(rnd3),
+    .res(actual_sum)
 );
 
 //----------------------------------------------------------------
@@ -164,6 +178,10 @@ always
 begin : clk_gen
   #CLK_HALF_PERIOD;
   clk_tb = !clk_tb;
+  rnd0 = 'h1; //$random();
+  rnd1 = 'h1; //$random();
+  rnd2 = 'h1; //$random();
+  rnd3 = 'h1; //$random();
 end // clk_gen
 
 //----------------------------------------------------------------
@@ -237,6 +255,14 @@ task init_sim;
         acc_tb = 1'b0;
         svalid_tb = 1'b0;
         sampler_mode_tb = 1'b0;
+
+        //Masking
+        for (int i = 0; i < 46; i++) begin
+            u[i] = 2'h0;
+            v[i] = 2'h0;
+        end
+        actual_u = 'h0;
+        actual_v = 'h0;
 
         $display("End of init\n");
     end
@@ -488,7 +514,7 @@ task ntt_top_test();
 
     $display("End of test\n");
 endtask
-
+/*
 task pwm_opt_test();
     $display("PWM operation 1\n");
     $readmemh("pwm_iter1.hex", ntt_mem_tb);
@@ -545,7 +571,7 @@ task pwm_opt_test();
         @(posedge clk_tb);
     end
 endtask
-
+*/
 task init_mem();
     for (int i = 0; i < 32768; i++) begin
         load_tb_addr = i;
@@ -554,6 +580,23 @@ task init_mem();
     end
     load_tb_values = 1'b0;
     load_tb_addr = 'h0;
+endtask
+
+task masked_BFU_adder_test();
+    for (int i = 0; i < 10; i++) begin
+        @(posedge clk_tb);
+        actual_u = i+1; //$random;
+        actual_v = i+1; //$random;
+        $display("actual u = %h, actual v = %h\n", actual_u, actual_v);
+        // for (int j = 0; j < 46; j++) begin
+        //     u[j] = {'h0, actual_u[j]};
+        //     v[j] = {'h0, actual_v[j]};
+        // end
+        u[0] = actual_u;
+        u[1] = 'h0; //rand = 0;
+        v[0] = actual_v;
+        v[1] = 'h0;
+    end
 endtask
 
 initial begin
@@ -571,7 +614,8 @@ initial begin
     // twiddle_rom_test();
     // ntt_ctrl_test();
     $display("Starting ntt test\n");
-    ntt_top_test();
+    // ntt_top_test();
+    masked_BFU_adder_test();
     // pwm_opt_test();
     repeat(1000) @(posedge clk_tb);
     $finish;

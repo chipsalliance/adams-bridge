@@ -26,6 +26,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
   rtl:
@@ -48,8 +49,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Arith_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
 ---
@@ -65,6 +68,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
   tb:
     directories: [$COMPILE_ROOT/tb]
     files:
@@ -72,8 +76,9 @@ targets:
       - $COMPILE_ROOT/tb/abr_masked_N_bit_Boolean_adder_tb.sv
       - $COMPILE_ROOT/tb/abr_masked_B2A_conv_tb.sv
       - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_tb.sv
+      - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_two_share_tb.sv
       
-    tops: [abr_masked_N_bit_mult_tb]
+    tops: [abr_masked_N_bit_mult_two_share_tb]
 ---
 provides: [mldsa_uvm_lib]
 schema_version: 2.4.0

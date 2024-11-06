@@ -14,7 +14,7 @@
 //
 //======================================================================
 
-module abr_masked_N_bit_mult_tb;
+module abr_masked_N_bit_mult_two_share_tb;
 
     // Parameters
     localparam WIDTH = 22;
@@ -28,30 +28,32 @@ module abr_masked_N_bit_mult_tb;
     logic rst_n;
     logic zeroize;
     logic [1:0] x [WIDTH-1:0];
-    logic [HALF_WIDTH-1:0] y;
+    logic [1:0] y [WIDTH-1:0];
     logic [1:0] z [WIDTH-1:0];
     logic [WIDTH-1:0] expected_z;
     logic [WIDTH-1:0] actual_z;
-    logic [HALF_WIDTH-1:0] actual_input;
-    logic [WIDTH-1:0] x0, z0, tmp0;
-    logic [WIDTH-1:0] x1, z1, tmp1;
+    logic [WIDTH-1:0] random_tb;
+    logic [HALF_WIDTH-1:0] actual_input, actual_y;
+    logic [WIDTH-1:0] x0, y0, z0, tmp0, y_tmp0;
+    logic [WIDTH-1:0] x1, y1, z1, tmp1, y_tmp1;
 
     // Queue to store inputs
     typedef struct {
       logic [1:0] x [WIDTH-1:0];
-      logic [HALF_WIDTH-1:0] y;
+      logic [1:0] y [WIDTH-1:0];
     } input_t;
     input_t input_queue [(WIDTH + 2)];
 
     input_t inputs;
 
     // Instantiate the DUT (Device Under Test)
-    abr_masked_N_bit_mult #(
+    abr_masked_N_bit_mult_two_share #(
       .WIDTH(WIDTH)
     ) dut (
       .clk(clk),
       .rst_n(rst_n),
       .zeroize(zeroize),
+      .random(random_tb),
       .x(x),
       .y(y),
       .z(z)
@@ -66,11 +68,12 @@ module abr_masked_N_bit_mult_tb;
       begin
         rst_n = 1;
         zeroize = 0;
-        y = 'h0;
+        
         expected_z = 'h0;
         actual_z = 'h0;
         for (i = 0; i < WIDTH; i = i + 1) begin
           x[i] = 2'b00;
+          y[i] = 2'h0;
         end
       end
     endtask
@@ -95,13 +98,19 @@ module abr_masked_N_bit_mult_tb;
             #3;
             if (i < num_vectors) begin
                 // Generate random inputs
+                random_tb = $random;
                 actual_input = $random;
+                actual_y = $random;
                 tmp1 = $random;
                 tmp0 = (actual_input - tmp1) % MOD;
                 for (int j = 0; j < WIDTH; j = j + 1) begin
                     x[j] = {tmp1[j], tmp0[j]};
                 end
-                y = $random;
+                y_tmp1 = $random;
+                y_tmp0 = (actual_y - y_tmp1) % MOD;
+                for (int j = 0; j < WIDTH; j = j+1) begin
+                  y[j] = {y_tmp1[j], y_tmp0[j]};
+                end
 
                 // Shift left and insert new inputs
                 for (int j = WIDTH + 1; j > 0; j = j - 1) begin
@@ -109,7 +118,7 @@ module abr_masked_N_bit_mult_tb;
                 end
                 input_queue[0] = '{x: x, y: y};
 
-                if (DEBUG) $display("[%0t] Input pushed: x = %d ({%d,%d}), y = %d", $time, actual_input, tmp0, tmp1, y);
+                if (DEBUG) $display("[%0t] Input pushed: x = %d ({%d,%d}), y = %d ({%d,%d})", $time, actual_input, tmp0, tmp1, actual_y, y_tmp0, y_tmp1);
             end
             else begin
               // Shift left and insert new inputs
@@ -132,12 +141,15 @@ module abr_masked_N_bit_mult_tb;
             for (int i = 0; i < WIDTH; i++) begin
                 x0[i] = inputs.x[i][0];
                 x1[i] = inputs.x[i][1];
+
+                y0[i] = inputs.y[i][0];
+                y1[i] = inputs.y[i][1];
             end
-            if (DEBUG) $display("[%0t] Input popped: x = %d, y = %d", $time, (x0+x1) % MOD, inputs.y);
+            if (DEBUG) $display("[%0t] Input popped: x = %d, y = %d", $time, (x0+x1) % MOD, (y0+y1)%MOD);
 
             // Compare the results (you can define the expected results based on your logic)
             #2; // Wait for outputs to stabilize
-            expected_z = ((x0 + x1) * inputs.y) % MOD;
+            expected_z = ((x0 + x1) * (y0+y1)) % MOD;
             for (int j = 0; j < WIDTH; j = j + 1) begin                
                 z0[j] = z[j][0];
                 z1[j] = z[j][1];
