@@ -69,8 +69,7 @@ module decompose
         output logic [63:0] w1_o,
         output logic buffer_en,
 
-        output logic decompose_done,
-        output logic w1_encode_done
+        output logic decompose_done
 
         
     );
@@ -263,8 +262,7 @@ module decompose
         .w1_encode_enable(verify ? &usehint_ready : &mod_ready),
         .r1_i(r1_mux),
         .w1_o(w1_o),
-        .buffer_en(buffer_en),
-        .w1_encode_done(w1_encode_done)
+        .buffer_en(buffer_en)
     );
     
 

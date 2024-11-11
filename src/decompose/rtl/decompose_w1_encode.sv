@@ -39,16 +39,13 @@ module decompose_w1_encode
         input wire [3:0][3:0] r1_i,
 
         output logic [63:0] w1_o,
-        output logic buffer_en,
-
-        output logic w1_encode_done
+        output logic buffer_en
     );
 
     localparam BUFFER_CYC = 4;
 
     //Enable counter
     logic [1:0] buffer_count;
-    logic [2:0] rounds_count;
 
     //Flags
     logic w1_en_reg;
@@ -81,20 +78,7 @@ module decompose_w1_encode
             buffer_count <= buffer_count - 'h1;
     end
 
-    //Rounds counter
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            rounds_count <= 'h0;
-        else if (zeroize)
-            rounds_count <= 'h0;
-        else if (init_count_first)
-            rounds_count <= MLDSA_K-1;
-        else if ((rounds_count > 0))
-            rounds_count <= rounds_count - 'h1;
-    end
-
     assign buffer_en        = w1_en_reg && (buffer_count == 'h0);
-    assign w1_encode_done   = (rounds_count == 'h0);
 
     //r1 shift reg
     always_ff @(posedge clk or negedge reset_n) begin
