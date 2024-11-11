@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 class ntt_sb extends uvm_scoreboard;
-    import mldsa_params_pkg::*;
+    // import mldsa_params_pkg::*;
     `uvm_component_utils(ntt_sb)
 
     uvm_analysis_imp_ntt_txn#(ntt_txn, ntt_sb) ntt_ap;
@@ -28,15 +28,15 @@ class ntt_sb extends uvm_scoreboard;
     localparam MLDSA_N = 256;
     localparam MLDSA_LOGN = $clog2(MLDSA_N);
     localparam f= 8347681;  // 256^-1 mod MLDSA_Q
-
+    localparam MEM_DEPTH = MLDSA_MEM_MAX_DEPTH;
     // Memory models for the three memories
-    bit [MEM_DATA_WIDTH-1:0] ntt_mem_model [0:MEM_DEPTH-1];
-    bit [MEM_DATA_WIDTH-1:0] pwm_a_mem_model [0:MEM_DEPTH-1];
-    bit [MEM_DATA_WIDTH-1:0] pwm_b_mem_model [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] ntt_mem_model [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] pwm_a_mem_model [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] pwm_b_mem_model [0:MEM_DEPTH-1];
 
-    bit [MEM_DATA_WIDTH-1:0] ntt_model_inputs [0:MEM_DEPTH-1];
-    bit [MEM_DATA_WIDTH-1:0] pwm_a_model_inputs [0:MEM_DEPTH-1];
-    bit [MEM_DATA_WIDTH-1:0] pwm_b_model_inputs [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] ntt_model_inputs [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] pwm_a_model_inputs [0:MEM_DEPTH-1];
+    bit [MLDSA_MEM_DATA_WIDTH-1:0] pwm_b_model_inputs [0:MEM_DEPTH-1];
 
     bit [REG_SIZE-1:0] One_NTT_input [0:MLDSA_N-1];
     bit [REG_SIZE-1:0] model_NTT_output [0:MLDSA_N-1];
@@ -148,8 +148,8 @@ class ntt_sb extends uvm_scoreboard;
 
     
     // Function to update the memory model based on the received transactions
-    function void update_sb_memory_model(ref bit [MEM_DATA_WIDTH-1:0] mem_from_DUT [0:MEM_DEPTH-1], 
-            ref bit [MEM_DATA_WIDTH-1:0] mem_to_model [0:MEM_DEPTH-1], 
+    function void update_sb_memory_model(ref bit [MLDSA_MEM_DATA_WIDTH-1:0] mem_from_DUT [0:MEM_DEPTH-1], 
+            ref bit [MLDSA_MEM_DATA_WIDTH-1:0] mem_to_model [0:MEM_DEPTH-1], 
             mem_txn mem_txn_i
         );
         if (mem_txn_i.update_mem) begin
@@ -170,7 +170,7 @@ class ntt_sb extends uvm_scoreboard;
 
     // Function to extract 256 coefficients from the input memory starting at src_base_addr
     function void extract_256_coeffs(
-        input bit [MEM_DATA_WIDTH-1:0] input_memory [0:MEM_DEPTH-1], 
+        input bit [MLDSA_MEM_DATA_WIDTH-1:0] input_memory [0:MEM_DEPTH-1], 
         input logic [MLDSA_MEM_ADDR_WIDTH-1:0] base_addr,
         input int stage_idx,
         output bit [REG_SIZE-1:0] NTT_coeffs [0:MLDSA_N-1]

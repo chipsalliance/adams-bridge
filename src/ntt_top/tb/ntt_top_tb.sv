@@ -26,6 +26,7 @@
 module ntt_top_tb 
 
     import ntt_defines_pkg::*;
+    import mldsa_params_pkg::*;
     
 #(
     parameter   TEST_VECTOR_NUM = 10,
@@ -63,7 +64,7 @@ reg [23:0] zeta_inv [255:0];
 reg [(4*(REG_SIZE+1))-1:0] ntt_mem_tb [63:0];
 
 reg load_tb_values;
-reg [MEM_ADDR_WIDTH-1:0] load_tb_addr;
+reg [MLDSA_MEM_ADDR_WIDTH-1:0] load_tb_addr;
 
 reg [7:0] src_base_addr, interim_base_addr, dest_base_addr;
 reg acc_tb, svalid_tb, sampler_mode_tb;
@@ -80,6 +81,9 @@ logic [1:0][45:0] u;
 logic [1:0][45:0] v;
 logic [1:0][45:0] w;
 logic [45:0] rnd0, rnd1, rnd2, rnd3;
+logic wren_tb, rden_tb;
+logic [1:0] wrptr_tb, rdptr_tb;
+logic [5:0] random_tb;
 
 //----------------------------------------------------------------
 // Device Under Test.
@@ -184,6 +188,20 @@ logic [45:0] rnd0, rnd1, rnd2, rnd3;
 //     .res()
 // );
 
+// ntt_shuffle_buffer dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .wren(wren_tb),
+//     .rden(rden_tb),
+//     .wrptr(wrptr_tb),
+//     .rdptr(rdptr_tb),
+//     .wr_rst_count(),
+//     .data_i(data_i_tb),
+//     .buf_valid(),
+//     .data_o()
+// );
+
 ntt_masked_gs_butterfly dut (
     .clk(clk_tb),
     .reset_n(reset_n_tb),
@@ -265,6 +283,8 @@ task init_sim;
         data_i_tb = 'h0;
         zeroize_tb = 'b0;
         enable_tb = 'b0;
+        wren_tb = 'b0; rden_tb = 'b0;
+        wrptr_tb = 'h0; rdptr_tb = 'h0;
 
         mode_tb = ct;
         addr0 = 'h0; addr1 = 'h0; addr2 = 'h0; addr3 = 'h0;
@@ -282,6 +302,7 @@ task init_sim;
         acc_tb = 1'b0;
         svalid_tb = 1'b0;
         sampler_mode_tb = 1'b0;
+        random_tb <= 'h0;
 
         //Masking
         for (int i = 0; i < 46; i++) begin
@@ -298,13 +319,19 @@ endtask
 
 task buffer_test();
     reg [REG_SIZE-1:0] i;
-    enable_tb <= 1'b1;
+    reg [1:0] j;
+    wren_tb <= 1'b1;
+    rden_tb <= 'b1;
     for (i = 0; i < 64; i++) begin
         // data_i_tb <= {(i*23'd64)+23'd192, (i*23'd64)+23'd128, (i*23'd64)+23'd64, (i*23'd64)};
+        wrptr_tb <= i%4;
+        j = $urandom_range(3);
+        rdptr_tb <= (i%4)+j;
         data_i_tb <= {(i*23'd64)+23'd3, (i*23'd64)+23'd2, (i*23'd64)+23'd1, i*23'd64}; //{23'd3, 23'd2, 23'd1, 23'd0};
         @(posedge clk_tb);
     end
-    enable_tb <= 1'b0;
+    wren_tb <= 1'b0;
+    rden_tb <= 'b0;
 endtask
 
 task twiddle_rom_test();
@@ -352,6 +379,14 @@ task ntt_ctrl_test();
 endtask
 
 task ntt_top_test();
+    fork
+        begin
+            while(1) begin
+                random_tb <= $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
     $display("NTT operation\n");
     operation = "NTT";
     mode_tb = ct;
@@ -363,6 +398,19 @@ task ntt_top_test();
     svalid_tb = 1'b1;
     @(posedge clk_tb);
     enable_tb = 1'b0;
+
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h0)
+    //     @(posedge clk_tb);
+    // random_tb = {4'h9, 2'h3};
+
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h1)
+    //     @(posedge clk_tb);
+    // random_tb = {4'h0, 2'h2};
+
+    // while(dut.ntt_top_inst0.ntt_ctrl_inst0.rounds_count == 'h2)
+    //     @(posedge clk_tb);
+    // random_tb = {4'hf, 2'h0};
+
     $display("Waiting for ntt_done\n");
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
@@ -373,7 +421,16 @@ task ntt_top_test();
     //         $display("Error: NTT data mismatch at index %0d (dest_base addr = %0d). Actual data = %h, expected data = %h", i, dest_base_addr, dut.ntt_mem.mem[i+dest_base_addr], ntt_mem_tb[i]);
     //     @(posedge clk_tb);
     // end
-
+    //     end
+    // join
+    // fork
+    //         begin
+    //             while(ntt_done_tb == 1'b0) begin
+    //                 random_tb = $urandom();
+    //                 @(posedge clk_tb);
+    //             end
+    //         end
+    //         begin
     $display("INTT operation\n");
     operation = "INTT";
     mode_tb = gs;
@@ -388,7 +445,7 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received intt_done\n");
-
+    
     $display("PWM operation 1\n");
     operation = "PWM 1 no acc";
     // $readmemh("pwm_iter1.hex", ntt_mem_tb);
@@ -515,6 +572,8 @@ task ntt_top_test();
     svalid_tb = 1'b0;
     @(posedge clk_tb);
 
+    
+
     $display("PWM + sampler operation 1\n");
     operation = "PWM sampler";
     mode_tb = pwm;
@@ -522,24 +581,26 @@ task ntt_top_test();
     acc_tb = 1'b0;
     sampler_mode_tb = 1'b1;
     repeat(2) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     @(posedge clk_tb);
     enable_tb = 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     repeat(10) @(posedge clk_tb);
-    svalid_tb = 1'b1;
+    svalid_tb <= 1'b1;
     repeat(45) @(posedge clk_tb);
-    svalid_tb = 1'b0;
+    svalid_tb <= 1'b0;
     $display("Waiting for pwo_done\n");
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received pwo_done\n");
-
+    
+        end
+    join_any
     $display("End of test\n");
 endtask
 /*

@@ -90,7 +90,7 @@ module makehint
     logic poly_last, poly_last_reg;
 
     //Read addr counter
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt;
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt, z_rd_addr;
     logic incr_mem_rd_addr;
     logic rst_rd_addr;
     logic last_addr_read;
@@ -98,8 +98,6 @@ module makehint
     //Read fsm
     mh_read_state_e read_fsm_state_ps, read_fsm_state_ns;
     logic arc_MH_IDLE_MH_RD_MEM;
-    logic arc_MH_RD_MEM_MH_IDLE;
-    logic arc_MH_RD_MEM_MH_FLUSH_SBUF;
     logic arc_MH_RD_MEM_MH_WAIT1;
     logic arc_MH_WAIT2_MH_IDLE;
     // logic arc_MH_WAIT_MH_RD_MEM; //TODO don't need wait if we do all polys back to back? check this later
@@ -108,7 +106,6 @@ module makehint
     //Hint sum
     logic [7:0] hintsum;
     logic busy_reg;
-    logic incr_reg_wr_addr;
     logic latch_hintsum_addr;
 
     //Busy flag
@@ -259,17 +256,25 @@ module makehint
     //Read addr counter
     //----------------------------
     always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
+        if (!reset_n) begin
             mem_rd_addr <= 'h0;
-        else if (zeroize)
+            z_rd_addr <= 'h0;
+        end
+        else if (zeroize) begin
             mem_rd_addr <= 'h0;
-        else if (rst_rd_addr)
-            mem_rd_addr <= 'h0;
-        else if (incr_mem_rd_addr)
-            mem_rd_addr <= (poly_last && last_addr_read) ? 'h0 : mem_rd_addr + 'h1;
+            z_rd_addr <= 'h0;
+        end
+        else if (rst_rd_addr) begin
+            mem_rd_addr <= mem_base_addr;
+            z_rd_addr <= 'h0;
+        end
+        else if (incr_mem_rd_addr) begin
+            mem_rd_addr <= (poly_last && last_addr_read) ? mem_base_addr : mem_rd_addr + 'h1;
+            z_rd_addr <= (poly_last && last_addr_read) ? 'h0 : z_rd_addr + 'h1;
+        end
     end
 
-    assign last_addr_read = (mem_rd_addr == MLDSA_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
+    assign last_addr_read = (mem_rd_addr == mem_base_addr + MLDSA_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
 
     //----------------------------
     //Read fsm
@@ -354,9 +359,9 @@ module makehint
 
     //Assign output
     assign mem_rd_req.rd_wr_en = (read_fsm_state_ps == MH_RD_MEM) ? RW_READ : RW_IDLE;
-    assign mem_rd_req.addr     = mem_base_addr + mem_rd_addr;
+    assign mem_rd_req.addr     = mem_rd_addr;
     assign z_rd_req.rd_wr_en   = (read_fsm_state_ps == MH_RD_MEM) ? RW_READ : RW_IDLE;
-    assign z_rd_req.addr       = mem_rd_addr;
+    assign z_rd_req.addr       = z_rd_addr;
     assign makehint_done       = (read_fsm_state_ps == MH_IDLE);
 
     generate
@@ -376,7 +381,7 @@ module makehint
         end
     endgenerate
 
-    makehint_sample_buffer #(
+    abr_sample_buffer #(
         .NUM_WR(4),
         .NUM_RD(4),
         .BUFFER_DATA_W(BUFFER_DATA_W)

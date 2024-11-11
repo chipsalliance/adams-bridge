@@ -59,8 +59,8 @@ module hintgen
     assign h = (enable & ~zeroize) ? or2_res : 'b0;
 
     always_comb begin
-        r_lt_gamma2         = (r <= MLDSA_GAMMA2)         ? 1'b1 : 1'b0;
-        r_gt_q_minus_gamma2 = (r > Q_MINUS_GAMMA2)  ? 1'b1 : 1'b0;
+        r_lt_gamma2         = (r <= MLDSA_GAMMA2)   ? 1'b1 : 1'b0;
+        r_gt_q_minus_gamma2 = (r >= Q_MINUS_GAMMA2) ? 1'b1 : 1'b0;
         r_eq_q_minus_gamma2 = (r == Q_MINUS_GAMMA2) ? 1'b1 : 1'b0;
     end
 
