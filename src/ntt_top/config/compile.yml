@@ -52,6 +52,7 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_masked_mult_redux46.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
       - $COMPILE_ROOT/rtl/ntt_buffer.sv
+      - $COMPILE_ROOT/rtl/ntt_shuffle_buffer.sv
       - $COMPILE_ROOT/rtl/ntt_twiddle_lookup.sv
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
