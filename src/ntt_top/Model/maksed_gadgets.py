@@ -629,21 +629,33 @@ def B2A(x0, x1):
 def maskedAdderReduction(u0, u1):
     uRolled0 = (u0 + Roller) % MultMod #TODO: forgot what it's for?
     uRolled1 = u1
+    print(f"rolled_shares = {uRolled0: X}, {uRolled1: X}")
+    print(f"rolled_combin = {uRolled0+uRolled1: X}")
     # We need its only int(1+numOfBits/2)-bit so the adder size
     # can be reduced from 46 to 24
     # 2**23 is 1 in 24th bit
     uBoolean0, uBoolean1 = A2BConv(uRolled0, uRolled1)
+    print(f"boolean_shares = {uBoolean0: X}, {uBoolean1: X}")
+    print(f"boolean_combin = {uBoolean0^uBoolean1: X}")
     c0 = (uBoolean0 >> int(numOfBits/2)) & 1
     c1 = (uBoolean1 >> int(numOfBits/2)) & 1
     red0, red1 = B2A(c0, c1) #converts to 46-bit arith domain not just 1 bit! (pad inputs on MSB part with 0s if needed)
+    print(f"arith_shares = {red0: X}, {red1: X}")
+    print(f"arith_combin = {red0+red1: X}")
     q0 = red0 * ((0-DILITHIUM_Q)% MultMod)
     q1 = red1 * ((0-DILITHIUM_Q)% MultMod)
+    print(f"prime_shares = {q0: X}, {q1: X}")
+    print(f"prime_combin = {q0+q1: X}")
     uReduced0 = (u0+q0) % MultMod
     uReduced1 = (u1+q1) % MultMod
+    print(f"res_redux_shares = {uReduced0: X}, {uReduced1: X}")
+    print(f"res_redux_combin = {uReduced0+uReduced1: X}")
     return uReduced0, uReduced1
 
 def maskedBFUAdder(x0, x1, y0, y1):
     u0, u1 = maskedAdder(x0, x1, y0, y1)
+    print(f"add_res_shares = {u0: X}, {u1: X}")
+    print(f"add_res_combin = {u0+u1: X}")
     uReduced0, uReduced1 = maskedAdderReduction(u0, u1)
     return uReduced0, uReduced1
 
@@ -651,6 +663,8 @@ def maskedBFUAdder(x0, x1, y0, y1):
 def maskedBFUSub(x0, x1, y0, y1):
     y_new0 = (DILITHIUM_Q-y0) % MultMod
     y_new1 = (0-y1) % MultMod
+    print(f"y_new_shares = {y_new0: X}, {y_new1: X}")
+    print(f"y_new_combin = {y_new0+y_new1: X}")
     v0, v1 = maskedAdder(x0, x1, y_new0, y_new1)
     vReduced0, vReduced1 = maskedAdderReduction(v0, v1)
     return vReduced0, vReduced1

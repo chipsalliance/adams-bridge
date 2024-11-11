@@ -74,11 +74,11 @@ pwo_mem_addr_t pwo_mem_base_addr_tb;
 
 string operation;
 
-logic [45:0] actual_u, actual_v;
+logic sub;
+logic [45:0] actual_u, actual_v, actual_w;
 logic [1:0][45:0] u;
 logic [1:0][45:0] v;
-logic [1:0] actual_sum [45:0];
-logic [46:0] exp_sum;
+logic [1:0][45:0] w;
 logic [45:0] rnd0, rnd1, rnd2, rnd3;
 
 //----------------------------------------------------------------
@@ -156,17 +156,44 @@ logic [45:0] rnd0, rnd1, rnd2, rnd3;
 //     .ntt_busy()
 // );
 
-ntt_masked_BFU_add_sub dut (
+// ntt_masked_BFU_add_sub dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .sub(sub),
+//     .u(u),
+//     .v(v),
+//     .rnd0(rnd0),
+//     .rnd1(rnd1),
+//     .rnd2(rnd2),
+//     .rnd3(rnd3),
+//     .res()
+// );
+
+// ntt_masked_BFU_mult dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .u(u),
+//     .v(v),
+//     .rnd0(rnd0),
+//     .rnd1(rnd1),
+//     .rnd2(rnd2),
+//     .rnd3(rnd3),
+//     .rnd4(rnd0+rnd1),
+//     .res()
+// );
+
+ntt_masked_gs_butterfly dut (
     .clk(clk_tb),
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
-    .u(u),
-    .v(v),
-    .rnd0(rnd0),
-    .rnd1(rnd1),
-    .rnd2(rnd2),
-    .rnd3(rnd3),
-    .res(actual_sum)
+    .opu_i(u),
+    .opv_i(v),
+    .opw_i(w),
+    .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
+    .u_o(),
+    .v_o()
 );
 
 //----------------------------------------------------------------
@@ -178,10 +205,10 @@ always
 begin : clk_gen
   #CLK_HALF_PERIOD;
   clk_tb = !clk_tb;
-  rnd0 = 'h1; //$random();
-  rnd1 = 'h1; //$random();
-  rnd2 = 'h1; //$random();
-  rnd3 = 'h1; //$random();
+  rnd0 = $random();
+  rnd1 = $random();
+  rnd2 = $random();
+  rnd3 = $random();
 end // clk_gen
 
 //----------------------------------------------------------------
@@ -263,6 +290,7 @@ task init_sim;
         end
         actual_u = 'h0;
         actual_v = 'h0;
+        sub = 'h0;
 
         $display("End of init\n");
     end
@@ -582,20 +610,113 @@ task init_mem();
     load_tb_addr = 'h0;
 endtask
 
+/*
 task masked_BFU_adder_test();
+    logic [45:0] u_array, v_array;
+    logic [45:0] rand0, rand1;
+    sub = 1;
+    for (int i = 0; i < 1000; i++) begin
+        @(posedge clk_tb);
+        fork
+            begin
+                actual_u = $random()%PRIME;
+                actual_v = $random()%PRIME;
+                u_array = actual_u;
+                v_array = actual_v;
+                rand0 = $random();
+                rand1 = $random();
+
+                u[0] = actual_u-rand0;
+                u[1] = rand0;
+                v[0] = actual_v-rand1;
+                v[1] = rand1;
+                // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+            end
+            begin
+                repeat(54) @(posedge clk_tb);
+                if (!sub) begin
+                    if ((dut.add_res_reduced[1] + dut.add_res_reduced[0]) != ((u_array + v_array)%PRIME)) begin
+                        $error("Addition Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array + v_array)%PRIME, dut.add_res_reduced[0], dut.add_res_reduced[1], dut.add_res_reduced[0] + dut.add_res_reduced[1]);
+                    end
+                end
+                else begin
+                    if ((dut.add_res_reduced[1] + dut.add_res_reduced[0]) != ((u_array - v_array + PRIME)%PRIME)) begin
+                        $error("Subtraction Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array + PRIME + (~v_array+'h1))%PRIME, dut.add_res_reduced[0], dut.add_res_reduced[1], dut.add_res_reduced[0] + dut.add_res_reduced[1]);
+                    end
+                end
+            end
+        join
+    end
+endtask
+*/
+/*
+task masked_BFU_mult_test();
+    logic [45:0] u_array, v_array;
+    logic [45:0] rand0, rand1;
+
     for (int i = 0; i < 10; i++) begin
         @(posedge clk_tb);
-        actual_u = i+1; //$random;
-        actual_v = i+1; //$random;
-        $display("actual u = %h, actual v = %h\n", actual_u, actual_v);
-        // for (int j = 0; j < 46; j++) begin
-        //     u[j] = {'h0, actual_u[j]};
-        //     v[j] = {'h0, actual_v[j]};
-        // end
-        u[0] = actual_u;
-        u[1] = 'h0; //rand = 0;
-        v[0] = actual_v;
-        v[1] = 'h0;
+        fork
+            begin
+                actual_u = $random()%PRIME;
+                actual_v = $random()%PRIME;
+                u_array = actual_u;
+                v_array = actual_v;
+                rand0 = $random();
+                rand1 = $random();
+
+                // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+
+                u[0] = actual_u-rand0;
+                u[1] = rand0;
+                v[0] = actual_v-rand1;
+                v[1] = rand1;
+                // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+            end
+            begin
+                repeat(3) @(posedge clk_tb);
+                if ((dut.final_res[1] + dut.final_res[0]) != ((u_array * v_array)%PRIME)) begin
+                    $error("Multiplication Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array * v_array)%PRIME, dut.final_res[0], dut.final_res[1], dut.final_res[0] + dut.final_res[1]);
+                end
+            end
+        join
+    end
+endtask
+*/
+
+task masked_gs_butterfly_test();
+    logic [45:0] rand0, rand1, rand2;
+    for (int i = 0; i < 10; i++) begin
+        @(posedge clk_tb);
+        fork
+            begin
+                actual_u = $random()%PRIME;
+                actual_v = $random()%PRIME;
+                actual_w = 'h2;
+                // u_array = actual_u;
+                // v_array = actual_v;
+                rand0 = $random();
+                rand1 = $random();
+                rand2 = $random();
+
+                // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+
+                u[0] = actual_u-rand0;
+                u[1] = rand0;
+                v[0] = actual_v-rand1;
+                v[1] = rand1;
+                w[0] = actual_w-rand2;
+                w[1] = rand2;
+                // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+            end
+            //TODO: check with Emre - when doing (u-v), should exp result be ((u-v)+Q) % Q to account for negative nums? FPV had issues with this, so do (if u < v), result + Q
+            // begin
+            //     repeat(3) @(posedge clk_tb);
+            //     if ((dut.final_res[1] + dut.final_res[0]) != ((u_array * v_array)%PRIME)) begin
+            //         $error("Multiplication Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array * v_array)%PRIME, dut.final_res[0], dut.final_res[1], dut.final_res[0] + dut.final_res[1]);
+            //     end
+            // end
+        join
     end
 endtask
 
@@ -615,7 +736,9 @@ initial begin
     // ntt_ctrl_test();
     $display("Starting ntt test\n");
     // ntt_top_test();
-    masked_BFU_adder_test();
+    // masked_BFU_adder_test();
+    // masked_BFU_mult_test();
+    masked_gs_butterfly_test();
     // pwm_opt_test();
     repeat(1000) @(posedge clk_tb);
     $finish;

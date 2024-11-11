@@ -48,25 +48,25 @@
     logic [WIDTH-1:0] x0, x1, y0, y1;
 
     // Format organization stage
-    always_comb begin
-        // x0 = x[0];
-        // x1 = x[1];
-        // y0 = y[0];
-        // y1 = y[1];
-        for (int i = 0; i < WIDTH; i++) begin
-            x0[i] = x[i][0];
-            x1[i] = x[i][1];
-            y0[i] = y[i][0];
-            y1[i] = y[i][1];
-        end
-    end
+    // always_comb begin
+    //     // x0 = x[0];
+    //     // x1 = x[1];
+    //     // y0 = y[0];
+    //     // y1 = y[1];
+    //     for (int i = 0; i < WIDTH; i++) begin
+    //         x0[i] = x[i][0];
+    //         x1[i] = x[i][1];
+    //         y0[i] = y[i][0];
+    //         y1[i] = y[i][1];
+    //     end
+    // end
 
     // Calculation stage
     always_comb begin
-        calculation[0] = x0 * y0; // Multiplication of the first share x and first share y
-        calculation[1] = x1 * y0; // Multiplication of the second share x and first share y
-        calculation[2] = x0 * y1; // Multiplication of the first share x and second share y
-        calculation[3] = x1 * y1; // Multiplication of the second share x and second share y
+        calculation[0] = x[0] * y[0]; // Multiplication of the first share x and first share y
+        calculation[1] = x[1] * y[0]; // Multiplication of the second share x and first share y
+        calculation[2] = x[0] * y[1]; // Multiplication of the first share x and second share y
+        calculation[3] = x[1] * y[1]; // Multiplication of the second share x and second share y
 
         calculation_rand[0] = calculation[2] + random;
         calculation_rand[1] = calculation[1] - random;
@@ -78,13 +78,18 @@
     // Final output assignment
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            z <= 'h0;
+            for (int i = 0; i < WIDTH; i++)
+                z[i] <= 2'h0;
         end
         else if (zeroize) begin
-            z <= 'h0;
+            for (int i = 0; i < WIDTH; i++)
+                z[i] <= 2'h0;
         end
         else begin
-            z <= final_res;
+            for (int i = 0; i < WIDTH; i++) begin
+                z[i][0] <= final_res[0][i];
+                z[i][1] <= final_res[1][i];
+            end
         end
     end
 

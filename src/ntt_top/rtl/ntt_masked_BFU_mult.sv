@@ -33,28 +33,47 @@ module ntt_masked_BFU_mult
     input wire [1:0][WIDTH-1:0] u,
     input wire [1:0][WIDTH-1:0] v,
     input wire [WIDTH-1:0] rnd0, rnd1, rnd2, rnd3, rnd4,
-    output logic [1:0] res [HALF_WIDTH-1:0]
+    output logic [1:0] res [WIDTH-1:0]
 );
 
     //Internal signals
     logic [1:0] mul_res [WIDTH-1:0];
+    logic [WIDTH-1:0] mul_res0, mul_res1, mul_res_combined, mul_res_combined_share0;
+    logic [1:0] mul_res_refresh [WIDTH-1:0];
     logic [1:0] mul_res_bool [WIDTH-1:0];
+    logic [WIDTH-1:0] mul_res_bool0, mul_res_bool1;
+    logic [1:0][WIDTH-1:0] temp, final_res;
     logic [1:0] mul_res_bool_reduced [WIDTH-1:0];
-    logic [1:0] mul_res_reduced [HALF_WIDTH-1:0];
+    logic [1:0] mul_res_reduced [WIDTH-1:0];
+    logic [WIDTH-1:0] mul_res_bool_redux0, mul_res_bool_redux1, mul_res_redux0, mul_res_redux1;
 
-    //Perform mul on input shares
+    //Perform mul on input shares - 1 clk
     abr_masked_N_bit_mult_two_share #(
         .WIDTH(WIDTH)
-    ) masked_mult_inst (
+    ) masked_two_share_mult_inst (
         .clk(clk),
         .rst_n(reset_n),
         .zeroize(zeroize),
         .random(rnd0),
         .x(u),
         .y(v),
-        .s(mul_res)
+        .z(mul_res)
     );
 
+    always_comb begin
+        for(int i = 0; i < WIDTH; i++) begin
+            mul_res0[i] = mul_res[i][0];
+            mul_res1[i] = mul_res[i][1];
+        end
+        mul_res_combined = (mul_res0 + mul_res1) % MLDSA_Q;
+        mul_res_combined_share0 = mul_res_combined - rnd0;
+        for (int i = 0; i < WIDTH; i++) begin
+            mul_res_refresh[i][0] = mul_res_combined_share0[i];
+            mul_res_refresh[i][1] = rnd0[i];
+        end
+    end
+/*
+    //48 clks
     abr_masked_A2B_conv #(
         .WIDTH(WIDTH)
     ) a2b_inst (
@@ -80,18 +99,27 @@ module ntt_masked_BFU_mult
     //     .rnd(rnd4),
     //     .s()
     // );
+    
 
-    //B2A
+    //B2A - 2 clks
     abr_masked_B2A_conv #(
         .WIDTH(WIDTH)
     ) b2a_inst (
         .clk(clk),
         .rst_n(reset_n),
         .zeroize(zeroize),
-        .rnd(),
+        .rnd(rnd0),
         .x_boolean(mul_res_bool_reduced),
         .x_arith(mul_res_reduced)
     );
+*/
+    always_comb begin
+        
+        for (int i = 0; i < WIDTH; i++) begin
+            mul_res_redux0[i] = mul_res_refresh[i][0]; //mul_res_reduced[i][0];
+            mul_res_redux1[i] = mul_res_refresh[i][1]; //mul_res_reduced[i][1];
+        end
+    end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -103,8 +131,16 @@ module ntt_masked_BFU_mult
                 res[i] <= 2'h0;
         end
         else begin
-            res <= mul_res_reduced;
+            res <= mul_res_refresh; //mul_res_reduced;
         end
+    end
+
+    always_comb begin
+        for ( int i = 0; i < WIDTH; i++) begin
+            final_res[0][i] = res[i][0];
+            final_res[1][i] = res[i][1];
+        end
+        
     end
 
 

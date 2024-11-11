@@ -54,6 +54,8 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
       - $COMPILE_ROOT/rtl/ntt_masked_BFU_add_sub.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_BFU_mult.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_gs_butterfly.sv
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
