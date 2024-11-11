@@ -1,0 +1,26 @@
+name: adams-bridge_lib
+files:
+  # Adams Bridge design
+  - src/abr_libs/config/compile.yml
+  - src/abr_prim_generic/config/compile.yml
+  - src/abr_prim/config/compile.yml
+  - src/abr_sha3/config/compile.yml
+  - src/rej_sampler/config/compile.yml
+  - src/rej_bounded/config/compile.yml
+  - src/exp_mask/config/compile.yml
+  - src/sample_in_ball/config/compile.yml
+  - src/decompose/config/compile.yml
+  - src/sk_encode/config/compile.yml
+  - src/sk_decode/config/compile.yml
+  - src/makehint/config/compile.yml
+  - src/norm_check/config/compile.yml
+  - src/sig_encode_z/config/compile.yml
+  - src/sig_decode_z/config/compile.yml
+  - src/sigdecode_h/config/compile.yml
+  - src/pk_decode/config/compile.yml
+  - src/power2round/config/compile.yml
+  - src/mldsa_sampler_top/config/compile.yml
+  - src/ntt_top/config/compile.yml
+  - src/mldsa_top/config/compile.yml
+  # UVMF TBs
+  - src/mldsa_top/uvmf/config/compile.yml

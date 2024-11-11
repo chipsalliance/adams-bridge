@@ -23,12 +23,12 @@ class mem_txn extends uvm_sequence_item;
     rand bit reset_indicator;
     rand  mem_if_t mem_port0_req;
     rand  mem_if_t mem_port1_req;
-    rand  bit [MEM_DATA_WIDTH-1:0] p0_read_data;
-    rand  bit [MEM_DATA_WIDTH-1:0] p0_write_data;
-    rand  bit [MEM_DATA_WIDTH-1:0] p1_read_data;
-    rand  bit [MEM_DATA_WIDTH-1:0] p1_write_data;
+    rand  bit [MLDSA_MEM_DATA_WIDTH-1:0] p0_read_data;
+    rand  bit [MLDSA_MEM_DATA_WIDTH-1:0] p0_write_data;
+    rand  bit [MLDSA_MEM_DATA_WIDTH-1:0] p1_read_data;
+    rand  bit [MLDSA_MEM_DATA_WIDTH-1:0] p1_write_data;
     rand bit update_mem;
-    rand bit [MEM_DATA_WIDTH-1:0]    artificialMemory [];
+    rand bit [MLDSA_MEM_DATA_WIDTH-1:0]    artificialMemory [];
 
     // Define constants
     localparam int MLDSA_Q = 23'd8380417;

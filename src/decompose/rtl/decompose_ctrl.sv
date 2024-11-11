@@ -37,6 +37,7 @@ module decompose_ctrl
     );
 
     //Internals
+    logic [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr_reg, dest_base_addr_reg;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr_nxt, mem_wr_addr_nxt;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_wr_addr;
     logic incr_rd_addr, incr_wr_addr;
@@ -54,19 +55,21 @@ module decompose_ctrl
     logic arc_DCMP_WR_IDLE_DCMP_WR_MEM;
     logic arc_DCMP_WR_MEM_DCMP_WR_IDLE;
 
-
     //Read addr counter
     always_comb mem_rd_addr_nxt = mem_rd_addr + 'h1;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             mem_rd_addr <= 'h0;
+            src_base_addr_reg <= 'h0;
         end
         else if (zeroize) begin
             mem_rd_addr <= 'h0;
+            src_base_addr_reg <= 'h0;
         end
         else if (rst_rd_addr) begin
             mem_rd_addr <= src_base_addr;
+            src_base_addr_reg <= src_base_addr;
         end
         else if (incr_rd_addr) begin
             mem_rd_addr <= last_poly_last_addr_rd ? 'h0 : mem_rd_addr_nxt;
@@ -79,12 +82,15 @@ module decompose_ctrl
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             mem_wr_addr <= 'h0;
+            dest_base_addr_reg <= 'h0;
         end
         else if (zeroize) begin
             mem_wr_addr <= 'h0;
+            dest_base_addr_reg <= 'h0;
         end
         else if (rst_wr_addr) begin
             mem_wr_addr <= dest_base_addr;
+            dest_base_addr_reg <= dest_base_addr;
         end
         else if (incr_wr_addr) begin
             mem_wr_addr <= last_poly_last_addr_wr ? 'h0 : mem_wr_addr_nxt;
@@ -92,8 +98,8 @@ module decompose_ctrl
     end
 
     //Flags
-    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr  + (MLDSA_K * (MLDSA_N/4))-1);
-    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr + (MLDSA_K * (MLDSA_N/4))-1);
+    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr_reg  + (MLDSA_K * (MLDSA_N/4))-1);
+    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr_reg + (MLDSA_K * (MLDSA_N/4))-1);
     assign decompose_busy = (read_fsm_state_ps != DCMP_RD_IDLE);
     assign decompose_done = (read_fsm_state_ps == DCMP_RD_IDLE) & (write_fsm_state_ps == DCMP_WR_IDLE);
 
