@@ -55,7 +55,6 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_twiddle_lookup.sv
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
-      - $COMPILE_ROOT/rtl/ntt_masked_BFU_add_sub.sv
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
