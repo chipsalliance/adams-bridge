@@ -21,6 +21,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
+      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
+      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
@@ -46,6 +50,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
+      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
+      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
@@ -63,6 +71,10 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
+      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
+      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
+      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
+      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
       - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
       - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv

@@ -48,6 +48,8 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
       - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_special_adder.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_special_adder.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_mult_redux46.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
       - $COMPILE_ROOT/rtl/ntt_buffer.sv
       - $COMPILE_ROOT/rtl/ntt_shuffle_buffer.sv
@@ -94,6 +96,19 @@ targets:
     files:
       - $COMPILE_ROOT/tb/ntt_mult_reduction_tb.sv
     tops: [ntt_mult_reduction_tb]
+
+---
+provides: [ntt_masked_mult_reduction_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_tb.sv
+      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_auto_tb.sv
+    tops: [ntt_masked_mult_redux46_auto_tb]
 
 ---
 provides: [ntt_utb]  
