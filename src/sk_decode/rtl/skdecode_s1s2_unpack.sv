@@ -59,10 +59,8 @@ module skdecode_s1s2_unpack
                 3'h3: data_o = MLDSA_Q-1;
                 3'h4: data_o = MLDSA_Q-2;
                 default: begin
-                    //TODO uncomment these when error validation is ready
-                    // data_o   = 'h0;
-                    // error_o  = 'b1;
-                    data_o = MLDSA_Q + eta_minus_data;
+                    data_o   = 'h0;
+                    error_o  = 'b1;
                 end
             endcase
 
