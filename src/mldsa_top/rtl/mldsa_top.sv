@@ -158,6 +158,7 @@ module mldsa_top
   logic [1:0][DATA_WIDTH-1:0] skdecode_rd_data;
   mem_if_t [1:0] skdecode_mem_wr_req;
   logic [1:0][MLDSA_MEM_DATA_WIDTH-1:0] skdecode_mem_wr_data;
+  logic skdecode_error;
 
   logic makehint_enable, makehint_done;
   logic makehint_invalid;
@@ -339,6 +340,7 @@ mldsa_ctrl mldsa_ctrl_inst
   .skdecode_keymem_if_i(skdecode_keymem_if),
   .skdecode_rd_data_o(skdecode_rd_data),
   .skdecode_done_i(skdecode_done),
+  .skdecode_error_i(skdecode_error),
 
   .skencode_enable_o(skencode_enable),
   .skencode_keymem_if_i(skencode_keymem_if),
@@ -643,7 +645,7 @@ skdecode_inst
   .s1_done(),
   .s2_done(),
   .t0_done(),
-  .skdecode_error()
+  .skdecode_error(skdecode_error)
 );
 
 makehint
