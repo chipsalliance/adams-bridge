@@ -111,7 +111,7 @@ class ML_DSA_randomized_sign_gen_sequence extends mldsa_bench_sequence_base;
     end
     // Skip the two lines (KeyGen command and PK in output)
     void'($fgets(line, fd));
-    $sscanf(line, "%02x\n", value);
+    void'($sscanf(line, "%02x\n", value));
     read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
     // Read the secret key (SK) from the file into the SK array
     read_line(fd, 1224, SK);

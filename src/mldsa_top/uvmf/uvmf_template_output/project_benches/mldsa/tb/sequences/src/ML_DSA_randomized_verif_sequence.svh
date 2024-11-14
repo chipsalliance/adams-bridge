@@ -87,7 +87,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
     end
     // Skip the two lines (KeyGen command and PK in output)
     void'($fgets(line, fd));
-    $sscanf(line, "%02x\n", value);
+    void'($sscanf(line, "%02x\n", value));
     read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
     // Read the secret key (SK) from the file into the SK array
     read_line(fd, 1224, SK);
@@ -133,11 +133,11 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
     else begin
       // Skip the first line
       void'($fgets(line, fd)); // Read a line from the file
-      $sscanf(line, "%02x\n", value);
+      void'($sscanf(line, "%02x\n", value));
     end
     // Skip the second line
     void'($fgets(line, fd)); // Read a line from the file
-    $sscanf(line, "%08x\n", value);
+    void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
     SIG[0] = SIG[0] >> 8;
     $fclose(fd);
