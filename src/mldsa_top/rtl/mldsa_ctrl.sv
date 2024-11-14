@@ -95,6 +95,7 @@ module mldsa_ctrl
   input mem_if_t [1:0] skdecode_keymem_if_i,
   output logic [1:0][DATA_WIDTH-1:0] skdecode_rd_data_o,
   input logic skdecode_done_i,
+  input logic skdecode_error_i,
 
   output logic makehint_enable_o,
   input logic makehint_invalid_i,
@@ -400,7 +401,7 @@ always_comb mldsa_privkey_lock = '0;
   assign notif_intr = mldsa_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
 
   always_comb begin
-    mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = '0; //TODO
+    mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
     mldsa_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
   end
 
@@ -986,7 +987,7 @@ always_comb mldsa_privkey_lock = '0;
   always_comb subcomponent_busy = !(ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
                                   sampler_busy_i |
                                   ntt_busy_i[0];
-  always_comb error_flag_edge = 0;
+  always_comb error_flag_edge = skdecode_error_i;
   always_comb seq_en = 1;
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
