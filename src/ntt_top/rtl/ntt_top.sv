@@ -40,7 +40,8 @@ module ntt_top
     parameter MLDSA_N = 256,
     parameter MLDSA_LOGN = $clog2(MLDSA_N),
     parameter MEM_ADDR_WIDTH = 15,
-    parameter MEM_DATA_WIDTH = 4*REG_SIZE
+    parameter MEM_DATA_WIDTH = 4*REG_SIZE,
+    parameter WIDTH = 46
 )
 (
     //Clock and reset
@@ -65,7 +66,9 @@ module ntt_top
     input wire sampler_valid,
 
     input wire shuffle_en,
+    input wire masking_en,
     input wire [5:0] random,
+    input wire [4:0][WIDTH-1:0] rnd_i,
 
     //Memory if
     //Reuse between pwm c, ntt
@@ -269,7 +272,7 @@ module ntt_top
         endcase
     end
 
-
+    /*
     //Butterfly 2x2
     ntt_butterfly2x2 #(
         .REG_SIZE(NTT_REG_SIZE),
@@ -285,6 +288,25 @@ module ntt_top
         .uv_o(uv_o),
         .pw_uvw_i(pw_uvw_i),
         .accumulate(accumulate),
+        .pwo_uv_o(pwo_uv_o),
+        .ready_o(bf_ready)
+    );
+    */
+
+    ntt_hybrid_butterfly_2x2 #(
+        .WIDTH(WIDTH)
+    )
+    hybrid_bf2x2 (
+        .clk(clk),
+        .reset_n(reset_n),
+        .zeroize(zeroize),
+        .mode(mode),
+        .enable(bf_enable_mux),
+        .uvw_i(uvw_i),
+        .pw_uvw_i(pw_uvw_i),
+        .rnd_i(rnd_i),
+        .accumulate(accumulate),
+        .uv_o(uv_o),
         .pwo_uv_o(pwo_uv_o),
         .ready_o(bf_ready)
     );

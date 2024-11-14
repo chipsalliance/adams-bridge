@@ -376,7 +376,7 @@ end
 
 
 //------------------------------------------
-//Twiddle addr logic
+//Twiddle addr logic - TODO: shuffling+masking (adjust latency)
 //------------------------------------------
 always_comb begin
     unique case(rounds_count)

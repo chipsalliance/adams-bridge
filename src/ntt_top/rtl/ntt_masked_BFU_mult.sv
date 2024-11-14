@@ -15,7 +15,7 @@
 //======================================================================
 //
 // ntt_masked_BFU_mult
-// Performs two share multiplication and reduction
+// Performs two share multiplication and reduction - total latency = 207 clks
 //======================================================================
 
 module ntt_masked_BFU_mult
@@ -43,7 +43,8 @@ module ntt_masked_BFU_mult
     logic [1:0] mul_res_bool [WIDTH-1:0];
     logic [WIDTH-1:0] mul_res_bool0, mul_res_bool1;
     logic [1:0][WIDTH-1:0] temp, final_res;
-    logic [1:0] mul_res_bool_reduced [WIDTH-1:0];
+    logic [1:0] mul_res_bool_reduced [HALF_WIDTH-1:0];
+    logic [1:0] mul_res_bool_reduced_padded [WIDTH-1:0];
     logic [1:0] mul_res_reduced [WIDTH-1:0];
     logic [WIDTH-1:0] mul_res_bool_redux0, mul_res_bool_redux1, mul_res_redux0, mul_res_redux1;
 
@@ -72,7 +73,7 @@ module ntt_masked_BFU_mult
             mul_res_refresh[i][1] = rnd0[i];
         end
     end
-/*
+
     //48 clks
     abr_masked_A2B_conv #(
         .WIDTH(WIDTH)
@@ -87,19 +88,35 @@ module ntt_masked_BFU_mult
         .s(mul_res_bool)
     );
 
-    //redux46
-    // abr_masked_N_bit_Boolean_adder #(
-    //     .WIDTH(10) //TODO: ask Emre - inputs are 10 bit, output should be 12 bits. Is it ok to put inputs at 12 too?
-    // ) bool_adder_inst0 (
-    //     .clk(clk),
-    //     .rst_n(reset_n),
-    //     .zeroize(zeroize),
-    //     .x({12'(mul_res_bool[22:13][1]), 12'(mul_res_bool[22:13][0])}),
-    //     .y({12'(mul_res_bool[32:23][1]), 12'(mul_res_bool[32:23][0])}),
-    //     .rnd(rnd4),
-    //     .s()
-    // );
+    //Mult reduction46 - 156 clks
+    ntt_masked_mult_redux46 #(
+        .WIDTH(WIDTH)
+    ) mult_redux46_inst (
+        .clk(clk),
+        .rst_n(reset_n),
+        .zeroize(zeroize),
+        .rnd0_11(rnd0[10:0]),
+        .rnd1_11(rnd0[21:11]),
+        .rnd2_11(rnd0[32:22]),
+        .rnd0_12(rnd0[44:33]),
+        .rnd0_4(rnd1[3:0]),
+        .rnd0_14(rnd1[17:4]),
+        .rnd_3WIDTH({rnd4[HALF_WIDTH-1:0], rnd3[HALF_WIDTH-1:0], rnd2[HALF_WIDTH-1:0]}),
+        .x(mul_res_bool),
+        .y(mul_res_bool_reduced)
+    );
     
+    always_comb begin
+        for (int i = 0; i < WIDTH; i++) begin
+            if (i < HALF_WIDTH) begin
+                mul_res_bool_reduced_padded[i][0] = mul_res_bool_reduced[i][0];
+                mul_res_bool_reduced_padded[i][1] = mul_res_bool_reduced[i][1];
+            end
+            else begin
+                mul_res_bool_reduced_padded[i] = 2'b00;
+            end
+        end
+    end
 
     //B2A - 2 clks
     abr_masked_B2A_conv #(
@@ -109,15 +126,15 @@ module ntt_masked_BFU_mult
         .rst_n(reset_n),
         .zeroize(zeroize),
         .rnd(rnd0),
-        .x_boolean(mul_res_bool_reduced),
+        .x_boolean(mul_res_bool_reduced_padded),
         .x_arith(mul_res_reduced)
     );
-*/
+
     always_comb begin
         
         for (int i = 0; i < WIDTH; i++) begin
-            mul_res_redux0[i] = mul_res_refresh[i][0]; //mul_res_reduced[i][0];
-            mul_res_redux1[i] = mul_res_refresh[i][1]; //mul_res_reduced[i][1];
+            mul_res_redux0[i] = mul_res_reduced[i][0]; //mul_res_refresh[i][0];
+            mul_res_redux1[i] = mul_res_reduced[i][1]; //mul_res_refresh[i][1];
         end
     end
 
@@ -131,7 +148,7 @@ module ntt_masked_BFU_mult
                 res[i] <= 2'h0;
         end
         else begin
-            res <= mul_res_refresh; //mul_res_reduced;
+            res <= mul_res_reduced; //mul_res_refresh;
         end
     end
 

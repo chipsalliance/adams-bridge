@@ -84,6 +84,8 @@ logic [45:0] rnd0, rnd1, rnd2, rnd3;
 logic wren_tb, rden_tb;
 logic [1:0] wrptr_tb, rdptr_tb;
 logic [5:0] random_tb;
+bf_uvwi_t uvw_i_tb;
+pwo_uvwi_t pw_uvw_i_tb;
 
 //----------------------------------------------------------------
 // Device Under Test.
@@ -142,23 +144,23 @@ logic [5:0] random_tb;
 //     .sampler_valid(svalid_tb)
 // );
 
-// ntt_wrapper dut (
-//     .clk(clk_tb),
-//     .reset_n(reset_n_tb),
-//     .zeroize(zeroize_tb),
-//     .mode(mode_tb),
-//     .ntt_enable(enable_tb),
-//     .load_tb_values(load_tb_values),
-//     .load_tb_addr(load_tb_addr),
-//     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
-//     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
-//     .accumulate(acc_tb),
-//     .sampler_valid(svalid_tb),
-//     .sampler_mode(sampler_mode_tb),
-//     .sampler_data(96'hFFFFFF),
-//     .ntt_done(ntt_done_tb),
-//     .ntt_busy()
-// );
+ntt_wrapper dut (
+    .clk(clk_tb),
+    .reset_n(reset_n_tb),
+    .zeroize(zeroize_tb),
+    .mode(mode_tb),
+    .ntt_enable(enable_tb),
+    .load_tb_values(load_tb_values),
+    .load_tb_addr(load_tb_addr),
+    .ntt_mem_base_addr(ntt_mem_base_addr_tb),
+    .pwo_mem_base_addr(pwo_mem_base_addr_tb),
+    .accumulate(acc_tb),
+    .sampler_valid(svalid_tb),
+    .sampler_mode(sampler_mode_tb),
+    .sampler_data(96'hFFFFFF),
+    .ntt_done(ntt_done_tb),
+    .ntt_busy()
+);
 
 // ntt_masked_BFU_add_sub dut (
 //     .clk(clk_tb),
@@ -202,17 +204,53 @@ logic [5:0] random_tb;
 //     .data_o()
 // );
 
-ntt_masked_gs_butterfly dut (
-    .clk(clk_tb),
-    .reset_n(reset_n_tb),
-    .zeroize(zeroize_tb),
-    .opu_i(u),
-    .opv_i(v),
-    .opw_i(w),
-    .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
-    .u_o(),
-    .v_o()
-);
+// ntt_masked_gs_butterfly dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .opu_i(u),
+//     .opv_i(v),
+//     .opw_i(w),
+//     .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
+//     .u_o(),
+//     .v_o()
+// );
+
+// ntt_masked_pwm dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .u(u),
+//     .v(v),
+//     .w(w),
+//     .rnd({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
+//     .res()
+// );
+
+// ntt_masked_butterfly1x2 dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .uvw_i(uvw_i_tb),
+//     .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
+//     .uv_o()
+// );
+
+// ntt_hybrid_butterfly_2x2 dut (
+//     .clk(clk_tb),
+//     .reset_n(reset_n_tb),
+//     .zeroize(zeroize_tb),
+//     .mode(mode_tb),
+//     .enable(enable_tb),
+//     .masking_en(1'b0),
+//     .uvw_i(uvw_i_tb),
+//     .pw_uvw_i(pw_uvw_i_tb),
+//     .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
+//     .accumulate(1'b0),
+//     .uv_o(),
+//     .pwo_uv_o(),
+//     .ready_o()
+// );
 
 //----------------------------------------------------------------
 // clk_gen
@@ -311,7 +349,36 @@ task init_sim;
         end
         actual_u = 'h0;
         actual_v = 'h0;
+        actual_w = 'h0;
         sub = 'h0;
+
+        rnd0 = 'h0;
+        rnd1 = 'h0;
+        rnd2 = 'h0;
+        rnd3 = 'h0;
+
+        uvw_i_tb.u00_i = 'h0;
+        uvw_i_tb.u01_i = 'h0;
+        uvw_i_tb.v00_i = 'h0;
+        uvw_i_tb.v01_i = 'h0;
+        uvw_i_tb.w00_i = 'h0;
+        uvw_i_tb.w01_i = 'h0;
+
+        pw_uvw_i_tb.u0_i = 'h0;
+        pw_uvw_i_tb.v0_i = 'h0;
+        pw_uvw_i_tb.w0_i = 'h0;
+
+        pw_uvw_i_tb.u1_i = 'h0;
+        pw_uvw_i_tb.v1_i = 'h0;
+        pw_uvw_i_tb.w1_i = 'h0;
+
+        pw_uvw_i_tb.u2_i = 'h0;
+        pw_uvw_i_tb.v2_i = 'h0;
+        pw_uvw_i_tb.w2_i = 'h0;
+
+        pw_uvw_i_tb.u3_i = 'h0;
+        pw_uvw_i_tb.v3_i = 'h0;
+        pw_uvw_i_tb.w3_i = 'h0;
 
         $display("End of init\n");
     end
@@ -709,8 +776,8 @@ task masked_BFU_adder_test();
         join
     end
 endtask
-*/
-/*
+
+
 task masked_BFU_mult_test();
     logic [45:0] u_array, v_array;
     logic [45:0] rand0, rand1;
@@ -735,7 +802,7 @@ task masked_BFU_mult_test();
                 // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
             end
             begin
-                repeat(3) @(posedge clk_tb);
+                repeat(210) @(posedge clk_tb);
                 if ((dut.final_res[1] + dut.final_res[0]) != ((u_array * v_array)%PRIME)) begin
                     $error("Multiplication Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array * v_array)%PRIME, dut.final_res[0], dut.final_res[1], dut.final_res[0] + dut.final_res[1]);
                 end
@@ -745,7 +812,52 @@ task masked_BFU_mult_test();
 endtask
 */
 
-task masked_gs_butterfly_test();
+
+// task masked_gs_butterfly_test();
+//     logic [45:0] rand0, rand1, rand2;
+//     logic [45:0] actual_u_normalized;
+//     for (int i = 0; i < 10; i++) begin
+//         @(posedge clk_tb);
+//         fork
+//             begin
+//                 actual_u = $random()%PRIME;
+//                 actual_v = $random()%PRIME;
+//                 actual_w = 'h2;
+//                 if (actual_u < actual_v)
+//                     actual_u_normalized = actual_u + PRIME;
+//                 else
+//                     actual_u_normalized = actual_u;
+//                 // u_array = actual_u;
+//                 // v_array = actual_v;
+//                 rand0 = $random();
+//                 rand1 = $random();
+//                 rand2 = $random();
+
+//                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+
+//                 u[0] = actual_u-rand0;
+//                 u[1] = rand0;
+//                 v[0] = actual_v-rand1;
+//                 v[1] = rand1;
+//                 w[0] = actual_w-rand2;
+//                 w[1] = rand2;
+//                 // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+//             end
+//             begin
+//                 repeat(264) @(posedge clk_tb);
+//                 if ((dut.u_o_0 + dut.u_o_1) != ((actual_u_normalized + actual_v)%PRIME)) begin
+//                     $error("U = u+v Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (actual_u_normalized + actual_v)%PRIME, dut.u_o_0, dut.u_o_1, dut.u_o_0 + dut.u_o_1);
+//                 end
+//                 if ((dut.v_o_0 + dut.v_o_1) != (((actual_u_normalized - actual_v)*actual_w)%PRIME)) begin
+//                     $error("V = (u-v)w Mismatch: exp_output = %h   output shares = %h %h actual output = %h", ((actual_u_normalized - actual_v)*actual_w)%PRIME, dut.v_o_0, dut.v_o_1, dut.v_o_0 + dut.v_o_1);
+//                 end
+//             end
+//         join
+//     end
+// endtask
+
+/*
+task masked_pwm_test();
     logic [45:0] rand0, rand1, rand2;
     for (int i = 0; i < 10; i++) begin
         @(posedge clk_tb);
@@ -754,6 +866,7 @@ task masked_gs_butterfly_test();
                 actual_u = $random()%PRIME;
                 actual_v = $random()%PRIME;
                 actual_w = 'h2;
+
                 // u_array = actual_u;
                 // v_array = actual_v;
                 rand0 = $random();
@@ -770,14 +883,124 @@ task masked_gs_butterfly_test();
                 w[1] = rand2;
                 // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
             end
-            //TODO: check with Emre - when doing (u-v), should exp result be ((u-v)+Q) % Q to account for negative nums? FPV had issues with this, so do (if u < v), result + Q
+            begin
+                repeat(264) @(posedge clk_tb);
+                if ((dut.res[0] + dut.res[1]) != ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME)) begin
+                    $error("U = u*v+w Mismatch: exp_output = %h   output shares = %h %h actual output = %h", ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME), dut.res[0], dut.res[1], dut.res[0] + dut.res[1]);
+                end
+            end
+        join
+    end
+endtask
+*/
+
+// task masked_bfu_1x2_test();
+//     logic [45:0] rand0, rand1, rand2;
+//     for (int i = 0; i < 10; i++) begin
+//         @(posedge clk_tb);
+//         fork
+//             begin
+//                 actual_u = $random()%PRIME;
+//                 actual_v = $random()%PRIME;
+//                 actual_w = 'h2;
+
+//                 // u_array = actual_u;
+//                 // v_array = actual_v;
+//                 rand0 = $random();
+//                 rand1 = $random();
+//                 rand2 = $random();
+
+//                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+
+//                 u[0] = actual_u-rand0;
+//                 u[1] = rand0;
+//                 v[0] = actual_v-rand1;
+//                 v[1] = rand1;
+//                 w[0] = actual_w-rand2;
+//                 w[1] = rand2;
+
+//                 uvw_i_tb.u00_i = u;
+//                 uvw_i_tb.u01_i = u;
+//                 uvw_i_tb.v00_i = v;
+//                 uvw_i_tb.v01_i = v;
+//                 uvw_i_tb.w00_i = w;
+//                 uvw_i_tb.w01_i = w;
+//                 // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+//             end
+//             // begin
+//             //     repeat(264) @(posedge clk_tb);
+//             //     if ((dut.res[0] + dut.res[1]) != ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME)) begin
+//             //         $error("U = u*v+w Mismatch: exp_output = %h   output shares = %h %h actual output = %h", ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME), dut.res[0], dut.res[1], dut.res[0] + dut.res[1]);
+//             //     end
+//             // end
+//         join
+//     end
+// endtask
+
+task masked_hybrid_bf_2x2_test();
+    logic [45:0] rand0, rand1, rand2;
+    for (int j = 0; j < 6; j++) begin
+    mode_tb = j;
+    for (int i = 0; i < 10; i++) begin
+        @(posedge clk_tb);
+        enable_tb = 1'b1;
+        fork
+            begin
+                actual_u = $random()%PRIME;
+                actual_v = $random()%PRIME;
+                actual_w = 'h2;
+
+                // u_array = actual_u;
+                // v_array = actual_v;
+                rand0 = $random();
+                rand1 = $random();
+                rand2 = $random();
+
+                // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+
+                u[0] = actual_u-rand0;
+                u[1] = rand0;
+                v[0] = actual_v-rand1;
+                v[1] = rand1;
+                w[0] = actual_w-rand2;
+                w[1] = rand2;
+
+                uvw_i_tb.u00_i = actual_u;
+                uvw_i_tb.u01_i = actual_u;
+                uvw_i_tb.v00_i = actual_v;
+                uvw_i_tb.v01_i = actual_v;
+                uvw_i_tb.w00_i = actual_w;
+                uvw_i_tb.w01_i = actual_w;
+                uvw_i_tb.w10_i = actual_w;
+                uvw_i_tb.w11_i = actual_w;
+
+                pw_uvw_i_tb.u0_i = actual_u;
+                pw_uvw_i_tb.v0_i = actual_v;
+                pw_uvw_i_tb.w0_i = actual_w;
+
+                pw_uvw_i_tb.u1_i = actual_u;
+                pw_uvw_i_tb.v1_i = actual_v;
+                pw_uvw_i_tb.w1_i = actual_w;
+
+                pw_uvw_i_tb.u2_i = actual_u;
+                pw_uvw_i_tb.v2_i = actual_v;
+                pw_uvw_i_tb.w2_i = actual_w;
+
+                pw_uvw_i_tb.u3_i = actual_u;
+                pw_uvw_i_tb.v3_i = actual_v;
+                pw_uvw_i_tb.w3_i = actual_w;
+                //$display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+            end
             // begin
-            //     repeat(3) @(posedge clk_tb);
-            //     if ((dut.final_res[1] + dut.final_res[0]) != ((u_array * v_array)%PRIME)) begin
-            //         $error("Multiplication Mismatch: exp_output = %h   output shares = %h %h actual output = %h", (u_array * v_array)%PRIME, dut.final_res[0], dut.final_res[1], dut.final_res[0] + dut.final_res[1]);
+            //     repeat(264) @(posedge clk_tb);
+            //     if ((dut.res[0] + dut.res[1]) != ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME)) begin
+            //         $error("U = u*v+w Mismatch: exp_output = %h   output shares = %h %h actual output = %h", ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME), dut.res[0], dut.res[1], dut.res[0] + dut.res[1]);
             //     end
             // end
         join
+    end
+    enable_tb = 1'b0;
+    @(posedge clk_tb);
     end
 endtask
 
@@ -789,7 +1012,7 @@ initial begin
 
     @(posedge clk_tb);
     $display("Starting init mem\n");
-    init_mem();
+    // init_mem();
     // $readmemh("ntt_stage67.hex", ntt_mem_tb);
     @(posedge clk_tb);
     // buffer_test();
@@ -799,7 +1022,9 @@ initial begin
     // ntt_top_test();
     // masked_BFU_adder_test();
     // masked_BFU_mult_test();
-    masked_gs_butterfly_test();
+    // masked_gs_butterfly_test();
+    // masked_pwm_test();
+    masked_hybrid_bf_2x2_test();
     // pwm_opt_test();
     repeat(1000) @(posedge clk_tb);
     $finish;
