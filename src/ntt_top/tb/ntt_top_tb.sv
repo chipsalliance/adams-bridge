@@ -152,6 +152,10 @@ ntt_wrapper dut (
     .ntt_enable(enable_tb),
     .load_tb_values(load_tb_values),
     .load_tb_addr(load_tb_addr),
+    .shuffle_en(1'b0),
+    .random(random_tb),
+    .masking_en(1'b0),
+    .rnd_i('h0),
     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
     .accumulate(acc_tb),
@@ -729,7 +733,7 @@ task pwm_opt_test();
 endtask
 */
 task init_mem();
-    for (int i = 0; i < 32768; i++) begin
+    for (int i = 0; i < 512; i++) begin
         load_tb_addr = i;
         load_tb_values = 1'b1;
         @(posedge clk_tb);
@@ -936,7 +940,7 @@ endtask
 //         join
 //     end
 // endtask
-
+/*
 task masked_hybrid_bf_2x2_test();
     logic [45:0] rand0, rand1, rand2;
     for (int j = 0; j < 6; j++) begin
@@ -1003,7 +1007,7 @@ task masked_hybrid_bf_2x2_test();
     @(posedge clk_tb);
     end
 endtask
-
+*/
 initial begin
     init_sim();
     reset_dut();
@@ -1012,19 +1016,19 @@ initial begin
 
     @(posedge clk_tb);
     $display("Starting init mem\n");
-    // init_mem();
+    init_mem();
     // $readmemh("ntt_stage67.hex", ntt_mem_tb);
     @(posedge clk_tb);
     // buffer_test();
     // twiddle_rom_test();
     // ntt_ctrl_test();
     $display("Starting ntt test\n");
-    // ntt_top_test();
+    ntt_top_test();
     // masked_BFU_adder_test();
     // masked_BFU_mult_test();
     // masked_gs_butterfly_test();
     // masked_pwm_test();
-    masked_hybrid_bf_2x2_test();
+    // masked_hybrid_bf_2x2_test();
     // pwm_opt_test();
     repeat(1000) @(posedge clk_tb);
     $finish;

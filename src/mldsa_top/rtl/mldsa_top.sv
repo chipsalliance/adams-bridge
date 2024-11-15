@@ -516,6 +516,8 @@ generate
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(shuffle_en[g_inst]),
     .random(rand_bits[5:0]),
+    .masking_en(1'b0),
+    .rnd_i('h0),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),

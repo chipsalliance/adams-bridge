@@ -66,13 +66,13 @@ logic [HALF_WIDTH-1:0] u10_int, u11_int, v10_int, v11_int;
 //Inputs to 2nd stage
 logic [HALF_WIDTH-1:0] u10, u11, v10, v11;
 //Outputs of 2nd stage
-logic [HALF_WIDTH-1:0] u20, u21, v20, v21;
+// logic [HALF_WIDTH-1:0] u20, u21, v20, v21;
 
 //Other internal wires
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 logic [MASKED_BF_STAGE1_LATENCY-1:0][WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic pwo_mode, pwm_intt_mode;
-logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
+// logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
 
 //Shares - TODO replace with struct?
@@ -159,48 +159,91 @@ end
 always_comb begin
     //TODO: check randomness with Emre
     //Split u inputs
-    u00_share[0] = /*uvw_i.u00_i*/u00 - rnd_i[0];
-    u00_share[1] = rnd_i[0];
+    if (masking_en) begin
+        u00_share[0] = /*uvw_i.u00_i*/u00 - rnd_i[0];
+        u00_share[1] = rnd_i[0];
 
-    u01_share[0] = /*uvw_i.u01_i*/u01 - rnd_i[1];
-    u01_share[1] = rnd_i[1];
+        u01_share[0] = /*uvw_i.u01_i*/u01 - rnd_i[1];
+        u01_share[1] = rnd_i[1];
 
-    u10_share[0] = u10 - rnd_i[0];
-    u10_share[1] = rnd_i[0];
+        u10_share[0] = u10 - rnd_i[0];
+        u10_share[1] = rnd_i[0];
 
-    u11_share[0] = u11 - rnd_i[0];
-    u11_share[1] = rnd_i[0];
+        u11_share[0] = u11 - rnd_i[0];
+        u11_share[1] = rnd_i[0];
 
-    //Split v inputs
-    v00_share[0] = /*uvw_i.v00_i*/v00 - rnd_i[2];
-    v00_share[1] = rnd_i[2];
+        //Split v inputs
+        v00_share[0] = /*uvw_i.v00_i*/v00 - rnd_i[2];
+        v00_share[1] = rnd_i[2];
 
-    v01_share[0] = /*uvw_i.v01_i*/v01 - rnd_i[3];
-    v01_share[1] = rnd_i[3];
+        v01_share[0] = /*uvw_i.v01_i*/v01 - rnd_i[3];
+        v01_share[1] = rnd_i[3];
 
-    v10_share[0] = v10 - rnd_i[2];
-    v10_share[1] = rnd_i[2];
+        v10_share[0] = v10 - rnd_i[2];
+        v10_share[1] = rnd_i[2];
 
-    v11_share[0] = v11 - rnd_i[2];
-    v11_share[1] = rnd_i[2];
+        v11_share[0] = v11 - rnd_i[2];
+        v11_share[1] = rnd_i[2];
 
-    //Split w inputs
-    w00_share[0] = /*uvw_i.w00_i*/w00 - rnd_i[4];
-    w00_share[1] = rnd_i[4];
+        //Split w inputs
+        w00_share[0] = /*uvw_i.w00_i*/w00 - rnd_i[4];
+        w00_share[1] = rnd_i[4];
 
-    w01_share[0] = /*uvw_i.w01_i*/w01 - rnd_i[0];
-    w01_share[1] = rnd_i[0];
+        w01_share[0] = /*uvw_i.w01_i*/w01 - rnd_i[0];
+        w01_share[1] = rnd_i[0];
 
-    w10_reg_share[0] = w10_reg[0] - rnd_i[1];
-    w10_reg_share[1] = rnd_i[1];
+        w10_reg_share[0] = w10_reg[0] - rnd_i[1];
+        w10_reg_share[1] = rnd_i[1];
 
-    w11_reg_share[0] = w11_reg[0] - rnd_i[2];
-    w11_reg_share[1] = rnd_i[2];
+        w11_reg_share[0] = w11_reg[0] - rnd_i[2];
+        w11_reg_share[1] = rnd_i[2];
+    end
+    else begin
+    u00_share[0] = 'h0;
+    u00_share[1] = 'h0;
+
+    u01_share[0] = 'h0;
+    u01_share[1] = 'h0;
+
+    u10_share[0] = 'h0;
+    u10_share[1] = 'h0;
+
+    u11_share[0] = 'h0;
+    u11_share[1] = 'h0;
+
+    //Split v input
+    v00_share[0] = 'h0;
+    v00_share[1] = 'h0;
+
+    v01_share[0] = 'h0;
+    v01_share[1] = 'h0;
+
+    v10_share[0] = 'h0;
+    v10_share[1] = 'h0;
+
+    v11_share[0] = 'h0;
+    v11_share[1] = 'h0;
+
+    //Split w input
+    w00_share[0] = 'h0;
+    w00_share[1] = 'h0;
+
+    w01_share[0] = 'h0;
+    w01_share[1] = 'h0;
+
+    w10_reg_share[0] = 'h0;
+    w10_reg_share[1] = 'h0;
+
+    w11_reg_share[0] = 'h0;
+    w11_reg_share[1] = 'h0;
+
+    end
 end
 
 //----------------------------------------------------
 //Masked PWMs - Used in masked PWM+INTT mode only
 //----------------------------------------------------
+// `ifdef MASKING
 ntt_masked_pwm #(
     .WIDTH(WIDTH)
 ) pwm_inst00 (
@@ -252,7 +295,7 @@ ntt_masked_pwm #(
     .rnd({rnd_i[2], rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3]}),
     .res(uv11_share)
 );
-
+// `endif 
 //----------------------------------------------------
 //Masked BFU stage 1 - Used in masked PWM+INTT mode only
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
@@ -268,7 +311,7 @@ ntt_masked_butterfly1x2 #(
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );
-
+// `endif
 //----------------------------------------------------
 //Unmasked BFU stage 1 - Used in all other modes
 //----------------------------------------------------
@@ -316,7 +359,7 @@ ntt_butterfly #(
     .mode(mode),
     .opu_i(masking_en ? masked_gs_stage1_uvo.u20_o : u10),
     .opv_i(masking_en ? masked_gs_stage1_uvo.v20_o : v10),
-    .opw_i(masking_en ? masked_w10_reg[0] : w10_reg[0]), //TODO: delayed w10
+    .opw_i(masking_en ? masked_w10_reg[0] : pwo_mode ? w10 : w10_reg[0]), //TODO: delayed w10
     .accumulate(accumulate),
     .u_o(uv_o.u20_o),
     .v_o(uv_o.v20_o),
@@ -332,7 +375,7 @@ ntt_butterfly #(
     .mode(mode),
     .opu_i(masking_en ? masked_gs_stage1_uvo.u21_o : u11),
     .opv_i(masking_en ? masked_gs_stage1_uvo.v21_o : v11),
-    .opw_i(masking_en ? masked_w11_reg[0] : w11_reg[0]), //TODO: delayed w10
+    .opw_i(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : w11_reg[0]), //TODO: delayed w10
     .accumulate(accumulate),
     .u_o(uv_o.u21_o),
     .v_o(uv_o.v21_o),

@@ -302,6 +302,7 @@ module ntt_top
         .zeroize(zeroize),
         .mode(mode),
         .enable(bf_enable_mux),
+        .masking_en(masking_en),
         .uvw_i(uvw_i),
         .pw_uvw_i(pw_uvw_i),
         .rnd_i(rnd_i),
