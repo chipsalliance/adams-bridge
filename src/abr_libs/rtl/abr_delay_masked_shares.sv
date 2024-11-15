@@ -32,32 +32,26 @@ module abr_delay_masked_shares
 );
 
     // Create an array of shift registers to store the delayed values
-    logic [1:0] shift_reg [N-1:0][WIDTH-1:0];
+    logic [N-1:0][WIDTH-1:0][1:0] shift_reg ;
 
     // Use an always_ff block to implement the shift register
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             // Reset all shift register values to 0
             for (int j = 0; j < N; j = j + 1) begin
-                for (int i = 0; i < WIDTH; i = i + 1) begin
-                    shift_reg[j][i] <= 2'b0;
-                end
+                shift_reg[j] <= '0;
             end
         end
         else if (zeroize) begin
             // Reset all shift register values to 0
             for (int j = 0; j < N; j = j + 1) begin
-                for (int i = 0; i < WIDTH; i = i + 1) begin
-                    shift_reg[j][i] <= 2'b0;
-                end
+                shift_reg[j] <= '0;
             end
         end
         else begin
             // Shift the values through the registers
             for (int j = 0; j < N-1; j = j + 1) begin
-                for (int i = 0; i < WIDTH; i = i + 1) begin
-                    shift_reg[j+1][i] <= shift_reg[j][i];
-                end
+                shift_reg[j+1] <= shift_reg[j];
             end
 
             // Load the input values into the first shift register stage
