@@ -40,11 +40,11 @@
 );
 
     // Internal signals
-    logic [1:0] carry [WIDTH:0]; // Carry signals for each stage
-    logic [1:0] sum [WIDTH-1:0]; // Sum signals for each stage
-    logic [1:0] x_reg [WIDTH-1:0][WIDTH-1:0]; // Pipeline registers for x
-    logic [1:0] y_reg [WIDTH-1:0][WIDTH-1:0]; // Pipeline registers for y
-    logic [1:0] sum_reg [WIDTH-1:0][WIDTH-1:0]; // Pipeline registers for sum
+    logic  [WIDTH:0] [1:0] carry; // Carry signals for each stage
+    logic  [WIDTH-1:0] [1:0] sum; // Sum signals for each stage
+    logic  [WIDTH-1:0][WIDTH-1:0][1:0] x_reg; // Pipeline registers for x
+    logic  [WIDTH-1:0][WIDTH-1:0][1:0] y_reg; // Pipeline registers for y
+    logic  [WIDTH-1:0][WIDTH-1:0][1:0] sum_reg; // Pipeline registers for sum
     logic [1:0] the_last_sum;
 
     // Initialize the first carry input to 0
@@ -57,16 +57,12 @@
             // Pipeline registers for x and y inputs
             always_ff @(posedge clk or negedge rst_n) begin
                 if (!rst_n) begin
-                    for (int j = 0; j < WIDTH; j = j + 1) begin
-                        x_reg[i][j] <= 2'b00;
-                        y_reg[i][j] <= 2'b00;
-                    end
+                    x_reg[i] <= '0;
+                    y_reg[i] <= '0;
                 end
                 else if (zeroize) begin
-                    for (int j = 0; j < WIDTH; j = j + 1) begin
-                        x_reg[i][j] <= 2'b00;
-                        y_reg[i][j] <= 2'b00;
-                    end
+                    x_reg[i] <= '0;
+                    y_reg[i] <= '0;
                 end
                 else begin
                     for (int j = 0; j < WIDTH; j = j + 1) begin
@@ -85,14 +81,16 @@
             // Pipeline registers for sum output
             always_ff @(posedge clk or negedge rst_n) begin
                 if (!rst_n) begin
-                    for (int j = 0; j < WIDTH; j = j + 1) begin
-                        sum_reg[i][j] <= 2'b00;
-                    end
+                    // for (int j = 0; j < WIDTH; j = j + 1) begin
+                    //     sum_reg[i][j] <= 2'b00;
+                    // end
+                    sum_reg[i] <= '0;
                 end
                 else if (zeroize) begin
-                    for (int j = 0; j < WIDTH; j = j + 1) begin
-                        sum_reg[i][j] <= 2'b00;
-                    end
+                    // for (int j = 0; j < WIDTH; j = j + 1) begin
+                    //     sum_reg[i][j] <= 2'b00;
+                    // end
+                    sum_reg[i] <= '0;
                 end
                 else begin
                     for (int j = i; j < WIDTH; j = j + 1) begin
