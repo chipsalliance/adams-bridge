@@ -56,6 +56,29 @@ typedef struct packed {
 } bf_uvwi_t;
 
 typedef struct packed {
+    //input a
+    logic [NTT_REG_SIZE-1:0] u0_i;
+    logic [NTT_REG_SIZE-1:0] u1_i;
+    logic [NTT_REG_SIZE-1:0] u2_i;
+    logic [NTT_REG_SIZE-1:0] u3_i;
+    //input b
+    logic [NTT_REG_SIZE-1:0] v0_i;
+    logic [NTT_REG_SIZE-1:0] v1_i;
+    logic [NTT_REG_SIZE-1:0] v2_i;
+    logic [NTT_REG_SIZE-1:0] v3_i;
+    //accumulated input c (comes from dest mem)
+    logic [NTT_REG_SIZE-1:0] w0_i;
+    logic [NTT_REG_SIZE-1:0] w1_i;
+    logic [NTT_REG_SIZE-1:0] w2_i;
+    logic [NTT_REG_SIZE-1:0] w3_i;
+    //input w for INTT operation that follows pwm. TODO: for only PWM/PWMA ops, this needs to be 0
+    logic [NTT_REG_SIZE-1:0] twiddle_w0_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w1_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w2_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w3_i;
+} hybrid_bf_uvwi_t;
+
+typedef struct packed {
     logic [NTT_REG_SIZE-1:0] u20_o;
     logic [NTT_REG_SIZE-1:0] u21_o;
     logic [NTT_REG_SIZE-1:0] v20_o;

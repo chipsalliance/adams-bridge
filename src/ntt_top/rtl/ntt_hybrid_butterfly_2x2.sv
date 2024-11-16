@@ -47,6 +47,7 @@ module ntt_hybrid_butterfly_2x2
     input wire masking_en,
     input bf_uvwi_t uvw_i,      //Inputs are original form
     input pwo_uvwi_t pw_uvw_i,  //PWO inputs are original form
+    input hybrid_bf_uvwi_t hybrid_pw_uvw_i, //PWM+INTT inputs. TODO: combine and mux with pwo inputs?
     input wire [4:0][WIDTH-1:0] rnd_i,
     input wire accumulate,
 
@@ -69,16 +70,18 @@ logic [HALF_WIDTH-1:0] u10, u11, v10, v11;
 // logic [HALF_WIDTH-1:0] u20, u21, v20, v21;
 
 //Other internal wires
-logic [UNMASKED_BF_STAGE1_LATENCY-1:0][WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
-logic [MASKED_BF_STAGE1_LATENCY-1:0][WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
+logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
+logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic pwo_mode, pwm_intt_mode;
 // logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
 
 //Shares - TODO replace with struct?
 logic [1:0][WIDTH-1:0] u00_share, u01_share, v00_share, v01_share, u10_share, v10_share, u11_share, v11_share;
-logic [1:0][WIDTH-1:0] w00_share, w01_share, w10_share, w11_share, w10_reg_share, w11_reg_share;
+logic [1:0][WIDTH-1:0] w00_share, w01_share, w10_share, w11_share; //, w10_reg_share, w11_reg_share;
 logic [1:0][WIDTH-1:0] uv00_share, uv01_share, uv10_share, uv11_share;
+logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share, twiddle_w10_share, twiddle_w11_share;
 bf_uvo_t masked_gs_stage1_uvo;
 
 //w delay flops
@@ -100,16 +103,22 @@ end
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
+        masked_w00_reg <= 'h0;
+        masked_w01_reg <= 'h0;
         masked_w10_reg <= 'h0;
         masked_w11_reg <= 'h0;
     end
     else if (zeroize) begin
+        masked_w00_reg <= 'h0;
+        masked_w01_reg <= 'h0;
         masked_w10_reg <= 'h0;
         masked_w11_reg <= 'h0;
     end
     else begin
-        masked_w10_reg <= {uvw_i.w10_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
-        masked_w11_reg <= {uvw_i.w11_i, masked_w11_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
+        masked_w00_reg <= {hybrid_pw_uvw_i.twiddle_w0_i, masked_w00_reg[MASKED_PWM_LATENCY-1:1]};
+        masked_w01_reg <= {hybrid_pw_uvw_i.twiddle_w1_i, masked_w01_reg[MASKED_PWM_LATENCY-1:1]};
+        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
+        masked_w11_reg <= {hybrid_pw_uvw_i.twiddle_w3_i, masked_w11_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -118,7 +127,7 @@ assign pwm_intt_mode = (mode == pwm_intt) & masking_en;
 
 //Input assignments - TODO: add input flops for u, v, w, and rnd?
 always_comb begin
-    if (pwo_mode | pwm_intt_mode) begin //pwm_intt mode, inputs are driven on pw_uvw_i interface. TODO: check again
+    if (pwo_mode) begin
         u00 = pw_uvw_i.u0_i;
         v00 = pw_uvw_i.v0_i;
         w00 = pw_uvw_i.w0_i;
@@ -135,6 +144,28 @@ always_comb begin
         v11 = pw_uvw_i.v3_i;
         w11 = pw_uvw_i.w3_i;
 
+    end
+    else if (pwm_intt_mode) begin //TODO: clean up
+        u00 = hybrid_pw_uvw_i.u0_i;
+        v00 = hybrid_pw_uvw_i.v0_i;
+        w00 = hybrid_pw_uvw_i.w0_i;
+
+        u01 = hybrid_pw_uvw_i.u1_i;
+        v01 = hybrid_pw_uvw_i.v1_i;
+        w01 = hybrid_pw_uvw_i.w1_i;
+
+        u10 = hybrid_pw_uvw_i.u2_i;
+        v10 = hybrid_pw_uvw_i.v2_i;
+        w10 = hybrid_pw_uvw_i.w2_i;
+
+        u11 = hybrid_pw_uvw_i.u3_i;
+        v11 = hybrid_pw_uvw_i.v3_i;
+        w11 = hybrid_pw_uvw_i.w3_i;
+
+        // twiddle_w00 = hybrid_pw_uvw_i.twiddle_w0_i;
+        // twiddle_w01 = hybrid_pw_uvw_i.twiddle_w1_i;
+        // twiddle_w10 = hybrid_pw_uvw_i.twiddle_w2_i;
+        // twiddle_w11 = hybrid_pw_uvw_i.twiddle_w3_i;
     end
     else begin //Only applies to unmasked ops since in masking, intt receives inputs from pwm and not from the API
         u00 = uvw_i.u00_i;
@@ -192,11 +223,18 @@ always_comb begin
         w01_share[0] = /*uvw_i.w01_i*/w01 - rnd_i[0];
         w01_share[1] = rnd_i[0];
 
-        w10_reg_share[0] = w10_reg[0] - rnd_i[1];
-        w10_reg_share[1] = rnd_i[1];
+        // w10_reg_share[0] = w10_reg[0] - rnd_i[1];
+        // w10_reg_share[1] = rnd_i[1];
 
-        w11_reg_share[0] = w11_reg[0] - rnd_i[2];
-        w11_reg_share[1] = rnd_i[2];
+        // w11_reg_share[0] = w11_reg[0] - rnd_i[2];
+        // w11_reg_share[1] = rnd_i[2];
+
+        twiddle_w00_share[0] = masked_w00_reg[0] - rnd_i[0];
+        twiddle_w00_share[1] = rnd_i[0];
+
+        twiddle_w01_share[0] = masked_w01_reg[0] - rnd_i[1];
+        twiddle_w01_share[1] = rnd_i[1];  
+
     end
     else begin
     u00_share[0] = 'h0;
@@ -231,11 +269,17 @@ always_comb begin
     w01_share[0] = 'h0;
     w01_share[1] = 'h0;
 
-    w10_reg_share[0] = 'h0;
-    w10_reg_share[1] = 'h0;
+    // w10_reg_share[0] = 'h0;
+    // w10_reg_share[1] = 'h0;
 
-    w11_reg_share[0] = 'h0;
-    w11_reg_share[1] = 'h0;
+    // w11_reg_share[0] = 'h0;
+    // w11_reg_share[1] = 'h0;
+
+    twiddle_w00_share[0] = 'h0;
+    twiddle_w00_share[1] = 'h0;
+
+    twiddle_w01_share[0] = 'h0;
+    twiddle_w01_share[1] = 'h0;  
 
     end
 end
@@ -307,7 +351,7 @@ ntt_masked_butterfly1x2 #(
     .reset_n(reset_n),
     .zeroize(zeroize),
     // .enable()
-    .uvw_i({uv00_share, uv01_share, uv10_share, uv11_share}), //TODO check connection
+    .uvw_i({uv00_share, uv01_share, uv10_share, uv11_share, twiddle_w00_share, twiddle_w01_share}), //TODO check connection
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );
@@ -322,9 +366,9 @@ ntt_butterfly #(
     .reset_n(reset_n),
     .zeroize(zeroize),
     .mode(mode),
-    .opu_i(masking_en ? 'h0 : u00),
-    .opv_i(masking_en ? 'h0 : v00),
-    .opw_i(masking_en ? 'h0 : w00),
+    .opu_i(masking_en ? HALF_WIDTH'(0) : u00),
+    .opv_i(masking_en ? HALF_WIDTH'(0) : v00),
+    .opw_i(masking_en ? HALF_WIDTH'(0) : w00),
     .accumulate(accumulate),
     .u_o(u10_int),
     .v_o(u11_int),
@@ -338,9 +382,9 @@ ntt_butterfly #(
     .reset_n(reset_n),
     .zeroize(zeroize),
     .mode(mode),
-    .opu_i(masking_en ? 'h0 : u01),
-    .opv_i(masking_en ? 'h0 : v01),
-    .opw_i(masking_en ? 'h0 : w01),
+    .opu_i(masking_en ? HALF_WIDTH'(0) : u01),
+    .opv_i(masking_en ? HALF_WIDTH'(0) : v01),
+    .opw_i(masking_en ? HALF_WIDTH'(0) : w01),
     .accumulate(accumulate),
     .u_o(v10_int),
     .v_o(v11_int),

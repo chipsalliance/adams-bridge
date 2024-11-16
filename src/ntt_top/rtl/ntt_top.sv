@@ -124,6 +124,8 @@ module ntt_top
     logic pw_rden, pw_rden_dest_mem;
     logic sampler_valid_reg;
     logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
+    //PWM+INTT IF - masking
+    hybrid_bf_uvwi_t hybrid_pw_uvw_i;
 
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
@@ -144,6 +146,7 @@ module ntt_top
     logic gs_mode;
     logic pwo_mode;
     logic pwm_mode, pwa_mode, pws_mode;
+    logic pwm_intt_mode;
 
     assign ct_mode = (mode == ct);
     assign gs_mode = (mode == gs);
@@ -151,6 +154,7 @@ module ntt_top
     assign pwm_mode = (mode == pwm);
     assign pwa_mode = (mode == pwa);
     assign pws_mode = (mode == pws);
+    assign pwm_intt_mode = (mode == pwm_intt);
     assign pw_rden_dest_mem = accumulate ? pw_rden : 1'b0;
 
     //Mem IF assignments:
@@ -249,7 +253,7 @@ module ntt_top
                 uvw_i.w10_i = twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
                 uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
             end
-            gs: begin
+            gs, pwm_intt: begin
                 if (shuffle_en) begin
                     uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
                     uvw_i.w10_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
@@ -305,6 +309,7 @@ module ntt_top
         .masking_en(masking_en),
         .uvw_i(uvw_i),
         .pw_uvw_i(pw_uvw_i),
+        .hybrid_pw_uvw_i(hybrid_pw_uvw_i),
         .rnd_i(rnd_i),
         .accumulate(accumulate),
         .uv_o(uv_o),
@@ -489,6 +494,8 @@ module ntt_top
             pw_uvw_i.w3_i    = 'h0;
         end
         endcase
+
+        hybrid_pw_uvw_i = {pw_uvw_i, uvw_i.w00_i, uvw_i.w01_i, uvw_i.w10_i, uvw_i.w11_i};
     end
     assign bf_enable_mux    = ct_mode ? bf_enable       : bf_enable_reg;
     assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
