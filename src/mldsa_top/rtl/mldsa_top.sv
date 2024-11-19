@@ -517,7 +517,7 @@ generate
     .shuffle_en(shuffle_en[g_inst]),
     .random(rand_bits[5:0]),
     .masking_en(1'b0),
-    .rnd_i(rand_bits[RND_W-1:6]),
+    .rnd_i(rand_bits[RND_W-1:6]), //('h0), //rand_bits[RND_W-1:6]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),

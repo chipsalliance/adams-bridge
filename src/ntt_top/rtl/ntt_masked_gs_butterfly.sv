@@ -39,7 +39,7 @@ module ntt_masked_gs_butterfly
     );
 
     localparam MASKED_MULT_LATENCY = 207;
-    logic [1:0][WIDTH-1:0] w_reg [52:0]; //TODO parameterize
+    logic [52:0][1:0][WIDTH-1:0] w_reg; //TODO parameterize
     logic [1:0] add_res [WIDTH-1:0];
     logic [1:0] sub_res [WIDTH-1:0];
     logic [1:0] mul_res [WIDTH-1:0];
@@ -137,7 +137,7 @@ module ntt_masked_gs_butterfly
         .rnd1(rnd_i[3]),
         .rnd2(rnd_i[0]),
         .rnd3(rnd_i[1]),
-        .rnd4(rnd_i[2]+rnd_i[3]),
+        .rnd4(WIDTH'(rnd_i[2]+rnd_i[3])),
         .res(mul_res) //(u-v)*w
     );
 

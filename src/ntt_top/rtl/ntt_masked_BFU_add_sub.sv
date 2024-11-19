@@ -38,14 +38,14 @@ module ntt_masked_BFU_add_sub
 
     //Internal signals
     logic [1:0][WIDTH-1:0] v_int, add_res;
-    logic [1:0][WIDTH-1:0] add_res_reg [WIDTH+4:0]; //TODO parameterize
+    logic [WIDTH+4:0][1:0][WIDTH-1:0] add_res_reg; //TODO parameterize
     logic [1:0] add_res_rolled [WIDTH-1:0];
     logic [1:0] add_res_bool [WIDTH-1:0];
     logic [1:0] add_res_arith [WIDTH-1:0];
     logic [WIDTH-1:0] prime0, prime1, add_res_rolled0, add_res_rolled1;
     logic [1:0][WIDTH-1:0] add_res_reduced, prime_packed;
     logic [1:0] prime [WIDTH-1:0];
-    logic [WIDTH-1:0] add_res_bool0, add_res_bool1, add_res_arith0, add_res_arith1, add_res_reduced0, add_res_reduced1;
+    logic [WIDTH-1:0] add_res_bool0, add_res_bool1, add_res_arith0, add_res_arith1;
     // logic [WIDTH-1:0] prime0, prime1;
 
     //Add flops to inputs to avoid pruning TODO
@@ -171,8 +171,6 @@ module ntt_masked_BFU_add_sub
             add_res_bool1[i] = add_res_bool[i][1];
             add_res_arith0[i] = add_res_arith[i][0];
             add_res_arith1[i] = add_res_arith[i][1]; 
-            add_res_reduced0[i] = add_res_reduced[i][0];
-            add_res_reduced1[i] = add_res_reduced[i][1]; 
         end
     
         //If bit[23] = 1, subtract Q from adder result

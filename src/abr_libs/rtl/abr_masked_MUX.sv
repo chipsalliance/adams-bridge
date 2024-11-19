@@ -51,6 +51,7 @@ module abr_masked_MUX #(
         if (sub_i) begin
             // When subtracting, select bits are based on carry0
             s = carry0;
+            c0c1 = 2'h0; //verilator
         end
         else begin
             // When adding, select bits are based on inverted (carry0 ^ carry1)
@@ -58,6 +59,8 @@ module abr_masked_MUX #(
             s[0] = ~c0c1[0];
             s[1] = c0c1[1];
         end
+    end
+    always_comb begin //verilator
         for (int i = 0; i < WIDTH; i++) begin
             xy[i] = r0[i] ^ r1[i];
             xyk[i][0] = xy[i][0] ^ rnd_xor[i];

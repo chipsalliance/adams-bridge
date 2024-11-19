@@ -107,14 +107,12 @@ module ntt_masked_BFU_mult
     );
     
     always_comb begin
-        for (int i = 0; i < WIDTH; i++) begin
-            if (i < HALF_WIDTH) begin
-                mul_res_bool_reduced_padded[i][0] = mul_res_bool_reduced[i][0];
-                mul_res_bool_reduced_padded[i][1] = mul_res_bool_reduced[i][1];
-            end
-            else begin
-                mul_res_bool_reduced_padded[i] = 2'b00;
-            end
+        for (int i = 0; i < HALF_WIDTH; i++) begin
+            mul_res_bool_reduced_padded[i][0] = mul_res_bool_reduced[i][0];
+            mul_res_bool_reduced_padded[i][1] = mul_res_bool_reduced[i][1];
+        end
+        for (int i = HALF_WIDTH; i < WIDTH; i++) begin
+            mul_res_bool_reduced_padded[i] = 2'b00;
         end
     end
 

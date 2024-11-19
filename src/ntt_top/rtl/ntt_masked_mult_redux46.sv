@@ -41,7 +41,7 @@ module ntt_masked_mult_redux46
 );
 
     // Intermediate wires for the sliced values
-    int cnt;
+    logic [4:0] cnt;
     logic [1:0] z_45_23 [22:0];
     logic [1:0] z_45_23_delayed [22:0];
     logic [1:0] z_45_33 [13:0];
@@ -91,7 +91,7 @@ module ntt_masked_mult_redux46
         // Counter for z_45_33
         cnt = 0;
         for (int i = 33; i <= 45; i = i + 1) begin
-            z_45_33[cnt] = x[i];
+            z_45_33[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
         z_45_33[13] = 2'b00;
@@ -99,26 +99,26 @@ module ntt_masked_mult_redux46
         // Counter for z_45_43
         cnt = 0;
         for (int i = 43; i <= 45; i = i + 1) begin
-            z_45_43[cnt] = x[i];
-            z_45_43_padded_8[cnt] = x[i];
+            z_45_43[cnt[1:0]] = x[i];
+            z_45_43_padded_8[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
         z_45_43[3] = 2'b00;
         z_45_43_padded_8[3] = 2'b00;
-        for (int i = 0; i < 8; i = i + 1)
+        for (int i = 0; i < 7; i = i + 1) //i < 8
             z_45_43_padded_8[i+4] = 2'b00;
 
         // Counter for z_12_0
         cnt = 0;
         for (int i = 0; i <= 12; i = i + 1) begin
-            z_12_0[cnt] = x[i];
+            z_12_0[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
 
         // Counter for z_22_13
         cnt = 0;
         for (int i = 13; i <= 22; i = i + 1) begin
-            z_22_13[cnt] = x[i];
+            z_22_13[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
         z_22_13[10] = 2'b00;
@@ -126,7 +126,7 @@ module ntt_masked_mult_redux46
         // Counter for z_32_23
         cnt = 0;
         for (int i = 23; i <= 32; i = i + 1) begin
-            z_32_23[cnt] = x[i];
+            z_32_23[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
         z_32_23[10] = 2'b00;
@@ -134,16 +134,16 @@ module ntt_masked_mult_redux46
         // Counter for z_42_33
         cnt = 0;
         for (int i = 33; i <= 42; i = i + 1) begin
-            z_42_33[cnt] = x[i];
+            z_42_33[cnt[3:0]] = x[i];
             cnt = cnt + 1;
         end
         z_42_33[10] = 2'b00;
 
         cnt = 0;
         for (int i = 10; i <= 11; i = i + 1) begin
-            c11_10[cnt] = c0_11[i];
-            c11_10_padded_9[cnt] = c0_11[i];
-            c11_10_padded_2[cnt] = c0_11[i];
+            c11_10[cnt[0]] = c0_11[i];
+            c11_10_padded_9[cnt[3:0]] = c0_11[i];
+            c11_10_padded_2[cnt[1:0]] = c0_11[i];
             cnt = cnt + 1;
         end
         c11_10_padded_2[2] = 2'b00;
@@ -153,8 +153,8 @@ module ntt_masked_mult_redux46
 
         cnt = 0;
         for (int i = 0; i <= 9; i = i + 1) begin
-            c9_0[cnt] = c0_11[i];
-            c9_0_padded[cnt] = c0_11[i];
+            c9_0[cnt[3:0]] = c0_11[i];
+            c9_0_padded[cnt[3:0]] = c0_11[i];
             cnt = cnt + 1;
         end
         c9_0_padded[10] = 2'b00;

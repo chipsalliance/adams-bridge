@@ -191,37 +191,43 @@ always_comb begin
     //TODO: check randomness with Emre
     //Split u inputs
     if (masking_en) begin
-        u00_share[0] = /*uvw_i.u00_i*/u00 - rnd_i[0];
+        u00_share[0] = /*uvw_i.u00_i*/WIDTH'(u00) - rnd_i[0];
         u00_share[1] = rnd_i[0];
 
-        u01_share[0] = /*uvw_i.u01_i*/u01 - rnd_i[1];
+        u01_share[0] = /*uvw_i.u01_i*/WIDTH'(u01) - rnd_i[1];
         u01_share[1] = rnd_i[1];
 
-        u10_share[0] = u10 - rnd_i[0];
+        u10_share[0] = WIDTH'(u10) - rnd_i[0];
         u10_share[1] = rnd_i[0];
 
-        u11_share[0] = u11 - rnd_i[0];
+        u11_share[0] = WIDTH'(u11) - rnd_i[0];
         u11_share[1] = rnd_i[0];
 
         //Split v inputs
-        v00_share[0] = /*uvw_i.v00_i*/v00 - rnd_i[2];
+        v00_share[0] = /*uvw_i.v00_i*/WIDTH'(v00) - rnd_i[2];
         v00_share[1] = rnd_i[2];
 
-        v01_share[0] = /*uvw_i.v01_i*/v01 - rnd_i[3];
+        v01_share[0] = /*uvw_i.v01_i*/WIDTH'(v01) - rnd_i[3];
         v01_share[1] = rnd_i[3];
 
-        v10_share[0] = v10 - rnd_i[2];
+        v10_share[0] = WIDTH'(v10) - rnd_i[2];
         v10_share[1] = rnd_i[2];
 
-        v11_share[0] = v11 - rnd_i[2];
+        v11_share[0] = WIDTH'(v11) - rnd_i[2];
         v11_share[1] = rnd_i[2];
 
         //Split w inputs
-        w00_share[0] = /*uvw_i.w00_i*/w00 - rnd_i[4];
+        w00_share[0] = /*uvw_i.w00_i*/WIDTH'(w00) - rnd_i[4];
         w00_share[1] = rnd_i[4];
 
-        w01_share[0] = /*uvw_i.w01_i*/w01 - rnd_i[0];
+        w01_share[0] = /*uvw_i.w01_i*/WIDTH'(w01) - rnd_i[0];
         w01_share[1] = rnd_i[0];
+
+        w10_share[0] = WIDTH'(w10) - rnd_i[1];
+        w10_share[1] = rnd_i[1];
+
+        w11_share[0] = WIDTH'(w11) - rnd_i[2];
+        w11_share[1] = rnd_i[2];
 
         // w10_reg_share[0] = w10_reg[0] - rnd_i[1];
         // w10_reg_share[1] = rnd_i[1];
@@ -229,10 +235,10 @@ always_comb begin
         // w11_reg_share[0] = w11_reg[0] - rnd_i[2];
         // w11_reg_share[1] = rnd_i[2];
 
-        twiddle_w00_share[0] = masked_w00_reg[0] - rnd_i[0];
+        twiddle_w00_share[0] = WIDTH'(masked_w00_reg[0]) - rnd_i[0];
         twiddle_w00_share[1] = rnd_i[0];
 
-        twiddle_w01_share[0] = masked_w01_reg[0] - rnd_i[1];
+        twiddle_w01_share[0] = WIDTH'(masked_w01_reg[0]) - rnd_i[1];
         twiddle_w01_share[1] = rnd_i[1];  
 
     end
@@ -268,6 +274,12 @@ always_comb begin
 
     w01_share[0] = 'h0;
     w01_share[1] = 'h0;
+
+    w10_share[0] = 'h0;
+    w10_share[1] = 'h0;
+
+    w11_share[0] = 'h0;
+    w11_share[1] = 'h0;
 
     // w10_reg_share[0] = 'h0;
     // w10_reg_share[1] = 'h0;

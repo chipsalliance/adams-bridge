@@ -63,10 +63,10 @@
 
     // Calculation stage
     always_comb begin
-        calculation[0] = x[0] * y[0]; // Multiplication of the first share x and first share y
-        calculation[1] = x[1] * y[0]; // Multiplication of the second share x and first share y
-        calculation[2] = x[0] * y[1]; // Multiplication of the first share x and second share y
-        calculation[3] = x[1] * y[1]; // Multiplication of the second share x and second share y
+        calculation[0] = WIDTH'(x[0] * y[0]); // Multiplication of the first share x and first share y
+        calculation[1] = WIDTH'(x[1] * y[0]); // Multiplication of the second share x and first share y
+        calculation[2] = WIDTH'(x[0] * y[1]); // Multiplication of the first share x and second share y
+        calculation[3] = WIDTH'(x[1] * y[1]); // Multiplication of the second share x and second share y
 
         calculation_rand[0] = calculation[2] + random;
         calculation_rand[1] = calculation[1] - random;

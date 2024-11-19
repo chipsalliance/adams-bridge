@@ -99,10 +99,10 @@ module ntt_masked_butterfly1x2
             v11_packed[0][i] = v11_int[i][0];
             v11_packed[1][i] = v11_int[i][1];
         end
-        u10_combined = u10_packed[0] + u10_packed[1];
-        v10_combined = v10_packed[0] + v10_packed[1];
-        u11_combined = u11_packed[0] + u11_packed[1];
-        v11_combined = v11_packed[0] + v11_packed[1];
+        u10_combined = HALF_WIDTH'(u10_packed[0] + u10_packed[1]);
+        v10_combined = HALF_WIDTH'(v10_packed[0] + v10_packed[1]);
+        u11_combined = HALF_WIDTH'(u11_packed[0] + u11_packed[1]);
+        v11_combined = HALF_WIDTH'(v11_packed[0] + v11_packed[1]);
     end
 
     //Perform div2 on combined outputs

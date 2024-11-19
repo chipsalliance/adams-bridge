@@ -745,7 +745,7 @@ always_comb begin
             buf_wr_rst_count_ntt    = 1'b1; //There are no more mem reads, so buf writes need to halt
             buf_rd_rst_count_ntt    = 1'b0; //There are still some entries in buf that BF2x2 needs to pick up
             bf_enable_fsm           = pwo_mode ? sampler_valid : (buf_count <= 3);
-            incr_twiddle_addr_fsm   = (ct_mode | gs_mode | pwm_intt);
+            incr_twiddle_addr_fsm   = (ct_mode | gs_mode | pwm_intt_mode);
             rd_addr_step            = NTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = (pwo_mode & sampler_valid);
             pw_rden_fsm             = (pwo_mode & sampler_valid);
