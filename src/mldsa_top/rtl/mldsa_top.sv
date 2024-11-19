@@ -494,7 +494,9 @@ generate
         end
         default: begin
         end
-      endcase 
+      endcase
+      
+      
     end
 
   ntt_top #(
@@ -517,7 +519,7 @@ generate
     .shuffle_en(shuffle_en[g_inst]),
     .random(rand_bits[5:0]),
     .masking_en(1'b0),
-    .rnd_i(rand_bits[RND_W-1:6]), //('h0), //rand_bits[RND_W-1:6]),
+    .rnd_i(rand_bits[RND_W-1:6] & {(RND_W-6){ntt_busy[g_inst]}}), //('h0), //rand_bits[RND_W-1:6]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
