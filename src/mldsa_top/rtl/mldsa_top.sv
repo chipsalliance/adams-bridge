@@ -118,6 +118,7 @@ module mldsa_top
   logic [1:0] ntt_done;
   logic [1:0] ntt_busy;
   logic [1:0] shuffle_en;
+  logic [1:0] ntt_random_en;
 
   mem_if_t w1_mem_wr_req;
   logic [3:0] w1_mem_wr_data;
@@ -448,6 +449,7 @@ generate
       sampler_valid[g_inst] = 0;
       sampler_ntt_mode[g_inst] = 0;
       shuffle_en[g_inst] = 0; //TODO: temp change for testing, remove and add to opcodes
+      ntt_random_en[g_inst] = 0;
 
       unique case (ntt_mode[g_inst]) inside
         MLDSA_NTT_NONE: begin
@@ -459,6 +461,7 @@ generate
         MLDSA_INTT: begin
           mode[g_inst] = gs;
           shuffle_en[g_inst] = 1;
+          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWM_SMPL: begin
           mode[g_inst] = pwm;
@@ -475,12 +478,14 @@ generate
           mode[g_inst] = pwm;
           sampler_valid[g_inst] = 1;
           shuffle_en[g_inst] = 1;
+          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWM_ACCUM: begin
           mode[g_inst] = pwm;
           accumulate[g_inst] = 1;
           sampler_valid[g_inst] = 1;
           shuffle_en[g_inst] = 1;
+          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWA: begin
           mode[g_inst] = pwa;
@@ -519,7 +524,7 @@ generate
     .shuffle_en(shuffle_en[g_inst]),
     .random(rand_bits[5:0]),
     .masking_en(1'b0),
-    .rnd_i(rand_bits[RND_W-1:6] & {(RND_W-6){ntt_busy[g_inst]}}), //('h0), //rand_bits[RND_W-1:6]),
+    .rnd_i(rand_bits[RND_W-1:6] /*& {(RND_W-6){ntt_busy[g_inst]}}*/ & {(RND_W-6){ntt_random_en[g_inst]}}), //('h0), //rand_bits[RND_W-1:6]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
