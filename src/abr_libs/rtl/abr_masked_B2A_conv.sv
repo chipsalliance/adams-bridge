@@ -48,20 +48,6 @@
     logic unsigned [1:0]       x_arith_next [WIDTH-1:0];
     wire [WIDTH-1:0]   Gamma;
     assign Gamma = rnd;
-`ifdef DEBUG_MASKING
-    logic [WIDTH-1:0] actual_input, actual_input0, actual_input1, exp_output, actual_output;
-    always_comb begin
-        for (int i = 0; i < WIDTH; i++) begin
-            actual_input[i] = x_boolean[i][0] ^ x_boolean[i][1];
-        end
-        exp_output = actual_input1;
-    end
-    always_ff @(posedge clk) begin
-        actual_input0 <= actual_input;
-        actual_input1 <= actual_input0;
-        actual_output <= A2 + x1;
-    end
-`endif
 
      // Register inputs
     always_ff @ (posedge clk or negedge rst_n) begin            
