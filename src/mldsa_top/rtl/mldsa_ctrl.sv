@@ -67,6 +67,8 @@ module mldsa_ctrl
   output mldsa_ntt_mode_e [1:0]             ntt_mode_o,
   output ntt_mem_addr_t [1:0]               ntt_mem_base_addr_o,
   output pwo_mem_addr_t [1:0]               pwo_mem_base_addr_o,
+  output logic [1:0]                        ntt_masking_en_o,
+  output logic [1:0]                        ntt_shuffling_en_o,
   input logic [1:0]                         ntt_busy_i,
 
   //aux interfaces
@@ -1146,8 +1148,12 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb begin
     ntt_mode_o[0] = MLDSA_NTT_NONE;
+    ntt_masking_en_o[0] = 0;
+    ntt_shuffling_en_o[0] = 0;
     if (prim_instr.opcode.ntt_en) begin
       ntt_mode_o[0] = prim_instr.opcode.mode.ntt_mode;
+      ntt_masking_en_o[0] = prim_instr.opcode.masking_en;
+      ntt_shuffling_en_o[0] = prim_instr.opcode.shuffling_en;
     end
   end
 
@@ -1354,7 +1360,6 @@ mldsa_seq_prim mldsa_seq_prim_inst
           end   
           MLDSA_SIGN : begin  // signing
             sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
-            sec_seq_en = 1;
           end                                   
           MLDSA_VERIFY : begin  // verifying
             sec_prog_cntr_nxt = MLDSA_RESET;
@@ -1362,7 +1367,6 @@ mldsa_seq_prim mldsa_seq_prim_inst
           end                     
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
             sec_prog_cntr_nxt = MLDSA_RESET;
-            sec_seq_en = 0;
           end
           default : begin
             sec_prog_cntr_nxt = MLDSA_RESET;
@@ -1371,6 +1375,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
         endcase
         if (keygen_signing_process & (prim_prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
           sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
+          sec_seq_en = 1;
         end
       end
       //START of C access - check if C is valid
@@ -1443,8 +1448,12 @@ mldsa_seq_prim mldsa_seq_prim_inst
   //instruciton decode - drives secondary ntt
   always_comb begin
     ntt_mode_o[1] = MLDSA_NTT_NONE;
+    ntt_masking_en_o[1] = 0;
+    ntt_shuffling_en_o[1] = 0;
     if (sec_instr.opcode.ntt_en) begin
       ntt_mode_o[1] = sec_instr.opcode.mode.ntt_mode;
+      ntt_masking_en_o[1] = sec_instr.opcode.masking_en;
+      ntt_shuffling_en_o[1] = sec_instr.opcode.shuffling_en;
     end
   end
 

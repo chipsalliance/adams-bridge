@@ -117,7 +117,8 @@ module mldsa_top
   logic [1:0][MLDSA_MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
   logic [1:0] ntt_done;
   logic [1:0] ntt_busy;
-  logic [1:0] shuffle_en;
+  logic [1:0] ntt_shuffling_en;
+  logic [1:0] ntt_masking_en;
 
   mem_if_t w1_mem_wr_req;
   logic [3:0] w1_mem_wr_data;
@@ -317,6 +318,8 @@ mldsa_ctrl mldsa_ctrl_inst
   .ntt_mode_o(ntt_mode),
   .ntt_mem_base_addr_o(ntt_mem_base_addr),
   .pwo_mem_base_addr_o(pwo_mem_base_addr),
+  .ntt_masking_en_o(ntt_masking_en),
+  .ntt_shuffling_en_o(ntt_shuffling_en),
   .ntt_busy_i(ntt_busy),
 
   //aux interface
@@ -447,18 +450,15 @@ generate
       accumulate[g_inst] = '0;
       sampler_valid[g_inst] = 0;
       sampler_ntt_mode[g_inst] = 0;
-      shuffle_en[g_inst] = 0; //TODO: temp change for testing, remove and add to opcodes
 
       unique case (ntt_mode[g_inst]) inside
         MLDSA_NTT_NONE: begin
         end
         MLDSA_NTT: begin
           mode[g_inst] = ct;
-          shuffle_en[g_inst] = 1;
         end
         MLDSA_INTT: begin
           mode[g_inst] = gs;
-          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWM_SMPL: begin
           mode[g_inst] = pwm;
@@ -474,23 +474,19 @@ generate
         MLDSA_PWM: begin
           mode[g_inst] = pwm;
           sampler_valid[g_inst] = 1;
-          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWM_ACCUM: begin
           mode[g_inst] = pwm;
           accumulate[g_inst] = 1;
           sampler_valid[g_inst] = 1;
-          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWA: begin
           mode[g_inst] = pwa;
           sampler_valid[g_inst] = 1;
-          shuffle_en[g_inst] = 1;
         end
         MLDSA_PWS: begin
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
-          shuffle_en[g_inst] = 1;
         end
         default: begin
         end
@@ -514,7 +510,7 @@ generate
     .pwo_mem_base_addr(pwo_mem_base_addr[g_inst]),
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
-    .shuffle_en(shuffle_en[g_inst]),
+    .shuffle_en(ntt_shuffling_en[g_inst]),
     .random(rand_bits[5:0]),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
@@ -953,7 +949,7 @@ always_comb begin
       for (int bank = 0; bank < 2; bank++) begin
         ntt_mem_re0_bank[0][bank]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_rd_req[0].addr[0] == bank);
         pwo_a_mem_re0_bank[0][bank] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_a_rd_req[0].addr[0] == bank);
-        pwo_b_mem_re0_bank[0][bank] = (shuffle_en[0] ? ~sampler_ntt_dv_f : ~sampler_ntt_dv) & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_b_rd_req[0].addr[0] == bank);
+        pwo_b_mem_re0_bank[0][bank] = (ntt_shuffling_en[0] ? ~sampler_ntt_dv_f : ~sampler_ntt_dv) & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_b_rd_req[0].addr[0] == bank);
     
         ntt_mem_re0_bank[1][bank]   = (ntt_mem_rd_req[1].rd_wr_en == RW_READ) & (ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (ntt_mem_rd_req[1].addr[0] == bank);
         pwo_a_mem_re0_bank[1][bank] = (pwm_a_rd_req[1].rd_wr_en == RW_READ) & (pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]) & (pwm_a_rd_req[1].addr[0] == bank);
@@ -987,7 +983,7 @@ always_comb begin
     end else begin
       ntt_mem_re[0][i]   = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_a_mem_re[0][i] = (pwm_a_rd_req[0].rd_wr_en == RW_READ) & (pwm_a_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
-      pwo_b_mem_re[0][i] = (shuffle_en[0] ? ~sampler_ntt_dv_f : ~sampler_ntt_dv) & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
+      pwo_b_mem_re[0][i] = (ntt_shuffling_en[0] ? ~sampler_ntt_dv_f : ~sampler_ntt_dv) & (pwm_b_rd_req[0].rd_wr_en == RW_READ) & (pwm_b_rd_req[0].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
   
       ntt_mem_re[1][i]   = (ntt_mem_rd_req[1].rd_wr_en == RW_READ) & (ntt_mem_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       pwo_a_mem_re[1][i] = (pwm_a_rd_req[1].rd_wr_en == RW_READ) & (pwm_a_rd_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);

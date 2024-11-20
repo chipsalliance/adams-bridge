@@ -174,7 +174,8 @@ package mldsa_ctrl_pkg;
         logic ntt_en;
         logic aux_en;
         mldsa_opcode_mode_u mode;
-        logic sca_en;
+        logic masking_en;
+        logic shuffling_en;
     } mldsa_opcode_t;
 
     typedef struct packed {
@@ -187,39 +188,39 @@ package mldsa_ctrl_pkg;
     } mldsa_seq_instr_t;
 
     // MLDSA ISA
-    localparam mldsa_opcode_t MLDSA_UOP_NOP       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SAMPLER_NONE,   sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SHAKE256  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256,       sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SHAKE128  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128,       sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_REJB      = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_REJ_BOUNDED,    sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_REJS_PWM  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_SMPL,       sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_REJS_PWMA = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_ACCUM_SMPL, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SIB       = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SAMPLE_IN_BALL, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_EXP_MASK  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_EXP_MASK,       sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_PWS       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            sca_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_NOP       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SAMPLER_NONE,   masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SHAKE256  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256,       masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SHAKE128  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128,       masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_REJB      = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_REJ_BOUNDED,    masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_REJS_PWM  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_SMPL,       masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_REJS_PWMA = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_ACCUM_SMPL, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SIB       = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SAMPLE_IN_BALL, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_EXP_MASK  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_EXP_MASK,       masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam mldsa_opcode_t MLDSA_UOP_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           masking_en:1'b0, shuffling_en:1'b1};
+    localparam mldsa_opcode_t MLDSA_UOP_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam mldsa_opcode_t MLDSA_UOP_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam mldsa_opcode_t MLDSA_UOP_PWS       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, shuffling_en:1'b1};
     //Load Keccak with data but don't run it yet
-    localparam mldsa_opcode_t MLDSA_UOP_LD_SHAKE256 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_LD_SHAKE128 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128, sca_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_LD_SHAKE256 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_LD_SHAKE128 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128, masking_en:1'b0, shuffling_en:1'b0};
     //Run Keccak but don't load it
-    localparam mldsa_opcode_t MLDSA_UOP_RUN_SHAKE256 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_RUN_SHAKE128 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128, sca_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_RUN_SHAKE256 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE256, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_RUN_SHAKE128 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:MLDSA_SHAKE128, masking_en:1'b0, shuffling_en:1'b0};
     // Aux functions
-    localparam mldsa_opcode_t MLDSA_UOP_DECOMP     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SKENCODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_MAKEHINT   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_NORMCHK    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SIGENCODE  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_PKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SIGDEC_H   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_SIGDEC_Z   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_HINTSUM    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_HINTSUM,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  sca_en:1'b0};
-    localparam mldsa_opcode_t MLDSA_UOP_LFSR       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     sca_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_DECOMP     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SKENCODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_MAKEHINT   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_NORMCHK    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SIGENCODE  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_PKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SIGDEC_H   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_SIGDEC_Z   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_HINTSUM    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_HINTSUM,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam mldsa_opcode_t MLDSA_UOP_LFSR       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, shuffling_en:1'b0};
 
     //Immediate encodings
     localparam [MLDSA_IMM_WIDTH-1:0] MLDSA_NORMCHK_Z = 'h0000;
