@@ -38,7 +38,9 @@ module ntt_wrapper
     input mode_t mode,
     input wire ntt_enable,
     input wire shuffle_en,
+    input wire masking_en,
     input wire [5:0] random,
+    input wire [4:0][45:0] rnd_i,
     
     //TB purpose - remove later TODO
     input wire load_tb_values,
@@ -181,7 +183,9 @@ module ntt_wrapper
         .accumulate(accumulate),
         .sampler_valid(sampler_valid),
         .shuffle_en(shuffle_en),
+        .masking_en(1'b0),
         .random(random),
+        .rnd_i('h0),
         //NTT mem IF
         .mem_wr_req(mem_wr_req),
         .mem_rd_req(mem_rd_req),

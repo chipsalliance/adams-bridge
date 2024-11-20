@@ -30,7 +30,7 @@
 //    outputs A and r.
 //
 //======================================================================
-
+`define DEBUG_MASKING 1
  module abr_masked_B2A_conv #(
     parameter WIDTH = 8 // Default width is 8 bits
 )(
@@ -48,6 +48,20 @@
     logic unsigned [1:0]       x_arith_next [WIDTH-1:0];
     wire [WIDTH-1:0]   Gamma;
     assign Gamma = rnd;
+`ifdef DEBUG_MASKING
+    logic [WIDTH-1:0] actual_input, actual_input0, actual_input1, exp_output, actual_output;
+    always_comb begin
+        for (int i = 0; i < WIDTH; i++) begin
+            actual_input[i] = x_boolean[i][0] ^ x_boolean[i][1];
+        end
+        exp_output = actual_input1;
+    end
+    always_ff @(posedge clk) begin
+        actual_input0 <= actual_input;
+        actual_input1 <= actual_input0;
+        actual_output <= A2 + x1;
+    end
+`endif
 
      // Register inputs
     always_ff @ (posedge clk or negedge rst_n) begin            
@@ -80,16 +94,16 @@
     // Combinational logic
     always_comb begin
         
-            T0               = x0 ^ Gamma_reg;           // T = x' ⊕ Γ
-            T1               = T0 - Gamma_reg;            // T = T - Γ
-            T2               = T1 ^ x0;                   // T = T ⊕ x'
-            Gamma_reg2       = Gamma_reg ^ x1;           // Γ = Γ ⊕ r
-            A0               = x0 ^ Gamma_reg2;          // A = x' ⊕ Γ
-            A1               = A0 - Gamma_reg2;           // A = A - Γ
-            A2               = A1 ^ T2;                    // A = A ⊕ T
+            T0               = x0 ^ Gamma_reg;              // T = x' ⊕ Γ
+            T1               = T0 - Gamma_reg;              // T = T - Γ
+            T2               = T1 ^ x0;                     // T = T ⊕ x'
+            Gamma_reg2       = Gamma_reg ^ x1;              // Γ = Γ ⊕ r
+            A0               = x0 ^ Gamma_reg2;             // A = x' ⊕ Γ
+            A1               = A0 - Gamma_reg2;             // A = A - Γ
+            A2               = A1 ^ T2;                     // A = A ⊕ T
         for (int i = 0; i < WIDTH; i++) begin
-            x_arith_next[i][0]  = A2[i];                  // Assign A to the output
-            x_arith_next[i][1]  = x1[i];                 // Assign r to the output
+            x_arith_next[i][0]  = A2[i];                    // Assign A to the output
+            x_arith_next[i][1]  = x1[i];                    // Assign r to the output
         end
     end
 

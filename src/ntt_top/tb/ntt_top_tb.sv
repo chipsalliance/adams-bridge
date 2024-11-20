@@ -75,9 +75,17 @@ pwo_mem_addr_t pwo_mem_base_addr_tb;
 
 string operation;
 
+logic sub;
+logic [45:0] actual_u, actual_v, actual_w;
+logic [1:0][45:0] u;
+logic [1:0][45:0] v;
+logic [1:0][45:0] w;
+logic [45:0] rnd0, rnd1, rnd2, rnd3;
 logic wren_tb, rden_tb;
 logic [1:0] wrptr_tb, rdptr_tb;
 logic [5:0] random_tb;
+bf_uvwi_t uvw_i_tb;
+pwo_uvwi_t pw_uvw_i_tb;
 
 //----------------------------------------------------------------
 // Device Under Test.
@@ -136,6 +144,28 @@ logic [5:0] random_tb;
 //     .sampler_valid(svalid_tb)
 // );
 
+ntt_wrapper dut (
+    .clk(clk_tb),
+    .reset_n(reset_n_tb),
+    .zeroize(zeroize_tb),
+    .mode(mode_tb),
+    .ntt_enable(enable_tb),
+    .load_tb_values(load_tb_values),
+    .load_tb_addr(load_tb_addr),
+    .shuffle_en(1'b0),
+    .random(random_tb),
+    .masking_en(1'b0),
+    .rnd_i('h0),
+    .ntt_mem_base_addr(ntt_mem_base_addr_tb),
+    .pwo_mem_base_addr(pwo_mem_base_addr_tb),
+    .accumulate(acc_tb),
+    .sampler_valid(svalid_tb),
+    .sampler_mode(sampler_mode_tb),
+    .sampler_data(96'hFFFFFF),
+    .ntt_done(ntt_done_tb),
+    .ntt_busy()
+);
+
 // ntt_shuffle_buffer dut (
 //     .clk(clk_tb),
 //     .reset_n(reset_n_tb),
@@ -150,32 +180,6 @@ logic [5:0] random_tb;
 //     .data_o()
 // );
 
-ntt_wrapper dut (
-    .clk(clk_tb),
-    .reset_n(reset_n_tb),
-    .zeroize(zeroize_tb),
-    .mode(mode_tb),
-    .ntt_enable(enable_tb),
-    .load_tb_values(load_tb_values),
-    .load_tb_addr(load_tb_addr),
-    .shuffle_en(1'b0),
-    .random(random_tb),
-    // .src_base_addr(src_base_addr),
-    // .interim_base_addr(interim_base_addr),
-    // .dest_base_addr(dest_base_addr),
-    // .pw_base_addr_a(8'd0),
-    // .pw_base_addr_b(8'd0),
-    // .pw_base_addr_c(8'd0),
-    .ntt_mem_base_addr(ntt_mem_base_addr_tb),
-    .pwo_mem_base_addr(pwo_mem_base_addr_tb),
-    .accumulate(acc_tb),
-    .sampler_valid(svalid_tb),
-    .sampler_mode(sampler_mode_tb),
-    .sampler_data(96'hFFFFFF),
-    .ntt_done(ntt_done_tb),
-    .ntt_busy()
-);
-
 //----------------------------------------------------------------
 // clk_gen
 //
@@ -185,6 +189,10 @@ always
 begin : clk_gen
   #CLK_HALF_PERIOD;
   clk_tb = !clk_tb;
+  rnd0 = $random();
+  rnd1 = $random();
+  rnd2 = $random();
+  rnd3 = $random();
 end // clk_gen
 
 //----------------------------------------------------------------
@@ -261,6 +269,44 @@ task init_sim;
         svalid_tb = 1'b0;
         sampler_mode_tb = 1'b0;
         random_tb <= 'h0;
+
+        //Masking
+        for (int i = 0; i < 46; i++) begin
+            u[i] = 2'h0;
+            v[i] = 2'h0;
+        end
+        actual_u = 'h0;
+        actual_v = 'h0;
+        actual_w = 'h0;
+        sub = 'h0;
+
+        rnd0 = 'h0;
+        rnd1 = 'h0;
+        rnd2 = 'h0;
+        rnd3 = 'h0;
+
+        uvw_i_tb.u00_i = 'h0;
+        uvw_i_tb.u01_i = 'h0;
+        uvw_i_tb.v00_i = 'h0;
+        uvw_i_tb.v01_i = 'h0;
+        uvw_i_tb.w00_i = 'h0;
+        uvw_i_tb.w01_i = 'h0;
+
+        pw_uvw_i_tb.u0_i = 'h0;
+        pw_uvw_i_tb.v0_i = 'h0;
+        pw_uvw_i_tb.w0_i = 'h0;
+
+        pw_uvw_i_tb.u1_i = 'h0;
+        pw_uvw_i_tb.v1_i = 'h0;
+        pw_uvw_i_tb.w1_i = 'h0;
+
+        pw_uvw_i_tb.u2_i = 'h0;
+        pw_uvw_i_tb.v2_i = 'h0;
+        pw_uvw_i_tb.w2_i = 'h0;
+
+        pw_uvw_i_tb.u3_i = 'h0;
+        pw_uvw_i_tb.v3_i = 'h0;
+        pw_uvw_i_tb.w3_i = 'h0;
 
         $display("End of init\n");
     end
@@ -552,7 +598,7 @@ task ntt_top_test();
     join_any
     $display("End of test\n");
 endtask
-
+/*
 task pwm_opt_test();
     $display("PWM operation 1\n");
     $readmemh("pwm_iter1.hex", ntt_mem_tb);
@@ -609,9 +655,9 @@ task pwm_opt_test();
         @(posedge clk_tb);
     end
 endtask
-
+*/
 task init_mem();
-    for (int i = 0; i < 32768; i++) begin
+    for (int i = 0; i < 512; i++) begin
         load_tb_addr = i;
         load_tb_values = 1'b1;
         @(posedge clk_tb);

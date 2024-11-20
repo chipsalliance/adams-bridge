@@ -121,6 +121,7 @@ logic pw_wren_fsm, pw_wren_reg;
 //Mode flags
 logic ct_mode, gs_mode, pwo_mode; //point-wise operations mode
 logic pwm_mode, pwa_mode, pws_mode; 
+logic pwm_intt_mode;
 
 //Addr internal wires
 logic [MEM_ADDR_WIDTH-1:0] src_base_addr, interim_base_addr, dest_base_addr;
@@ -221,6 +222,7 @@ always_comb begin
     pwm_mode = (ntt_mode == pwm);
     pwa_mode = (ntt_mode == pwa);
     pws_mode = (ntt_mode == pws);
+    pwm_intt_mode = (ntt_mode == pwm_intt);
 end
 
 //------------------------------------------
@@ -376,7 +378,7 @@ end
 
 
 //------------------------------------------
-//Twiddle addr logic
+//Twiddle addr logic - TODO: shuffling+masking (adjust latency)
 //------------------------------------------
 always_comb begin
     unique case(rounds_count)
@@ -731,7 +733,7 @@ always_comb begin
             else
                 mem_rd_en_fsm       = (ntt_mode inside {ct, gs}) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) : 1'b0;
             bf_enable_fsm           = pwo_mode ? sampler_valid : 1'b1;
-            incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs};
+            incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs, pwm_intt};
             rd_addr_step            = ct_mode ? NTT_READ_ADDR_STEP : INTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = sampler_valid & pwo_mode;
             pw_rden_fsm             = sampler_valid & pwo_mode;
@@ -743,7 +745,7 @@ always_comb begin
             buf_wr_rst_count_ntt    = 1'b1; //There are no more mem reads, so buf writes need to halt
             buf_rd_rst_count_ntt    = 1'b0; //There are still some entries in buf that BF2x2 needs to pick up
             bf_enable_fsm           = pwo_mode ? sampler_valid : (buf_count <= 3);
-            incr_twiddle_addr_fsm   = (ct_mode | gs_mode);
+            incr_twiddle_addr_fsm   = (ct_mode | gs_mode | pwm_intt_mode);
             rd_addr_step            = NTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = (pwo_mode & sampler_valid);
             pw_rden_fsm             = (pwo_mode & sampler_valid);
