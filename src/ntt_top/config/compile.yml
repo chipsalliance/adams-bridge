@@ -114,6 +114,18 @@ targets:
     tops: [ntt_masked_mult_redux46_auto_tb]
 
 ---
+provides: [ntt_top_masking_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_top_masking_tb.sv
+    tops: [ntt_top_masking_tb]
+
+---
 provides: [ntt_utb]  
 schema_version: 2.4.0
 requires:

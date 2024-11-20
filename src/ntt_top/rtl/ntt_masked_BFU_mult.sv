@@ -131,8 +131,8 @@ module ntt_masked_BFU_mult
     always_comb begin
         
         for (int i = 0; i < WIDTH; i++) begin
-            mul_res_redux0[i] = mul_res_reduced[i][0]; //mul_res_refresh[i][0];
-            mul_res_redux1[i] = mul_res_reduced[i][1]; //mul_res_refresh[i][1];
+            mul_res_redux0[i] = mul_res_reduced[i][0];
+            mul_res_redux1[i] = mul_res_reduced[i][1];
         end
     end
 
@@ -146,7 +146,7 @@ module ntt_masked_BFU_mult
                 res[i] <= 2'h0;
         end
         else begin
-            res <= mul_res_reduced; //mul_res_refresh;
+            res <= mul_res_reduced;
         end
     end
 

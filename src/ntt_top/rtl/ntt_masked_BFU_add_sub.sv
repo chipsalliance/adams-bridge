@@ -46,7 +46,6 @@ module ntt_masked_BFU_add_sub
     logic [1:0][WIDTH-1:0] add_res_reduced, prime_packed;
     logic [1:0] prime [WIDTH-1:0];
     logic [WIDTH-1:0] add_res_bool0, add_res_bool1, add_res_arith0, add_res_arith1;
-    // logic [WIDTH-1:0] prime0, prime1;
 
     //Add flops to inputs to avoid pruning TODO
     always_comb begin
@@ -115,19 +114,6 @@ module ntt_masked_BFU_add_sub
 
     logic [1:0] temp0 [WIDTH-1:0]; 
 
-    // always_comb begin
-    //     for(int i = 0; i< WIDTH; i++)  begin
-    //         add_res_bool0[i] = add_res_bool[i][0];
-    //         add_res_bool1[i] = add_res_bool[i][1];
-    // //         if (i==0) begin
-    // //             temp0[i] = {add_res_bool[HALF_WIDTH][1], add_res_bool[HALF_WIDTH][0]};
-    // //         end 
-    // //         else begin
-    // //             temp0[i] = '0;
-    // //         end
-    //     end
-    // end
-
     //Convert 1 bit to 46 bit to pass to B2A converter - 1 clk
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -194,7 +180,7 @@ module ntt_masked_BFU_add_sub
         end
         else begin
             for (int i = 0; i < WIDTH; i++) begin
-                res[i] <= {add_res_reduced[1][i],add_res_reduced[0][i]}; //TODO: check with Emre - shares XORed together give actual result. Is this correct? Or should they be added instead?
+                res[i] <= {add_res_reduced[1][i],add_res_reduced[0][i]};
             end
         end
     end

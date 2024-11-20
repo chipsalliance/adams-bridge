@@ -161,11 +161,6 @@ always_comb begin
         u11 = hybrid_pw_uvw_i.u3_i;
         v11 = hybrid_pw_uvw_i.v3_i;
         w11 = hybrid_pw_uvw_i.w3_i;
-
-        // twiddle_w00 = hybrid_pw_uvw_i.twiddle_w0_i;
-        // twiddle_w01 = hybrid_pw_uvw_i.twiddle_w1_i;
-        // twiddle_w10 = hybrid_pw_uvw_i.twiddle_w2_i;
-        // twiddle_w11 = hybrid_pw_uvw_i.twiddle_w3_i;
     end
     else begin //Only applies to unmasked ops since in masking, intt receives inputs from pwm and not from the API
         u00 = uvw_i.u00_i;
@@ -189,12 +184,13 @@ end
 //Split into shares
 always_comb begin
     //TODO: check randomness with Emre
+    //TODO: add flops here (input side)
     //Split u inputs
     if (masking_en) begin
-        u00_share[0] = /*uvw_i.u00_i*/WIDTH'(u00) - rnd_i[0];
+        u00_share[0] = WIDTH'(u00) - rnd_i[0];
         u00_share[1] = rnd_i[0];
 
-        u01_share[0] = /*uvw_i.u01_i*/WIDTH'(u01) - rnd_i[1];
+        u01_share[0] = WIDTH'(u01) - rnd_i[1];
         u01_share[1] = rnd_i[1];
 
         u10_share[0] = WIDTH'(u10) - rnd_i[0];
@@ -204,10 +200,10 @@ always_comb begin
         u11_share[1] = rnd_i[0];
 
         //Split v inputs
-        v00_share[0] = /*uvw_i.v00_i*/WIDTH'(v00) - rnd_i[2];
+        v00_share[0] = WIDTH'(v00) - rnd_i[2];
         v00_share[1] = rnd_i[2];
 
-        v01_share[0] = /*uvw_i.v01_i*/WIDTH'(v01) - rnd_i[3];
+        v01_share[0] = WIDTH'(v01) - rnd_i[3];
         v01_share[1] = rnd_i[3];
 
         v10_share[0] = WIDTH'(v10) - rnd_i[2];
@@ -217,10 +213,10 @@ always_comb begin
         v11_share[1] = rnd_i[2];
 
         //Split w inputs
-        w00_share[0] = /*uvw_i.w00_i*/WIDTH'(w00) - rnd_i[4];
+        w00_share[0] = WIDTH'(w00) - rnd_i[4];
         w00_share[1] = rnd_i[4];
 
-        w01_share[0] = /*uvw_i.w01_i*/WIDTH'(w01) - rnd_i[0];
+        w01_share[0] = WIDTH'(w01) - rnd_i[0];
         w01_share[1] = rnd_i[0];
 
         w10_share[0] = WIDTH'(w10) - rnd_i[1];
@@ -228,12 +224,6 @@ always_comb begin
 
         w11_share[0] = WIDTH'(w11) - rnd_i[2];
         w11_share[1] = rnd_i[2];
-
-        // w10_reg_share[0] = w10_reg[0] - rnd_i[1];
-        // w10_reg_share[1] = rnd_i[1];
-
-        // w11_reg_share[0] = w11_reg[0] - rnd_i[2];
-        // w11_reg_share[1] = rnd_i[2];
 
         twiddle_w00_share[0] = WIDTH'(masked_w00_reg[0]) - rnd_i[0];
         twiddle_w00_share[1] = rnd_i[0];
@@ -243,61 +233,54 @@ always_comb begin
 
     end
     else begin
-    u00_share[0] = 'h0;
-    u00_share[1] = 'h0;
+        u00_share[0] = 'h0;
+        u00_share[1] = 'h0;
 
-    u01_share[0] = 'h0;
-    u01_share[1] = 'h0;
+        u01_share[0] = 'h0;
+        u01_share[1] = 'h0;
 
-    u10_share[0] = 'h0;
-    u10_share[1] = 'h0;
+        u10_share[0] = 'h0;
+        u10_share[1] = 'h0;
 
-    u11_share[0] = 'h0;
-    u11_share[1] = 'h0;
+        u11_share[0] = 'h0;
+        u11_share[1] = 'h0;
 
-    //Split v input
-    v00_share[0] = 'h0;
-    v00_share[1] = 'h0;
+        //Split v input
+        v00_share[0] = 'h0;
+        v00_share[1] = 'h0;
 
-    v01_share[0] = 'h0;
-    v01_share[1] = 'h0;
+        v01_share[0] = 'h0;
+        v01_share[1] = 'h0;
 
-    v10_share[0] = 'h0;
-    v10_share[1] = 'h0;
+        v10_share[0] = 'h0;
+        v10_share[1] = 'h0;
 
-    v11_share[0] = 'h0;
-    v11_share[1] = 'h0;
+        v11_share[0] = 'h0;
+        v11_share[1] = 'h0;
 
-    //Split w input
-    w00_share[0] = 'h0;
-    w00_share[1] = 'h0;
+        //Split w input
+        w00_share[0] = 'h0;
+        w00_share[1] = 'h0;
 
-    w01_share[0] = 'h0;
-    w01_share[1] = 'h0;
+        w01_share[0] = 'h0;
+        w01_share[1] = 'h0;
 
-    w10_share[0] = 'h0;
-    w10_share[1] = 'h0;
+        w10_share[0] = 'h0;
+        w10_share[1] = 'h0;
 
-    w11_share[0] = 'h0;
-    w11_share[1] = 'h0;
+        w11_share[0] = 'h0;
+        w11_share[1] = 'h0;
 
-    // w10_reg_share[0] = 'h0;
-    // w10_reg_share[1] = 'h0;
+        twiddle_w00_share[0] = 'h0;
+        twiddle_w00_share[1] = 'h0;
 
-    // w11_reg_share[0] = 'h0;
-    // w11_reg_share[1] = 'h0;
-
-    twiddle_w00_share[0] = 'h0;
-    twiddle_w00_share[1] = 'h0;
-
-    twiddle_w01_share[0] = 'h0;
-    twiddle_w01_share[1] = 'h0;  
-
+        twiddle_w01_share[0] = 'h0;
+        twiddle_w01_share[1] = 'h0;  
     end
 end
 
 //----------------------------------------------------
-//Masked PWMs - Used in masked PWM+INTT mode only
+//Masked PWMs - Used in masked PWM+INTT mode only - 207 clks
 //----------------------------------------------------
 // `ifdef MASKING
 ntt_masked_pwm #(
@@ -353,7 +336,7 @@ ntt_masked_pwm #(
 );
 // `endif 
 //----------------------------------------------------
-//Masked BFU stage 1 - Used in masked PWM+INTT mode only
+//Masked BFU stage 1 - Used in masked PWM+INTT mode only - 260 clks
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
 //----------------------------------------------------
 ntt_masked_butterfly1x2 #(
@@ -362,7 +345,6 @@ ntt_masked_butterfly1x2 #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    // .enable()
     .uvw_i({uv00_share, uv01_share, uv10_share, uv11_share, twiddle_w00_share, twiddle_w01_share}), //TODO check connection
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
@@ -415,7 +397,7 @@ ntt_butterfly #(
     .mode(mode),
     .opu_i(masking_en ? masked_gs_stage1_uvo.u20_o : u10),
     .opv_i(masking_en ? masked_gs_stage1_uvo.v20_o : v10),
-    .opw_i(masking_en ? masked_w10_reg[0] : pwo_mode ? w10 : w10_reg[0]), //TODO: delayed w10
+    .opw_i(masking_en ? masked_w10_reg[0] : pwo_mode ? w10 : w10_reg[0]),
     .accumulate(accumulate),
     .u_o(uv_o.u20_o),
     .v_o(uv_o.v20_o),
@@ -431,7 +413,7 @@ ntt_butterfly #(
     .mode(mode),
     .opu_i(masking_en ? masked_gs_stage1_uvo.u21_o : u11),
     .opv_i(masking_en ? masked_gs_stage1_uvo.v21_o : v11),
-    .opw_i(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : w11_reg[0]), //TODO: delayed w10
+    .opw_i(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : w11_reg[0]),
     .accumulate(accumulate),
     .u_o(uv_o.u21_o),
     .v_o(uv_o.v21_o),
@@ -448,7 +430,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (zeroize)
         masked_ready_reg <= 'b0;
     else begin
-        unique case(mode) //471:0
+        unique case(mode) //471:0 delay flop for enable - TODO: optimize
             ct:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
             gs:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
             pwm: masked_ready_reg <= accumulate ? {467'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};

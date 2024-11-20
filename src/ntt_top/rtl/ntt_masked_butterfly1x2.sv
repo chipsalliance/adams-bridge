@@ -36,8 +36,7 @@ module ntt_masked_butterfly1x2
         input masked_bf_uvwi_t uvw_i,
         input [4:0][WIDTH-1:0] rnd_i,
         
-        output bf_uvo_t uv_o //,
-        // output logic ready_o
+        output bf_uvo_t uv_o
     );
 
     logic [1:0][WIDTH-1:0] u00, v00, w00;
@@ -47,8 +46,8 @@ module ntt_masked_butterfly1x2
     logic [1:0] u11_int [WIDTH-1:0];
     logic [1:0] v11_int [WIDTH-1:0];
     logic [1:0][WIDTH-1:0] u10_packed, v10_packed, u11_packed, v11_packed;
-    logic [HALF_WIDTH-1:0] u10_combined, v10_combined, u11_combined, v11_combined; //TODO: 46 bit or 23 bit? check with Emre
-    logic [HALF_WIDTH-1:0] u10_div2, v10_div2, u11_div2, v11_div2; //TODO: check width
+    logic [HALF_WIDTH-1:0] u10_combined, v10_combined, u11_combined, v11_combined;
+    logic [HALF_WIDTH-1:0] u10_div2, v10_div2, u11_div2, v11_div2;
 
     always_comb begin
         u00 = uvw_i.u00_i;

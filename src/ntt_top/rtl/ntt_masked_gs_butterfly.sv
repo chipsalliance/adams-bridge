@@ -31,7 +31,7 @@ module ntt_masked_gs_butterfly
 
         input wire [1:0][WIDTH-1:0] opu_i,
         input wire [1:0][WIDTH-1:0] opv_i,
-        input wire [1:0][WIDTH-1:0] opw_i, //benefit from splitting? Or should we use one share mult?
+        input wire [1:0][WIDTH-1:0] opw_i,
         input wire [4:0][WIDTH-1:0] rnd_i,
 
         output logic [1:0] u_o [WIDTH-1:0], //TODO: make packed?

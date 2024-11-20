@@ -207,6 +207,7 @@ module mldsa_top
   logic lfsr_enable;
   logic [1:0][LFSR_W-1:0] lfsr_seed;
   logic [RND_W-1:0] rand_bits;
+  logic [RND_W-7:0] ntt_rand_bits;
 
   //gasket to assemble reg requests
   logic mldsa_reg_dv;
@@ -221,6 +222,12 @@ module mldsa_top
 
   mldsa_reg__in_t mldsa_reg_hwif_in;
   mldsa_reg__out_t mldsa_reg_hwif_out;
+
+  `ifdef MLDSA_MASKING
+    assign ntt_rand_bits = rand_bits[RND_W-1:6];
+  `else
+    assign ntt_rand_bits = (RND_W-6)'(0);
+  `endif
 
   abr_ahb_slv_sif #(
     .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
@@ -449,7 +456,7 @@ generate
       sampler_valid[g_inst] = 0;
       sampler_ntt_mode[g_inst] = 0;
       shuffle_en[g_inst] = 0; //TODO: temp change for testing, remove and add to opcodes
-      ntt_random_en[g_inst] = 0;
+      ntt_random_en[g_inst] = 0; //Turn off random in NTT for all ops except PWM, INTT
 
       unique case (ntt_mode[g_inst]) inside
         MLDSA_NTT_NONE: begin
@@ -524,7 +531,7 @@ generate
     .shuffle_en(shuffle_en[g_inst]),
     .random(rand_bits[5:0]),
     .masking_en(1'b0),
-    .rnd_i(rand_bits[RND_W-1:6] /*& {(RND_W-6){ntt_busy[g_inst]}}*/ & {(RND_W-6){ntt_random_en[g_inst]}}), //('h0), //rand_bits[RND_W-1:6]),
+    .rnd_i(ntt_rand_bits & {(RND_W-6){ntt_random_en[g_inst]}}),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),

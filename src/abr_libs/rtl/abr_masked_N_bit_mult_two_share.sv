@@ -36,8 +36,8 @@
         input wire rst_n,                       // Active low reset signal
         input wire zeroize,                     // Zeroize signal
         input wire        [WIDTH-1:0] random,   // Intermediate randomness
-        input wire   [1:0][WIDTH-1:0] x,       // WIDTH-bit arithmetic shares operand x
-        input wire   [1:0][WIDTH-1:0] y,       // WIDTH-bit arithmetic shares operand y
+        input wire   [1:0][WIDTH-1:0] x,        // WIDTH-bit arithmetic shares operand x
+        input wire   [1:0][WIDTH-1:0] y,        // WIDTH-bit arithmetic shares operand y
         output logic [1:0] z [WIDTH-1:0]        // WIDTH-bit arithmetic shares output z
     );
 
@@ -46,20 +46,6 @@
     logic [WIDTH-1:0] calculation_rand [1:0];
     logic [WIDTH-1:0] final_res [1:0];
     logic [WIDTH-1:0] x0, x1, y0, y1;
-
-    // Format organization stage
-    // always_comb begin
-    //     // x0 = x[0];
-    //     // x1 = x[1];
-    //     // y0 = y[0];
-    //     // y1 = y[1];
-    //     for (int i = 0; i < WIDTH; i++) begin
-    //         x0[i] = x[i][0];
-    //         x1[i] = x[i][1];
-    //         y0[i] = y[i][0];
-    //         y1[i] = y[i][1];
-    //     end
-    // end
 
     // Calculation stage
     always_comb begin

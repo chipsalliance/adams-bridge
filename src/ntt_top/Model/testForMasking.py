@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from maksed_gadgets import *
+from masked_gadgets import *
 
 
 def test_one_share_mult(numTest = 10):
