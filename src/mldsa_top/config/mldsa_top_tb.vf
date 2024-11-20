@@ -60,8 +60,6 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_ram_tdp_file.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_wrapper.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/tb/mldsa_top_tb.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Arith_adder.sv
