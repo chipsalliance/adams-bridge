@@ -155,7 +155,7 @@ ntt_wrapper dut (
     .shuffle_en(1'b0),
     .random(random_tb),
     .masking_en(1'b0),
-    .rnd_i('h0),
+    .rnd_i(230'h0),
     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
     .accumulate(acc_tb),

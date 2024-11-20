@@ -62,11 +62,11 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_masked_pwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_butterfly1x2.sv
       - $COMPILE_ROOT/rtl/ntt_hybrid_butterfly_2x2.sv
-  tb:
-    directories: [$COMPILE_ROOT/rtl]
-    files:
-      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
-      - $COMPILE_ROOT/tb/ntt_wrapper.sv
+  # tb:
+  #   directories: [$COMPILE_ROOT/rtl]
+  #   files:
+  #     - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+  #     - $COMPILE_ROOT/tb/ntt_wrapper.sv
       
     tops: [ntt_top]
   rtl_lint:
@@ -84,6 +84,8 @@ targets:
     directories: [$COMPILE_ROOT/tb]
     files:
       - $COMPILE_ROOT/tb/ntt_top_tb.sv
+      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
     tops: [ntt_top_tb]
   sim:
     pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
@@ -161,4 +163,6 @@ targets:
       - $COMPILE_ROOT/utb/tests/ntt_base_test.sv
       - $COMPILE_ROOT/utb/tests/ntt_combined_test.sv
       - $COMPILE_ROOT/utb/ntt_utb_top/ntt_utb_top.sv
+      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
     tops: [ntt_utb_top]
