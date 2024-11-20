@@ -268,11 +268,12 @@ always_comb mldsa_privkey_lock = '0;
 
   logic [MsgWidth-1:0] msg_data, msg_data_nxt;
 
-  logic seq_en;
-  logic [MLDSA_PROG_ADDR_W-1 : 0] prog_cntr, prog_cntr_nxt;
-  mldsa_seq_instr_t instr;
-  logic [MLDSA_PROG_ADDR_W-1 : 0] sign_prog_cntr, sign_prog_cntr_nxt;
-  mldsa_seq_instr_t sign_instr;
+  logic prim_seq_en;
+  logic sec_seq_en;
+  logic [MLDSA_PROG_ADDR_W-1 : 0] prim_prog_cntr, prim_prog_cntr_nxt;
+  mldsa_seq_instr_t prim_instr;
+  logic [MLDSA_PROG_ADDR_W-1 : 0] sec_prog_cntr, sec_prog_cntr_nxt;
+  mldsa_seq_instr_t sec_instr;
 
   logic msg_done;
   logic [MsgStrbW-1:0] last_msg_strobe;
@@ -313,7 +314,7 @@ always_comb mldsa_privkey_lock = '0;
   assign mldsa_reg_hwif_in_o = mldsa_reg_hwif_in;
   assign mldsa_reg_hwif_out = mldsa_reg_hwif_out_i;
 
-  always_comb mldsa_ready = (prog_cntr == MLDSA_RESET);
+  always_comb mldsa_ready = (prim_prog_cntr == MLDSA_RESET);
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
@@ -375,7 +376,7 @@ always_comb mldsa_privkey_lock = '0;
     end
   
     for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++)begin 
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
+      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[VERIFY_RES_NUM_DWORDS-1-dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
@@ -524,12 +525,12 @@ always_comb mldsa_privkey_lock = '0;
       privatekey_reg <= '0;
     end else begin
       if (sampler_state_dv_i) begin
-        if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+        if (prim_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
           //HW write rho
           privatekey_reg.enc.rho <= sampler_state_data_i[0][255:0]; //FIXME optimize this to be shared with pubkey?
           //HW write K
           privatekey_reg.enc.K <= sampler_state_data_i[0][1023:768];
-        end else if (instr.operand3 == MLDSA_DEST_TR_REG_ID) begin
+        end else if (prim_instr.operand3 == MLDSA_DEST_TR_REG_ID) begin
           //HW write tr
           privatekey_reg.enc.tr <= sampler_state_data_i[0][511:0];
         end
@@ -675,7 +676,7 @@ always_comb mldsa_privkey_lock = '0;
       signature_reg <= '0;
     end else begin
       //HW write c
-      if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
+      if (sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
         signature_reg.enc.c <= sampler_state_data_i[0][511:0];
       end else if (mldsa_ready & api_sig_c_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
         for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
@@ -766,7 +767,7 @@ always_comb mldsa_privkey_lock = '0;
 
   assign pubkey_ram_rdata_t1 = pubkey_ram_rdata;
 
-  always_comb pkdecode_rd_en = instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
+  always_comb pkdecode_rd_en = prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
 
   always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:342]}) & ~msg_hold;
 
@@ -820,7 +821,7 @@ always_comb mldsa_privkey_lock = '0;
       publickey_reg <= '0;
     end else begin
       //HW write rho
-      if (sampler_state_dv_i & (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID)) begin
+      if (sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID)) begin
         publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
       end else if (mldsa_ready & api_pubkey_rho_dec & mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr) begin
         publickey_reg.enc.rho[api_pk_rho_addr] <= mldsa_reg_hwif_out.MLDSA_PUBKEY.wr_data;
@@ -853,7 +854,7 @@ always_comb mldsa_privkey_lock = '0;
           MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
           MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
           MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
-          MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.raw[{sampler_src_offset[1:0],1'b0}]};
+          MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b0}]};
       	  MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
       	  MLDSA_CNT_ID:         msg_data <= counter_reg;
           default:              msg_data <= '0;
@@ -878,13 +879,13 @@ always_comb mldsa_privkey_lock = '0;
       mu_reg <= 0;
     end
     else if (sampler_state_dv_i) begin
-      if (instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
+      if (prim_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][767:256];
       end
-      else if (instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
+      else if (prim_instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
         mu_reg <= sampler_state_data_i[0][511:0];
       end
-      else if (instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
+      else if (prim_instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][511:0];
       end
     end
@@ -900,7 +901,7 @@ always_comb mldsa_privkey_lock = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
-      if (instr.operand3 == MLDSA_DEST_LFSR_SEED_REG_ID) begin
+      if (prim_instr.operand3 == MLDSA_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o <= sampler_state_data_i[0][2*LFSR_W-1:0];
           lfsr_entropy_reg <= sampler_state_data_i[0][2*LFSR_W+511:2*LFSR_W];
       end
@@ -971,38 +972,33 @@ always_comb mldsa_privkey_lock = '0;
     end
   end
   
-  //FIXME check if aux mode is set appropriately?
+  //Clear signature if makehint or normcheck fail
   always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
   //FIXME jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
   always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
-                                   (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
+                                   (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
 //Primary sequencer for keygen, signing, and verify
-
-  //FIXME need to optimize sequencer
-  //Should be able to implement opcode to load next keccak data while sampler or ntt is running
-  //requires a granularity of busy that is context aware of the current and next steps or
-  //need a way to advance to the next step and understand when it can proceed and when it can't
   always_comb subcomponent_busy = !(ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
                                   sampler_busy_i |
                                   ntt_busy_i[0];
   always_comb error_flag_edge = skdecode_error_i;
-  always_comb seq_en = 1;
+
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
-      prog_cntr <= MLDSA_RESET;
+      prim_prog_cntr <= MLDSA_RESET;
     end
     else if(zeroize) begin
-      prog_cntr <= MLDSA_RESET;
+      prim_prog_cntr <= MLDSA_RESET;
     end
     else begin
       if (error_flag_edge) begin
-        prog_cntr <= MLDSA_ERROR;
+        prim_prog_cntr <= MLDSA_ERROR;
       end
       else begin
-        prog_cntr <= prog_cntr_nxt;
+        prim_prog_cntr <= prim_prog_cntr_nxt;
       end
     end
   end
@@ -1020,127 +1016,129 @@ always_comb mldsa_privkey_lock = '0;
     update_kappa = 0;
     set_verify_valid = 0;
     set_entropy = 0;
-    prog_cntr_nxt = MLDSA_RESET;
+    prim_prog_cntr_nxt = MLDSA_RESET;
+    prim_seq_en = 1;
 
-    unique case (prog_cntr) inside
+    unique case (prim_prog_cntr) inside
       MLDSA_RESET : begin 
-        // Waiting for new valid command 
+        // Waiting for new valid command
         unique case (cmd_reg) inside
           MLDSA_KEYGEN : begin  // keygen
-            prog_cntr_nxt = MLDSA_KG_S;
+            prim_prog_cntr_nxt = MLDSA_KG_S;
             keygen_process_nxt = 1;
             set_entropy = 1;
           end   
           MLDSA_SIGN : begin  // signing
-            prog_cntr_nxt = MLDSA_SIGN_RND_S;
+            prim_prog_cntr_nxt = MLDSA_SIGN_RND_S;
             signing_process_nxt  = 1;
             set_entropy = 1;
           end                                   
           MLDSA_VERIFY : begin  // verifying
-            prog_cntr_nxt = MLDSA_VERIFY_S;
+            prim_prog_cntr_nxt = MLDSA_VERIFY_S;
             verifying_process_nxt  = 1;
             set_verify_valid = 1;
           end                          
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
-            prog_cntr_nxt = MLDSA_KG_S;
+            prim_prog_cntr_nxt = MLDSA_KG_S;
             keygen_signing_process_nxt  = 1;
             set_entropy = 1;
           end
           default : begin
-            prog_cntr_nxt = MLDSA_RESET;
+            prim_prog_cntr_nxt = MLDSA_RESET;
+            prim_seq_en = 0;
           end
         endcase
       end        
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
         if (keygen_signing_process) begin
-          prog_cntr_nxt = MLDSA_SIGN_S;
+          prim_prog_cntr_nxt = MLDSA_SIGN_S;
           signing_process_nxt  = 1;
         end
         else begin
-          prog_cntr_nxt = prog_cntr + 1;
+          prim_prog_cntr_nxt = prim_prog_cntr + 1;
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //prog_cntr_nxt = MLDSA_RESET;
+        //prim_prog_cntr_nxt = MLDSA_RESET;
         keygen_done = 1;
       end
       //START of Y access - check if Y is still valid
       MLDSA_SIGN_CHECK_Y_CLR : begin
-        if (y_valid | w0_valid) begin //Stalled until Y can be overwritten //FIXME reads are colliding
-          prog_cntr_nxt = prog_cntr;
+        if (y_valid | w0_valid) begin //Stalled until Y and w0 can be overwritten
+          prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
-          prog_cntr_nxt = prog_cntr + 1;
+          prim_prog_cntr_nxt = prim_prog_cntr + 1;
         end
       end
       //END of Y access - SET Y valid
       MLDSA_SIGN_SET_Y : begin
         set_y_valid = 1;
-        prog_cntr_nxt = prog_cntr + 1;
+        prim_prog_cntr_nxt = prim_prog_cntr + 1;
       end
       //START of W0 access - check if W0 is still valid
       MLDSA_SIGN_CHECK_W0_CLR : begin
         if (w0_valid) begin //Stalled until W0 can be overwritten
-          prog_cntr_nxt = prog_cntr;
+          prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
-          prog_cntr_nxt = prog_cntr + 1;
+          prim_prog_cntr_nxt = prim_prog_cntr + 1;
         end
       end
       //END of W0 access - SET W0 valid
       MLDSA_SIGN_SET_W0 : begin
         set_w0_valid = 1;
-        prog_cntr_nxt = prog_cntr + 1;
+        prim_prog_cntr_nxt = prim_prog_cntr + 1;
       end
       //START of C access - check if C is still valid
       MLDSA_SIGN_CHECK_C_CLR : begin
         if (c_valid) begin //Stalled until C can be overwritten
-          prog_cntr_nxt = prog_cntr;
+          prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
-          prog_cntr_nxt = prog_cntr + 1;
+          prim_prog_cntr_nxt = prim_prog_cntr + 1;
         end
       end
       //END of C access - SET C valid
       MLDSA_SIGN_SET_C : begin
         set_c_valid = 1;
-        prog_cntr_nxt = prog_cntr + 1;
+        prim_prog_cntr_nxt = prim_prog_cntr + 1;
       end
       MLDSA_SIGN_E : begin // end of challenge generation
         //increment kappa value
         update_kappa = 1;
         //restart challenge generation
-        prog_cntr_nxt = MLDSA_SIGN_CHECK_Y_CLR;
+        prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_Y_CLR;
       end
       MLDSA_VERIFY_E : begin // end of verify flow
         verify_done = 1;
       end
       default : begin
         if (subcomponent_busy) begin //Stalled until sub-component is done
-          prog_cntr_nxt = prog_cntr;
+          prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
-          prog_cntr_nxt = prog_cntr + 1;
+          prim_prog_cntr_nxt = prim_prog_cntr + 1;
         end
       end
     endcase
   end
 
-//Controller instruction decode - drives sampler and primary ntt
+//Controller prim_instr decode - drives sampler and primary ntt
 //FIXME latch the sampler mode here
   always_comb begin
     sampler_mode_o = MLDSA_SAMPLER_NONE;
-    if (instr.opcode.sampler_en) begin
-      if (instr.opcode.ntt_en & instr.opcode.mode.ntt_mode inside {MLDSA_PWM_SMPL, MLDSA_PWM_ACCUM_SMPL}) begin
+    if (prim_instr.opcode.sampler_en) begin
+      if (prim_instr.opcode.ntt_en & prim_instr.opcode.mode.ntt_mode inside {MLDSA_PWM_SMPL, MLDSA_PWM_ACCUM_SMPL}) begin
         sampler_mode_o = MLDSA_REJ_SAMPLER;
       end else begin
-        sampler_mode_o = instr.opcode.mode.sampler_mode;
+        sampler_mode_o = prim_instr.opcode.mode.sampler_mode;
       end
-    end else if (instr.opcode.keccak_en) begin
-      sampler_mode_o = instr.opcode.mode.sampler_mode;
-    end else if (instr.opcode.aux_en) begin
-      if (instr.opcode.mode.aux_mode == MLDSA_DECOMP) begin
+    end else if (prim_instr.opcode.keccak_en) begin
+      sampler_mode_o = prim_instr.opcode.mode.sampler_mode;
+    end else if (prim_instr.opcode.aux_en) begin
+      if (prim_instr.opcode.mode.aux_mode == MLDSA_DECOMP) begin
         sampler_mode_o = MLDSA_SHAKE256;
       end
     end
@@ -1148,37 +1146,37 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb begin
     ntt_mode_o[0] = MLDSA_NTT_NONE;
-    if (instr.opcode.ntt_en) begin
-      ntt_mode_o[0] = instr.opcode.mode.ntt_mode;
+    if (prim_instr.opcode.ntt_en) begin
+      ntt_mode_o[0] = prim_instr.opcode.mode.ntt_mode;
     end
   end
 
   always_comb sampler_src_offset = {4'b0, msg_cnt}; //fixme
 
   //FIXME one interface here?
-  always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         dest_base_addr:instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+  always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         interim_base_addr:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
-                                         pw_base_addr_a:instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
-                                         pw_base_addr_c:instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+  always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
+                                         pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
+                                         pw_base_addr_c:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb dest_base_addr_o = instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src0_base_addr_o[0] = instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[0] = instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[0] = instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb dest_base_addr_o = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[0] = prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[0] = prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_dest_base_addr_o[0] = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
 
 //determine the number of bytes in the last message
 //operand 2 contains the length of the message being fed to sha3
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
-always_comb last_msg_strobe = ~(MsgStrbW'('1) << instr.length[$clog2(MsgStrbW)-1:0]);
+always_comb last_msg_strobe = ~(MsgStrbW'('1) << prim_instr.length[$clog2(MsgStrbW)-1:0]);
  
 always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Done when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_done = msg_cnt >= instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)];
+always_comb msg_done = msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)];
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1201,7 +1199,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb decompose_mode_o = instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_USEHINT);
+always_comb decompose_mode_o = prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_USEHINT);
 
 //State logic
 always_comb begin : primary_ctrl_fsm_out_combo
@@ -1225,10 +1223,10 @@ always_comb begin : primary_ctrl_fsm_out_combo
     unique case (ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
         //load keccak data to SIPO
-        if (instr.opcode.keccak_en)
+        if (prim_instr.opcode.keccak_en)
           ctrl_fsm_ns = MLDSA_CTRL_SHA3_START;
         //start sampler flow, data already driven to SIPO
-        else if (instr.opcode.sampler_en | instr.opcode.ntt_en | instr.opcode.aux_en)
+        else if (prim_instr.opcode.sampler_en | prim_instr.opcode.ntt_en | prim_instr.opcode.aux_en)
           ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_SHA3_START: begin
@@ -1242,45 +1240,45 @@ always_comb begin : primary_ctrl_fsm_out_combo
       end
       MLDSA_CTRL_MSG_LOAD: begin
         msg_valid = 1;
-        sampler_src = instr.operand1;
-        sampler_imm = instr.imm;
+        sampler_src = prim_instr.operand1;
+        sampler_imm = prim_instr.imm;
         if (msg_done) begin
-          if (instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          if (prim_instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
           else ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
         end
       end
       MLDSA_CTRL_MSG_WAIT: begin
         //load another message
-        if (instr.opcode.keccak_en) ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        if (prim_instr.opcode.keccak_en) ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
         //kick off the sampler
-        else if (instr.opcode.sampler_en | instr.opcode.aux_en | instr.opcode.ntt_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+        else if (prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
         else ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
       end
       MLDSA_CTRL_FUNC_START: begin
         ctrl_fsm_ns = MLDSA_CTRL_DONE;
-        sampler_start_o = instr.opcode.sampler_en;
-        ntt_enable_o[0] = instr.opcode.ntt_en;
-        if (instr.opcode.aux_en) begin
-          power2round_enable_o = (instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
-          decompose_enable_o = (instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT});
-          skencode_enable_o = (instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
-          pkdecode_enable_o = (instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
-          sigdecode_h_enable_o = (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H);
-          sigdecode_z_enable_o = (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z);
-          normcheck_enable[0] = (instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
-          lfsr_enable_o = (instr.opcode.mode.aux_mode == MLDSA_LFSR);
+        sampler_start_o = prim_instr.opcode.sampler_en;
+        ntt_enable_o[0] = prim_instr.opcode.ntt_en;
+        if (prim_instr.opcode.aux_en) begin
+          power2round_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
+          decompose_enable_o = (prim_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT});
+          skencode_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
+          pkdecode_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
+          sigdecode_h_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H);
+          sigdecode_z_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z);
+          normcheck_enable[0] = (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+          lfsr_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR);
         end
       end
       MLDSA_CTRL_DONE: begin
-        if ((~sampler_busy_i & ~ntt_busy_i[0] & ~instr.opcode.aux_en) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT}) & decompose_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_PWR2RND) & power2round_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SKENCODE) & skencode_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_PKDECODE) & pkdecode_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z) & sigdecode_z_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
-            (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
+        if ((~sampler_busy_i & ~ntt_busy_i[0] & ~prim_instr.opcode.aux_en) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT}) & decompose_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PWR2RND) & power2round_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SKENCODE) & skencode_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE) & pkdecode_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z) & sigdecode_z_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
           
               ctrl_fsm_ns = MLDSA_CTRL_IDLE;
 
@@ -1310,77 +1308,79 @@ mldsa_seq_prim mldsa_seq_prim_inst
   .rst_b(rst_b),
   .zeroize(zeroize),
 
-  .en_i(seq_en),
-  .addr_i(prog_cntr_nxt),
-  .data_o(instr)
+  .en_i(prim_seq_en),
+  .addr_i(prim_prog_cntr_nxt),
+  .data_o(prim_instr)
 );
 
   //Second sequencer for simultaneous signing operations
-
-  //FIXME need to optimize sequencer
-  //Should be able to implement opcode to load next keccak data while sampler or ntt is running
-  //requires a granularity of busy that is context aware of the current and next steps or
-  //need a way to advance to the next step and understand when it can proceed and when it can't
   always_comb sign_subcomponent_busy = !(sign_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE}) |
                                         ntt_busy_i[1];
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
-      sign_prog_cntr <= MLDSA_RESET;
+      sec_prog_cntr <= MLDSA_RESET;
     end
     else if(zeroize) begin
-      sign_prog_cntr <= MLDSA_RESET;
+      sec_prog_cntr <= MLDSA_RESET;
     end
     else begin
       if (error_flag_edge) begin
-        sign_prog_cntr <= MLDSA_ERROR;
+        sec_prog_cntr <= MLDSA_ERROR;
       end
       else begin
-        sign_prog_cntr <= sign_prog_cntr_nxt;
+        sec_prog_cntr <= sec_prog_cntr_nxt;
       end
     end
   end
 
   //subroutine decode
   always_comb begin
-    sign_prog_cntr_nxt = MLDSA_RESET;
+    sec_prog_cntr_nxt = MLDSA_RESET;
     clear_c_valid = 0;
     clear_y_valid = 0;
     clear_w0_valid = 0;
     set_signature_valid = 0;
     signature_done = 0;
-    unique case (sign_prog_cntr) inside
+    sec_seq_en = 1;
+
+    unique case (sec_prog_cntr) inside
       MLDSA_RESET : begin 
         // Waiting for new valid command 
         unique case (cmd_reg) inside
           MLDSA_KEYGEN : begin  // keygen
-            sign_prog_cntr_nxt = MLDSA_RESET;
+            sec_prog_cntr_nxt = MLDSA_RESET;
+            sec_seq_en = 0;
           end   
           MLDSA_SIGN : begin  // signing
-            sign_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
+            sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
+            sec_seq_en = 1;
           end                                   
           MLDSA_VERIFY : begin  // verifying
-            sign_prog_cntr_nxt = MLDSA_RESET;
+            sec_prog_cntr_nxt = MLDSA_RESET;
+            sec_seq_en = 0;
           end                     
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
-            sign_prog_cntr_nxt = MLDSA_RESET;
+            sec_prog_cntr_nxt = MLDSA_RESET;
+            sec_seq_en = 0;
           end
           default : begin
-            sign_prog_cntr_nxt = MLDSA_RESET;
+            sec_prog_cntr_nxt = MLDSA_RESET;
+            sec_seq_en = 0;
           end   
         endcase
-        if (keygen_signing_process & (prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
-          sign_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
+        if (keygen_signing_process & (prim_prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
+          sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
         end
       end
       //START of C access - check if C is valid
       MLDSA_SIGN_CHECK_C_VLD : begin
         if (c_valid) begin
           set_signature_valid = 1;
-          sign_prog_cntr_nxt = sign_prog_cntr + 1;
+          sec_prog_cntr_nxt = sec_prog_cntr + 1;
         end
         else begin
-          sign_prog_cntr_nxt = sign_prog_cntr;
+          sec_prog_cntr_nxt = sec_prog_cntr;
         end
       end
       //END of C access - SET C valid
@@ -1388,42 +1388,42 @@ mldsa_seq_prim mldsa_seq_prim_inst
       //FIXME another place to consider odd/even counter on challenge/validity
       MLDSA_SIGN_CLEAR_C : begin
         clear_c_valid = 1;
-        sign_prog_cntr_nxt = MLDSA_SIGN_CHECK_C_VLD;
+        sec_prog_cntr_nxt = MLDSA_SIGN_CHECK_C_VLD;
       end
       //START of Y access - check if Y is valid
       MLDSA_SIGN_CHECK_Y_VLD : begin
         if (y_valid & w0_valid) begin 
-          sign_prog_cntr_nxt = sign_prog_cntr + 1;
+          sec_prog_cntr_nxt = sec_prog_cntr + 1;
         end
         else begin
-          sign_prog_cntr_nxt = sign_prog_cntr;
+          sec_prog_cntr_nxt = sec_prog_cntr;
         end
       end
       //END of Y access - SET Y valid
       MLDSA_SIGN_CLEAR_Y : begin
         clear_y_valid = 1;
-        sign_prog_cntr_nxt = sign_prog_cntr + 1;
+        sec_prog_cntr_nxt = sec_prog_cntr + 1;
       end
       //START of W0 access - check if W0 is valid
       MLDSA_SIGN_CHECK_W0_VLD : begin
         if (w0_valid) begin 
-          sign_prog_cntr_nxt = sign_prog_cntr + 1;
+          sec_prog_cntr_nxt = sec_prog_cntr + 1;
         end
         else begin
-          sign_prog_cntr_nxt = sign_prog_cntr ;
+          sec_prog_cntr_nxt = sec_prog_cntr ;
         end
       end
       //END of W0 access - SET W0 valid
       MLDSA_SIGN_CLEAR_W0 : begin
         clear_w0_valid = 1;
-        sign_prog_cntr_nxt = sign_prog_cntr + 1;
+        sec_prog_cntr_nxt = sec_prog_cntr + 1;
       end
       MLDSA_SIGN_GEN_S : begin // end of validity checks
         if (signature_valid) begin
-          sign_prog_cntr_nxt = sign_prog_cntr + 2; //Jump to encode
+          sec_prog_cntr_nxt = MLDSA_SIGN_GEN_E; //Jump to end
         end else begin
           //restart
-          sign_prog_cntr_nxt = sign_prog_cntr + 1;
+          sec_prog_cntr_nxt = MLDSA_SIGN_CLEAR_C;
         end
       end
       MLDSA_SIGN_GEN_E : begin // Successful signature generation
@@ -1431,10 +1431,10 @@ mldsa_seq_prim mldsa_seq_prim_inst
       end
       default : begin
         if (sign_subcomponent_busy) begin //Stalled until sub-component is done
-          sign_prog_cntr_nxt = sign_prog_cntr;
+          sec_prog_cntr_nxt = sec_prog_cntr;
         end
         else begin
-          sign_prog_cntr_nxt = sign_prog_cntr + 1;
+          sec_prog_cntr_nxt = sec_prog_cntr + 1;
         end
       end
     endcase
@@ -1443,28 +1443,28 @@ mldsa_seq_prim mldsa_seq_prim_inst
   //instruciton decode - drives secondary ntt
   always_comb begin
     ntt_mode_o[1] = MLDSA_NTT_NONE;
-    if (sign_instr.opcode.ntt_en) begin
-      ntt_mode_o[1] = sign_instr.opcode.mode.ntt_mode;
+    if (sec_instr.opcode.ntt_en) begin
+      ntt_mode_o[1] = sec_instr.opcode.mode.ntt_mode;
     end
   end
 
   //FIXME one interface here?
-  always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sign_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:sign_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         dest_base_addr:sign_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+  always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         interim_base_addr:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sign_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
-                                         pw_base_addr_a:sign_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
-                                         pw_base_addr_c:sign_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+  always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
+                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
+                                         pw_base_addr_c:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb aux_src0_base_addr_o[1] = sign_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[1] = sign_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[1] = sign_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[1] = sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_dest_base_addr_o[1] = sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
 
-  always_comb normcheck_mode_o = (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? instr.imm[1:0] :
-                                 (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? sign_instr.imm[1:0] : '0;
-  always_comb normcheck_src_addr_o = (instr.opcode.aux_en & (instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[0] :
-                                     (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[1] : '0;
+  always_comb normcheck_mode_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? prim_instr.imm[1:0] :
+                                 (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? sec_instr.imm[1:0] : '0;
+  always_comb normcheck_src_addr_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[0] :
+                                     (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[1] : '0;
   always_comb normcheck_enable_o = |normcheck_enable;
 
 //State logic
@@ -1479,27 +1479,27 @@ always_comb begin : secpondary_ctrl_fsm_out_combo
     unique case (sign_ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
         //Start function
-        if (sign_instr.opcode.sampler_en)
+        if (sec_instr.opcode.sampler_en)
           sign_ctrl_fsm_ns = MLDSA_CTRL_ERROR;
-        if (sign_instr.opcode.ntt_en | sign_instr.opcode.aux_en)
+        if (sec_instr.opcode.ntt_en | sec_instr.opcode.aux_en)
           sign_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_FUNC_START: begin
         sign_ctrl_fsm_ns = MLDSA_CTRL_DONE;
-        ntt_enable_o[1] = sign_instr.opcode.ntt_en;
-        if (sign_instr.opcode.aux_en) begin
-          skdecode_enable_o = (sign_instr.opcode.mode.aux_mode == MLDSA_SKDECODE);
-          makehint_enable_o = (sign_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT);
-          normcheck_enable[1] = (sign_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
-          sigencode_enable_o = (sign_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
+        ntt_enable_o[1] = sec_instr.opcode.ntt_en;
+        if (sec_instr.opcode.aux_en) begin
+          skdecode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE);
+          makehint_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT);
+          normcheck_enable[1] = (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+          sigencode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
         end
       end
       MLDSA_CTRL_DONE: begin
-        if ((sign_instr.opcode.ntt_en & ~ntt_busy_i[1]) |
-            (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
-            (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
-            (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
-            (sign_instr.opcode.aux_en & (sign_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) ) begin
+        if ((sec_instr.opcode.ntt_en & ~ntt_busy_i[1]) |
+            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
+            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
+            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
+            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) ) begin
           sign_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
         end
       end
@@ -1527,9 +1527,9 @@ mldsa_seq_sec mldsa_seq_sec_inst
   .rst_b(rst_b),
   .zeroize(zeroize),
   
-  .en_i(seq_en),
-  .addr_i(sign_prog_cntr_nxt),
-  .data_o(sign_instr)
+  .en_i(sec_seq_en),
+  .addr_i(sec_prog_cntr_nxt),
+  .data_o(sec_instr)
 );
 
 
@@ -1588,7 +1588,7 @@ mldsa_seq_sec mldsa_seq_sec_inst
         end 
         else begin
             if (seq_en) begin
-                unique case(sign_prog_cntr_nxt)
+                unique case(sec_prog_cntr_nxt)
                     MLDSA_SIGN_VALID_S : begin //NTT(C)
                         NTT_raw_signal <= 'h1;
                         PWM_raw_signal <= 'h0;

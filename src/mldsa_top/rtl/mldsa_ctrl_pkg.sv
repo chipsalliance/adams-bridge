@@ -36,6 +36,7 @@ package mldsa_ctrl_pkg;
     localparam MSG_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam PRIVKEY_REG_NUM_DWORDS = 32;
+    localparam PRIVKEY_REG_RHO_NUM_DWORDS = 8;
     localparam PRIVKEY_MEM_NUM_DWORDS = PRIVKEY_NUM_DWORDS - PRIVKEY_REG_NUM_DWORDS;
     localparam SIGN_RND_NUM_DWORDS = 8;
     localparam PUBKEY_NUM_DWORDS = 648;
@@ -76,7 +77,7 @@ package mldsa_ctrl_pkg;
     localparam PK_ADDR_W = $clog2(PUBKEY_NUM_DWORDS);
     localparam PK_MEM_ADDR_W = $clog2(PK_MEM_DEPTH);
     localparam PK_MEM_OFFSET_W = $clog2(PK_MEM_DATA_W/32);
-    localparam PK_RHO_REG_ADDR_W = $clog2(8); //fixme
+    localparam PK_RHO_REG_ADDR_W = $clog2(PRIVKEY_REG_RHO_NUM_DWORDS);
     
 
     typedef struct packed {
@@ -437,7 +438,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_W0     = MLDSA_SIGN_VALID_S + 103;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_S        = MLDSA_SIGN_VALID_S + 105;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_C      = MLDSA_SIGN_GEN_S + 1;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_E        = MLDSA_SIGN_GEN_S + 9;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_E        = MLDSA_SIGN_GEN_S + 2;
 
 
 endpackage
