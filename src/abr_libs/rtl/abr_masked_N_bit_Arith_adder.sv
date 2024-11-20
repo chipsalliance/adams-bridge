@@ -47,22 +47,12 @@
     // Final output assignment
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            // for (int i = 0; i < WIDTH; i++) begin
-            //     s[i] <= 2'b0;
-            // end
             s <= 'h0;
         end
         else if (zeroize) begin
-            // for (int i = 0; i < WIDTH; i++) begin
-            //     s[i] <= 2'b0;
-            // end
             s <= 'h0;
         end
         else begin
-            // for (int i = 0; i < WIDTH; i++) begin
-            //     s[i][0] <= add_res[0][i]; // Pass-through without masking
-            //     s[i][1] <= add_res[1][i]; // Pass-through without masking
-            // end
             s <= add_res;
         end
     end

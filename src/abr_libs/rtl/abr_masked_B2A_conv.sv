@@ -94,16 +94,16 @@
     // Combinational logic
     always_comb begin
         
-            T0               = x0 ^ Gamma_reg;           // T = x' ⊕ Γ
-            T1               = T0 - Gamma_reg;            // T = T - Γ
-            T2               = T1 ^ x0;                   // T = T ⊕ x'
-            Gamma_reg2       = Gamma_reg ^ x1;           // Γ = Γ ⊕ r
-            A0               = x0 ^ Gamma_reg2;          // A = x' ⊕ Γ
-            A1               = A0 - Gamma_reg2;           // A = A - Γ
-            A2               = A1 ^ T2;                    // A = A ⊕ T
+            T0               = x0 ^ Gamma_reg;              // T = x' ⊕ Γ
+            T1               = T0 - Gamma_reg;              // T = T - Γ
+            T2               = T1 ^ x0;                     // T = T ⊕ x'
+            Gamma_reg2       = Gamma_reg ^ x1;              // Γ = Γ ⊕ r
+            A0               = x0 ^ Gamma_reg2;             // A = x' ⊕ Γ
+            A1               = A0 - Gamma_reg2;             // A = A - Γ
+            A2               = A1 ^ T2;                     // A = A ⊕ T
         for (int i = 0; i < WIDTH; i++) begin
-            x_arith_next[i][0]  = A2[i];                  // Assign A to the output
-            x_arith_next[i][1]  = x1[i];                 // Assign r to the output
+            x_arith_next[i][0]  = A2[i];                    // Assign A to the output
+            x_arith_next[i][1]  = x1[i];                    // Assign r to the output
         end
     end
 

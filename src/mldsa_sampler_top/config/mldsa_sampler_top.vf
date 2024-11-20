@@ -26,11 +26,16 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sample_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_slv_sif.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_AND.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_delay_masked_shares.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_add_sub_mod_Boolean.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_MUX.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Boolean_sub.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_full_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_A2B_conv.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Boolean_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_B2A_conv.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball_pkg.sv
@@ -42,6 +47,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_mubi_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Arith_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded2.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_sampler/rtl/rej_sampler_ctrl.sv

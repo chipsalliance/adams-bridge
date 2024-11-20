@@ -281,48 +281,27 @@ def test_maskedBFUAdder(numTest = 10):
     operands = CustomUnsignedInteger(0, 0, DILITHIUM_Q-1)   
     for i in range(0, numTest):         
         #get a random number ranging [0, DILITHIUM_Q-1]
-        # operands.generate_random()
-        # a = int(operands.value)
-        # operands.generate_random()
-        # b = int(operands.value)
-        # expected = (a+b) % DILITHIUM_Q
-        # randomness.generate_random()
-        # r0 = int(randomness.value)
-        # a0 = int(a-r0) % MultMod
-        # a1 = r0
-        # randomness.generate_random()
-        # r1 = int(randomness.value)
-        # b0 = int(b-r1) % MultMod
-        # b1 = r1
+        operands.generate_random()
+        a = int(operands.value)
+        operands.generate_random()
+        b = int(operands.value)
+        expected = (a+b) % DILITHIUM_Q
+        randomness.generate_random()
+        r0 = int(randomness.value)
+        a0 = int(a-r0) % MultMod
+        a1 = r0
+        randomness.generate_random()
+        r1 = int(randomness.value)
+        b0 = int(b-r1) % MultMod
+        b1 = r1
 
-        # a = int("54bb00", 16)
-        # b = int("727900", 16)
-        # r0 = int("782839f0", 16)
-        # r1 = int("7923d7f2", 16)
-        
-        # print("actual inputs:")
-        # print(f"{a: X}, {b: X}")
-        # expected = (a+b) % DILITHIUM_Q
-        # a0 = int(a-r0) % MultMod
-        # a1 = r0
-        # b0 = int(b-r1) % MultMod
-        # b1 = r1
-        a0 = int("00007f0ef2fd", 16)
-        a1 = int("3fff81075002", 16)
-        b0 = int("3fffff142bfe", 16)
-        b1 = int("0000013a0302", 16)
-        expected = ((a0+a1)-(b0+b1)) % DILITHIUM_Q
-        print("a shares:")
-        print(f"{a0: X}, {a1: X}")
-        print("b shares:")
-        print(f"{b0: X}, {b1: X}")
-        a0, a1 = maskedBFUSub(a0, a1, b0, b1) #maskedBFUAdder(a0, a1, b0, b1)
+        a0, a1 = maskedBFUAdder(a0, a1, b0, b1)
         gotten = int(a0 + a1) % MultMod
-        print(f"Gotten = {gotten: X}, Expected = {expected: X}")
+        # print(f"Gotten = {gotten: X}, Expected = {expected: X}")
         if gotten != expected:
             print(f"Addition gives an Error; gotten = {gotten: X}, while exp = {expected: X}")
 
-test_maskedBFUAdder(numTest = 1)
+#test_maskedBFUAdder(numTest = 1000)
 
 def gs_bf(u, v, z):
     t = (u - v) % DILITHIUM_Q
@@ -504,6 +483,6 @@ def test_MaskedmodularOps(numTest = 10):
 
 
 # test_MaskedmodularOps(numTest = 100000)
-# test_maskedReduction46(numTest = 1000000)
+test_maskedReduction46(numTest = 1000000)
 
 

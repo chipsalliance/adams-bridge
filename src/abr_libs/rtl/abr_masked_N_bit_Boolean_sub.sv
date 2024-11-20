@@ -75,15 +75,9 @@ module abr_masked_N_bit_Boolean_sub #(
             // Pipeline registers for sum output
             always_ff @(posedge clk or negedge rst_n) begin
                 if (!rst_n) begin
-                    // for (int j = 0; j < WIDTH; j = j + 1) begin
-                    //     sum_reg[i][j] <= 2'b00;
-                    // end
                     sum_reg[i] <= '0;
                 end
                 else if (zeroize) begin
-                    // for (int j = 0; j < WIDTH; j = j + 1) begin
-                    //     sum_reg[i][j] <= 2'b00;
-                    // end
                     sum_reg[i] <= '0;
                 end
                 else begin
@@ -106,8 +100,8 @@ module abr_masked_N_bit_Boolean_sub #(
                     .clk(clk),              // Connect clk to clk
                     .rst_n(rst_n),          // Connect rst_n to rst_n
                     .zeroize(zeroize),      // Connect zeroize to zeroize
-                    .x(x_reg[i][i]),  // Connect x to the last stage of the x pipeline
-                    .y(y_reg[i][i]),  // Connect y to the last stage of the y pipeline
+                    .x(x_reg[i][i]),        // Connect x to the last stage of the x pipeline
+                    .y(y_reg[i][i]),        // Connect y to the last stage of the y pipeline
                     .c_in(carry[i]),        // Connect c_in to carry[i]
                     .rnd(rnd[i]),           // Connect rnd to corresponding random bit
                     .s(sum[i]),             // Connect sum to sum[i]

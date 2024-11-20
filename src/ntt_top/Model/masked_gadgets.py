@@ -648,7 +648,7 @@ def B2A(x0, x1):
 # output: red0 = 1010 red1 = 0111 --> combine = 'd17 % 16 = 1
 # 
 def maskedAdderReduction(u0, u1):
-    uRolled0 = (u0 + Roller) % MultMod #TODO: forgot what it's for?
+    uRolled0 = (u0 + Roller) % MultMod
     uRolled1 = u1
     print(f"rolled_shares = {uRolled0: X}, {uRolled1: X}")
     print(f"rolled_combin = {uRolled0+uRolled1: X}")

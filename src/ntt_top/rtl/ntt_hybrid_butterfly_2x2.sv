@@ -282,7 +282,6 @@ end
 //----------------------------------------------------
 //Masked PWMs - Used in masked PWM+INTT mode only - 207 clks
 //----------------------------------------------------
-// `ifdef MASKING
 ntt_masked_pwm #(
     .WIDTH(WIDTH)
 ) pwm_inst00 (
@@ -334,7 +333,7 @@ ntt_masked_pwm #(
     .rnd({rnd_i[2], rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3]}),
     .res(uv11_share)
 );
-// `endif 
+
 //----------------------------------------------------
 //Masked BFU stage 1 - Used in masked PWM+INTT mode only - 260 clks
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
@@ -349,7 +348,7 @@ ntt_masked_butterfly1x2 #(
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );
-// `endif
+
 //----------------------------------------------------
 //Unmasked BFU stage 1 - Used in all other modes
 //----------------------------------------------------
