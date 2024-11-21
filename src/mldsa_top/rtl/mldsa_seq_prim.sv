@@ -93,7 +93,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 31   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0005, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 32   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0006, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 33   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 33   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 34   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_0_BASE, operand3:MLDSA_T0_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -105,7 +105,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 40   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0105, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 41   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0106, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 42   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 42   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 43   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_1_BASE, operand3:MLDSA_T1_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -117,7 +117,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 49   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0205, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 50   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0206, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 51   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 51   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 52   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_2_BASE, operand3:MLDSA_T2_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -129,7 +129,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 58   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0305, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 59   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0306, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 60   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 60   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 61   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_3_BASE, operand3:MLDSA_T3_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -141,7 +141,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 67   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0405, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 68   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0406, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 69   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 69   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 70   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_4_BASE, operand3:MLDSA_T4_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -153,7 +153,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 76   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0505, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 77   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0506, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 78   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 78   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 79   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_5_BASE, operand3:MLDSA_T5_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -165,7 +165,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 85   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0605, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 86   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0606, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 87   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 87   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 88   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_6_BASE, operand3:MLDSA_T6_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
@@ -177,7 +177,7 @@ module mldsa_seq_prim
                 MLDSA_KG_S+ 94   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0705, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 95   : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0706, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 96   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d00, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 96   : data_o_rom <= '{opcode:MLDSA_UOP_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
                 MLDSA_KG_S+ 97   : data_o_rom <= '{opcode:MLDSA_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
                 //(t1,t0)←Power2Round(t,d) AND pk ←pkEncode(ρ,t1)
@@ -217,13 +217,13 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_Y_S+ 5  : data_o_rom <= '{opcode:MLDSA_UOP_EXP_MASK, imm:'h0005, length:'d66, operand1:MLDSA_RHO_P_KAPPA_ID, operand2:MLDSA_NOP, operand3:MLDSA_Y_5_BASE};
                 MLDSA_SIGN_MAKE_Y_S+ 6  : data_o_rom <= '{opcode:MLDSA_UOP_EXP_MASK, imm:'h0006, length:'d66, operand1:MLDSA_RHO_P_KAPPA_ID, operand2:MLDSA_NOP, operand3:MLDSA_Y_6_BASE};
                 //NTT(Y)
-                MLDSA_SIGN_MAKE_Y_S+ 7  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_0_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 8  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_1_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_1_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 9  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_2_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_2_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 10 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_3_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_3_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 11 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_4_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_4_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 12 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_5_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_5_NTT_BASE};
-                MLDSA_SIGN_MAKE_Y_S+ 13 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0000, length:'d00, operand1:MLDSA_Y_6_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_6_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 7  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_0_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 8  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_1_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_1_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 9  : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_2_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_2_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 10 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_3_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_3_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 11 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_4_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_4_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 12 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_5_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_5_NTT_BASE};
+                MLDSA_SIGN_MAKE_Y_S+ 13 : data_o_rom <= '{opcode:MLDSA_UOP_NTT,  imm:'h0001, length:'d00, operand1:MLDSA_Y_6_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_Y_6_NTT_BASE};
                 //Check W0 clear
                 MLDSA_SIGN_CHECK_W0_CLR : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(y)
@@ -235,7 +235,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 5  : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0005, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 6  : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0006, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 7  : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_0_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 7  : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_0_BASE};
 
                 MLDSA_SIGN_MAKE_W_S+ 8  : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0100, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 9  : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0101, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -245,7 +245,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 13 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0105, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 14 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0106, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 15 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_1_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 15 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_1_BASE};
                 
                 MLDSA_SIGN_MAKE_W_S+ 16 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0200, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 17 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0201, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -255,7 +255,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 21 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0205, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 22 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0206, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 23 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_2_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 23 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_2_BASE};
 
                 MLDSA_SIGN_MAKE_W_S+ 24 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0300, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 25 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0301, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -265,7 +265,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 29 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0305, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 30 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0306, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 31 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_3_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 31 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_3_BASE};
 
                 MLDSA_SIGN_MAKE_W_S+ 32 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0400, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 33 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0401, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -275,7 +275,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 37 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0405, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 38 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0406, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 39 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_4_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 39 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_4_BASE};
     
                 MLDSA_SIGN_MAKE_W_S+ 40 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0500, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 41 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0501, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -285,7 +285,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 45 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0505, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 46 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0506, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 47 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_5_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 47 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_5_BASE};
                 
                 MLDSA_SIGN_MAKE_W_S+ 48 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0600, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 49 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0601, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -295,7 +295,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 53 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0605, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 54 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0606, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 55 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_6_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 55 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_6_BASE};
                 
                 MLDSA_SIGN_MAKE_W_S+ 56 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWM,  imm:'h0700, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_0_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 57 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0701, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_1_NTT_BASE, operand3:MLDSA_AY0_BASE};
@@ -305,7 +305,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_W_S+ 61 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0705, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_5_NTT_BASE, operand3:MLDSA_AY0_BASE};
                 MLDSA_SIGN_MAKE_W_S+ 62 : data_o_rom <= '{opcode:MLDSA_UOP_REJS_PWMA, imm:'h0706, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_Y_6_NTT_BASE, operand3:MLDSA_AY0_BASE};
 
-                MLDSA_SIGN_MAKE_W_S+ 63 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0000, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_7_BASE};
+                MLDSA_SIGN_MAKE_W_S+ 63 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_7_BASE};
 
                 //Set Y valid //FIXME this can move before MAKE_W if we opt accumulator to not have to read dest
                 MLDSA_SIGN_SET_Y        : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_UOP_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
