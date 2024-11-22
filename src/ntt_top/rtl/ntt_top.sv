@@ -148,16 +148,15 @@ module ntt_top
     logic pwm_mode, pwa_mode, pws_mode;
     logic pwm_intt_mode;
 
-
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            ct_mode <= (mode == ct);
-            gs_mode <= (mode == gs);
-            pwo_mode <= (mode inside {pwm, pwa, pws});
-            pwm_mode <= (mode == pwm);
-            pwa_mode <= (mode == pwa);
-            pws_mode <= (mode == pws);
-            pwm_intt_mode <= (mode == pwm_intt);
+            ct_mode <= 0;
+            gs_mode <= 0;
+            pwo_mode <= 0;
+            pwm_mode <= 0;
+            pwa_mode <= 0;
+            pws_mode <= 0;
+            pwm_intt_mode <= 0;
         end
         else begin
             ct_mode <= (mode == ct);
