@@ -279,6 +279,8 @@ always_comb mldsa_privkey_lock = '0;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
   logic msg_hold;
 
+  logic error_flag;
+  logic error_flag_reg;
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
@@ -987,8 +989,21 @@ always_comb mldsa_privkey_lock = '0;
   always_comb subcomponent_busy = !(ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
                                   sampler_busy_i |
                                   ntt_busy_i[0];
-  always_comb error_flag_edge = skdecode_error_i;
+  always_comb error_flag = skdecode_error_i;
   always_comb seq_en = 1;
+
+  always_ff @(posedge clk or negedge reset_n) 
+  begin : error_detection
+      if(!reset_n)
+          error_flag_reg <= 1'b0;
+      else if(zeroize_reg)
+          error_flag_reg <= 1'b0;
+      else if (error_flag)
+          error_flag_reg <= 1'b1;
+  end // error_detection
+
+  assign error_flag_edge = error_flag & (!error_flag_reg);
+
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
