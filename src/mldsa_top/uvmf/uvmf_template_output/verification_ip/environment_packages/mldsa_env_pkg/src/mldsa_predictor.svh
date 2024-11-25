@@ -80,6 +80,11 @@ class mldsa_predictor #(
   bit [31:0] SIG []; //4628 Bytes
   bit [31:0] VERIF []; //64 Bytes
 
+  bit lock_IP;
+  bit valid;
+  bit [31:0] data;
+  uvm_status_e status;
+
   // FUNCTION: new
   function new(string name, uvm_component parent);
     super.new(name,parent);
@@ -88,6 +93,8 @@ class mldsa_predictor #(
     PK = new[648];
     SIG = new[1157];
     VERIF = new[16];
+    lock_IP = 0;
+    data = '0;
     `uvm_warning("PREDICTOR_REVIEW", "This predictor has been created either through generation or re-generation with merging.  Remove this warning after the predictor has been reviewed.")
   
      // pragma uvmf custom new begin
@@ -325,10 +332,19 @@ class mldsa_predictor #(
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_VERSION at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_CTRL.get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_CTRL at address: 0x%x", reg_addr), UVM_HIGH)
+          `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_CTRL at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_STATUS.get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_STATUS at address: 0x%x", reg_addr), UVM_HIGH)
+          // This part checks if data is valid
+          data = t.data[0][31:0];
+          valid = data[1];
+          if (valid) begin
+            lock_IP = 0;
+            `uvm_info("PRED_AHB", $sformatf("The IP done signal released the lock"), UVM_LOW)
+          end else begin
+            lock_IP = lock_IP;
+          end
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_ENTROPY[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_ENTROPY[$size(p_mldsa_rm.MLDSA_ENTROPY)-1].get_address(p_mldsa_map)) begin
@@ -368,163 +384,171 @@ class mldsa_predictor #(
     int words_read;
     bit [31:0] value;
     int fd;
-    case (op_code)
-      3'b000: begin
-        `uvm_info("PRED", "CTRL Reg is written 3'b00 (No operation)...", UVM_MEDIUM)
-      end
-      3'b001: begin
-        output_file = "./keygen_input.hex";
-        input_file = "./keygen_output.hex";
-        // Open the file for writing
-        fd = $fopen(output_file, "w");
-        if (fd == 0) begin
-          $display("ERROR: Failed to open file: %s", output_file);
-          return;
+    if (!lock_IP) begin
+      case (op_code)
+        3'b000: begin
+          `uvm_info("PRED", "CTRL Reg is written 3'b00 (No operation)...", UVM_MEDIUM)
         end
-        $fwrite(fd, "%02X\n", op_code-1); // KeyGen cmd
-        write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
-        $fclose(fd);
-        // $system("test_dilithium5 keygen_input.hex keygen_output.hex");
-        $system($sformatf("./%s keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
-        `uvm_info("PRED", $sformatf("%s is being executed", dilithium_command), UVM_MEDIUM)
-        `uvm_info("PRED", "CTRL Reg is configured to perform KeyGen", UVM_MEDIUM)
-        // Open the file for reading
-        fd = $fopen(input_file, "r");
-        if (fd == 0) begin
-          `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-          return;
-        end
-        else begin
-          // Skip the first line
-          void'($fgets(line, fd)); // Read a line from the file
-          void'($sscanf(line, "%02x\n", value));
-        end
-        read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
-        read_line(fd, 1224, SK); // Read 4864-byte Secret Key to the file
-        $fclose(fd);
-      end
-      3'b010: begin
-        output_file = "./signing_input.hex";
-        input_file  = "./signing_ouput.hex";
-        // Open the file for writing
-        fd = $fopen(output_file, "w");
-        if (fd == 0) begin
-          $display("ERROR: Failed to open file: %s", output_file);
-          return;
-        end
-        $fwrite(fd, "%02X\n", op_code-1); // Signature generation cmd
-        write_file(fd, 16, MSG); // Write 64-byte Message to the file
-        write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
-        $fclose(fd);
-        //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
-        $system($sformatf("./%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
-        `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
-        // Open the file for reading
-        fd = $fopen(input_file, "r");
-        if (fd == 0) begin
-          `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-          return;
-        end
-        else begin
-          // Skip the first line
-          void'($fgets(line, fd)); // Read a line from the file
-          void'($sscanf(line, "%02x\n", value));
-        end
-        // Skip the second line
-        void'($fgets(line, fd)); // Read a line from the file
-        void'($sscanf(line, "%08x\n", value));
-        read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-        SIG[0] = SIG[0] >> 8;
-        $fclose(fd);
-      end
-      3'b011: begin
-        output_file = "./verif_input.hex";
-        input_file  = "./verif_ouput.hex";
-        // Open the file for writing
-        fd = $fopen(output_file, "w");
-        if (fd == 0) begin
-          $display("ERROR: Failed to open file: %s", output_file);
-          return;
-        end
-        $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
-        //$fwrite(fd, "00001253\n"); // Signature lenght
-        // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
-        write_file_without_newline(fd, 1157, SIG);
-        $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
-        write_file(fd, 16, MSG); // Write 64-byte message to the file
-        write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
-        $fclose(fd);
-        $system($sformatf("./%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
-        `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
-        // Open the file for reading
-        fd = $fopen(input_file, "r");
-        if (fd == 0) begin
-          `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-          return;
-        end
-        else begin
-          // Skip the first line
-          void'($fgets(line, fd)); // Read a line from the file
-          void'($sscanf(line, "%02x\n", value));
-        end
-        // Skip the second line
-        void'($fgets(line, fd)); // Read a line from the file
-        void'($sscanf(line, "%02x\n", value));
-        read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
-        $fclose(fd);
-      end
-      3'b100: begin
-        //Grab the PK and SK from keygen op ran by sequence
-        input_file = "./keygen_output_for_test.hex";
-        // Open the generated file for reading
-        fd = $fopen(input_file, "r");
-        if (fd == 0) begin
+        3'b001: begin
+          lock_IP = 1;
+          output_file = "./keygen_input.hex";
+          input_file = "./keygen_output.hex";
+          // Open the file for writing
+          fd = $fopen(output_file, "w");
+          if (fd == 0) begin
+            $display("ERROR: Failed to open file: %s", output_file);
+            return;
+          end
+          $fwrite(fd, "%02X\n", op_code-1); // KeyGen cmd
+          write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
+          $fclose(fd);
+          // $system("test_dilithium5 keygen_input.hex keygen_output.hex");
+          $system($sformatf("./%s keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
+          `uvm_info("PRED", $sformatf("%s is being executed", dilithium_command), UVM_MEDIUM)
+          `uvm_info("PRED", "CTRL Reg is configured to perform KeyGen", UVM_MEDIUM)
+          // Open the file for reading
+          fd = $fopen(input_file, "r");
+          if (fd == 0) begin
             `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
             return;
+          end
+          else begin
+            // Skip the first line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+          end
+          read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
+          read_line(fd, 1224, SK); // Read 4864-byte Secret Key to the file
+          $fclose(fd);
         end
-        // Skip the two lines (KeyGen command and PK in output)
-        void'($fgets(line, fd));
-        void'($sscanf(line, "%02x\n", value));
-        read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
-        // Read the secret key (SK) from the file into the SK array
-        read_line(fd, 1224, SK);
-        $fclose(fd);
-        //Perform Signing
-        output_file = "./signing_input.hex";
-        input_file  = "./signing_ouput.hex";
-        // Open the file for writing
-        fd = $fopen(output_file, "w");
-        if (fd == 0) begin
-          $display("ERROR: Failed to open file: %s", output_file);
-          return;
+        3'b010: begin
+          lock_IP = 1;
+          output_file = "./signing_input.hex";
+          input_file  = "./signing_ouput.hex";
+          // Open the file for writing
+          fd = $fopen(output_file, "w");
+          if (fd == 0) begin
+            $display("ERROR: Failed to open file: %s", output_file);
+            return;
+          end
+          $fwrite(fd, "%02X\n", op_code-1); // Signature generation cmd
+          write_file(fd, 16, MSG); // Write 64-byte Message to the file
+          write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
+          $fclose(fd);
+          //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
+          $system($sformatf("./%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
+          `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
+          // Open the file for reading
+          fd = $fopen(input_file, "r");
+          if (fd == 0) begin
+            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+            return;
+          end
+          else begin
+            // Skip the first line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+          end
+          // Skip the second line
+          void'($fgets(line, fd)); // Read a line from the file
+          void'($sscanf(line, "%08x\n", value));
+          read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+          SIG[0] = SIG[0] >> 8;
+          $fclose(fd);
         end
-        $fwrite(fd, "%02X\n", 1); // Signature generation cmd
-        write_file(fd, 16, MSG); // Write 64-byte Message to the file
-        write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
-        $fclose(fd);
-        //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
-        $system($sformatf("./%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
-        `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
-        // Open the file for reading
-        fd = $fopen(input_file, "r");
-        if (fd == 0) begin
-          `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-          return;
-        end
-        else begin
-          // Skip the first line
+        3'b011: begin
+          lock_IP = 1;
+          output_file = "./verif_input.hex";
+          input_file  = "./verif_ouput.hex";
+          // Open the file for writing
+          fd = $fopen(output_file, "w");
+          if (fd == 0) begin
+            $display("ERROR: Failed to open file: %s", output_file);
+            return;
+          end
+          $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
+          //$fwrite(fd, "00001253\n"); // Signature lenght
+          // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
+          write_file_without_newline(fd, 1157, SIG);
+          $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
+          write_file(fd, 16, MSG); // Write 64-byte message to the file
+          write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
+          $fclose(fd);
+          $system($sformatf("./%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
+          `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
+          // Open the file for reading
+          fd = $fopen(input_file, "r");
+          if (fd == 0) begin
+            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+            return;
+          end
+          else begin
+            // Skip the first line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+          end
+          // Skip the second line
           void'($fgets(line, fd)); // Read a line from the file
           void'($sscanf(line, "%02x\n", value));
+          read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
+          $fclose(fd);
         end
-        // Skip the second line
-        void'($fgets(line, fd)); // Read a line from the file
-        void'($sscanf(line, "%08x\n", value));
-        read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-        SIG[0] = SIG[0] >> 8;
-        $fclose(fd);
+        3'b100: begin
+          lock_IP = 1;
+          //Grab the PK and SK from keygen op ran by sequence
+          input_file = "./keygen_output_for_test.hex";
+          // Open the generated file for reading
+          fd = $fopen(input_file, "r");
+          if (fd == 0) begin
+              `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+              return;
+          end
+          // Skip the two lines (KeyGen command and PK in output)
+          void'($fgets(line, fd));
+          void'($sscanf(line, "%02x\n", value));
+          read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
+          // Read the secret key (SK) from the file into the SK array
+          read_line(fd, 1224, SK);
+          $fclose(fd);
+          //Perform Signing
+          output_file = "./signing_input.hex";
+          input_file  = "./signing_ouput.hex";
+          // Open the file for writing
+          fd = $fopen(output_file, "w");
+          if (fd == 0) begin
+            $display("ERROR: Failed to open file: %s", output_file);
+            return;
+          end
+          $fwrite(fd, "%02X\n", 1); // Signature generation cmd
+          write_file(fd, 16, MSG); // Write 64-byte Message to the file
+          write_file(fd, 1224, SK); // Write 4864-byte Secret Key to the file
+          $fclose(fd);
+          //$system("test_dilithium5 signing_input.hex signing_ouput.hex");
+          $system($sformatf("./%s signing_input.hex signing_ouput.hex >> signing.log", dilithium_command));
+          `uvm_info("PRED", "CTRL Reg is configured to perform Signature Generation", UVM_MEDIUM)
+          // Open the file for reading
+          fd = $fopen(input_file, "r");
+          if (fd == 0) begin
+            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+            return;
+          end
+          else begin
+            // Skip the first line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+          end
+          // Skip the second line
+          void'($fgets(line, fd)); // Read a line from the file
+          void'($sscanf(line, "%08x\n", value));
+          read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+          SIG[0] = SIG[0] >> 8;
+          $fclose(fd);
 
-      end
-    endcase
+        end
+      endcase
+    end
+    if (lock_IP)
+    `uvm_info("PRED_RUN_EXE", $sformatf("The IP is locked"), UVM_LOW)
   endfunction
 
   // TODO: Please learn which registers that I need to zeroize
