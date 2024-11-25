@@ -32,7 +32,7 @@ module abr_masked_N_bit_mult_tb;
     logic [1:0] z [WIDTH-1:0];
     logic [WIDTH-1:0] expected_z;
     logic [WIDTH-1:0] actual_z;
-    logic [HALF_WIDTH-1:0] actuan_input;
+    logic [HALF_WIDTH-1:0] actual_input;
     logic [WIDTH-1:0] x0, z0, tmp0;
     logic [WIDTH-1:0] x1, z1, tmp1;
 
@@ -95,9 +95,9 @@ module abr_masked_N_bit_mult_tb;
             #3;
             if (i < num_vectors) begin
                 // Generate random inputs
-                actuan_input = $random;
+                actual_input = $random;
                 tmp1 = $random;
-                tmp0 = (actuan_input - tmp1) % MOD;
+                tmp0 = (actual_input - tmp1) % MOD;
                 for (int j = 0; j < WIDTH; j = j + 1) begin
                     x[j] = {tmp1[j], tmp0[j]};
                 end
@@ -109,7 +109,7 @@ module abr_masked_N_bit_mult_tb;
                 end
                 input_queue[0] = '{x: x, y: y};
 
-                if (DEBUG) $display("[%0t] Input pushed: x = %d ({%d,%d}), y = %d", $time, actuan_input, tmp0, tmp1, y);
+                if (DEBUG) $display("[%0t] Input pushed: x = %d ({%d,%d}), y = %d", $time, actual_input, tmp0, tmp1, y);
             end
             else begin
               // Shift left and insert new inputs

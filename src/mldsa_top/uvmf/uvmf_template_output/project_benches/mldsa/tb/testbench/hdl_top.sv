@@ -43,6 +43,9 @@ module hdl_top;
 import mldsa_parameters_pkg::*;
 import qvip_ahb_lite_slave_params_pkg::*;
 import uvmf_base_pkg_hdl::*;
+`ifdef CALIPTRA
+import kv_defines_pkg::*; 
+`endif
 
   // pragma attribute hdl_top partition_module_xrtl                                            
   hdl_qvip_ahb_lite_slave 
@@ -74,6 +77,13 @@ import uvmf_base_pkg_hdl::*;
     rst =  1; 
   end
 
+`ifdef CALIPTRA
+  var kv_rd_resp_t kv_rd_resp;
+  initial begin
+      kv_rd_resp    = '{default:0};
+  end
+`endif
+
   // pragma uvmf custom dut_instantiation begin
   // AHB Clock/reset
   assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.default_clk_gen_CLK     = clk;
@@ -101,7 +111,13 @@ import uvmf_base_pkg_hdl::*;
       .hsize_i    (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HSIZE      ),
       .hresp_o    (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRESP      ),
       .hreadyout_o(uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HREADY     ),
-      .hrdata_o   (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRDATA     )
+      .hrdata_o   (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRDATA     ),
+`ifdef CALIPTRA
+      .kv_read(),
+      .kv_rd_resp(kv_rd_resp),
+`endif
+      .error_intr(),
+      .notif_intr()
     );
 
     assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HBURST    = 3'b0;

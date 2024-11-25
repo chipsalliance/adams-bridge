@@ -460,6 +460,9 @@ module mldsa_seq_prim
                 default :              data_o_rom <= '{opcode: MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
             endcase 
     end
+    else begin
+        data_o_rom <= '{opcode: MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+    end
 end
 
 endmodule

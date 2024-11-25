@@ -27,6 +27,7 @@ package ntt_defines_pkg;
     import mldsa_params_pkg::*;
 
 parameter NTT_REG_SIZE = REG_SIZE-1;
+parameter MASKED_WIDTH = 46;
 // parameter MEM_DEPTH = 2**MLDSA_MEM_ADDR_WIDTH;
 
 
@@ -37,7 +38,8 @@ localparam ct =3'd0,
            gs =3'd1,
            pwm=3'd2,
            pwa=3'd3,
-           pws=3'd4;
+           pws=3'd4,
+           pwm_intt = 3'd5;
  
 typedef logic [2:0] mode_t;
 
@@ -54,11 +56,43 @@ typedef struct packed {
 } bf_uvwi_t;
 
 typedef struct packed {
+    //input a
+    logic [NTT_REG_SIZE-1:0] u0_i;
+    logic [NTT_REG_SIZE-1:0] u1_i;
+    logic [NTT_REG_SIZE-1:0] u2_i;
+    logic [NTT_REG_SIZE-1:0] u3_i;
+    //input b
+    logic [NTT_REG_SIZE-1:0] v0_i;
+    logic [NTT_REG_SIZE-1:0] v1_i;
+    logic [NTT_REG_SIZE-1:0] v2_i;
+    logic [NTT_REG_SIZE-1:0] v3_i;
+    //accumulated input c (comes from dest mem)
+    logic [NTT_REG_SIZE-1:0] w0_i;
+    logic [NTT_REG_SIZE-1:0] w1_i;
+    logic [NTT_REG_SIZE-1:0] w2_i;
+    logic [NTT_REG_SIZE-1:0] w3_i;
+    //input w for INTT operation that follows pwm. TODO: for only PWM/PWMA ops, this needs to be 0
+    logic [NTT_REG_SIZE-1:0] twiddle_w0_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w1_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w2_i;
+    logic [NTT_REG_SIZE-1:0] twiddle_w3_i;
+} hybrid_bf_uvwi_t;
+
+typedef struct packed {
     logic [NTT_REG_SIZE-1:0] u20_o;
     logic [NTT_REG_SIZE-1:0] u21_o;
     logic [NTT_REG_SIZE-1:0] v20_o;
     logic [NTT_REG_SIZE-1:0] v21_o;
 } bf_uvo_t;
+
+typedef struct packed {
+    logic [1:0][MASKED_WIDTH-1:0] u00_i;
+    logic [1:0][MASKED_WIDTH-1:0] u01_i;
+    logic [1:0][MASKED_WIDTH-1:0] v00_i;
+    logic [1:0][MASKED_WIDTH-1:0] v01_i;
+    logic [1:0][MASKED_WIDTH-1:0] w00_i;
+    logic [1:0][MASKED_WIDTH-1:0] w01_i;
+} masked_bf_uvwi_t; //Only used in masked INTT stage 1
 
 typedef struct packed {
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr;
