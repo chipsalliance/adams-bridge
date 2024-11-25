@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from maksed_gadgets import *
+from masked_gadgets import *
 
 
 def test_one_share_mult(numTest = 10):
@@ -294,12 +294,14 @@ def test_maskedBFUAdder(numTest = 10):
         r1 = int(randomness.value)
         b0 = int(b-r1) % MultMod
         b1 = r1
+
         a0, a1 = maskedBFUAdder(a0, a1, b0, b1)
         gotten = int(a0 + a1) % MultMod
+        # print(f"Gotten = {gotten: X}, Expected = {expected: X}")
         if gotten != expected:
-            print(f"Multiplication gives an Error; gotten = {gotten}, while exp = {expected}")
+            print(f"Addition gives an Error; gotten = {gotten: X}, while exp = {expected: X}")
 
-# test_maskedBFUAdder(numTest = 1000)
+#test_maskedBFUAdder(numTest = 1000)
 
 def gs_bf(u, v, z):
     t = (u - v) % DILITHIUM_Q

@@ -182,7 +182,10 @@ module ntt_utb_top
 
         .accumulate(ntt_if_i.accumulate),
         .sampler_valid(ntt_if_i.sampler_valid),
+        .shuffle_en(1'b0),
+        .masking_en(1'b0),
         .random(random_utb),
+        .rnd_i(230'h0),
         //NTT mem IF
         .mem_wr_req(ntt_mem_if_i.mem_port0_req),
         .mem_rd_req(ntt_mem_if_i.mem_port1_req),

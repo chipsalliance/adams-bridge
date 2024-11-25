@@ -46,29 +46,33 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_butterfly2x2.sv
       - $COMPILE_ROOT/rtl/ntt_butterfly.sv
       - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
-      # - $COMPILE_ROOT/rtl/ntt_add_sub_mod.sv
-      # - $COMPILE_ROOT/rtl/ntt_adder.sv
       - $COMPILE_ROOT/rtl/ntt_mult_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_special_adder.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_special_adder.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_mult_redux46.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
       - $COMPILE_ROOT/rtl/ntt_buffer.sv
       - $COMPILE_ROOT/rtl/ntt_shuffle_buffer.sv
       - $COMPILE_ROOT/rtl/ntt_twiddle_lookup.sv
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
-  tb:
-    directories: [$COMPILE_ROOT/rtl]
-    files:
-      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
-      - $COMPILE_ROOT/tb/ntt_wrapper.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_BFU_add_sub.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_BFU_mult.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_gs_butterfly.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_pwm.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_butterfly1x2.sv
+      - $COMPILE_ROOT/rtl/ntt_hybrid_butterfly_2x2.sv
+  # tb:
+  #   directories: [$COMPILE_ROOT/rtl]
+  #   files:
+  #     - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+  #     - $COMPILE_ROOT/tb/ntt_wrapper.sv
       
     tops: [ntt_top]
   rtl_lint:
     directories: []
     waiver_files:
       - $MSFT_REPO_ROOT/src/ntt/config/design_lint/ntt_top/sglint_waivers
-    # black_box:
-    #   - ecc_reg
 ---
 provides: [ntt_top_tb]  
 schema_version: 2.4.0
@@ -80,6 +84,8 @@ targets:
     directories: [$COMPILE_ROOT/tb]
     files:
       - $COMPILE_ROOT/tb/ntt_top_tb.sv
+      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
     tops: [ntt_top_tb]
   sim:
     pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
@@ -95,6 +101,31 @@ targets:
     files:
       - $COMPILE_ROOT/tb/ntt_mult_reduction_tb.sv
     tops: [ntt_mult_reduction_tb]
+
+---
+provides: [ntt_masked_mult_reduction_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_tb.sv
+      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_auto_tb.sv
+    tops: [ntt_masked_mult_redux46_auto_tb]
+
+---
+provides: [ntt_top_masking_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ntt_top_masking_tb.sv
+    tops: [ntt_top_masking_tb]
 
 ---
 provides: [ntt_utb]  
@@ -132,4 +163,6 @@ targets:
       - $COMPILE_ROOT/utb/tests/ntt_base_test.sv
       - $COMPILE_ROOT/utb/tests/ntt_combined_test.sv
       - $COMPILE_ROOT/utb/ntt_utb_top/ntt_utb_top.sv
+      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
     tops: [ntt_utb_top]

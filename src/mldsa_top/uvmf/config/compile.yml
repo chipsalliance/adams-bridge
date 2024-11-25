@@ -28,7 +28,7 @@ targets:
       - hdl_top
       - hvl_top
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying C executbale vector generator to $PWD" && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 . && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_debug .'  
+    pre_exec: 'echo "[PRE-EXEC] Copying C executable vector generator to $PWD" && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 . && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_debug .'
 global:
   tool:
     vcs:
