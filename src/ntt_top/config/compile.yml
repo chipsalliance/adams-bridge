@@ -131,7 +131,7 @@ targets:
 provides: [ntt_utb]  
 schema_version: 2.4.0
 requires:
-  - uvm_lib
+  - mldsa_uvm_lib
   - ntt_top
   - ntt_pkg
 targets:
