@@ -41,11 +41,13 @@ package mldsa_tests_pkg;
    `include "src/register_test.svh"
    `include "src/example_derived_test.svh"
    `include "src/ML_DSA_randomized_key_gen_test.svh"
+   `include "src/ML_DSA_randomized_zeroize_test.svh"
    `include "src/ML_DSA_randomized_early_run_test.svh"
    `include "src/ML_DSA_randomized_key_gen_and_sign_test.svh"
    `include "src/ML_DSA_randomized_sign_gen_test.svh"
    `include "src/ML_DSA_randomized_all_test.svh"
    `include "src/ML_DSA_randomized_verif_test.svh"
+   `include "src/ML_DSA_randomized_verif_fail_test.svh"
 
   // pragma uvmf custom package_item_additional begin
   // UVMF_CHANGE_ME : When adding new tests to the src directory

@@ -67,6 +67,7 @@ class mldsa_predictor #(
 
   // pragma uvmf custom class_item_additional begin
   string dilithium_command;
+  bit expect_predictor_verif_failure;
   // pragma uvmf custom class_item_additional end
 
   uvm_analysis_port #(mvc_sequence_item_base) mldsa_ahb_reg_ap;
@@ -95,7 +96,7 @@ class mldsa_predictor #(
     VERIF = new[16];
     lock_IP = 0;
     data = '0;
-    `uvm_warning("PREDICTOR_REVIEW", "This predictor has been created either through generation or re-generation with merging.  Remove this warning after the predictor has been reviewed.")
+    //`uvm_warning("PREDICTOR_REVIEW", "This predictor has been created either through generation or re-generation with merging.  Remove this warning after the predictor has been reviewed.")
   
      // pragma uvmf custom new begin
   // pragma uvmf custom new end
@@ -116,8 +117,12 @@ class mldsa_predictor #(
     if (!uvm_config_db#(string)::get(this, "", "dilithium_command", dilithium_command)) begin
       dilithium_command = "test_dilithium5"; // default value
     end
-
     `uvm_info("PREDICTOR", $sformatf("DILITHIUM_COMMAND to be used: %s", dilithium_command), UVM_LOW)
+
+    if (!uvm_config_db#(bit)::get(this, "", "expect_predictor_verif_failure", expect_predictor_verif_failure)) begin
+      expect_predictor_verif_failure = 0; // default value
+    end
+    `uvm_info("PREDICTOR", $sformatf("expect_predictor_verif_failure to be used: %d", expect_predictor_verif_failure), UVM_LOW)
   // pragma uvmf custom build_phase end
   endfunction
 
@@ -336,15 +341,15 @@ class mldsa_predictor #(
         end
         else if (reg_addr == p_mldsa_rm.MLDSA_STATUS.get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_STATUS at address: 0x%x", reg_addr), UVM_HIGH)
-          // This part checks if data is valid
-          data = t.data[0][31:0];
-          valid = data[1];
-          if (valid) begin
-            lock_IP = 0;
-            `uvm_info("PRED_AHB", $sformatf("The IP done signal released the lock"), UVM_LOW)
-          end else begin
-            lock_IP = lock_IP;
-          end
+          // // This part checks if data is valid
+          // data = t.data[0][31:0];
+          // valid = data[1];
+          // if (valid) begin
+          //   lock_IP = 0;
+          //   `uvm_info("PRED_AHB", $sformatf("The IP done signal released the lock"), UVM_LOW)
+          // end else begin
+          //   lock_IP = lock_IP;
+          // end
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_ENTROPY[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_ENTROPY[$size(p_mldsa_rm.MLDSA_ENTROPY)-1].get_address(p_mldsa_map)) begin
@@ -458,40 +463,63 @@ class mldsa_predictor #(
         end
         3'b011: begin
           lock_IP = 1;
-          output_file = "./verif_input.hex";
-          input_file  = "./verif_ouput.hex";
-          // Open the file for writing
-          fd = $fopen(output_file, "w");
-          if (fd == 0) begin
-            $display("ERROR: Failed to open file: %s", output_file);
-            return;
-          end
-          $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
-          //$fwrite(fd, "00001253\n"); // Signature lenght
-          // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
-          write_file_without_newline(fd, 1157, SIG);
-          $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
-          write_file(fd, 16, MSG); // Write 64-byte message to the file
-          write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
-          $fclose(fd);
-          $system($sformatf("./%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
-          `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
-          // Open the file for reading
-          fd = $fopen(input_file, "r");
-          if (fd == 0) begin
-            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-            return;
-          end
-          else begin
-            // Skip the first line
+          if ( ! expect_predictor_verif_failure) begin
+            output_file = "./verif_input.hex";
+            input_file  = "./verif_ouput.hex";
+            // Open the file for writing
+            fd = $fopen(output_file, "w");
+            if (fd == 0) begin
+              $display("ERROR: Failed to open file: %s", output_file);
+              return;
+            end
+            $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
+            //$fwrite(fd, "00001253\n"); // Signature lenght
+            // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
+            write_file_without_newline(fd, 1157, SIG);
+            $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
+            write_file(fd, 16, MSG); // Write 64-byte message to the file
+            write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
+            $fclose(fd);
+            $system($sformatf("./%s verif_input.hex verif_ouput.hex >> verif.log", dilithium_command));
+            `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
+            // Open the file for reading
+            fd = $fopen(input_file, "r");
+            if (fd == 0) begin
+              `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+              return;
+            end
+            else begin
+              // Skip the first line
+              void'($fgets(line, fd)); // Read a line from the file
+              void'($sscanf(line, "%02x\n", value));
+            end
+            // Skip the second line
             void'($fgets(line, fd)); // Read a line from the file
             void'($sscanf(line, "%02x\n", value));
+            read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
+            $fclose(fd);
           end
-          // Skip the second line
-          void'($fgets(line, fd)); // Read a line from the file
-          void'($sscanf(line, "%02x\n", value));
-          read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
-          $fclose(fd);
+          else begin
+            input_file  = "./verif_ouput.hex";
+            $system($sformatf("./%s verif_failure_input_test.hex verif_ouput.hex >> verif.log", dilithium_command));
+            `uvm_info("PRED", "CTRL Reg is configured to perform Verification", UVM_MEDIUM)
+            // Open the file for reading
+            fd = $fopen(input_file, "r");
+            if (fd == 0) begin
+              `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+              return;
+            end
+            else begin
+              // Skip the first line
+              void'($fgets(line, fd)); // Read a line from the file
+              void'($sscanf(line, "%02x\n", value));
+            end
+            // Skip the second line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+            read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
+            $fclose(fd);
+          end
         end
         3'b100: begin
           lock_IP = 1;
@@ -551,13 +579,14 @@ class mldsa_predictor #(
     `uvm_info("PRED_RUN_EXE", $sformatf("The IP is locked"), UVM_LOW)
   endfunction
 
-  // TODO: Please learn which registers that I need to zeroize
+  
   function void zeroize_registers(bit zeroize);
 
     // Define the zero_value at the beginning
     uvm_reg_data_t zero_value = 32'b0;
 
     if (zeroize) begin
+      lock_IP = 0;
   
       // Zeroize local variables
       foreach (SEED[i]) begin
