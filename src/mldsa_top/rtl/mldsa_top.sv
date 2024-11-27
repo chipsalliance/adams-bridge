@@ -66,6 +66,8 @@ module mldsa_top
   input kv_rd_resp_t kv_rd_resp,
   `endif
 
+  output logic                      busy_o,
+
   output logic                      error_intr,
   output logic                      notif_intr
 
@@ -393,6 +395,8 @@ mldsa_ctrl mldsa_ctrl_inst
 
   .lfsr_enable_o(lfsr_enable),
   .lfsr_seed_o(lfsr_seed),
+
+  .busy_o(busy_o),
 
   .error_intr(error_intr),
   .notif_intr(notif_intr),

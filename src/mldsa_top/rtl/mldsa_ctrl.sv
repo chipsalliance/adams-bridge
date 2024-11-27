@@ -142,6 +142,8 @@ module mldsa_ctrl
   input kv_rd_resp_t kv_rd_resp,
   `endif
 
+  output logic busy_o,
+
   //Interrupts
   output logic error_intr,
   output logic notif_intr
@@ -324,6 +326,9 @@ always_comb mldsa_privkey_lock = '0;
     else
       counter_reg <= counter_reg + 1;
   end
+
+  //Set busy when engine is in progress
+  always_comb busy_o = ~mldsa_ready & ~mldsa_valid_reg;
 
 //HWIF to reg block
   always_comb mldsa_reg_hwif_in.reset_b = rst_b;
@@ -1182,7 +1187,7 @@ always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Done when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_done = msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)];
+always_comb msg_done = ~msg_hold & (msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
