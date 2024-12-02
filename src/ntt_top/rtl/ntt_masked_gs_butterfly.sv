@@ -16,7 +16,7 @@
 // ntt_masked_gs_butterfly.sv
 // --------
 // Only performs gs (INTT) mode of operation. All blocks are masked
-// Latency = 260 clks
+// Latency = 262 clks
 
 module ntt_masked_gs_butterfly
     import mldsa_params_pkg::*;
@@ -38,7 +38,7 @@ module ntt_masked_gs_butterfly
         output logic [1:0] v_o [WIDTH-1:0]
     );
 
-    localparam MASKED_MULT_LATENCY = 207;
+    localparam MASKED_MULT_LATENCY = 209;
     logic [52:0][1:0][WIDTH-1:0] w_reg; //TODO parameterize
     logic [1:0] add_res [WIDTH-1:0];
     logic [1:0] sub_res [WIDTH-1:0];
@@ -124,7 +124,7 @@ module ntt_masked_gs_butterfly
         end
     end
 
-    //207 clks
+    //207 clks - 209
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (

@@ -16,7 +16,7 @@
 //
 // ntt_masked_mult_redux46
 // Performs masked multiplication reduction for MLDSA
-// It has 156 Cycle Latency
+// It has 157 Cycle Latency
 //======================================================================
 
 module ntt_masked_mult_redux46
@@ -243,6 +243,7 @@ module ntt_masked_mult_redux46
         .delayed_reg(z_12_0_delayed)
     );
 
+    //28 cycles?
     ntt_masked_special_adder  add_with_conc_d10_and_z12(
         .clk(clk),
         .rst_n(rst_n),
@@ -316,6 +317,7 @@ module ntt_masked_mult_redux46
         .delayed_reg(z_45_23_delayed)
     );
     
+    //54 cycles
     abr_masked_add_sub_mod_Boolean mod_adder_z_45_23_and_f13_0 (
         .clk(clk),
         .rst_n(rst_n),
@@ -339,6 +341,7 @@ module ntt_masked_mult_redux46
         .delayed_reg(d22_0_delayed)
     );
 
+    //54 cycles
     abr_masked_add_sub_mod_Boolean  mod_adder_d22_0_and_e22_0 (
         .clk(clk),
         .rst_n(rst_n),

@@ -18,15 +18,14 @@
 // 1. Performs 1st stage of masked INTT operation
 // 2. Combines output shares
 // 3. Performs div2 on combined outputs (unmasked)
-// Total latency = 261 clks
+// Total latency = 264 clks
 
 module ntt_masked_butterfly1x2
     import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
         parameter WIDTH = 46,
-        parameter HALF_WIDTH = WIDTH/2,
-        parameter MASKED_BF_STAGE1_LATENCY = 260
+        parameter HALF_WIDTH = WIDTH/2
     )
     (
         input wire clk,
@@ -59,6 +58,7 @@ module ntt_masked_butterfly1x2
         w01 = uvw_i.w01_i;
     end
 
+    //263
     ntt_masked_gs_butterfly #(
         .WIDTH(WIDTH)
     ) masked_bf_inst00 (
@@ -146,9 +146,9 @@ module ntt_masked_butterfly1x2
         end
         else begin
             uv_o.u20_o <= u10_div2;
-            uv_o.u21_o <= u11_div2; //Check connection TODO
-            uv_o.v20_o <= v10_div2;
-            uv_o.v21_o <= v11_div2; //Check connection TODO
+            uv_o.u21_o <= v10_div2; //u11_div2;
+            uv_o.v20_o <= u11_div2; //v10_div2;
+            uv_o.v21_o <= v11_div2;
         end
     end
 

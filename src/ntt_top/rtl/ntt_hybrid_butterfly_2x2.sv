@@ -32,10 +32,11 @@ module ntt_hybrid_butterfly_2x2
     parameter UNMASKED_PWA_LATENCY = 1, //latency of modular addition
     parameter UNMASKED_PWS_LATENCY = 1,  //latency of modular subtraction
     parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2,
-    parameter MASKED_BF_STAGE1_LATENCY = 260, //For 1 masked butterfly
-    parameter MASKED_PWM_LATENCY = 207, //For 1 masked pwm operation
+    parameter MASKED_BF_STAGE1_LATENCY = 264, //For 1 masked butterfly
+    parameter MASKED_PWM_LATENCY = 209, //For 1 masked pwm operation
+    parameter MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY,
     parameter MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY,
-    parameter MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY
+    parameter MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1 //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
 )
 (
     input wire clk,
@@ -68,11 +69,12 @@ logic [HALF_WIDTH-1:0] u10_int, u11_int, v10_int, v11_int;
 logic [HALF_WIDTH-1:0] u10, u11, v10, v11;
 //Outputs of 2nd stage
 // logic [HALF_WIDTH-1:0] u20, u21, v20, v21;
+logic masking_en_reg;
 
 //Other internal wires
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
-logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+logic [MASKED_PWM_MASKED_INTT_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic pwo_mode, pwm_intt_mode;
 // logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
@@ -81,7 +83,7 @@ logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
 logic [1:0][WIDTH-1:0] u00_share, u01_share, v00_share, v01_share, u10_share, v10_share, u11_share, v11_share;
 logic [1:0][WIDTH-1:0] w00_share, w01_share, w10_share, w11_share; //, w10_reg_share, w11_reg_share;
 logic [1:0][WIDTH-1:0] uv00_share, uv01_share, uv10_share, uv11_share;
-logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share, twiddle_w10_share, twiddle_w11_share;
+logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share;
 bf_uvo_t masked_gs_stage1_uvo;
 
 //w delay flops
@@ -90,14 +92,17 @@ always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         w10_reg <= 'h0;
         w11_reg <= 'h0;
+        masking_en_reg <= 'b0;
     end
     else if (zeroize) begin
         w10_reg <= 'h0;
         w11_reg <= 'h0;
+        masking_en_reg <= 'b0;
     end
     else begin
         w10_reg <= {uvw_i.w10_i, w10_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
         w11_reg <= {uvw_i.w11_i, w11_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
+        masking_en_reg <= masking_en;
     end
 end
 
@@ -115,10 +120,10 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_w11_reg <= 'h0;
     end
     else begin
-        masked_w00_reg <= {hybrid_pw_uvw_i.twiddle_w0_i, masked_w00_reg[MASKED_PWM_LATENCY-1:1]};
+        masked_w00_reg <= {hybrid_pw_uvw_i.twiddle_w0_i, masked_w00_reg[MASKED_PWM_LATENCY-1:1]}; //TODO add PWMA latency when Ay countermeasure is added
         masked_w01_reg <= {hybrid_pw_uvw_i.twiddle_w1_i, masked_w01_reg[MASKED_PWM_LATENCY-1:1]};
-        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
-        masked_w11_reg <= {hybrid_pw_uvw_i.twiddle_w3_i, masked_w11_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
+        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_PWM_MASKED_INTT_LATENCY-1:1]};
+        masked_w11_reg <= {hybrid_pw_uvw_i.twiddle_w3_i, masked_w11_reg[MASKED_PWM_MASKED_INTT_LATENCY-1:1]};
     end
 end
 
@@ -280,7 +285,7 @@ always_comb begin
 end
 
 //----------------------------------------------------
-//Masked PWMs - Used in masked PWM+INTT mode only - 207 clks
+//Masked PWMs - Used in masked PWM+INTT mode only - 209 clks
 //----------------------------------------------------
 ntt_masked_pwm #(
     .WIDTH(WIDTH)
@@ -288,6 +293,7 @@ ntt_masked_pwm #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
+    .accumulate(accumulate),
     .u(u00_share),
     .v(v00_share),
     .w(w00_share),
@@ -301,6 +307,7 @@ ntt_masked_pwm #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
+    .accumulate(accumulate),
     .u(u01_share),
     .v(v01_share),
     .w(w01_share),
@@ -314,6 +321,7 @@ ntt_masked_pwm #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
+    .accumulate(accumulate),
     .u(u10_share),
     .v(v10_share),
     .w(w10_share),
@@ -327,6 +335,7 @@ ntt_masked_pwm #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
+    .accumulate(accumulate),
     .u(u11_share),
     .v(v11_share),
     .w(w11_share),
@@ -335,7 +344,7 @@ ntt_masked_pwm #(
 );
 
 //----------------------------------------------------
-//Masked BFU stage 1 - Used in masked PWM+INTT mode only - 260 clks
+//Masked BFU stage 1 - Used in masked PWM+INTT mode only - 264 clks
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
 //----------------------------------------------------
 ntt_masked_butterfly1x2 #(
@@ -344,7 +353,7 @@ ntt_masked_butterfly1x2 #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .uvw_i({uv00_share, uv01_share, uv10_share, uv11_share, twiddle_w00_share, twiddle_w01_share}), //TODO check connection
+    .uvw_i({uv00_share, uv10_share, uv01_share, uv11_share, twiddle_w00_share, twiddle_w01_share}), //TODO check connection
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );
@@ -359,9 +368,9 @@ ntt_butterfly #(
     .reset_n(reset_n),
     .zeroize(zeroize),
     .mode(mode),
-    .opu_i(masking_en ? HALF_WIDTH'(0) : u00),
-    .opv_i(masking_en ? HALF_WIDTH'(0) : v00),
-    .opw_i(masking_en ? HALF_WIDTH'(0) : w00),
+    .opu_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : u00),
+    .opv_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : v00),
+    .opw_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : w00),
     .accumulate(accumulate),
     .u_o(u10_int),
     .v_o(u11_int),
@@ -375,9 +384,9 @@ ntt_butterfly #(
     .reset_n(reset_n),
     .zeroize(zeroize),
     .mode(mode),
-    .opu_i(masking_en ? HALF_WIDTH'(0) : u01),
-    .opv_i(masking_en ? HALF_WIDTH'(0) : v01),
-    .opw_i(masking_en ? HALF_WIDTH'(0) : w01),
+    .opu_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : u01),
+    .opv_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : v01),
+    .opw_i((masking_en & pwm_intt_mode) ? HALF_WIDTH'(0) : w01),
     .accumulate(accumulate),
     .u_o(v10_int),
     .v_o(v11_int),
@@ -393,10 +402,10 @@ ntt_butterfly #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .mode(mode),
-    .opu_i(masking_en ? masked_gs_stage1_uvo.u20_o : u10),
-    .opv_i(masking_en ? masked_gs_stage1_uvo.v20_o : v10),
-    .opw_i(masking_en ? masked_w10_reg[0] : pwo_mode ? w10 : w10_reg[0]),
+    .mode((masking_en & pwm_intt_mode) ? gs : mode),
+    .opu_i((masking_en & pwm_intt_mode) ? masked_gs_stage1_uvo.u20_o : u10),
+    .opv_i((masking_en & pwm_intt_mode) ? masked_gs_stage1_uvo.v20_o : v10),
+    .opw_i((masking_en & pwm_intt_mode) ? masked_w10_reg[0] : pwo_mode ? w10 : w10_reg[0]),
     .accumulate(accumulate),
     .u_o(uv_o.u20_o),
     .v_o(uv_o.v20_o),
@@ -409,10 +418,10 @@ ntt_butterfly #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .mode(mode),
-    .opu_i(masking_en ? masked_gs_stage1_uvo.u21_o : u11),
-    .opv_i(masking_en ? masked_gs_stage1_uvo.v21_o : v11),
-    .opw_i(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : w11_reg[0]),
+    .mode((masking_en & pwm_intt_mode) ? gs : mode),
+    .opu_i((masking_en & pwm_intt_mode) ? masked_gs_stage1_uvo.u21_o : u11),
+    .opv_i((masking_en & pwm_intt_mode) ? masked_gs_stage1_uvo.v21_o : v11),
+    .opw_i((masking_en & pwm_intt_mode) ? masked_w11_reg[0] : pwo_mode ? w11 : w11_reg[0]),
     .accumulate(accumulate),
     .u_o(uv_o.u21_o),
     .v_o(uv_o.v21_o),

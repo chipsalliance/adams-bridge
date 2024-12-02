@@ -503,6 +503,7 @@ generate
         MLDSA_PWM_INTT: begin
           mode[g_inst] = pwm_intt;
           ntt_random_en[g_inst] = 1;
+          sampler_valid[g_inst] = 1;
         end
         default: begin
         end
