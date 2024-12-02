@@ -26,17 +26,7 @@ module ntt_hybrid_butterfly_2x2
     import ntt_defines_pkg::*;
 #(
     parameter WIDTH = 46,
-    parameter HALF_WIDTH = WIDTH/2,
-    parameter UNMASKED_BF_LATENCY = 10, //5 cycles per butterfly * 2 instances in serial = 10 clks
-    parameter UNMASKED_PWM_LATENCY = 5, //latency of modular multiplier + modular addition to perform accumulation
-    parameter UNMASKED_PWA_LATENCY = 1, //latency of modular addition
-    parameter UNMASKED_PWS_LATENCY = 1,  //latency of modular subtraction
-    parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2,
-    parameter MASKED_BF_STAGE1_LATENCY = 264, //For 1 masked butterfly
-    parameter MASKED_PWM_LATENCY = 209, //For 1 masked pwm operation
-    parameter MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY,
-    parameter MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY,
-    parameter MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1 //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
+    parameter HALF_WIDTH = WIDTH/2
 )
 (
     input wire clk,
@@ -56,6 +46,20 @@ module ntt_hybrid_butterfly_2x2
     output pwo_t pwo_uv_o,
     output logic ready_o
 );
+
+//----------------------
+//Latency params
+//----------------------
+localparam UNMASKED_BF_LATENCY = 10; //5 cycles per butterfly * 2 instances in serial = 10 clks
+localparam UNMASKED_PWM_LATENCY = 5; //latency of modular multiplier + modular addition to perform accumulation
+localparam UNMASKED_PWA_LATENCY = 1; //latency of modular addition
+localparam UNMASKED_PWS_LATENCY = 1;  //latency of modular subtraction
+localparam UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
+localparam MASKED_BF_STAGE1_LATENCY = 264; //For 1 masked butterfly
+localparam MASKED_PWM_LATENCY = 209; //For 1 masked pwm operation
+localparam MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;
+localparam MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;
+localparam MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1; //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
 
 //----------------------
 //Unmasked wires
@@ -353,7 +357,7 @@ ntt_masked_butterfly1x2 #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .uvw_i({uv00_share, uv10_share, uv01_share, uv11_share, twiddle_w00_share, twiddle_w01_share}), //TODO check connection
+    .uvw_i({uv00_share, uv10_share, uv01_share, uv11_share, twiddle_w00_share, twiddle_w01_share}),
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );

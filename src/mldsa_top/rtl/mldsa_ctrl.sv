@@ -1155,7 +1155,7 @@ always_comb mldsa_privkey_lock = '0;
     if (prim_instr.opcode.ntt_en) begin
       ntt_mode_o[0] = prim_instr.opcode.mode.ntt_mode;
       ntt_masking_en_o[0] = prim_instr.opcode.masking_en;
-      ntt_shuffling_en_o[0] = prim_instr.opcode.shuffling_en; //1'b0;
+      ntt_shuffling_en_o[0] = prim_instr.opcode.shuffling_en;
     end
   end
 
@@ -1458,7 +1458,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
     if (sec_instr.opcode.ntt_en) begin
       ntt_mode_o[1] = sec_instr.opcode.mode.ntt_mode;
       ntt_masking_en_o[1] = sec_instr.opcode.masking_en;
-      ntt_shuffling_en_o[1] = sec_instr.opcode.shuffling_en; //1'b0;
+      ntt_shuffling_en_o[1] = sec_instr.opcode.shuffling_en;
     end
   end
   //passing a bit on the immediate field to mux between temp address locations

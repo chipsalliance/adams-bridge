@@ -19,8 +19,7 @@
 // This module performs masked pwm operation with or without accumulate
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
-// 207 clks if PWM, 260 clks if PWMA
-// 209, 262
+// 209 clks if PWM, 262 clks if PWMA
 
 module ntt_masked_pwm
     import mldsa_params_pkg::*;
@@ -60,7 +59,7 @@ module ntt_masked_pwm
         end
     end
 
-    //209 clks (207)
+    //209 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst0 (

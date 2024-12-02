@@ -243,7 +243,7 @@ module ntt_masked_mult_redux46
         .delayed_reg(z_12_0_delayed)
     );
 
-    //28 cycles?
+    //28 cycles
     ntt_masked_special_adder  add_with_conc_d10_and_z12(
         .clk(clk),
         .rst_n(rst_n),

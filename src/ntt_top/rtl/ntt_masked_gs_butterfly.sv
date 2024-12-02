@@ -39,7 +39,8 @@ module ntt_masked_gs_butterfly
     );
 
     localparam MASKED_MULT_LATENCY = 209;
-    logic [52:0][1:0][WIDTH-1:0] w_reg; //TODO parameterize
+    localparam MASKED_ADD_SUB_LATENCY = 53;
+    logic [MASKED_ADD_SUB_LATENCY-1:0][1:0][WIDTH-1:0] w_reg;
     logic [1:0] add_res [WIDTH-1:0];
     logic [1:0] sub_res [WIDTH-1:0];
     logic [1:0] mul_res [WIDTH-1:0];
@@ -110,21 +111,21 @@ module ntt_masked_gs_butterfly
     //w delay flops
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            for (int i = 0; i < 53; i++) begin
+            for (int i = 0; i < MASKED_ADD_SUB_LATENCY; i++) begin
                 w_reg[i] <= 'h0;
             end
         end
         else if (zeroize) begin
-            for (int i = 0; i < 53; i++) begin
+            for (int i = 0; i < MASKED_ADD_SUB_LATENCY; i++) begin
                 w_reg[i] <= 'h0;
             end
         end
         else begin
-            w_reg <= {opw_i, w_reg[52:1]};
+            w_reg <= {opw_i, w_reg[MASKED_ADD_SUB_LATENCY-1:1]};
         end
     end
 
-    //207 clks - 209
+    //209 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (
