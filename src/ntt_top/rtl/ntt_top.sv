@@ -150,13 +150,27 @@ module ntt_top
     mode_t opcode;
     logic masking_en_ctrl;
 
-    assign ct_mode = (mode == ct);
-    assign gs_mode = (mode == gs);
-    assign pwo_mode = (mode inside {pwm, pwa, pws});
-    assign pwm_mode = (mode == pwm);
-    assign pwa_mode = (mode == pwa);
-    assign pws_mode = (mode == pws);
-    assign pwm_intt_mode = (mode == pwm_intt);
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            ct_mode <= 0;
+            gs_mode <= 0;
+            pwo_mode <= 0;
+            pwm_mode <= 0;
+            pwa_mode <= 0;
+            pws_mode <= 0;
+            pwm_intt_mode <= 0;
+        end
+        else begin
+            ct_mode <= (mode == ct);
+            gs_mode <= (mode == gs);
+            pwo_mode <= (mode inside {pwm, pwa, pws});
+            pwm_mode <= (mode == pwm);
+            pwa_mode <= (mode == pwa);
+            pws_mode <= (mode == pws);
+            pwm_intt_mode <= (mode == pwm_intt);
+        end
+    end
+
     assign pw_rden_dest_mem = accumulate ? pw_rden : 1'b0;
 
     //Mem IF assignments:
