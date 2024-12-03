@@ -168,6 +168,28 @@ mldsa_env_seq.start(top_configuration.vsqr);
 
   endfunction
 
+  function void parse_hex_to_array(string hex_data, ref bit [31:0] array []);
+    int hex_len;
+    int bit_length_words;
+    bit [31:0] word;
+    bit [31:0] reversed_word;
+    string chunk;
+
+    // Calculate the number of words from the length of the hexadecimal string
+    hex_len = hex_data.len();
+    bit_length_words = hex_len / 8;
+    array = new[bit_length_words];
+
+    // Parse the hexadecimal string into the array
+    for (int i = 0; i < bit_length_words; i++) begin
+      chunk = hex_data.substr((hex_len - 8 * (i + 1)), (hex_len - 8 * i - 1));
+      void'($sscanf(chunk, "%08x", word));
+      reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
+      // Reverse the order of the words as well as their bytes
+      array[i] = reversed_word;
+    end
+  endfunction
+
 endclass
 
 // pragma uvmf custom external begin

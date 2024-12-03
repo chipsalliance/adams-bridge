@@ -523,20 +523,34 @@ class mldsa_predictor #(
         end
         3'b100: begin
           lock_IP = 1;
-          //Grab the PK and SK from keygen op ran by sequence
-          input_file = "./keygen_output_for_test.hex";
-          // Open the generated file for reading
+          output_file = "./keygen_input.hex";
+          input_file = "./keygen_output.hex";
+          // Open the file for writing
+          fd = $fopen(output_file, "w");
+          if (fd == 0) begin
+            $display("ERROR: Failed to open file: %s", output_file);
+            return;
+          end
+          $fwrite(fd, "%02X\n", 0); // KeyGen cmd
+          write_file(fd, 32/4, SEED); // Write 32-byte SEED to the file
+          $fclose(fd);
+          // $system("test_dilithium5 keygen_input.hex keygen_output.hex");
+          $system($sformatf("./%s keygen_input.hex keygen_output.hex >> keygen.log", dilithium_command));
+          `uvm_info("PRED", $sformatf("%s is being executed", dilithium_command), UVM_MEDIUM)
+          `uvm_info("PRED", "CTRL Reg is configured to perform KeyGen", UVM_MEDIUM)
+          // Open the file for reading
           fd = $fopen(input_file, "r");
           if (fd == 0) begin
-              `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
-              return;
+            `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+            return;
           end
-          // Skip the two lines (KeyGen command and PK in output)
-          void'($fgets(line, fd));
-          void'($sscanf(line, "%02x\n", value));
+          else begin
+            // Skip the first line
+            void'($fgets(line, fd)); // Read a line from the file
+            void'($sscanf(line, "%02x\n", value));
+          end
           read_line(fd, 648, PK); // Read 2592-byte Public Key to the file
-          // Read the secret key (SK) from the file into the SK array
-          read_line(fd, 1224, SK);
+          read_line(fd, 1224, SK); // Read 4864-byte Secret Key to the file
           $fclose(fd);
           //Perform Signing
           output_file = "./signing_input.hex";
