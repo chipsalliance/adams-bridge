@@ -304,8 +304,8 @@ task masked_BFU_adder_test();
                 actual_v = $random()%PRIME;
                 u_array = actual_u;
                 v_array = actual_v;
-                rand0 = $random();
-                rand1 = $random();
+                rand0 = $random()%PRIME;
+                rand1 = $random()%PRIME;
 
                 u[0] = actual_u-rand0;
                 u[1] = rand0;
@@ -343,8 +343,8 @@ task masked_BFU_mult_test();
                 actual_v = $random()%PRIME;
                 u_array = actual_u;
                 v_array = actual_v;
-                rand0 = $random();
-                rand1 = $random();
+                rand0 = $random()%PRIME;
+                rand1 = $random()%PRIME;
 
                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
 
@@ -382,9 +382,9 @@ endtask
 //                     actual_u_normalized = actual_u;
 //                 // u_array = actual_u;
 //                 // v_array = actual_v;
-//                 rand0 = $random();
-//                 rand1 = $random();
-//                 rand2 = $random();
+//                 rand0 = $random()%PRIME;
+//                 rand1 = $random()%PRIME;
+//                 rand2 = $random()%PRIME;
 
 //                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
 
@@ -422,9 +422,9 @@ task masked_pwm_test();
 
                 // u_array = actual_u;
                 // v_array = actual_v;
-                rand0 = $random();
-                rand1 = $random();
-                rand2 = $random();
+                rand0 = $random()%PRIME;
+                rand1 = $random()%PRIME;
+                rand2 = $random()%PRIME;
 
                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
 
@@ -459,9 +459,9 @@ endtask
 
 //                 // u_array = actual_u;
 //                 // v_array = actual_v;
-//                 rand0 = $random();
-//                 rand1 = $random();
-//                 rand2 = $random();
+//                 rand0 = $random()%PRIME;
+//                 rand1 = $random()%PRIME;
+//                 rand2 = $random()%PRIME;
 
 //                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
 
@@ -505,9 +505,9 @@ task masked_hybrid_bf_2x2_test();
 
                 // u_array = actual_u;
                 // v_array = actual_v;
-                rand0 = $random();
-                rand1 = $random();
-                rand2 = $random();
+                rand0 = $random()%PRIME;
+                rand1 = $random()%PRIME;
+                rand2 = $random()%PRIME;
 
                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
 

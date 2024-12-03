@@ -21,6 +21,7 @@
 // 2. Controls wr/rd addr of NTT mem
 // 3. Controls rd addr of twiddle ROM
 // 4. Performs shuffling of wr/rd addr
+// Note: Latency changes in BFU must be reflected in the latency params here and in bf2x2 for correct pipeline operation
 //======================================================================
 
 module ntt_ctrl
@@ -90,7 +91,7 @@ localparam INTT_WRITE_ADDR_STEP = 16;
 localparam PWO_READ_ADDR_STEP   = 1;
 localparam PWO_WRITE_ADDR_STEP  = 1;
 localparam PWM_LATENCY = 5;
-localparam MASKED_BF_STAGE1_LATENCY = 260; //TODO check
+localparam MASKED_BF_STAGE1_LATENCY = 264; //TODO check
 
 localparam [MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 localparam INTT_WRBUF_LATENCY = 13; //includes BF latency + mem latency for shuffled reads to begin
@@ -578,7 +579,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
-        buf_wrptr_reg <= {{468{2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
+        buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if (pwo_mode & (incr_pw_rd_addr | butterfly_ready)) begin
         buf_rdptr_reg <= {mem_rd_index_ofst, buf_rdptr_reg[BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
@@ -628,7 +629,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[MASKED_BF_STAGE1_LATENCY:1]};
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin //TODO: replace gs condition with an fsm generated flag perhaps?
-        chunk_count_reg <= {{251{4'h0}}, chunk_count, chunk_count_reg[BF_LATENCY:1]};
+        chunk_count_reg <= {{(MASKED_BF_STAGE1_LATENCY+1-BF_LATENCY){4'h0}}, chunk_count, chunk_count_reg[BF_LATENCY:1]};
     end
 end
 
