@@ -1,4 +1,4 @@
-name: adams-bridge_lib
+name: adams_bridge_lib
 files:
   # Adams Bridge design
   - src/abr_libs/config/compile.yml
