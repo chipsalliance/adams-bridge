@@ -90,11 +90,11 @@ localparam INTT_WRITE_ADDR_STEP = 16;
 localparam PWO_READ_ADDR_STEP   = 1;
 localparam PWO_WRITE_ADDR_STEP  = 1;
 localparam PWM_LATENCY = 5;
-localparam MASKED_BF_STAGE1_LATENCY = 260;
+localparam MASKED_BF_STAGE1_LATENCY = 260; //TODO check
 
 localparam [MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 localparam INTT_WRBUF_LATENCY = 13; //includes BF latency + mem latency for shuffled reads to begin
-localparam MASKED_INTT_WRBUF_LATENCY = 481; //TODO check
+localparam MASKED_INTT_WRBUF_LATENCY = 481; //masked PWM+INTT latency + mem latency for shuffled reads to begin
 //FSM states
 ntt_read_state_t read_fsm_state_ps, read_fsm_state_ns;
 ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
@@ -304,7 +304,7 @@ always_comb begin
 
     if (shuffle_en) begin
         mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
-        mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : (gs_mode | pwm_intt_mode) ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4])); //TODO check pwm_intt latency with shuffling
+        mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : (gs_mode | pwm_intt_mode) ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
     end
     else begin
         mem_rd_addr_nxt = mem_rd_addr + rd_addr_step;
@@ -416,12 +416,12 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = ct_mode ? 'd0 : 'd63;
             twiddle_offset      = 'h0;
-            twiddle_rand_offset = ct_mode ? 'h0 : pwm_intt_mode ? 7'((4*chunk_count_reg[MASKED_BF_STAGE1_LATENCY]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) /*TODO: check buf_wrptr*/ : 7'((4*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 'h0 : pwm_intt_mode ? 7'((4*chunk_count_reg[MASKED_BF_STAGE1_LATENCY]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((4*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : pwm_intt_mode ? 7'((chunk_count_reg[MASKED_BF_STAGE1_LATENCY] % 4)*4 + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) /*TODO: check for masking*/ : 7'((chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : pwm_intt_mode ? 7'((chunk_count_reg[MASKED_BF_STAGE1_LATENCY] % 4)*4 + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
@@ -545,7 +545,6 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_rand_offset <= random[5:2];
         chunk_count <= random[5:2];
     end
-    //TODO: PWM+INTT mode
     else if ((ct_mode & (buf_count == 'h3)) | (((gs_mode | pwm_intt_mode) | (pwo_mode & incr_pw_rd_addr)) & (index_count == 'h3))) begin //update chunk after every 4 cycles - TODO: stop chunk counting when there's no incr_rd_addr in ntt/intt modes
         chunk_count <= (chunk_count == 'hf) ? 'h0 : chunk_count + 'h1;
     end
@@ -578,13 +577,13 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
         buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[BF_LATENCY:1]};
     end
-    else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin //TODO check latency in pwm_intt mode
+    else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
         buf_wrptr_reg <= {{468{2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if (pwo_mode & (incr_pw_rd_addr | butterfly_ready)) begin
         buf_rdptr_reg <= {mem_rd_index_ofst, buf_rdptr_reg[BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
     end
-    else if ((pwm_intt_mode)) begin // & (incr_pw_rd_addr | butterfly_ready))) begin
+    else if ((pwm_intt_mode)) begin
         buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
     end
     else begin

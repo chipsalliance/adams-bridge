@@ -385,51 +385,51 @@ task ntt_top_test();
             end
         end
         begin
-    // $display("NTT operation\n");
-    // operation = "NTT";
-    // mode_tb = ct;
-    // enable_tb = 1;
-    // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
-    // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
-    // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
-    // acc_tb = 1'b0;
-    // svalid_tb = 1'b1;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
+    $display("NTT operation\n");
+    operation = "NTT";
+    mode_tb = ct;
+    enable_tb = 1;
+    ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+    acc_tb = 1'b0;
+    svalid_tb = 1'b1;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
 
-    // $display("Waiting for ntt_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received ntt_done\n");
+    $display("Waiting for ntt_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received ntt_done\n");
 
     
-    // $display("INTT operation\n");
-    // operation = "INTT";
-    // mode_tb = gs;
-    // enable_tb = 1;
-    // ntt_mem_base_addr_tb.src_base_addr = 8'd128; //read from addr where ntt stored its results
-    // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
-    // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for intt_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received intt_done\n");
+    $display("INTT operation\n");
+    operation = "INTT";
+    mode_tb = gs;
+    enable_tb = 1;
+    ntt_mem_base_addr_tb.src_base_addr = 8'd128; //read from addr where ntt stored its results
+    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for intt_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received intt_done\n");
     
-    // $display("PWM operation 1\n");
-    // operation = "PWM 1 no acc";
-    // // $readmemh("pwm_iter1.hex", ntt_mem_tb);
-    // mode_tb = pwm;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWM operation 1\n");
+    operation = "PWM 1 no acc";
+    // $readmemh("pwm_iter1.hex", ntt_mem_tb);
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
     // for (int i = 0; i < 64; i++) begin
     //     if (dut.pwm_mem_c.mem[i+0] != ntt_mem_tb[i])
@@ -438,30 +438,30 @@ task ntt_top_test();
     // end
 
 
-    // $display("PWM operation 2\n");
-    // operation = "PWM 2 no acc";
-    // mode_tb = pwm;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWM operation 2\n");
+    operation = "PWM 2 no acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWM operation 3\n");
-    // operation = "PWM 3 acc";
-    // mode_tb = pwm;
-    // enable_tb = 1;
-    // acc_tb = 1'b1;
-    // $readmemh("pwm_iter2.hex", ntt_mem_tb);
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWM operation 3\n");
+    operation = "PWM 3 acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b1;
+    $readmemh("pwm_iter2.hex", ntt_mem_tb);
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
     // $readmemh("pwm_iter2.hex", ntt_mem_tb);
     // for (int i = 0; i < 64; i++) begin
@@ -470,106 +470,106 @@ task ntt_top_test();
     //     @(posedge clk_tb);
     // end
 
-    // $display("PWA operation 1\n");
-    // operation = "PWA 1";
-    // mode_tb = pwa;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWA operation 1\n");
+    operation = "PWA 1";
+    mode_tb = pwa;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWA operation 2\n");
-    // operation = "PWA 2";
-    // mode_tb = pwa;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWA operation 2\n");
+    operation = "PWA 2";
+    mode_tb = pwa;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWA operation 3\n");
-    // operation = "PWA 3";
-    // mode_tb = pwa;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWA operation 3\n");
+    operation = "PWA 3";
+    mode_tb = pwa;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWS operation 1\n");
-    // operation = "PWS 1";
-    // mode_tb = pws;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWS operation 1\n");
+    operation = "PWS 1";
+    mode_tb = pws;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWS operation 2\n");
-    // operation = "PWS 2";
-    // mode_tb = pws;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWS operation 2\n");
+    operation = "PWS 2";
+    mode_tb = pws;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
-    // $display("PWS operation 3\n");
-    // operation = "PWS 3";
-    // mode_tb = pws;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
-    // svalid_tb = 1'b0;
-    // @(posedge clk_tb);
+    $display("PWS operation 3\n");
+    operation = "PWS 3";
+    mode_tb = pws;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
+    svalid_tb = 1'b0;
+    @(posedge clk_tb);
 
     
 
-    // $display("PWM + sampler operation 1\n");
-    // operation = "PWM sampler";
-    // mode_tb = pwm;
-    // enable_tb = 1;
-    // acc_tb = 1'b0;
-    // sampler_mode_tb = 1'b1;
-    // repeat(2) @(posedge clk_tb);
-    // svalid_tb <= 1'b1;
-    // @(posedge clk_tb);
-    // enable_tb = 1'b0;
-    // repeat(10) @(posedge clk_tb);
-    // svalid_tb <= 1'b0;
-    // repeat(10) @(posedge clk_tb);
-    // svalid_tb <= 1'b1;
-    // repeat(10) @(posedge clk_tb);
-    // svalid_tb <= 1'b0;
-    // repeat(10) @(posedge clk_tb);
-    // svalid_tb <= 1'b1;
-    // repeat(45) @(posedge clk_tb);
-    // svalid_tb <= 1'b0;
-    // $display("Waiting for pwo_done\n");
-    // while(ntt_done_tb == 1'b0)
-    //     @(posedge clk_tb);
-    // $display("Received pwo_done\n");
+    $display("PWM + sampler operation 1\n");
+    operation = "PWM sampler";
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b0;
+    sampler_mode_tb = 1'b1;
+    repeat(2) @(posedge clk_tb);
+    svalid_tb <= 1'b1;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    repeat(10) @(posedge clk_tb);
+    svalid_tb <= 1'b0;
+    repeat(10) @(posedge clk_tb);
+    svalid_tb <= 1'b1;
+    repeat(10) @(posedge clk_tb);
+    svalid_tb <= 1'b0;
+    repeat(10) @(posedge clk_tb);
+    svalid_tb <= 1'b1;
+    repeat(45) @(posedge clk_tb);
+    svalid_tb <= 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
 
     $display("PWM+INTT operation\n");
     operation = "PWM INTT";
