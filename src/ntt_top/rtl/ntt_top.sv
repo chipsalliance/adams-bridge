@@ -147,6 +147,8 @@ module ntt_top
     logic pwo_mode;
     logic pwm_mode, pwa_mode, pws_mode;
     logic pwm_intt_mode;
+    mode_t opcode;
+    logic masking_en_ctrl;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -182,25 +184,25 @@ module ntt_top
                                         : mem_wr_data_int;
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
-    assign mem_rd_req.rd_wr_en = (ct_mode || gs_mode) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign mem_rd_req.addr     = (ct_mode || gs_mode) ? mem_rd_addr : pwm_mode ? pw_mem_rd_addr_c : 'h0;
-    assign pwm_rd_data_c       = (pwm_mode && accumulate) ? mem_rd_data : 'h0; //TODO: check if this is supposed to be mem_rd_data_reg
+    assign mem_rd_req.rd_wr_en = (ct_mode | gs_mode | pwm_intt_mode) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign mem_rd_req.addr     = (ct_mode | gs_mode | pwm_intt_mode) ? mem_rd_addr : pwm_mode ? pw_mem_rd_addr_c : 'h0;
+    assign pwm_rd_data_c       = (pwm_mode && accumulate) ? mem_rd_data : 'h0; //TODO: masked pwm (Ay) mode
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
-    assign pwm_a_rd_req.rd_wr_en = pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign pwm_a_rd_req.addr     = pwo_mode ? pw_mem_rd_addr_a : 'h0;
-    assign pwm_rd_data_a         = pwo_mode ? pwm_a_rd_data : 'h0; //TODO: clean up mux. Just connect input directly to logic
+    assign pwm_a_rd_req.rd_wr_en = (pwo_mode | pwm_intt_mode) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign pwm_a_rd_req.addr     = (pwo_mode | pwm_intt_mode) ? pw_mem_rd_addr_a : 'h0;
+    assign pwm_rd_data_a         = (pwo_mode | pwm_intt_mode) ? pwm_a_rd_data : 'h0; //TODO: clean up mux. Just connect input directly to logic
 
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
     always_comb begin
         if (shuffle_en) begin
-            pwm_b_rd_req.rd_wr_en = sampler_valid_reg & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE; //pw_rden is delayed a clk due to shuffling, so use delayed sampler_valid to line it up
-            pwm_b_rd_req.addr     = sampler_valid_reg & pwo_mode ? pw_mem_rd_addr_b : 'h0;
+            pwm_b_rd_req.rd_wr_en = sampler_valid_reg & (pwo_mode | pwm_intt_mode) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE; //pw_rden is delayed a clk due to shuffling, so use delayed sampler_valid to line it up
+            pwm_b_rd_req.addr     = sampler_valid_reg & (pwo_mode | pwm_intt_mode) ? pw_mem_rd_addr_b : 'h0;
             pwm_rd_data_b         = pwm_b_rd_data_reg;
         end
         else begin
-            pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-            pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? pw_mem_rd_addr_b : 'h0;
+            pwm_b_rd_req.rd_wr_en = sampler_valid & (pwo_mode | pwm_intt_mode) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+            pwm_b_rd_req.addr     = sampler_valid & (pwo_mode | pwm_intt_mode) ? pw_mem_rd_addr_b : 'h0;
             pwm_rd_data_b         = pwm_b_rd_data;
         end
     end
@@ -226,6 +228,8 @@ module ntt_top
         .accumulate(accumulate),
 
         .bf_enable(bf_enable),
+        .opcode(opcode),
+        .masking_en_ctrl(masking_en_ctrl),
         .buf_wren(buf_wren),
         .buf_rden(buf_rden),
         .buf_wrptr(buf_wrptr),
@@ -318,7 +322,7 @@ module ntt_top
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),
-        .mode(mode),
+        .mode(opcode),
         .enable(bf_enable_mux),
         .masking_en(masking_en),
         .uvw_i(uvw_i),
@@ -411,7 +415,7 @@ module ntt_top
                                                             : {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
 
     always_comb begin
-        unique case(mode)
+        unique case(opcode)
         ct: begin
             uvw_i.u00_i      = buf_data_o[REG_SIZE-2:0] ; 
             uvw_i.u01_i      = buf_data_o[(2*REG_SIZE)-2:REG_SIZE] ; 
@@ -428,7 +432,7 @@ module ntt_top
 
             pw_uvw_i         = 'h0;
         end
-        pwm: begin
+        pwm, pwm_intt: begin
             uvw_i.u00_i      = 'h0;
             uvw_i.u01_i      = 'h0;
             uvw_i.v00_i      = 'h0;
