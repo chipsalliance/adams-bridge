@@ -38,9 +38,16 @@ package mldsa_sequences_pkg;
   `include "src/example_derived_test_sequence.svh"
   `include "src/ML_DSA_randomized_key_gen_sequence.svh"
   `include "src/ML_DSA_randomized_key_gen_and_sign_sequence.svh"
+  `include "src/ML_DSA_randomized_early_run_sequence.svh"
+  `include "src/ML_DSA_randomized_zeroize_sequence.svh"
   `include "src/ML_DSA_randomized_sign_gen_sequence.svh"
   `include "src/ML_DSA_randomized_verif_sequence.svh"
+  `include "src/ML_DSA_randomized_verif_fail_sequence.svh"
+  `include "src/ML_DSA_randomized_reset_sequence.svh"
   `include "src/ML_DSA_randomized_all_sequence.svh"
+  `include "src/ML_DSA_keygen_KATs_sequence.svh"
+  `include "src/ML_DSA_keygen_signing_KATs_sequence.svh"
+  `include "src/ML_DSA_verif_KATs_sequence.svh"
 
   // pragma uvmf custom package_item_additional begin
   // UVMF_CHANGE_ME : When adding new sequences to the src directory

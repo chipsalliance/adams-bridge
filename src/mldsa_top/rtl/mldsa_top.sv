@@ -500,6 +500,11 @@ generate
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
         end
+        MLDSA_PWM_INTT: begin
+          mode[g_inst] = pwm_intt;
+          ntt_random_en[g_inst] = 1;
+          sampler_valid[g_inst] = 1;
+        end
         default: begin
         end
       endcase
@@ -526,7 +531,7 @@ generate
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
     .random(rand_bits[5:0]),
-    .masking_en(1'b0),
+    .masking_en(ntt_masking_en[g_inst]),
     .rnd_i(ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)), //(ntt_rand_bits & {(RND_W-6){ntt_random_en[g_inst]}}),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),

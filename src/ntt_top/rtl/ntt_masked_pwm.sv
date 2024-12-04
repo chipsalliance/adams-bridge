@@ -19,18 +19,20 @@
 // This module performs masked pwm operation with or without accumulate
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
+// 209 clks if PWM, 262 clks if PWMA
 
 module ntt_masked_pwm
     import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter WIDTH = 46,
-    parameter MASKED_MULT_LATENCY = 207
+    parameter MASKED_MULT_LATENCY = 209
 )
 (
     input wire clk,
     input wire reset_n,
     input wire zeroize,
+    input wire accumulate,
     input wire [1:0][WIDTH-1:0] u,
     input wire [1:0][WIDTH-1:0] v,
     input wire [1:0][WIDTH-1:0] w,
@@ -57,6 +59,7 @@ module ntt_masked_pwm
         end
     end
 
+    //209 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst0 (
@@ -102,8 +105,8 @@ module ntt_masked_pwm
 
     always_comb begin
         for (int i = 0; i < WIDTH; i++) begin
-            res[0][i] = res_unpacked[i][0];
-            res[1][i] = res_unpacked[i][1];
+            res[0][i] = accumulate ? res_unpacked[i][0] : mul_res[i][0];
+            res[1][i] = accumulate ? res_unpacked[i][1] : mul_res[i][1];
         end
     end
 

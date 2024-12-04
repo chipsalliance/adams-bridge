@@ -43,6 +43,7 @@ module hdl_top;
 import mldsa_parameters_pkg::*;
 import qvip_ahb_lite_slave_params_pkg::*;
 import uvmf_base_pkg_hdl::*;
+import uvm_pkg::*;
 `ifdef CALIPTRA
 import kv_defines_pkg::*; 
 `endif
@@ -71,10 +72,21 @@ import kv_defines_pkg::*;
 
 // pragma uvmf custom reset_generator begin
   bit rst;
+  uvm_event ev;
   initial begin
+    ev = uvm_event_pool::get_global("ev_rst");
     rst = 0; 
     #200ns;
-    rst =  1; 
+    rst =  1;
+    while(1) begin // On the fly reset
+      `uvm_info("HDL_TOP_TB",$sformatf(" waiting for the reset event trigger"),UVM_LOW)
+      // waiting for event trigger
+      ev.wait_trigger;
+      `uvm_info("HDL_TOP",$sformatf(" the reset event got triggered"),UVM_LOW)
+      rst = 0; 
+      #200ns;
+      rst =  1;
+    end
   end
 
 `ifdef CALIPTRA
