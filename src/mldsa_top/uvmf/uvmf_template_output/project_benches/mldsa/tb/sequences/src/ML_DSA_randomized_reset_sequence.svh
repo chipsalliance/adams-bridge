@@ -15,9 +15,9 @@
 //----------------------------------------------------------------------
 //
 
-class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
+class ML_DSA_randomized_reset_sequence extends mldsa_bench_sequence_base;
 
-  `uvm_object_utils(ML_DSA_randomized_all_sequence);
+  `uvm_object_utils(ML_DSA_randomized_reset_sequence);
 
     
     bit ready;
@@ -29,6 +29,9 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
     int value;
     // Create a queue to hold the tasks in a randomized order
     int order_array[3] = '{0, 1, 2}; // 0: keygen_sequence, 1: keygen_and_signing_sequence, 2: verification_sequence
+
+    static uvm_event ev;
+    int unsigned random_delay;
   
 
   function new(string name = "");
@@ -36,6 +39,8 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
   endfunction
 
   virtual task body();
+
+    ev = uvm_event_pool::get_global("ev_rst");
     reg_model.reset();
 
     #400;
@@ -50,17 +55,34 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
     
     // Shuffle the array to randomize the order
     order_array.shuffle();
-    `uvm_info("ALL_SEQ", $sformatf("shuffled order is = %p", order_array), UVM_LOW);
+    `uvm_info("ALL_RST_SEQ", $sformatf("shuffled order is = %p", order_array), UVM_LOW);
 
 
-    // Execute tasks in the randomized order
-    foreach (order_array[i]) begin
-      case (order_array[i])
-        0: keygen_sequence();
-        1: keygen_and_signing_sequence();
-        2: verification_sequence();
-      endcase
-    end
+    // Execute tasks in the randomized order and assert reset with a random delay
+    fork
+      begin
+        foreach (order_array[i]) begin
+          case (order_array[i])
+            0: keygen_sequence();
+            1: keygen_and_signing_sequence();
+            2: verification_sequence();
+          endcase
+        end
+      end
+      begin
+        if (!randomize(random_delay) with { random_delay inside {[10:10000]}; }) begin
+          `uvm_error("RANDOMIZE_FAIL", "Failed to randomize delay");
+        end else begin
+          `uvm_info("RANDOM_DELAY", $sformatf("Random delay: %0d cycles", random_delay), UVM_LOW);
+        end
+        // Introduce the random delay
+        #random_delay; // Delay for the random number of clock cycles
+        ev.trigger();          
+        `uvm_info("ALL_RST_SEQ", $sformatf("The reset is triggered"), UVM_LOW);
+      end
+    join_any
+    disable fork;
+    #40000;
 
   endtask
 
