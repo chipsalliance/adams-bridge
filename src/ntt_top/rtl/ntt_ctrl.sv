@@ -92,10 +92,11 @@ localparam PWO_READ_ADDR_STEP   = 1;
 localparam PWO_WRITE_ADDR_STEP  = 1;
 localparam PWM_LATENCY = 5;
 localparam MASKED_BF_STAGE1_LATENCY = 264; //TODO check
+localparam MASKED_PWM_LATENCY = 209; //For 1 masked pwm operation
 
 localparam [MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 localparam INTT_WRBUF_LATENCY = 13; //includes BF latency + mem latency for shuffled reads to begin
-localparam MASKED_INTT_WRBUF_LATENCY = 481; //masked PWM+INTT latency + mem latency for shuffled reads to begin
+localparam MASKED_PWM_INTT_WRBUF_LATENCY = 481; //masked PWM+INTT latency + mem latency for shuffled reads to begin
 //FSM states
 ntt_read_state_t read_fsm_state_ps, read_fsm_state_ns;
 ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
@@ -116,8 +117,9 @@ logic [1:0] buf_rdptr_int;
 logic [1:0] buf_rdptr_f;
 logic [BF_LATENCY:0][1:0] buf_rdptr_reg;
 //logic [INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
-logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
+logic [MASKED_PWM_INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
 logic [MASKED_BF_STAGE1_LATENCY:0][3:0] chunk_count_reg;
+// logic [MASKED_PWM_INTT_WRBUF_LATENCY:0] chunk_count_reg;
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
 logic mem_wr_en_fsm, mem_wr_en_reg;
@@ -417,17 +419,17 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = ct_mode ? 'd0 : 'd63;
             twiddle_offset      = 'h0;
-            twiddle_rand_offset = ct_mode ? 'h0 : pwm_intt_mode ? 7'((4*chunk_count_reg[MASKED_BF_STAGE1_LATENCY]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((4*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 'h0 : pwm_intt_mode ? 7'((4*chunk_count_reg[MASKED_BF_STAGE1_LATENCY]) + buf_wrptr_reg[MASKED_PWM_INTT_WRBUF_LATENCY-1]) : 7'((4*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : pwm_intt_mode ? 7'((chunk_count_reg[MASKED_BF_STAGE1_LATENCY] % 4)*4 + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : pwm_intt_mode ? 7'((chunk_count_reg[MASKED_BF_STAGE1_LATENCY] % 4)*4 + buf_wrptr_reg[MASKED_PWM_INTT_WRBUF_LATENCY-1]) : 7'((chunk_count_reg[BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
             twiddle_offset      = ct_mode ? 'd5 : 'd80;
-            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd4)*'d4 + buf_rdptr_int) : pwm_intt_mode ? 7'(buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'(buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd4)*'d4 + buf_rdptr_int) : pwm_intt_mode ? 7'(buf_wrptr_reg[MASKED_PWM_INTT_WRBUF_LATENCY-1]) : 7'(buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h3: begin
             twiddle_end_addr    = ct_mode ? 'd63 : 'd0;
@@ -579,13 +581,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
-        buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
+        buf_wrptr_reg <= {{(MASKED_PWM_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if (pwo_mode & (incr_pw_rd_addr | butterfly_ready)) begin
         buf_rdptr_reg <= {mem_rd_index_ofst, buf_rdptr_reg[BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
     end
     else if ((pwm_intt_mode)) begin
-        buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
+        buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_PWM_INTT_WRBUF_LATENCY-1:1]};
     end
     else begin
         buf_rdptr_reg <= 'h0;
