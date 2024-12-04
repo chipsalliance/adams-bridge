@@ -16,8 +16,8 @@
 `define ABR_CFG_SV
 
    `include "abr_sva.svh"
-   // `define RV_FPGA_OPTIMIZE
-   // `define RV_FPGA_SCA
+   `define RV_FPGA_OPTIMIZE
+   `define RV_FPGA_SCA
 
   `define ABR_ICG           abr_clk_gate
 
