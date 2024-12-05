@@ -21,6 +21,7 @@
 // 2. Controls wr/rd addr of NTT mem
 // 3. Controls rd addr of twiddle ROM
 // 4. Performs shuffling of wr/rd addr
+// Note: Latency changes in BFU must be reflected in the latency params here and in bf2x2 for correct pipeline operation
 //======================================================================
 
 module ntt_ctrl
@@ -112,6 +113,8 @@ logic [UNMASKED_BF_LATENCY:0][1:0] buf_rdptr_reg;
 //logic [INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
 logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
 logic [MASKED_BF_STAGE1_LATENCY:0][3:0] chunk_count_reg;
+// logic [MASKED_PWM_INTT_WRBUF_LATENCY:0] chunk_count_reg;
+
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
 logic mem_wr_en_fsm, mem_wr_en_reg;
@@ -573,13 +576,16 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
-        buf_wrptr_reg <= {{468{2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
+        buf_wrptr_reg <= {{(MASKED_PWM_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if (pwo_mode & (incr_pw_rd_addr | butterfly_ready)) begin
         buf_rdptr_reg <= {mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
     end
     else if ((pwm_intt_mode)) begin
         buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
+    end
+    else if ((pwm_intt_mode)) begin
+        buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_PWM_INTT_WRBUF_LATENCY-1:1]};
     end
     else begin
         buf_rdptr_reg <= 'h0;
@@ -623,7 +629,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[MASKED_BF_STAGE1_LATENCY:1]};
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin //TODO: replace gs condition with an fsm generated flag perhaps?
-        chunk_count_reg <= {{251{4'h0}}, chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
+        chunk_count_reg <= {{(MASKED_BF_STAGE1_LATENCY+1-BF_LATENCY){4'h0}}, chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
     end
 end
 

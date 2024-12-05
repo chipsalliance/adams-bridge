@@ -72,11 +72,23 @@ class mldsa_scoreboard #(
                             ahb_lite_slave_0_params::AHB_ADDRESS_WIDTH,
                             ahb_lite_slave_0_params::AHB_WDATA_WIDTH,
                             ahb_lite_slave_0_params::AHB_RDATA_WIDTH)     ahb_actual_q       [$];
-  // pragma uvmf custom class_item_additional end
 
+  
+  ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS,
+                            ahb_lite_slave_0_params::AHB_NUM_MASTER_BITS,
+                            ahb_lite_slave_0_params::AHB_NUM_SLAVES,
+                            ahb_lite_slave_0_params::AHB_ADDRESS_WIDTH,
+                            ahb_lite_slave_0_params::AHB_WDATA_WIDTH,
+                            ahb_lite_slave_0_params::AHB_RDATA_WIDTH)     ahb_expected_verif_q       [$];
+
+
+  // pragma uvmf custom class_item_additional end
+  bit expect_verif_failure = 0;
   int transaction_count = 0;
+  int verif_transaction_count = 0;
   int match_count = 0;
   int mismatch_count = 0;
+  int verif_unexpected_match_count = 0;
   int nothing_to_compare_against_count = 0;
   event entry_received;
   mldsa_reg_model_top scbr_mldsa_rm;
@@ -95,6 +107,12 @@ class mldsa_scoreboard #(
     actual_ahb_analysis_export = new("actual_ahb_analysis_export", this);
     expected_ahb_analysis_export = new("expected_ahb_analysis_export", this);
   // pragma uvmf custom build_phase begin
+
+    if (!uvm_config_db#(bit)::get(this, "", "expect_verif_failure", expect_verif_failure)) begin
+      expect_verif_failure = '0; // default value
+    end
+
+    `uvm_info("SCOREBOARD", $sformatf("expect_verif_failure to be used: %d", expect_verif_failure), UVM_LOW)
     // Instantiate the register model
     // scbr_mldsa_rm = mldsa_reg_model_top::type_id::create("scbr_mldsa_rm", this);
     scbr_mldsa_rm = configuration.mldsa_rm;
@@ -139,6 +157,27 @@ class mldsa_scoreboard #(
           t.address <= scbr_mldsa_rm.MLDSA_MSG[$size(scbr_mldsa_rm.MLDSA_MSG)-1].get_address(scbr_mldsa_map))
       ) begin
         `uvm_info("SCBD_AHB", $sformatf("Skipping register access in scoreboard at address: 0x%x", t.address), UVM_HIGH)
+      end
+      else if ( (t.address >= scbr_mldsa_rm.MLDSA_VERIFY_RES[0].get_address(scbr_mldsa_map) &&
+                t.address <= scbr_mldsa_rm.MLDSA_VERIFY_RES[$size(scbr_mldsa_rm.MLDSA_VERIFY_RES)-1].get_address(scbr_mldsa_map)) &&
+                expect_verif_failure &&
+                ahb_expected_verif_q.size() > 0)
+      begin
+        t_exp = ahb_expected_verif_q.pop_front();
+        txn_eq = (t_exp.data[0][31:0] == t.data[0][31:0]);
+        // `uvm_info("SCBD_AHB",{"           Poped Data: ",t_exp.convert2string()}, UVM_MEDIUM)
+        if ((t_exp.data[0][31:0] == t.data[0][31:0])) begin
+            verif_unexpected_match_count++;
+            // `uvm_info ("SCBD_AHB", $sformatf("Actual AHB txn with {Address: 0x%x} {Data: 0x%x} {RnW: %p} matches expected",t.address,t.data[0],t.RnW), UVM_MEDIUM)
+        end
+        verif_transaction_count++;
+        if (verif_transaction_count==16 && verif_unexpected_match_count==16) begin
+          verif_transaction_count = 0;
+          `uvm_error("SCBD_AHB", $sformatf("Although the verification failure is expected, the verif result matches with the successful verif output"))
+        end
+        else if (verif_transaction_count==16 && verif_unexpected_match_count<16) begin
+          verif_transaction_count = 0;
+        end
       end
       else if (ahb_expected_q.size() > 0) begin
           t_exp = ahb_expected_q.pop_front();
@@ -196,6 +235,14 @@ class mldsa_scoreboard #(
           t.address <= scbr_mldsa_rm.MLDSA_MSG[$size(scbr_mldsa_rm.MLDSA_MSG)-1].get_address(scbr_mldsa_map))
       ) begin
         `uvm_info("SCBD_AHB", $sformatf("Skipping monitor message in scoreboard at address: 0x%x", t.address), UVM_HIGH)
+      end
+      else if ( (t.address >= scbr_mldsa_rm.MLDSA_VERIFY_RES[0].get_address(scbr_mldsa_map) &&
+                t.address <= scbr_mldsa_rm.MLDSA_VERIFY_RES[$size(scbr_mldsa_rm.MLDSA_VERIFY_RES)-1].get_address(scbr_mldsa_map)) &&
+                expect_verif_failure 
+      )begin
+
+        ahb_expected_verif_q.push_back(t);
+        -> entry_received;
       end
       else begin
 
