@@ -30,6 +30,23 @@ parameter NTT_REG_SIZE = REG_SIZE-1;
 parameter MASKED_WIDTH = 46;
 // parameter MEM_DEPTH = 2**MLDSA_MEM_ADDR_WIDTH;
 
+//----------------------
+//Latency params for NTT
+//----------------------
+parameter INTT_WRBUF_LATENCY = 13;
+parameter UNMASKED_BF_LATENCY = 10;         //5 cycles per butterfly * 2 instances in serial = 10 clks
+parameter UNMASKED_PWM_LATENCY = 5;         //latency of modular multiplier + modular addition to perform accumulation
+parameter UNMASKED_PWA_LATENCY = 1;         //latency of modular addition
+parameter UNMASKED_PWS_LATENCY = 1;         //latency of modular subtraction
+parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
+
+parameter MASKED_PWM_LATENCY = 210;         //For 1 masked pwm operation
+parameter MASKED_BF_STAGE1_LATENCY = 265;   //For 1 masked butterfly operation
+parameter MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;   //PWM+stage1 INTT latency
+parameter MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;      //masked INTT latency
+parameter MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1;           //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
+parameter MASKED_ADD_SUB_LATENCY = 53;      //For 1 masked add/sub operation
+parameter MASKED_INTT_WRBUF_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 3;         //masked PWM+INTT latency + mem latency for shuffled reads to begin (does not include PWMA case)
 
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
 //TODO: tb has issue with enums in top level ports. For now, using this workaround

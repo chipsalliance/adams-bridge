@@ -19,14 +19,13 @@
 // This module performs masked pwm operation with or without accumulate
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
-// 209 clks if PWM, 262 clks if PWMA
+// 210 clks if PWM, 263 clks if PWMA
 
 module ntt_masked_pwm
     import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
-    parameter WIDTH = 46,
-    parameter MASKED_MULT_LATENCY = 209
+    parameter WIDTH = 46
 )
 (
     input wire clk,
@@ -59,7 +58,7 @@ module ntt_masked_pwm
         end
     end
 
-    //209 clks
+    //210 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst0 (
@@ -78,7 +77,7 @@ module ntt_masked_pwm
 
     abr_delay_masked_shares #(
         .WIDTH(WIDTH),
-        .N(MASKED_MULT_LATENCY)
+        .N(MASKED_PWM_LATENCY)
     ) w_delay (
         .clk(clk),
         .rst_n(reset_n),
@@ -87,6 +86,7 @@ module ntt_masked_pwm
         .delayed_reg(w_reg)
     );
 
+    //53 clks (accumulate case)
     ntt_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) add_inst0 (

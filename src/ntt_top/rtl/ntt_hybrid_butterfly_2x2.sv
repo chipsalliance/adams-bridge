@@ -48,20 +48,6 @@ module ntt_hybrid_butterfly_2x2
 );
 
 //----------------------
-//Latency params
-//----------------------
-localparam UNMASKED_BF_LATENCY = 10; //5 cycles per butterfly * 2 instances in serial = 10 clks
-localparam UNMASKED_PWM_LATENCY = 5; //latency of modular multiplier + modular addition to perform accumulation
-localparam UNMASKED_PWA_LATENCY = 1; //latency of modular addition
-localparam UNMASKED_PWS_LATENCY = 1;  //latency of modular subtraction
-localparam UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
-localparam MASKED_BF_STAGE1_LATENCY = 264; //For 1 masked butterfly
-localparam MASKED_PWM_LATENCY = 209; //For 1 masked pwm operation
-localparam MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;
-localparam MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;
-localparam MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1; //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
-
-//----------------------
 //Unmasked wires
 //----------------------
 //Inputs to 1st stage
@@ -289,7 +275,7 @@ always_comb begin
 end
 
 //----------------------------------------------------
-//Masked PWMs - Used in masked PWM+INTT mode only - 209 clks
+//Masked PWMs - Used in masked PWM+INTT mode only - 210 clks
 //----------------------------------------------------
 ntt_masked_pwm #(
     .WIDTH(WIDTH)

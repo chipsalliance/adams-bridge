@@ -68,9 +68,11 @@ logic wren_tb, rden_tb;
 logic [1:0] wrptr_tb, rdptr_tb;
 logic [5:0] random_tb;
 bf_uvwi_t uvw_i_tb;
+masked_bf_uvwi_t masked_uvw_i_tb;
 pwo_uvwi_t pw_uvw_i_tb;
 hybrid_bf_uvwi_t hybrid_uvw_i_tb;
-
+bf_uvo_t uv_o_tb;
+logic [REG_SIZE-1:0] u10, u11, v10, v11;
 //----------------------------------------------------------------
 // Device Under Test.
 //----------------------------------------------------------------
@@ -110,6 +112,7 @@ hybrid_bf_uvwi_t hybrid_uvw_i_tb;
 //     .u(u),
 //     .v(v),
 //     .w(w),
+//     .accumulate(1'b1),
 //     .rnd({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
 //     .res()
 // );
@@ -118,7 +121,7 @@ hybrid_bf_uvwi_t hybrid_uvw_i_tb;
 //     .clk(clk_tb),
 //     .reset_n(reset_n_tb),
 //     .zeroize(zeroize_tb),
-//     .uvw_i(uvw_i_tb),
+//     .uvw_i(masked_uvw_i_tb),
 //     .rnd_i({rnd0+rnd1, rnd3, rnd2, rnd1, rnd0}),
 //     .uv_o()
 // );
@@ -250,6 +253,8 @@ task init_sim;
         uvw_i_tb.v01_i = 'h0;
         uvw_i_tb.w00_i = 'h0;
         uvw_i_tb.w01_i = 'h0;
+        uvw_i_tb.w10_i = 'h0;
+        uvw_i_tb.w11_i = 'h0;
 
         pw_uvw_i_tb.u0_i = 'h0;
         pw_uvw_i_tb.v0_i = 'h0;
@@ -286,6 +291,13 @@ task init_sim;
         hybrid_uvw_i_tb.twiddle_w1_i = 'h0;
         hybrid_uvw_i_tb.twiddle_w2_i = 'h0;
         hybrid_uvw_i_tb.twiddle_w3_i = 'h0;
+
+        masked_uvw_i_tb = {'h0, 'h0, 'h0, 'h0, 'h0, 'h0};
+
+        u10 = 'h0;
+        u11 = 'h0;
+        v10 = 'h0;
+        v11 = 'h0;
 
         $display("End of init\n");
     end
@@ -447,48 +459,75 @@ task masked_pwm_test();
 endtask
 */
 
-// task masked_bfu_1x2_test();
-//     logic [45:0] rand0, rand1, rand2;
-//     for (int i = 0; i < 10; i++) begin
-//         @(posedge clk_tb);
-//         fork
-//             begin
-//                 actual_u = $random()%PRIME;
-//                 actual_v = $random()%PRIME;
-//                 actual_w = 'h2;
+task div2(logic [REG_SIZE-1:0] in, output logic [REG_SIZE-1:0] out);
+    if (in[0]) begin
+        out = (in >> 1) + ((PRIME+1)/2);
+    end
+    else begin
+        out = (in >> 1);
+    end
+endtask
+/*
+task masked_bfu_1x2_test();
+    logic [45:0] rand0, rand1, rand2;
+    logic [REG_SIZE:0] temp;
+    for (int i = 0; i < 10; i++) begin
+        @(posedge clk_tb);
+        fork
+            begin
+                actual_u = $random()%PRIME;
+                actual_v = $random()%PRIME;
+                actual_w = 'h2;
 
-//                 // u_array = actual_u;
-//                 // v_array = actual_v;
-//                 rand0 = $random();
-//                 rand1 = $random();
-//                 rand2 = $random();
+                // u_array = actual_u;
+                // v_array = actual_v;
+                rand0 = $random()%PRIME;
+                rand1 = $random()%PRIME;
+                rand2 = $random()%PRIME;
 
-//                 // $display("actual u = %h, actual v = %h", actual_u, actual_v);
+                $display("actual u = %h, actual v = %h", actual_u, actual_v);
 
-//                 u[0] = actual_u-rand0;
-//                 u[1] = rand0;
-//                 v[0] = actual_v-rand1;
-//                 v[1] = rand1;
-//                 w[0] = actual_w-rand2;
-//                 w[1] = rand2;
+                u[0] = actual_u-rand0;
+                u[1] = rand0;
+                v[0] = actual_v-rand1;
+                v[1] = rand1;
+                w[0] = actual_w-rand2;
+                w[1] = rand2;
 
-//                 uvw_i_tb.u00_i = u;
-//                 uvw_i_tb.u01_i = u;
-//                 uvw_i_tb.v00_i = v;
-//                 uvw_i_tb.v01_i = v;
-//                 uvw_i_tb.w00_i = w;
-//                 uvw_i_tb.w01_i = w;
-//                 // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
-//             end
-//             // begin
-//             //     repeat(264) @(posedge clk_tb);
-//             //     if ((dut.res[0] + dut.res[1]) != ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME)) begin
-//             //         $error("U = u*v+w Mismatch: exp_output = %h   output shares = %h %h actual output = %h", ((((actual_u * actual_v)%PRIME)+actual_w) % PRIME), dut.res[0], dut.res[1], dut.res[0] + dut.res[1]);
-//             //     end
-//             // end
-//         join
-//     end
-// endtask
+                masked_uvw_i_tb.u00_i = u;
+                masked_uvw_i_tb.u01_i = u;
+                masked_uvw_i_tb.v00_i = v;
+                masked_uvw_i_tb.v01_i = v;
+                masked_uvw_i_tb.w00_i = w;
+                masked_uvw_i_tb.w01_i = w;
+                // $display("u0 = %h, u1 = %h, v0 = %h, v1 = %h", u[0], u[1], v[0], v[1]);
+            end
+            begin
+                repeat(267) @(posedge clk_tb);
+                $display("actual u = %h, actual v = %h", actual_u, actual_v);
+                u10 = (actual_u+actual_v)%PRIME;
+                if (actual_u < actual_v)
+                    temp = actual_u + PRIME;
+                else
+                    temp = actual_u;
+                v10 = (((temp-actual_v)%PRIME)*actual_w)%PRIME;
+                $display("u10 = %h", u10);
+                $display("v10 = %h", v10);
+                $display("----------");
+                div2(u10, uv_o_tb.u20_o);
+                div2(v10, uv_o_tb.u21_o);
+                div2(u10, uv_o_tb.v20_o); //since same inputs
+                div2(v10, uv_o_tb.v21_o);
+
+                if (dut.uv_o != uv_o_tb)
+                    $error("Data mismatch. Expected = {%h, %h, %h, %h}, Observed = {%h, %h, %h, %h}", uv_o_tb.u20_o, uv_o_tb.u21_o, uv_o_tb.v20_o, uv_o_tb.v21_o, dut.uv_o.u20_o, dut.uv_o.u21_o, dut.uv_o.v20_o, dut.uv_o.v21_o);
+                else
+                    $display("Success: Matched results");
+            end
+        join
+    end
+endtask
+*/
 
 task masked_hybrid_bf_2x2_test();
     logic [45:0] rand0, rand1, rand2;
@@ -569,7 +608,8 @@ initial begin
     // masked_BFU_mult_test();
     // masked_gs_butterfly_test();
     // masked_pwm_test();
-    masked_hybrid_bf_2x2_test();
+    masked_bfu_1x2_test();
+    // masked_hybrid_bf_2x2_test();
 
     repeat(1000) @(posedge clk_tb);
     $finish;
