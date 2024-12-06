@@ -24,6 +24,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/coverage
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers
@@ -126,6 +127,8 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/coverage/mldsa_top_cov_if.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/coverage/mldsa_top_cov_bind.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_uvm.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_model_top_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/mldsa_env_pkg.sv
