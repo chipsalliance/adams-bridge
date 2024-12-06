@@ -74,3 +74,27 @@ global:
         - '-assert svaext'
         - +define+ABR_ASSERT_ON
         - '-noinherit_timescale=1ns/1ps'
+---
+provides: [mldsa_coverage]  
+schema_version: 2.4.0
+requires: 
+  - mldsa_top
+targets:
+  tb:
+    directories: 
+      - $COMPILE_ROOT/coverage
+    files:
+      - $COMPILE_ROOT/coverage/mldsa_top_cov_if.sv
+      - $COMPILE_ROOT/coverage/mldsa_top_cov_bind.sv
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        #- '-v2k_generate'
+        #- '-timescale=1ns/1ps'
+        - '-noinherit_timescale=1ns/1ps'
+        #- '-ucli -i dump.ucli'
+      #sim:
+        #- '-ucli -i dump.ucli'        
