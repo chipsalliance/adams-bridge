@@ -601,6 +601,7 @@ always_comb mldsa_privkey_lock = '0;
   logic api_sig_z_re, api_sig_z_re_f, api_sig_z_we;
   logic [SIG_ADDR_W-1:0] api_sig_addr;
   mldsa_signature_z_addr_t api_sig_z_addr;
+  mldsa_signature_z_addr_t api_sig_z_addr_f;
   logic [SIG_C_REG_ADDR_W-1:0] api_sig_c_addr;
   logic [SIG_H_REG_ADDR_W-1:0] api_sig_h_addr;
   logic [DATA_WIDTH-1:0] signature_reg_rdata;
@@ -609,8 +610,10 @@ always_comb mldsa_privkey_lock = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       api_sig_z_re_f <= '0;
+      api_sig_z_addr_f <= '0;
     end else begin
       api_sig_z_re_f <= api_sig_z_re;
+      api_sig_z_addr_f <= api_sig_z_addr;
     end
   end
 
@@ -649,7 +652,7 @@ always_comb mldsa_privkey_lock = '0;
                                 ({SIG_Z_MEM_ADDR_W{api_sig_z_re}} & api_sig_z_addr.addr);
 
   always_comb sigdecode_z_rd_data_o = sig_z_ram_rdata;
-  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr.offset] : signature_reg_rdata;
+  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr_f.offset] : signature_reg_rdata;
 
   //write requests
   always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we;
@@ -722,6 +725,7 @@ always_comb mldsa_privkey_lock = '0;
   logic api_pubkey_re, api_pubkey_re_f, api_pubkey_we;
   logic [PK_ADDR_W-1:0] api_pubkey_addr;
   mldsa_pubkey_mem_addr_t api_pubkey_mem_addr;
+  mldsa_pubkey_mem_addr_t api_pubkey_mem_addr_f;
   mldsa_pubkey_mem_addr_t sampler_pubkey_mem_addr;
   logic [PK_RHO_REG_ADDR_W-1:0] api_pk_rho_addr;
   logic [DATA_WIDTH-1:0] pk_reg_rdata;
@@ -731,11 +735,13 @@ always_comb mldsa_privkey_lock = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       api_pubkey_re_f <= '0;
+      api_pubkey_mem_addr_f <= '0;
       sampler_pk_rd_en_f <= '0;
       sampler_src_offset_f <= '0;
       pkdecode_rd_offset_f <= '0;
     end else begin
       api_pubkey_re_f <= api_pubkey_re;
+      api_pubkey_mem_addr_f <= api_pubkey_mem_addr;
       sampler_pk_rd_en_f <= msg_hold ? sampler_pk_rd_en_f : sampler_pk_rd_en;
       sampler_src_offset_f <= msg_hold ? sampler_src_offset_f : sampler_pubkey_mem_addr.offset[2:0];
       pkdecode_rd_offset_f <= pkdecode_rd_addr_i[1:0];
@@ -793,7 +799,7 @@ always_comb mldsa_privkey_lock = '0;
     endcase
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr.offset] : pk_reg_rdata;
+  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr_f.offset] : pk_reg_rdata;
 
   //write requests
   always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we;

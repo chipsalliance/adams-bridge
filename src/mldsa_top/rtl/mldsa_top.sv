@@ -78,7 +78,6 @@ module mldsa_top
 
 //Signal Declarations
   logic zeroize_reg;
-  logic [1:0] cmd_reg;
 
   mldsa_sampler_mode_e       sampler_mode;
   logic                      sha3_start;
@@ -836,7 +835,7 @@ abr_prim_lfsr
 );
 
 //w1 memory
-`ABR_MEM_TEST(512, 4)
+`ABR_MEM(512,4)
 mldsa_w1_mem_inst
 (
   .clk_i(clk),
