@@ -21,7 +21,7 @@
 // unchanged. The counter is also protected against under- and overflows.
 
 `include "abr_prim_assert.sv"
-
+`timescale 1ns / 1ps
 module abr_prim_count #(
   parameter int Width = 2,
   // Can be used to reset the counter to a different value than 0, for example when
