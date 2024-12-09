@@ -307,6 +307,8 @@ always_comb mldsa_privkey_lock = '0;
   
   //shared aux functions
   logic [1:0] normcheck_enable;
+  
+  logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
   logic mldsa_status_done_d, mldsa_status_done_p;
@@ -1170,9 +1172,12 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb sampler_src_offset = {4'b0, msg_cnt}; //fixme
 
+  //passing a bit on the immediate field to mux between temp address locations
+  always_comb ntt_temp_address[0] = prim_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
+
   //FIXME one interface here?
   always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         interim_base_addr:ntt_temp_address[0],
                                          dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
@@ -1467,10 +1472,12 @@ mldsa_seq_prim mldsa_seq_prim_inst
       ntt_shuffling_en_o[1] = sec_instr.opcode.shuffling_en;
     end
   end
+  //passing a bit on the immediate field to mux between temp address locations
+  always_comb ntt_temp_address[1] = sec_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
 
   //FIXME one interface here?
   always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         interim_base_addr:ntt_temp_address[1],
                                          dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src

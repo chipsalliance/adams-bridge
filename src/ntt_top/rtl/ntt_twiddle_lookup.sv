@@ -38,7 +38,7 @@ reg [(3*DATA_WIDTH)-1:0] ntt_twiddle_mem  [84:0];
 reg [(3*DATA_WIDTH)-1:0] intt_twiddle_mem [84:0];
 
 always_comb begin
-    rdata = (mode == ct) ? ntt_twiddle_mem[raddr] : (mode == gs) ? intt_twiddle_mem[raddr] : 'h0;
+    rdata = (mode == ct) ? ntt_twiddle_mem[raddr] : (mode inside {gs, pwm_intt}) ? intt_twiddle_mem[raddr] : 'h0;
 end
 
 logic [255 : 0][(DATA_WIDTH)-1:0] zeta;

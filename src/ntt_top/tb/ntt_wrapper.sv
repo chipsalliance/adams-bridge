@@ -183,9 +183,9 @@ module ntt_wrapper
         .accumulate(accumulate),
         .sampler_valid(sampler_valid),
         .shuffle_en(shuffle_en),
-        .masking_en(1'b0),
+        .masking_en(masking_en),
         .random(random),
-        .rnd_i(230'h0),
+        .rnd_i(rnd_i),
         //NTT mem IF
         .mem_wr_req(mem_wr_req),
         .mem_rd_req(mem_rd_req),
