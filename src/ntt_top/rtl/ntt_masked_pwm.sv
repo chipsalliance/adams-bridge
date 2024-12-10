@@ -78,7 +78,7 @@ module ntt_masked_pwm
     //Delay reading addr until after PWM is done to do accumulate
     abr_delay_masked_shares #(
         .WIDTH(WIDTH),
-        .N(MASKED_PWM_LATENCY)
+        .N(MASKED_PWM_LATENCY-1)
     ) w_delay (
         .clk(clk),
         .rst_n(reset_n),
