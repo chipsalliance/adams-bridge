@@ -64,7 +64,7 @@ logic masking_en_reg;
 //Other internal wires
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 // logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
-logic [MASKED_PWM_MASKED_INTT_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic pwo_mode, pwm_intt_mode;
 // logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
@@ -105,7 +105,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_w10_reg <= 'h0;
     end
     else begin
-        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_PWM_MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-1:1]};
+        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -254,10 +254,10 @@ always_ff @(posedge clk or negedge reset_n) begin
         w11_share[0] <= WIDTH'(w11) - rnd_i[2];
         w11_share[1] <= rnd_i[2];
 
-        twiddle_w00_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w0_i - rnd_i[0]); //WIDTH'(masked_w00_reg[0]) - rnd_i[0];
+        twiddle_w00_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w0_i) - rnd_i[0]; //WIDTH'(masked_w00_reg[0]) - rnd_i[0];
         twiddle_w00_share[1] <= rnd_i[0];
 
-        twiddle_w01_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w1_i - rnd_i[0]); //WIDTH'(masked_w01_reg[0]) - rnd_i[1];
+        twiddle_w01_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w1_i) - rnd_i[0]; //WIDTH'(masked_w01_reg[0]) - rnd_i[1];
         twiddle_w01_share[1] <= rnd_i[0];
     end
 end
