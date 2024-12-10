@@ -229,7 +229,6 @@ end
 
 always_comb mldsa_privkey_lock = kv_seed_data_present;
 always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
-always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLSDA_VERIFY}) & pcr_sign_mode;
 
 `else
 always_comb begin: mldsa_kv_ctrl_reg
@@ -288,6 +287,7 @@ always_comb mldsa_privkey_lock = '0;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
   logic msg_hold;
 
+  logic error_flag, error_flag_reg;
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
@@ -1006,6 +1006,7 @@ always_comb mldsa_privkey_lock = '0;
                                   sampler_busy_i |
                                   ntt_busy_i[0];
 `ifdef CALIPTRA
+  always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
   always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid;
 `else
   always_comb error_flag = skdecode_error_i;
