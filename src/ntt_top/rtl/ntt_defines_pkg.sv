@@ -40,8 +40,8 @@ parameter UNMASKED_PWA_LATENCY = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY = 1;         //latency of modular subtraction
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
 
-parameter MASKED_PWM_LATENCY = 210;         //For 1 masked pwm operation
-parameter MASKED_BF_STAGE1_LATENCY = 265;   //For 1 masked butterfly operation
+parameter MASKED_PWM_LATENCY = 211;         //For 1 masked pwm operation
+parameter MASKED_BF_STAGE1_LATENCY = 266;   //For 1 masked butterfly operation
 parameter MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;   //PWM+stage1 INTT latency
 parameter MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;      //masked INTT latency
 parameter MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1;           //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it

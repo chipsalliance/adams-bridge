@@ -68,7 +68,7 @@ module ntt_masked_gs_butterfly
 
     abr_delay_masked_shares #(
         .WIDTH(WIDTH),
-        .N(MASKED_PWM_LATENCY)
+        .N(MASKED_PWM_LATENCY-1) //Inputs to BF multiplier are internal to this block. There's no input flop in the path, so latency is 1 clk less than the mult latency defined in the pkg
     ) add_res_delay_inst (
         .clk(clk),
         .rst_n(reset_n),

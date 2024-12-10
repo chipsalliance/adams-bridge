@@ -1603,7 +1603,7 @@ mldsa_seq_sec mldsa_seq_sec_inst
             INTT_raw_signal <= 'h0;
         end 
         else begin
-            if (seq_en) begin
+            if (sec_seq_en) begin
                 unique case(sec_prog_cntr_nxt)
                     MLDSA_SIGN_VALID_S : begin //NTT(C)
                         NTT_raw_signal <= 'h1;
