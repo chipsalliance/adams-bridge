@@ -254,11 +254,11 @@ always_ff @(posedge clk or negedge reset_n) begin
         w11_share[0] <= WIDTH'(w11) - rnd_i[2];
         w11_share[1] <= rnd_i[2];
 
-        twiddle_w00_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w0_i) - rnd_i[0]; //WIDTH'(masked_w00_reg[0]) - rnd_i[0];
-        twiddle_w00_share[1] <= rnd_i[0];
+        twiddle_w00_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w0_i) - rnd_i[3];
+        twiddle_w00_share[1] <= rnd_i[3];
 
-        twiddle_w01_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w1_i) - rnd_i[0]; //WIDTH'(masked_w01_reg[0]) - rnd_i[1];
-        twiddle_w01_share[1] <= rnd_i[0];
+        twiddle_w01_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w1_i) - rnd_i[3];
+        twiddle_w01_share[1] <= rnd_i[3];
     end
 end
 
