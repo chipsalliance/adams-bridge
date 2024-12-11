@@ -16,7 +16,7 @@
 // ntt_masked_gs_butterfly.sv
 // --------
 // Only performs gs (INTT) mode of operation. All blocks are masked
-// Latency = 262 clks
+// Latency = 264 clks
 
 module ntt_masked_gs_butterfly
     import mldsa_params_pkg::*;
@@ -38,8 +38,6 @@ module ntt_masked_gs_butterfly
         output logic [1:0] v_o [WIDTH-1:0]
     );
 
-    localparam MASKED_MULT_LATENCY = 209;
-    localparam MASKED_ADD_SUB_LATENCY = 53;
     logic [MASKED_ADD_SUB_LATENCY-1:0][1:0][WIDTH-1:0] w_reg;
     logic [1:0] add_res [WIDTH-1:0];
     logic [1:0] sub_res [WIDTH-1:0];
@@ -70,7 +68,7 @@ module ntt_masked_gs_butterfly
 
     abr_delay_masked_shares #(
         .WIDTH(WIDTH),
-        .N(MASKED_MULT_LATENCY)
+        .N(MASKED_PWM_LATENCY-1) //Inputs to BF multiplier are internal to this block. There's no input flop in the path, so latency is 1 clk less than the mult latency defined in the pkg
     ) add_res_delay_inst (
         .clk(clk),
         .rst_n(reset_n),
@@ -125,7 +123,7 @@ module ntt_masked_gs_butterfly
         end
     end
 
-    //209 clks
+    //210 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (

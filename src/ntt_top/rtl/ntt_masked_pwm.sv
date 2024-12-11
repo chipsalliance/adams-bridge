@@ -19,14 +19,13 @@
 // This module performs masked pwm operation with or without accumulate
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
-// 209 clks if PWM, 262 clks if PWMA
+// 210 clks if PWM, 263 clks if PWMA
 
 module ntt_masked_pwm
     import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
-    parameter WIDTH = 46,
-    parameter MASKED_MULT_LATENCY = 209
+    parameter WIDTH = 46
 )
 (
     input wire clk,
@@ -51,15 +50,15 @@ module ntt_masked_pwm
             w_unpacked[i][0] = w[0][i];
             w_unpacked[i][1] = w[1][i];
 
-            w_reg_packed[0][i] = w_reg[i][0];
-            w_reg_packed[1][i] = w_reg[i][1];
+            w_reg_packed[0][i] = 'h0; //w_reg[i][0];
+            w_reg_packed[1][i] = 'h0; //w_reg[i][1]; //TODO: fix
 
             mul_res_packed[0][i] = mul_res[i][0];
             mul_res_packed[1][i] = mul_res[i][1];
         end
     end
 
-    //209 clks
+    //210 clks
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst0 (
@@ -76,17 +75,19 @@ module ntt_masked_pwm
         .res(mul_res)
     );
 
-    abr_delay_masked_shares #(
-        .WIDTH(WIDTH),
-        .N(MASKED_MULT_LATENCY)
-    ) w_delay (
-        .clk(clk),
-        .rst_n(reset_n),
-        .zeroize(zeroize),
-        .input_reg(w_unpacked),
-        .delayed_reg(w_reg)
-    );
+    // //Delay reading addr until after PWM is done to do accumulate
+    // abr_delay_masked_shares #(
+    //     .WIDTH(WIDTH),
+    //     .N(MASKED_PWM_LATENCY-1)
+    // ) w_delay (
+    //     .clk(clk),
+    //     .rst_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .input_reg(w_unpacked),
+    //     .delayed_reg(w_reg)
+    // );
 
+    //53 clks (accumulate case)
     ntt_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) add_inst0 (

@@ -27,12 +27,7 @@ module ntt_butterfly2x2
 #(
     parameter REG_SIZE = 23,
     parameter MLDSA_Q = 23'd8380417,
-    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2,
-    parameter BF_LATENCY = 10, //5 cycles per butterfly * 2 instances in serial = 10 clks
-    parameter PWM_LATENCY = 5, //latency of modular multiplier + modular addition to perform accumulation
-    parameter PWA_LATENCY = 1, //latency of modular addition
-    parameter PWS_LATENCY = 1,  //latency of modular subtraction
-    parameter BF_STAGE1_LATENCY = BF_LATENCY/2
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2
 )
 (
     //Clock and reset
@@ -66,9 +61,9 @@ module ntt_butterfly2x2
     logic [REG_SIZE-1:0] w01;
     logic [REG_SIZE-1:0] w10; 
     logic [REG_SIZE-1:0] w11;
-    logic [BF_STAGE1_LATENCY-1:0][REG_SIZE-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
+    logic [UNMASKED_BF_STAGE1_LATENCY-1:0][REG_SIZE-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
     logic pwo_mode;
-    logic [BF_LATENCY-1:0] ready_reg;
+    logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 
     //Each butterfly unit takes u, v, w inputs and produces
     //u, v outputs for the next stage to consume. Each butterfly
@@ -90,8 +85,8 @@ module ntt_butterfly2x2
             w11_reg <= 'h0;
         end
         else begin
-            w10_reg <= {uvw_i.w10_i, w10_reg[BF_STAGE1_LATENCY-1:1]};
-            w11_reg <= {uvw_i.w11_i, w11_reg[BF_STAGE1_LATENCY-1:1]};
+            w10_reg <= {uvw_i.w10_i, w10_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
+            w11_reg <= {uvw_i.w11_i, w11_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
         end
     end
 
@@ -221,9 +216,9 @@ module ntt_butterfly2x2
             ready_reg <= 'b0;
         else begin
             unique case(mode)
-                ct:  ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
-                gs:  ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
-                pwm: ready_reg <= accumulate ? {5'h0, enable, ready_reg[PWM_LATENCY-1:1]} : {6'h0, enable, ready_reg[PWM_LATENCY-2:1]};
+                ct:  ready_reg <= {enable, ready_reg[UNMASKED_BF_LATENCY-1:1]};
+                gs:  ready_reg <= {enable, ready_reg[UNMASKED_BF_LATENCY-1:1]};
+                pwm: ready_reg <= accumulate ? {5'h0, enable, ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, ready_reg[UNMASKED_PWM_LATENCY-2:1]};
                 pwa: ready_reg <= {9'h0, enable};
                 pws: ready_reg <= {9'h0, enable};
                 default: ready_reg <= 'h0;
