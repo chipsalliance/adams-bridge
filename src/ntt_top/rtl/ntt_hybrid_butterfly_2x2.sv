@@ -450,12 +450,12 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_ready_reg <= 'b0;
     else begin
         unique case(mode) //471:0 delay flop for enable - TODO: optimize
-            ct:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-            gs:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-            pwm: masked_ready_reg <= accumulate ? {467'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
+            ct:  masked_ready_reg <= {{(MASKED_PWM_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+            gs:  masked_ready_reg <= {{(MASKED_PWM_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+            pwm: masked_ready_reg <= accumulate ? {{(MASKED_PWM_INTT_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
             pwm_intt: masked_ready_reg <= accumulate ? {enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-1:1]} : {1'b0, enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-2:1]}; //TODO revisit
-            pwa: masked_ready_reg <= {471'h0, enable};
-            pws: masked_ready_reg <= {471'h0, enable};
+            pwa: masked_ready_reg <= {{MASKED_PWM_INTT_LATENCY-1{1'b0}}, enable};
+            pws: masked_ready_reg <= {{MASKED_PWM_INTT_LATENCY-1{1'b0}}, enable};
             default: masked_ready_reg <= 'h0;
         endcase
     end
