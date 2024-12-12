@@ -11,9 +11,19 @@
 #define MLEN 65536
 #define M_PRIME 1
 
+#ifndef PREHASH
+    #define PREHASH 0
+#endif
+
 #define PHM_SIZE 64 // 512 bits = 64 bytes
-#define OID_SIZE 11 // Size of OID (in bytes)
-#define M_SIZE (2 + OID_SIZE + PHM_SIZE) // Size of final message M'
+
+#if PREHASH == 1
+    #define OID_SIZE 11 // Size of OID (in bytes)
+    #define M_SIZE (2 + OID_SIZE + PHM_SIZE) // Size of final message M'
+#else
+    #define M_SIZE (2 + PHM_SIZE) // Size of final message M'
+#endif
+
 // Function prototypes
 uint8_t hexCharToInt(char c);
 uint8_t hexStringToByte(const char* str);
@@ -29,16 +39,28 @@ void create_message_prime(uint8_t *PHM, uint8_t *M_prime);
 const uint8_t rnd[32] = {0};
 
 void create_message_prime(uint8_t *PHM, uint8_t *M_prime) {
-    // Step 1: Initialize M_prime with required sizes
-    M_prime[0] = 0x01;
-    M_prime[1] = 0x00;
-    
-    // Step 2: Add OID (0x0609608648016503040203)
-    uint8_t OID[OID_SIZE] = {0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03};
-    memcpy(M_prime + 2, OID, OID_SIZE);
-    
-    // Step 3: Add 512-bit (64-byte) PHM
-    memcpy(M_prime + 2 + OID_SIZE, PHM, PHM_SIZE);
+    #if PREHASH == 1
+        // pre-hash MLDSA
+        // Step 1: Initialize M_prime with required sizes
+        M_prime[0] = 0x01;
+        M_prime[1] = 0x00;
+        
+        // Step 2: Add OID (0x0609608648016503040203)
+        uint8_t OID[OID_SIZE] = {0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03};
+        memcpy(M_prime + 2, OID, OID_SIZE);
+        
+        // Step 3: Add 512-bit (64-byte) PHM
+        memcpy(M_prime + 2 + OID_SIZE, PHM, PHM_SIZE);
+
+    #else
+        // pure MLDSA
+        // Step 1: Initialize M_prime with required sizes
+        M_prime[0] = 0x00;
+        M_prime[1] = 0x00;
+            
+        // Step 2: Add 512-bit (64-byte) PHM
+        memcpy(M_prime + 2, PHM, PHM_SIZE);
+    #endif
 }
 
 
