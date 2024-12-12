@@ -990,13 +990,12 @@ always_comb mldsa_privkey_lock = '0;
                                   sampler_busy_i |
                                   ntt_busy_i[0];
   always_comb error_flag = skdecode_error_i;
-  always_comb seq_en = 1;
 
-  always_ff @(posedge clk or negedge reset_n) 
+  always_ff @(posedge clk or negedge rst_b) 
   begin : error_detection
-      if(!reset_n)
+      if(!rst_b)
           error_flag_reg <= 1'b0;
-      else if(zeroize_reg)
+      else if(zeroize)
           error_flag_reg <= 1'b0;
       else if (error_flag)
           error_flag_reg <= 1'b1;
