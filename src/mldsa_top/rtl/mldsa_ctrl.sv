@@ -834,11 +834,10 @@ always_comb mldsa_privkey_lock = '0;
       end
     end
   end
-
-  //concatenate OID and MSG to make msg prime
-  logic [MSG_NUM_DWORDS-1+4 : 0][DATA_WIDTH-1:0] msg_p_reg;
-
-  always_comb msg_p_reg = {24'h0, msg_reg, PREHASH_OID, 8'h00, 8'h01};
+  
+  //pure-MLDSA assuming 512-bit input msg and empty ctx
+  logic [MSG_NUM_DWORDS-1+1 : 0][DATA_WIDTH-1:0] msg_p_reg;
+  always_comb msg_p_reg = {16'h0, msg_reg, 8'h00, 8'h00};
 
   always_comb rho_reg = verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
 
