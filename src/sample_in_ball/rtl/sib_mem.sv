@@ -21,6 +21,7 @@ module sib_mem #(
     )
     (
     input  logic                                 clk_i,
+    input  logic                                 rst_b,
     input  logic                                 zeroize,
 
     input  logic [NUM_PORTS-1:0]                 cs_i,
@@ -33,8 +34,11 @@ module sib_mem #(
     //storage element
     logic [DEPTH-1:0][DATA_WIDTH-1:0] mem;
 
-    always @(posedge clk_i) begin
-        if (zeroize) begin
+    always @(posedge clk_i or negedge rst_b) begin
+        if (!rst_b) begin
+            mem <= '0;
+        end
+        else if (zeroize) begin
             mem <= '0;
         end else begin
             for (int port = 0; port < NUM_PORTS; port++) begin
@@ -46,11 +50,18 @@ module sib_mem #(
     end
 
     always @(posedge clk_i) begin
-        for (int port = 0; port < NUM_PORTS; port++) begin
-            if (cs_i[port] & ~we_i[port]) begin
-                rdata_o[port] <= mem[addr_i[port]];
-            end
-        end 
+        if (!rst_b) begin
+            rdata_o <= '0;
+        end
+        else if (zeroize) begin
+            rdata_o <= '0;
+        end else begin
+            for (int port = 0; port < NUM_PORTS; port++) begin
+                if (cs_i[port] & ~we_i[port]) begin
+                    rdata_o[port] <= mem[addr_i[port]];
+                end
+            end 
+        end
     end
 
 endmodule
