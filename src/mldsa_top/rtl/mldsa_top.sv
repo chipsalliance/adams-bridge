@@ -1050,6 +1050,19 @@ always_ff @(posedge clk or negedge rst_b) begin : read_mux_flops
     normcheck_mem_re0_bank_f <= 0;
     sib_mem_re_f <= 0;
   end
+  else if (zeroize) begin
+    ntt_mem_re_f <= 0;
+    pwo_a_mem_re_f <= 0;
+    pwo_b_mem_re_f <= 0;
+    decomp_mem_re_f <= 0;
+    normcheck_mem_re_f <= 0;
+    ntt_mem_re0_bank_f <= 0;
+    pwo_a_mem_re0_bank_f <= 0;
+    pwo_b_mem_re0_bank_f <= 0;
+    decomp_mem_re0_bank_f <= 0;
+    normcheck_mem_re0_bank_f <= 0;
+    sib_mem_re_f <= 0;
+  end
   else begin
     ntt_mem_re_f <= ntt_mem_re;
     pwo_a_mem_re_f<= pwo_a_mem_re;

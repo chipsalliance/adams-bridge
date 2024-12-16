@@ -219,9 +219,11 @@ module mldsa_ctrl
 );
 
 always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
-  if (!rst_b) begin
+  if (!rst_b)
     kv_seed_data_present <= '0;
-  end else begin
+  else (zeroize)
+    kv_seed_data_present <= '0;
+  else begin
     kv_seed_data_present <= kv_seed_data_present_set ? '1 :
                             kv_seed_data_present_reset ? '0 : kv_seed_data_present;
   end
@@ -335,6 +337,7 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb mldsa_ready = (prim_prog_cntr == MLDSA_RESET);
 
+  //without zeroize to make it more complex
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
       counter_reg <= '0;
@@ -604,6 +607,11 @@ always_comb mldsa_privkey_lock = '0;
       signature_rd_ack <= 0;
       pubkey_rd_ack <= 0;
     end
+    else if (zeroize) begin
+      privkey_out_rd_ack <= 0;
+      signature_rd_ack <= 0;
+      pubkey_rd_ack <= 0;
+    end
     else begin
       privkey_out_rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
       signature_rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
@@ -631,9 +639,11 @@ always_comb mldsa_privkey_lock = '0;
 
 
   always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
+    if (!rst_b)
       api_sig_z_re_f <= '0;
-    end else begin
+    else if (zeroize)
+      api_sig_z_re_f <= '0;
+    else begin
       api_sig_z_re_f <= api_sig_z_re;
     end
   end
@@ -758,6 +768,11 @@ always_comb mldsa_privkey_lock = '0;
       sampler_pk_rd_en_f <= '0;
       sampler_src_offset_f <= '0;
       pkdecode_rd_offset_f <= '0;
+    end else if (zerozie) begin
+      api_pubkey_re_f <= '0;
+      sampler_pk_rd_en_f <= '0;
+      sampler_src_offset_f <= '0;
+      pkdecode_rd_offset_f <= '0;
     end else begin
       api_pubkey_re_f <= api_pubkey_re;
       sampler_pk_rd_en_f <= msg_hold ? sampler_pk_rd_en_f : sampler_pk_rd_en;
@@ -868,6 +883,8 @@ always_comb mldsa_privkey_lock = '0;
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
+      msg_data <= '0;
+    end else if (zeroize) begin
       msg_data <= '0;
     end else begin
       if (msg_hold) begin
