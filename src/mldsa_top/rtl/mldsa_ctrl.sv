@@ -227,8 +227,16 @@ always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
   end
 end
 
-always_comb mldsa_privkey_lock = kv_seed_data_present;
 always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
+
+always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
+  if (!rst_b)
+    mldsa_privkey_lock <= '0;
+  else (zeroize)
+    mldsa_privkey_lock <= '0;
+  else if (kv_seed_data_present_set)
+    mldsa_privkey_lock <= '1;
+end
 
 `else
 always_comb begin: mldsa_kv_ctrl_reg
