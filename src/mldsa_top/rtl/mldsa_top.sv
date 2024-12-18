@@ -224,6 +224,11 @@ module mldsa_top
   mldsa_reg__in_t mldsa_reg_hwif_in;
   mldsa_reg__out_t mldsa_reg_hwif_out;
 
+  mem_if_t zeroize_mem;
+  logic [MLDSA_MEM_DATA_WIDTH-1:0] zeroize_mem_wr_data;
+  
+  always_comb zeroize_mem_wr_data = '0;
+
   `ifdef MLDSA_MASKING
     assign ntt_rand_bits = rand_bits[RND_W-1:6];
   `else
@@ -393,6 +398,8 @@ mldsa_ctrl mldsa_ctrl_inst
 
   .lfsr_enable_o(lfsr_enable),
   .lfsr_seed_o(lfsr_seed),
+
+  .zeroize_mem_o(zeroize_mem),
 
   .error_intr(error_intr),
   .notif_intr(notif_intr),
@@ -888,6 +895,8 @@ logic [1:0] pkdecode_mem_we0_bank;
 logic [1:0] sigdecode_z_mem_we0_bank;
 logic [3:1] sigdecode_h_mem_we;
 logic [1:0] sigdecode_h_mem_we0_bank;
+logic [1:0] zeroize_mem_we0_bank;
+logic [3:1] zeroize_mem_we;
 
 logic [1:0][3:1] ntt_mem_re,ntt_mem_re_f;
 logic [1:0][3:1] pwo_a_mem_re,pwo_a_mem_re_f;
@@ -917,10 +926,11 @@ always_comb begin
         skdecode_mem_we0_bank[bank] = (skdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         pkdecode_mem_we0_bank[bank] = (pkdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         sigdecode_z_mem_we0_bank[bank] = (sigdecode_z_mem_wr_req[bank].rd_wr_en == RW_WRITE);
+        zeroize_mem_we0_bank[bank] = (zeroize_mem.rd_wr_en == RW_WRITE);
 
         mldsa_mem_we0_bank[bank] = sampler_mem_we0_bank[bank] | ntt_mem_we0_bank[0][bank] | ntt_mem_we0_bank[1][bank] | 
                                  decomp_mem_we0_bank[bank] | skdecode_mem_we0_bank[bank] | pkdecode_mem_we0_bank[bank] |
-                                 sigdecode_h_mem_we0_bank[bank] | sigdecode_z_mem_we0_bank[bank] ;
+                                 sigdecode_h_mem_we0_bank[bank] | sigdecode_z_mem_we0_bank[bank] | zeroize_mem_we0_bank[bank];
 
         mldsa_mem_waddr0_bank[bank] = ({MLDSA_MEM_ADDR_WIDTH-3{sampler_mem_we0_bank[bank] }} & sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
@@ -929,7 +939,8 @@ always_comb begin
                                     ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_h_mem_we0_bank[bank]  }} & sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{skdecode_mem_we0_bank[bank]}} & skdecode_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                                     ({MLDSA_MEM_ADDR_WIDTH-3{pkdecode_mem_we0_bank[bank]}} & pkdecode_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
-                                    ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_z_mem_we0_bank[bank]}} & sigdecode_z_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]);
+                                    ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_z_mem_we0_bank[bank]}} & sigdecode_z_mem_wr_req[bank].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+                                    ({MLDSA_MEM_ADDR_WIDTH-3{zeroize_mem_we0_bank[bank]}} & ({zeroize_mem.addr[MLDSA_MEM_ADDR_WIDTH-3:0], 1'b0}));
 
         mldsa_mem_wdata0_bank[bank] = ({MLDSA_MEM_DATA_WIDTH{sampler_mem_we0_bank[bank] }} & sampler_mem_data) |
                                     ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we0_bank[0][bank]  }} & ntt_mem_wr_data[0]) |
@@ -938,7 +949,8 @@ always_comb begin
                                     ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we0_bank[bank]}} & sigdecode_h_mem_wr_data) |
                                     ({MLDSA_MEM_DATA_WIDTH{skdecode_mem_we0_bank[bank]}} & skdecode_mem_wr_data[bank]) |
                                     ({MLDSA_MEM_DATA_WIDTH{pkdecode_mem_we0_bank[bank]}} & pkdecode_mem_wr_data[bank]) |
-                                    ({MLDSA_MEM_DATA_WIDTH{sigdecode_z_mem_we0_bank[bank]}} & sigdecode_z_mem_wr_data[bank]);
+                                    ({MLDSA_MEM_DATA_WIDTH{sigdecode_z_mem_we0_bank[bank]}} & sigdecode_z_mem_wr_data[bank]) |
+                                    ({MLDSA_MEM_DATA_WIDTH{zeroize_mem_we0_bank[bank]}} & zeroize_mem_wr_data);
       end
     end else begin
       sampler_mem_we[i] = sampler_mem_dv & (sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
@@ -946,19 +958,22 @@ always_comb begin
       ntt_mem_we[1][i] = (ntt_mem_wr_req[1].rd_wr_en == RW_WRITE) & (ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       decomp_mem_we[i] = (decomp_mem_wr_req.rd_wr_en == RW_WRITE) & (decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
       sigdecode_h_mem_we[i] = (sigdecode_h_mem_wr_req.rd_wr_en == RW_WRITE) & (sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-1:MLDSA_MEM_ADDR_WIDTH-3] == i[2:0]);
+      zeroize_mem_we[i] = (zeroize_mem.rd_wr_en == RW_WRITE);
   
-      mldsa_mem_we[i] = sampler_mem_we[i] | ntt_mem_we[0][i] | ntt_mem_we[1][i] | decomp_mem_we[i] | sigdecode_h_mem_we[i];
+      mldsa_mem_we[i] = sampler_mem_we[i] | ntt_mem_we[0][i] | ntt_mem_we[1][i] | decomp_mem_we[i] | sigdecode_h_mem_we[i] | zeroize_mem_we[i];
       mldsa_mem_waddr[i] = ({MLDSA_MEM_ADDR_WIDTH-3{sampler_mem_we[i]}} & sampler_mem_addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we[0][i]}}  & ntt_mem_wr_req[0].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{ntt_mem_we[1][i]}}  & ntt_mem_wr_req[1].addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
                          ({MLDSA_MEM_ADDR_WIDTH-3{decomp_mem_we[i]}}  & decomp_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
-                         ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]);
+                         ({MLDSA_MEM_ADDR_WIDTH-3{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_req.addr[MLDSA_MEM_ADDR_WIDTH-4:0]) |
+                         ({MLDSA_MEM_ADDR_WIDTH-3{zeroize_mem_we[i]}} & zeroize_mem.addr[MLDSA_MEM_ADDR_WIDTH-4:0]);
 
       mldsa_mem_wdata[i] = ({MLDSA_MEM_DATA_WIDTH{sampler_mem_we[i]}}     & sampler_mem_data) |
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[0][i]}}      & ntt_mem_wr_data[0]) |
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[1][i]}}      & ntt_mem_wr_data[1]) |
                          ({MLDSA_MEM_DATA_WIDTH{decomp_mem_we[i]}}      & decomp_mem_wr_data) |
-                         ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_data);
+                         ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_data) |
+                         ({MLDSA_MEM_DATA_WIDTH{zeroize_mem_we[i]}} & zeroize_mem_wr_data);
     end
   end
 end
@@ -1048,7 +1063,7 @@ always_ff @(posedge clk or negedge rst_b) begin : read_mux_flops
     normcheck_mem_re0_bank_f <= 0;
     sib_mem_re_f <= 0;
   end
-  else if (zeroize) begin
+  else if (zeroize_reg) begin
     ntt_mem_re_f <= 0;
     pwo_a_mem_re_f <= 0;
     pwo_b_mem_re_f <= 0;

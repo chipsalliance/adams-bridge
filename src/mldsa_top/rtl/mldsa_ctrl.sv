@@ -136,6 +136,8 @@ module mldsa_ctrl
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
+  output mem_if_t zeroize_mem_o,
+
   `ifdef CALIPTRA
   // KV interface
   output kv_read_t kv_read,
@@ -217,7 +219,7 @@ module mldsa_ctrl
 always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
   if (!rst_b)
     kv_seed_data_present <= '0;
-  else (zeroize)
+  else if (zeroize)
     kv_seed_data_present <= '0;
   else begin
     kv_seed_data_present <= kv_seed_data_present_set ? '1 :
@@ -228,7 +230,7 @@ end
 always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
   if (!rst_b)
     mldsa_privkey_lock <= '0;
-  else (zeroize)
+  else if (zeroize)
     mldsa_privkey_lock <= '0;
   else if (kv_seed_data_present_set)
     mldsa_privkey_lock <= '1;
@@ -325,6 +327,10 @@ always_comb mldsa_privkey_lock = '0;
   logic set_entropy;
   logic [7:0][63:0] lfsr_entropy_reg;
   logic [MsgWidth-1:0] counter_reg;
+
+  logic [MLDSA_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
+  logic [MLDSA_MEM_DATA_WIDTH-1:0] zeroize_mem_wr_data;
+  logic zeroize_mem_done;
   
   assign mldsa_reg_hwif_in_o = mldsa_reg_hwif_in;
   assign mldsa_reg_hwif_out = mldsa_reg_hwif_out_i;
@@ -464,15 +470,17 @@ always_comb mldsa_privkey_lock = '0;
       pwr2rnd_keymem_we_bank[i] = (pwr2rnd_keymem_if_i[i].rd_wr_en == RW_WRITE);
       api_keymem_we_bank[i] = mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_keymem_wr_dec & (api_sk_mem_waddr[0] == i);
 
-      sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | api_keymem_we_bank[i];
+      sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | api_keymem_we_bank[i] | zeroize_mem_we;
 
       sk_ram_waddr_bank[i] = ({SK_MEM_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_ADDR_W:1]) |
                              ({SK_MEM_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_ADDR_W:1] ) |
-                             ({SK_MEM_ADDR_W{api_keymem_we_bank[i]}} & api_sk_mem_waddr[SK_MEM_ADDR_W:1]);
+                             ({SK_MEM_ADDR_W{api_keymem_we_bank[i]}} & api_sk_mem_waddr[SK_MEM_ADDR_W:1]) |
+                             ({SK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_ADDR_W-1:0]);
                  
       sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
                         ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
-                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data);         
+                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data) |
+                        ({DATA_WIDTH{zeroize_mem_we}} & zeroize_mem_wr_data);     
     end
   end     
   
@@ -668,16 +676,19 @@ always_comb mldsa_privkey_lock = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr.offset] : signature_reg_rdata;
 
   //write requests
-  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we;
+  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we;
   always_comb sig_z_ram_waddr = ({SIG_Z_MEM_ADDR_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
-                                ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr.addr);
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr.addr) |
+                                ({SIG_Z_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]);
 
   always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
-                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*4));
+                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*4)) |
+                                  ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we}});
 
 
   always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
-                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32));
+                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32)) |
+                                ({SIG_Z_MEM_DATA_W{zeroize_mem_we}} & SIG_Z_MEM_DATA_W'(zeroize_mem_wr_data)) ;
 
   //signature reg read flop
   always_ff @(posedge clk or negedge rst_b) begin
@@ -750,7 +761,7 @@ always_comb mldsa_privkey_lock = '0;
       sampler_pk_rd_en_f <= '0;
       sampler_src_offset_f <= '0;
       pkdecode_rd_offset_f <= '0;
-    end else if (zerozie) begin
+    end else if (zeroize) begin
       api_pubkey_re_f <= '0;
       sampler_pk_rd_en_f <= '0;
       sampler_src_offset_f <= '0;
@@ -817,16 +828,19 @@ always_comb mldsa_privkey_lock = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr.offset] : pk_reg_rdata;
 
   //write requests
-  always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we;
+  always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we | zeroize_mem_we;
   always_comb pubkey_ram_waddr = ({PK_MEM_ADDR_W{pk_t1_wren_i}} & pk_t1_wr_addr_i[PK_MEM_ADDR_W+1:2]) |
-                                ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr.addr);
+                                ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr.addr) |
+                                ({PK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[PK_MEM_ADDR_W-1:0]);
 
   always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & 'h3FF << pk_t1_wr_addr_i[1:0]*10) |
-                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & ('hF << api_pubkey_mem_addr.offset*4));
+                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & ('hF << api_pubkey_mem_addr.offset*4)) |
+                                   ({PK_MEM_WSTROBE_W{zeroize_mem_we}});
 
 
   always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
-                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_pubkey_mem_addr.offset*32));
+                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_pubkey_mem_addr.offset*32)) |
+                                 ({PK_MEM_DATA_W{zeroize_mem_we}} & PK_MEM_DATA_W'(zeroize_mem_wr_data));
 
 
   //pk reg read flop
@@ -1032,7 +1046,7 @@ always_comb mldsa_privkey_lock = '0;
       prim_prog_cntr <= MLDSA_RESET;
     end
     else if(zeroize) begin
-      prim_prog_cntr <= MLDSA_RESET;
+      prim_prog_cntr <= MLDSA_ZEROIZE;
     end
     else begin
       if (error_flag_edge) begin
@@ -1058,7 +1072,7 @@ always_comb mldsa_privkey_lock = '0;
     set_verify_valid = 0;
     set_entropy = 0;
     prim_prog_cntr_nxt = MLDSA_RESET;
-    prim_seq_en = 1;
+    prim_seq_en = !zeroize;
 
     unique case (prim_prog_cntr) inside
       MLDSA_RESET : begin 
@@ -1089,7 +1103,14 @@ always_comb mldsa_privkey_lock = '0;
             prim_seq_en = 0;
           end
         endcase
-      end        
+      end
+      MLDSA_ZEROIZE : begin
+        if (zeroize_mem_done)
+          prim_prog_cntr_nxt = MLDSA_RESET;
+        else
+          prim_prog_cntr_nxt = MLDSA_ZEROIZE;
+        prim_seq_en = 0;  
+      end     
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
         if (keygen_signing_process) begin
@@ -1353,8 +1374,6 @@ end
 mldsa_seq_prim mldsa_seq_prim_inst
 (
   .clk(clk),
-  .rst_b(rst_b),
-  .zeroize(zeroize),
 
   .en_i(prim_seq_en),
   .addr_i(prim_prog_cntr_nxt),
@@ -1370,7 +1389,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
       sec_prog_cntr <= MLDSA_RESET;
     end
     else if(zeroize) begin
-      sec_prog_cntr <= MLDSA_RESET;
+      sec_prog_cntr <= MLDSA_ZEROIZE;
     end
     else begin
       if (error_flag_edge) begin
@@ -1390,7 +1409,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
     clear_w0_valid = 0;
     set_signature_valid = 0;
     signature_done = 0;
-    sec_seq_en = 1;
+    sec_seq_en = !zeroize;
 
     unique case (sec_prog_cntr) inside
       MLDSA_RESET : begin 
@@ -1417,8 +1436,14 @@ mldsa_seq_prim mldsa_seq_prim_inst
         endcase
         if (keygen_signing_process & (prim_prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
           sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
-          sec_seq_en = 1;
         end
+      end
+      MLDSA_ZEROIZE : begin
+        if (zeroize_mem_done)
+          sec_prog_cntr_nxt = MLDSA_RESET;
+        else
+          sec_prog_cntr_nxt = MLDSA_ZEROIZE;
+        sec_seq_en = 0;
       end
       //START of C access - check if C is valid
       MLDSA_SIGN_CHECK_C_VLD : begin
@@ -1577,15 +1602,39 @@ end
 mldsa_seq_sec mldsa_seq_sec_inst
 (
   .clk(clk),
-  .rst_b(rst_b),
-  .zeroize(zeroize),
   
   .en_i(sec_seq_en),
   .addr_i(sec_prog_cntr_nxt),
   .data_o(sec_instr)
 );
 
+always_ff @(posedge clk or negedge rst_b) begin
+  if (!rst_b) begin
+    zeroize_mem_addr <= 0;
+    zeroize_mem_done <= 0;
+  end
+  else if (zeroize) begin
+    zeroize_mem_addr <= 0;
+    zeroize_mem_done <= 0;
+  end
+  else if (prim_prog_cntr == MLDSA_ZEROIZE) begin
+    if (zeroize_mem_addr == MLDSA_MEM_MAX_DEPTH) begin
+      zeroize_mem_addr <= 0;
+      zeroize_mem_done <= 1;
+    end else begin
+      zeroize_mem_addr <= zeroize_mem_addr + 1;
+    end
+  end else begin
+    zeroize_mem_addr <= 0;
+    zeroize_mem_done <= 0;
+  end
+end
 
+always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE);
+always_comb zeroize_mem_wr_data = '0;
+
+always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we;
+always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   
 `ifdef RV_FPGA_SCA
     //===========================================================================

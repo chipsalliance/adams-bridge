@@ -39,7 +39,7 @@ package mldsa_params_pkg;
   parameter COEFF_PER_CLK = 4;
 
 //Memory interface - FIXME calculate the width based on depth not the other way
-  parameter MLDSA_MEM_MAX_DEPTH = 1664; //FIXME
+  parameter MLDSA_MEM_MAX_DEPTH = 1408; //FIXME
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH;
   parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
 
