@@ -262,6 +262,7 @@ always_comb mldsa_privkey_lock = '0;
   logic keygen_done;
   logic signature_done;
   logic verify_done;
+  logic signature_validity_chk_done;
 
   //assign appropriate data to msg interface
   logic [MLDSA_OPR_WIDTH-1:0]  sampler_src;
@@ -328,6 +329,7 @@ always_comb mldsa_privkey_lock = '0;
   logic [7:0][63:0] lfsr_entropy_reg;
   logic [MsgWidth-1:0] counter_reg;
 
+  logic zeroize_mem_we;
   logic [MLDSA_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
   logic [MLDSA_MEM_DATA_WIDTH-1:0] zeroize_mem_wr_data;
   logic zeroize_mem_done;
@@ -480,7 +482,7 @@ always_comb mldsa_privkey_lock = '0;
       sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
                         ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
                         ({DATA_WIDTH{api_keymem_we_bank[i]}} & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data) |
-                        ({DATA_WIDTH{zeroize_mem_we}} & zeroize_mem_wr_data);     
+                        ({DATA_WIDTH{zeroize_mem_we}} & zeroize_mem_wr_data[DATA_WIDTH-1:0]);     
     end
   end     
   
@@ -1064,6 +1066,7 @@ always_comb mldsa_privkey_lock = '0;
     verifying_process_nxt = 0;
     keygen_signing_process_nxt = 0;
     keygen_done = 0;
+    signature_done = 0;
     verify_done = 0;
     set_y_valid = 0;
     set_w0_valid = 0;
@@ -1127,7 +1130,9 @@ always_comb mldsa_privkey_lock = '0;
       end
       //START of Y access - check if Y is still valid
       MLDSA_SIGN_CHECK_Y_CLR : begin
-        if (y_valid | w0_valid) begin //Stalled until Y and w0 can be overwritten
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else if (y_valid | w0_valid) begin //Stalled until Y and w0 can be overwritten
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
@@ -1141,7 +1146,9 @@ always_comb mldsa_privkey_lock = '0;
       end
       //START of W0 access - check if W0 is still valid
       MLDSA_SIGN_CHECK_W0_CLR : begin
-        if (w0_valid) begin //Stalled until W0 can be overwritten
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else if (w0_valid) begin //Stalled until W0 can be overwritten
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
@@ -1167,17 +1174,26 @@ always_comb mldsa_privkey_lock = '0;
         set_c_valid = 1;
         prim_prog_cntr_nxt = prim_prog_cntr + 1;
       end
-      MLDSA_SIGN_E : begin // end of challenge generation
-        //increment kappa value
-        update_kappa = 1;
-        //restart challenge generation
-        prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_Y_CLR;
+      MLDSA_SIGN_CHL_E : begin // end of challenge generation
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else begin
+          //increment kappa value
+          update_kappa = 1;
+          //restart challenge generation
+          prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_Y_CLR;
+        end
+      end
+      MLDSA_SIGN_E : begin // end of signature
+        signature_done = 1;
       end
       MLDSA_VERIFY_E : begin // end of verify flow
         verify_done = 1;
       end
       default : begin
-        if (subcomponent_busy) begin //Stalled until sub-component is done
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else if (subcomponent_busy) begin //Stalled until sub-component is done 
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
@@ -1408,7 +1424,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
     clear_y_valid = 0;
     clear_w0_valid = 0;
     set_signature_valid = 0;
-    signature_done = 0;
+    signature_validity_chk_done = 0;
     sec_seq_en = !zeroize;
 
     unique case (sec_prog_cntr) inside
@@ -1499,7 +1515,11 @@ mldsa_seq_prim mldsa_seq_prim_inst
         end
       end
       MLDSA_SIGN_GEN_E : begin // Successful signature generation
-        signature_done = 1;
+        signature_validity_chk_done = 1;
+        if (signature_done)
+          sec_prog_cntr_nxt = MLDSA_RESET;
+        else
+          sec_prog_cntr_nxt = sec_prog_cntr;
       end
       default : begin
         if (sign_subcomponent_busy) begin //Stalled until sub-component is done
@@ -1633,7 +1653,7 @@ end
 always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE);
 always_comb zeroize_mem_wr_data = '0;
 
-always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we;
+always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   
 `ifdef RV_FPGA_SCA

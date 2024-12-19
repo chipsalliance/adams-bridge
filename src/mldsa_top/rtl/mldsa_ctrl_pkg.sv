@@ -422,7 +422,8 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_CLR  = MLDSA_SIGN_SET_W0+ 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_CHECK_C_CLR+ 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_C        = MLDSA_SIGN_MAKE_C+ 2;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_SET_C + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_SET_C + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_CHL_E + 1;
     //Verify
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_H_TR       = MLDSA_VERIFY_S + 9;
