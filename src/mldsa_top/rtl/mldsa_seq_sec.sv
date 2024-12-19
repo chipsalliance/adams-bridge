@@ -46,7 +46,13 @@ module mldsa_seq_sec
   //----------------------------------------------------------------
  
   always_ff @(posedge clk) begin
-        if (en_i) begin
+        if (!rst_b) begin
+            data_o_rom <= '0;
+        end
+        else if (zeroize) begin
+            data_o_rom <= '0;
+        end
+        else if (en_i) begin
             unique case(addr_i)
                 //RESET
                 MLDSA_RESET      : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
