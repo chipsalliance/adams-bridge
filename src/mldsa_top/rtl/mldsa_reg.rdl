@@ -80,6 +80,7 @@ addrmap mldsa_reg {
         default resetsignal = reset_b;
         field {desc = "Control command field"; swwe = mldsa_ready; hwclr;} CTRL[3] = 3'b0;
         field {desc = "Zeroize all internal registers"; singlepulse;} ZEROIZE = 1'b0;
+        field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = mldsa_ready; hwclr;} PCR_SIGN = 1'b0;
     
     } MLDSA_CTRL;
 

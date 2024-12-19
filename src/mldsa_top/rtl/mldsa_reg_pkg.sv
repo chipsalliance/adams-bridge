@@ -27,7 +27,12 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__CTRL__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__in_t CTRL;
+        mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t PCR_SIGN;
     } mldsa_reg__MLDSA_CTRL__in_t;
 
     typedef struct packed{
@@ -193,8 +198,13 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__ZEROIZE__out_t;
 
     typedef struct packed{
+        logic value;
+    } mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__out_t CTRL;
         mldsa_reg__MLDSA_CTRL__ZEROIZE__out_t ZEROIZE;
+        mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t PCR_SIGN;
     } mldsa_reg__MLDSA_CTRL__out_t;
 
     typedef struct packed{
