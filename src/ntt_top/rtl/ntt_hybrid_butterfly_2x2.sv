@@ -48,20 +48,6 @@ module ntt_hybrid_butterfly_2x2
 );
 
 //----------------------
-//Latency params
-//----------------------
-localparam UNMASKED_BF_LATENCY = 10; //5 cycles per butterfly * 2 instances in serial = 10 clks
-localparam UNMASKED_PWM_LATENCY = 5; //latency of modular multiplier + modular addition to perform accumulation
-localparam UNMASKED_PWA_LATENCY = 1; //latency of modular addition
-localparam UNMASKED_PWS_LATENCY = 1;  //latency of modular subtraction
-localparam UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
-localparam MASKED_BF_STAGE1_LATENCY = 264; //For 1 masked butterfly
-localparam MASKED_PWM_LATENCY = 209; //For 1 masked pwm operation
-localparam MASKED_PWM_MASKED_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;
-localparam MASKED_INTT_LATENCY = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;
-localparam MASKED_PWM_INTT_LATENCY = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1; //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
-
-//----------------------
 //Unmasked wires
 //----------------------
 //Inputs to 1st stage
@@ -77,8 +63,8 @@ logic masking_en_reg;
 
 //Other internal wires
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
-logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
-logic [MASKED_PWM_MASKED_INTT_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+// logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
+logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic pwo_mode, pwm_intt_mode;
 // logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
@@ -87,6 +73,7 @@ logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
 logic [1:0][WIDTH-1:0] u00_share, u01_share, v00_share, v01_share, u10_share, v10_share, u11_share, v11_share;
 logic [1:0][WIDTH-1:0] w00_share, w01_share, w10_share, w11_share; //, w10_reg_share, w11_reg_share;
 logic [1:0][WIDTH-1:0] uv00_share, uv01_share, uv10_share, uv11_share;
+logic [1:0][WIDTH-1:0] uv00_share_reg, uv01_share_reg, uv10_share_reg, uv11_share_reg;
 logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share;
 bf_uvo_t masked_gs_stage1_uvo;
 
@@ -112,24 +99,17 @@ end
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        masked_w00_reg <= 'h0;
-        masked_w01_reg <= 'h0;
         masked_w10_reg <= 'h0;
-        masked_w11_reg <= 'h0;
     end
     else if (zeroize) begin
-        masked_w00_reg <= 'h0;
-        masked_w01_reg <= 'h0;
         masked_w10_reg <= 'h0;
-        masked_w11_reg <= 'h0;
     end
     else begin
-        masked_w00_reg <= {hybrid_pw_uvw_i.twiddle_w0_i, masked_w00_reg[MASKED_PWM_LATENCY-1:1]}; //TODO add PWMA latency when Ay countermeasure is added
-        masked_w01_reg <= {hybrid_pw_uvw_i.twiddle_w1_i, masked_w01_reg[MASKED_PWM_LATENCY-1:1]};
-        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_PWM_MASKED_INTT_LATENCY-1:1]};
-        masked_w11_reg <= {hybrid_pw_uvw_i.twiddle_w3_i, masked_w11_reg[MASKED_PWM_MASKED_INTT_LATENCY-1:1]};
+        masked_w10_reg <= {hybrid_pw_uvw_i.twiddle_w2_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
     end
 end
+
+assign masked_w11_reg = masked_w10_reg; //used only in masked INTT, both are equal, so can opt num of flops
 
 assign pwo_mode = (mode inside {pwm, pwa, pws});
 assign pwm_intt_mode = (mode == pwm_intt) & masking_en;
@@ -191,105 +171,99 @@ always_comb begin
 end
 
 //Split into shares
-always_comb begin
-    //TODO: check randomness with Emre
-    //TODO: add flops here (input side)
-    //Split u inputs
-    if (masking_en) begin
-        u00_share[0] = WIDTH'(u00) - rnd_i[0];
-        u00_share[1] = rnd_i[0];
+always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+        for (int i = 0; i < 2; i++) begin
+            u00_share[i] <= 'h0;
+            u01_share[i] <= 'h0;
+            u10_share[i] <= 'h0;
+            u11_share[i] <= 'h0;
 
-        u01_share[0] = WIDTH'(u01) - rnd_i[1];
-        u01_share[1] = rnd_i[1];
+            v00_share[i] <= 'h0;
+            v01_share[i] <= 'h0;
+            v10_share[i] <= 'h0;
+            v11_share[i] <= 'h0;
 
-        u10_share[0] = WIDTH'(u10) - rnd_i[0];
-        u10_share[1] = rnd_i[0];
+            w00_share[i] <= 'h0;
+            w01_share[i] <= 'h0;
+            w10_share[i] <= 'h0;
+            w11_share[i] <= 'h0;
 
-        u11_share[0] = WIDTH'(u11) - rnd_i[0];
-        u11_share[1] = rnd_i[0];
+            twiddle_w00_share[i]     <= 'h0;
+            twiddle_w01_share[i]     <= 'h0;
+        end
+    end
+    else if (zeroize) begin
+        for (int i = 0; i < 2; i++) begin
+            u00_share[i] <= 'h0;
+            u01_share[i] <= 'h0;
+            u10_share[i] <= 'h0;
+            u11_share[i] <= 'h0;
 
-        //Split v inputs
-        v00_share[0] = WIDTH'(v00) - rnd_i[2];
-        v00_share[1] = rnd_i[2];
+            v00_share[i] <= 'h0;
+            v01_share[i] <= 'h0;
+            v10_share[i] <= 'h0;
+            v11_share[i] <= 'h0;
 
-        v01_share[0] = WIDTH'(v01) - rnd_i[3];
-        v01_share[1] = rnd_i[3];
+            w00_share[i] <= 'h0;
+            w01_share[i] <= 'h0;
+            w10_share[i] <= 'h0;
+            w11_share[i] <= 'h0;
 
-        v10_share[0] = WIDTH'(v10) - rnd_i[2];
-        v10_share[1] = rnd_i[2];
-
-        v11_share[0] = WIDTH'(v11) - rnd_i[2];
-        v11_share[1] = rnd_i[2];
-
-        //Split w inputs
-        w00_share[0] = WIDTH'(w00) - rnd_i[4];
-        w00_share[1] = rnd_i[4];
-
-        w01_share[0] = WIDTH'(w01) - rnd_i[0];
-        w01_share[1] = rnd_i[0];
-
-        w10_share[0] = WIDTH'(w10) - rnd_i[1];
-        w10_share[1] = rnd_i[1];
-
-        w11_share[0] = WIDTH'(w11) - rnd_i[2];
-        w11_share[1] = rnd_i[2];
-
-        twiddle_w00_share[0] = WIDTH'(masked_w00_reg[0]) - rnd_i[0];
-        twiddle_w00_share[1] = rnd_i[0];
-
-        twiddle_w01_share[0] = WIDTH'(masked_w01_reg[0]) - rnd_i[1];
-        twiddle_w01_share[1] = rnd_i[1];  
-
+            twiddle_w00_share[i]     <= 'h0;
+            twiddle_w01_share[i]     <= 'h0;
+        end
     end
     else begin
-        u00_share[0] = 'h0;
-        u00_share[1] = 'h0;
+    //Split u inputs
+        u00_share[0] <= WIDTH'(u00) - rnd_i[0];
+        u00_share[1] <= rnd_i[0];
 
-        u01_share[0] = 'h0;
-        u01_share[1] = 'h0;
+        u01_share[0] <= WIDTH'(u01) - rnd_i[0];
+        u01_share[1] <= rnd_i[0];
 
-        u10_share[0] = 'h0;
-        u10_share[1] = 'h0;
+        u10_share[0] <= WIDTH'(u10) - rnd_i[0];
+        u10_share[1] <= rnd_i[0];
 
-        u11_share[0] = 'h0;
-        u11_share[1] = 'h0;
+        u11_share[0] <= WIDTH'(u11) - rnd_i[0];
+        u11_share[1] <= rnd_i[0];
 
-        //Split v input
-        v00_share[0] = 'h0;
-        v00_share[1] = 'h0;
+        //Split v inputs
+        v00_share[0] <= WIDTH'(v00) - rnd_i[1];
+        v00_share[1] <= rnd_i[1];
 
-        v01_share[0] = 'h0;
-        v01_share[1] = 'h0;
+        v01_share[0] <= WIDTH'(v01) - rnd_i[1];
+        v01_share[1] <= rnd_i[1];
 
-        v10_share[0] = 'h0;
-        v10_share[1] = 'h0;
+        v10_share[0] <= WIDTH'(v10) - rnd_i[1];
+        v10_share[1] <= rnd_i[1];
 
-        v11_share[0] = 'h0;
-        v11_share[1] = 'h0;
+        v11_share[0] <= WIDTH'(v11) - rnd_i[1];
+        v11_share[1] <= rnd_i[1];
 
-        //Split w input
-        w00_share[0] = 'h0;
-        w00_share[1] = 'h0;
+        //Split w inputs
+        w00_share[0] <= WIDTH'(w00) - rnd_i[2];
+        w00_share[1] <= rnd_i[2];
 
-        w01_share[0] = 'h0;
-        w01_share[1] = 'h0;
+        w01_share[0] <= WIDTH'(w01) - rnd_i[2];
+        w01_share[1] <= rnd_i[2];
 
-        w10_share[0] = 'h0;
-        w10_share[1] = 'h0;
+        w10_share[0] <= WIDTH'(w10) - rnd_i[2];
+        w10_share[1] <= rnd_i[2];
 
-        w11_share[0] = 'h0;
-        w11_share[1] = 'h0;
+        w11_share[0] <= WIDTH'(w11) - rnd_i[2];
+        w11_share[1] <= rnd_i[2];
 
-        twiddle_w00_share[0] = 'h0;
-        twiddle_w00_share[1] = 'h0;
+        twiddle_w00_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w0_i) - rnd_i[3];
+        twiddle_w00_share[1] <= rnd_i[3];
 
-        twiddle_w01_share[0] = 'h0;
-        twiddle_w01_share[1] = 'h0;  
+        twiddle_w01_share[0] <= WIDTH'(hybrid_pw_uvw_i.twiddle_w1_i) - rnd_i[3];
+        twiddle_w01_share[1] <= rnd_i[3];
     end
 end
 
 //----------------------------------------------------
-//Masked PWMs - Used in masked PWM+INTT mode only - 209 clks
+//Masked PWMs - Used in masked PWM+INTT mode only - 210 clks
 //----------------------------------------------------
 ntt_masked_pwm #(
     .WIDTH(WIDTH)
@@ -347,6 +321,39 @@ ntt_masked_pwm #(
     .res(uv11_share)
 );
 
+//---------------------------
+//Refresh randomness
+//---------------------------
+always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+        for (int i = 0; i < 2; i++) begin
+            uv00_share_reg[i] <= 'h0;
+            uv01_share_reg[i] <= 'h0;
+            uv10_share_reg[i] <= 'h0;
+            uv11_share_reg[i] <= 'h0;
+        end
+    end
+    else if (zeroize) begin
+        for (int i = 0; i < 2; i++) begin
+            uv00_share_reg[i] <= 'h0;
+            uv01_share_reg[i] <= 'h0;
+            uv10_share_reg[i] <= 'h0;
+            uv11_share_reg[i] <= 'h0;
+        end
+    end
+    else begin
+        uv00_share_reg[0] <= uv00_share[0] - rnd_i[0];
+        uv01_share_reg[0] <= uv01_share[0] - rnd_i[1];
+        uv10_share_reg[0] <= uv10_share[0] - rnd_i[2];
+        uv11_share_reg[0] <= uv11_share[0] - rnd_i[3];
+
+        uv00_share_reg[1] <= uv00_share[1] + rnd_i[0];
+        uv01_share_reg[1] <= uv01_share[1] + rnd_i[1];
+        uv10_share_reg[1] <= uv10_share[1] + rnd_i[2];
+        uv11_share_reg[1] <= uv11_share[1] + rnd_i[3];
+    end
+end
+
 //----------------------------------------------------
 //Masked BFU stage 1 - Used in masked PWM+INTT mode only - 264 clks
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
@@ -357,7 +364,7 @@ ntt_masked_butterfly1x2 #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .uvw_i({uv00_share, uv10_share, uv01_share, uv11_share, twiddle_w00_share, twiddle_w01_share}),
+    .uvw_i({uv00_share_reg, uv10_share_reg, uv01_share_reg, uv11_share_reg, twiddle_w00_share, twiddle_w01_share}),
     .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
     .uv_o(masked_gs_stage1_uvo)
 );
@@ -443,12 +450,12 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_ready_reg <= 'b0;
     else begin
         unique case(mode) //471:0 delay flop for enable - TODO: optimize
-            ct:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-            gs:  masked_ready_reg <= {462'h0, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-            pwm: masked_ready_reg <= accumulate ? {467'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
+            ct:  masked_ready_reg <= {{(MASKED_PWM_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+            gs:  masked_ready_reg <= {{(MASKED_PWM_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+            pwm: masked_ready_reg <= accumulate ? {{(MASKED_PWM_INTT_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
             pwm_intt: masked_ready_reg <= accumulate ? {enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-1:1]} : {1'b0, enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-2:1]}; //TODO revisit
-            pwa: masked_ready_reg <= {471'h0, enable};
-            pws: masked_ready_reg <= {471'h0, enable};
+            pwa: masked_ready_reg <= {{MASKED_PWM_INTT_LATENCY-1{1'b0}}, enable};
+            pws: masked_ready_reg <= {{MASKED_PWM_INTT_LATENCY-1{1'b0}}, enable};
             default: masked_ready_reg <= 'h0;
         endcase
     end

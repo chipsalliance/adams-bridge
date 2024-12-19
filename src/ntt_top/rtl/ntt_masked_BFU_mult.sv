@@ -15,7 +15,7 @@
 //======================================================================
 //
 // ntt_masked_BFU_mult
-// Performs two share multiplication and reduction - total latency = 209 clks
+// Performs two share multiplication and reduction - total latency = 210 clks
 //======================================================================
 
 module ntt_masked_BFU_mult
@@ -48,7 +48,7 @@ module ntt_masked_BFU_mult
     logic [1:0] mul_res_reduced [WIDTH-1:0];
     logic [WIDTH-1:0] mul_res_bool_redux0, mul_res_bool_redux1, mul_res_redux0, mul_res_redux1;
 
-    //Perform mul on input shares - 1 clk
+    //Perform mul on input shares - 2 clk
     abr_masked_N_bit_mult_two_share #(
         .WIDTH(WIDTH)
     ) masked_two_share_mult_inst (

@@ -25,7 +25,7 @@
 //  - Final output is obtained by combining the reshared and masked intermediate results.
 //  - It requires fresh randomness.
 //  - This design assumes that both x and y are secret, although y input from top level is usually public 
-//  - It has one cycle latency and can accept a new input set at every clock.
+//  - It has two cycle latency and can accept a new input set at every clock.
 //
 //======================================================================
 
@@ -43,6 +43,7 @@
 
     // Intermediate calculation logic for multiplication operations
     logic [WIDTH-1:0] calculation [3:0];
+    logic [WIDTH-1:0] calculation_reg [1:0];
     logic [WIDTH-1:0] calculation_rand [1:0];
     logic [WIDTH-1:0] final_res [1:0];
     logic [WIDTH-1:0] x0, x1, y0, y1;
@@ -53,12 +54,30 @@
         calculation[1] = WIDTH'(x[1] * y[0]); // Multiplication of the second share x and first share y
         calculation[2] = WIDTH'(x[0] * y[1]); // Multiplication of the first share x and second share y
         calculation[3] = WIDTH'(x[1] * y[1]); // Multiplication of the second share x and second share y
-
-        calculation_rand[0] = calculation[2] + random;
-        calculation_rand[1] = calculation[1] - random;
-
-        final_res[0] = calculation[0] + calculation_rand[0];
-        final_res[1] = calculation[3] + calculation_rand[1];
+    end
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (int i = 0; i < 2; i++) begin
+                calculation_rand[i] <= 'h0;
+                calculation_reg[i] <= 'h0;
+            end
+        end
+        else if (zeroize) begin
+            for (int i = 0; i < 2; i++) begin
+                calculation_rand[i] <= 'h0;
+                calculation_reg[i] <= 'h0;
+            end
+        end
+        else begin
+            calculation_rand[0] <= calculation[2] + random;
+            calculation_rand[1] <= calculation[1] - random;
+            calculation_reg[0]  <= calculation[0];
+            calculation_reg[1]  <= calculation[3];
+        end
+    end
+    always_comb begin
+        final_res[0] = calculation_reg[0] + calculation_rand[0];
+        final_res[1] = calculation_reg[1] + calculation_rand[1];
     end
 
     // Final output assignment

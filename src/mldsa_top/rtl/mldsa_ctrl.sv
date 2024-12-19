@@ -287,7 +287,8 @@ always_comb mldsa_privkey_lock = '0;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
   logic msg_hold;
 
-  logic error_flag, error_flag_reg;
+  logic error_flag;
+  logic error_flag_reg;
   logic error_flag_edge;
   logic subcomponent_busy;
   logic sign_subcomponent_busy;
@@ -850,11 +851,10 @@ always_comb mldsa_privkey_lock = '0;
       end
     end
   end
-
-  //concatenate OID and MSG to make msg prime
-  logic [MSG_NUM_DWORDS-1+4 : 0][DATA_WIDTH-1:0] msg_p_reg;
-
-  always_comb msg_p_reg = {24'h0, msg_reg, PREHASH_OID, 8'h00, 8'h01};
+  
+  //pure-MLDSA assuming 512-bit input msg and empty ctx
+  logic [MSG_NUM_DWORDS-1+1 : 0][DATA_WIDTH-1:0] msg_p_reg;
+  always_comb msg_p_reg = {16'h0, msg_reg, 8'h00, 8'h00};
 
   always_comb rho_reg = verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
 
@@ -1638,7 +1638,7 @@ mldsa_seq_sec mldsa_seq_sec_inst
             INTT_raw_signal <= 'h0;
         end 
         else begin
-            if (prim_seq_en) begin
+            if (sec_seq_en) begin
                 unique case(sec_prog_cntr_nxt)
                     MLDSA_SIGN_VALID_S : begin //NTT(C)
                         NTT_raw_signal <= 'h1;
