@@ -510,6 +510,7 @@ end
   sib_mem_inst
   (
     .clk_i(clk),
+    .rst_b(rst_b),
     .zeroize(zeroize_sib_mem),
     .cs_i(sib_mem_cs_mux),
     .we_i(sib_mem_we),
