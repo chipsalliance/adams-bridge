@@ -36,5 +36,7 @@
   
   `define MLDSA_CUSTOM_INF // KV interface\
                            output kv_read_t kv_read,\
-                           input kv_rd_resp_t kv_rd_resp,
+                           input kv_rd_resp_t kv_rd_resp,\
+                           //PCR Signing\
+                           input pcr_signing_t pcr_signing_data,
 `endif
