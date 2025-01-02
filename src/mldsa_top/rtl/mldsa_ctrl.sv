@@ -187,7 +187,7 @@ module mldsa_ctrl
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
-  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en;
+  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
 
   //Read SEED
