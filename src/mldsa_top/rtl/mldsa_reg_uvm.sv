@@ -72,9 +72,11 @@ package mldsa_reg_uvm;
 
         mldsa_reg__MLDSA_CTRL_bit_cg CTRL_bit_cg[3];
         mldsa_reg__MLDSA_CTRL_bit_cg ZEROIZE_bit_cg[1];
+        mldsa_reg__MLDSA_CTRL_bit_cg PCR_SIGN_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_fld_cg fld_cg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
+        rand uvm_reg_field PCR_SIGN;
 
         function new(string name = "mldsa_reg__MLDSA_CTRL");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -90,9 +92,12 @@ package mldsa_reg_uvm;
             this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
             this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+            this.PCR_SIGN = new("PCR_SIGN");
+            this.PCR_SIGN.configure(this, 1, 4, "WO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(CTRL_bit_cg[bt]) CTRL_bit_cg[bt] = new();
                 foreach(ZEROIZE_bit_cg[bt]) ZEROIZE_bit_cg[bt] = new();
+                foreach(PCR_SIGN_bit_cg[bt]) PCR_SIGN_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();

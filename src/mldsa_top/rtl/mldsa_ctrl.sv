@@ -142,6 +142,8 @@ module mldsa_ctrl
   // KV interface
   output kv_read_t kv_read,
   input kv_rd_resp_t kv_rd_resp,
+  //PCR Signing
+  input pcr_signing_t pcr_signing_data,
   `endif
 
   //Interrupts
@@ -168,6 +170,8 @@ module mldsa_ctrl
   //KV Seed Data Present
   logic kv_seed_data_present;
   logic kv_seed_data_present_set, kv_seed_data_present_reset;
+  logic pcr_sign_mode;
+  logic pcr_sign_input_invalid;
 
   always_comb begin: mldsa_kv_ctrl_reg
     //ready when fsm is not busy
@@ -185,7 +189,7 @@ module mldsa_ctrl
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
-  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en;
+  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
 
   //Read SEED
@@ -235,6 +239,8 @@ always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
   else if (kv_seed_data_present_set)
     mldsa_privkey_lock <= '1;
 end
+
+always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 
 `else
 always_comb begin: mldsa_kv_ctrl_reg
@@ -353,7 +359,12 @@ always_comb mldsa_privkey_lock = '0;
   always_comb mldsa_reg_hwif_in.mldsa_ready = mldsa_ready;
   always_comb cmd_reg = mldsa_reg_hwif_out.MLDSA_CTRL.CTRL.value;
   always_comb mldsa_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |cmd_reg;
-  
+  `ifdef CALIPTRA
+    always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
+  `else
+    always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
+  `endif
+
   always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
@@ -375,8 +386,9 @@ always_comb mldsa_privkey_lock = '0;
       seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
 
       `ifdef CALIPTRA
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (kv_seed_write_en & (kv_seed_write_offset == dword)) & ~zeroize;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = kv_seed_write_data;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == dword))) & ~zeroize;
+      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[dword] : 
+                                                      kv_seed_write_data;
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready & ~kv_seed_data_present;
       `else
@@ -389,9 +401,15 @@ always_comb mldsa_privkey_lock = '0;
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++)begin
       msg_reg[dword] = mldsa_reg_hwif_out.MLDSA_MSG[MSG_NUM_DWORDS-1-dword].MSG.value;
+      `ifdef CALIPTRA
+      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !zeroize;
+      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[dword];
+      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
+      `else
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = '0;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = '0;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
+      `endif
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin
@@ -1028,7 +1046,12 @@ always_comb mldsa_privkey_lock = '0;
   always_comb subcomponent_busy = !(ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
                                   sampler_busy_i |
                                   ntt_busy_i[0];
+`ifdef CALIPTRA
+  always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid;
+`else
   always_comb error_flag = skdecode_error_i;
+`endif                                  
 
   always_ff @(posedge clk or negedge rst_b) 
   begin : error_detection
