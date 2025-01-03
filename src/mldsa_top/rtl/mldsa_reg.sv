@@ -198,6 +198,10 @@ module mldsa_reg (
                 logic next;
                 logic load_next;
             } ZEROIZE;
+            struct packed{
+                logic next;
+                logic load_next;
+            } PCR_SIGN;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -356,6 +360,9 @@ module mldsa_reg (
             struct packed{
                 logic value;
             } ZEROIZE;
+            struct packed{
+                logic value;
+            } PCR_SIGN;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -522,6 +529,30 @@ module mldsa_reg (
         end
     end
     assign hwif_out.MLDSA_CTRL.ZEROIZE.value = field_storage.MLDSA_CTRL.ZEROIZE.value;
+    // Field: mldsa_reg.MLDSA_CTRL.PCR_SIGN
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_CTRL.PCR_SIGN.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_CTRL.PCR_SIGN.value & ~decoded_wr_biten[4:4]) | (decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_CTRL.PCR_SIGN.next = next_c;
+        field_combo.MLDSA_CTRL.PCR_SIGN.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_CTRL.PCR_SIGN.value <= 1'h0;
+        end else if(field_combo.MLDSA_CTRL.PCR_SIGN.load_next) begin
+            field_storage.MLDSA_CTRL.PCR_SIGN.value <= field_combo.MLDSA_CTRL.PCR_SIGN.next;
+        end
+    end
+    assign hwif_out.MLDSA_CTRL.PCR_SIGN.value = field_storage.MLDSA_CTRL.PCR_SIGN.value;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_ENTROPY[].ENTROPY
         always_comb begin

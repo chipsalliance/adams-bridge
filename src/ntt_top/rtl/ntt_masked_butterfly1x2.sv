@@ -58,7 +58,7 @@ module ntt_masked_butterfly1x2
         w01 = uvw_i.w01_i;
     end
 
-    //263
+    //264
     ntt_masked_gs_butterfly #(
         .WIDTH(WIDTH)
     ) masked_bf_inst00 (
