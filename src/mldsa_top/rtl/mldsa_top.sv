@@ -68,6 +68,8 @@ module mldsa_top
   input pcr_signing_t pcr_signing_data,
   `endif
 
+  output logic                      busy_o,
+
   output logic                      error_intr,
   output logic                      notif_intr
 
@@ -78,7 +80,6 @@ module mldsa_top
 
 //Signal Declarations
   logic zeroize_reg;
-  logic [1:0] cmd_reg;
 
   mldsa_sampler_mode_e       sampler_mode;
   logic                      sha3_start;
@@ -396,6 +397,8 @@ mldsa_ctrl mldsa_ctrl_inst
   .lfsr_enable_o(lfsr_enable),
   .lfsr_seed_o(lfsr_seed),
 
+  .busy_o(busy_o),
+
   .error_intr(error_intr),
   .notif_intr(notif_intr),
   .* //custom interface connects by name
@@ -627,7 +630,6 @@ skencode_inst
 
   .skencode_enable(skencode_enable),
   .skencode_done(skencode_done),
-  .skencode_error(),
 
   .keymem_a_wr_req(skencode_keymem_if),
   .keymem_a_wr_data(skencode_wr_data),
@@ -839,7 +841,7 @@ abr_prim_lfsr
 );
 
 //w1 memory
-`ABR_MEM_TEST(512, 4)
+`ABR_MEM(512,4)
 mldsa_w1_mem_inst
 (
   .clk_i(clk),
