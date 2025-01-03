@@ -873,26 +873,22 @@ always_comb mldsa_privkey_lock = '0;
     if (!rst_b) begin
       msg_data <= '0;
     end else begin
-      if (msg_hold) begin
-        msg_data <= msg_data;
-      end else begin
-        unique case (sampler_src) inside
-          MLDSA_SEED_ID:        msg_data <= msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-          MLDSA_RHO_ID:         msg_data <= msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
-          MLDSA_RHO_P_ID:       msg_data <= msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
-          MLDSA_TR_ID:          msg_data <= privatekey_reg.enc.tr[sampler_src_offset[2:0]];
-          MLDSA_MSG_ID:         msg_data <= {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
-          MLDSA_K_ID:           msg_data <= privatekey_reg.enc.K[sampler_src_offset[1:0]];
-          MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
-          MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-          MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
-          MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
-          MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b0}]};
-      	  MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
-      	  MLDSA_CNT_ID:         msg_data <= counter_reg;
-          default:              msg_data <= '0;
-        endcase
-      end
+      unique case (sampler_src) inside
+        MLDSA_SEED_ID:        msg_data <= msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
+        MLDSA_RHO_ID:         msg_data <= msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
+        MLDSA_RHO_P_ID:       msg_data <= msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
+        MLDSA_TR_ID:          msg_data <= privatekey_reg.enc.tr[sampler_src_offset[2:0]];
+        MLDSA_MSG_ID:         msg_data <= {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
+        MLDSA_K_ID:           msg_data <= privatekey_reg.enc.K[sampler_src_offset[1:0]];
+        MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
+        MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
+        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
+        MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
+        MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b0}]};
+        MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
+        MLDSA_CNT_ID:         msg_data <= counter_reg;
+        default:              msg_data <= '0;
+      endcase
     end 
   end
 
@@ -1233,7 +1229,7 @@ always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Done when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_done = ~msg_hold & (msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+always_comb msg_done = (msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1247,8 +1243,8 @@ always_ff @(posedge clk or negedge rst_b) begin
     msg_strobe_o <= 0;
   end
   else begin
-    msg_cnt <= msg_done  ? 'd0 :
-               msg_hold  ? msg_cnt : 
+    msg_cnt <= msg_hold  ? msg_cnt : 
+               msg_done  ? 'd0 :
                msg_valid ? msg_cnt + 'd1 : msg_cnt;
     msg_valid_o <= msg_hold ? msg_valid_o : msg_valid;
     msg_strobe_o <= msg_hold ? msg_strobe_o :
@@ -1299,7 +1295,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
         msg_valid = 1;
         sampler_src = prim_instr.operand1;
         sampler_imm = prim_instr.imm;
-        if (msg_done) begin
+        if (msg_done & ~msg_hold) begin
           if (prim_instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
           else ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
         end

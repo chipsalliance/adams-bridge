@@ -630,7 +630,6 @@ skencode_inst
 
   .skencode_enable(skencode_enable),
   .skencode_done(skencode_done),
-  .skencode_error(),
 
   .keymem_a_wr_req(skencode_keymem_if),
   .keymem_a_wr_data(skencode_wr_data),
