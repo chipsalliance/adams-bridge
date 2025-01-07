@@ -49,7 +49,7 @@ module sib_mem #(
         end
     end
 
-    always @(posedge clk_i) begin
+    always @(posedge clk_i or negedge rst_b) begin
         if (!rst_b) begin
             rdata_o <= '0;
         end
