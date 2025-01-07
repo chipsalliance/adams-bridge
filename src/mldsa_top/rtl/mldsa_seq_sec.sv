@@ -24,8 +24,6 @@ module mldsa_seq_sec
   import mldsa_ctrl_pkg::*;
   (
   input logic clk,
-  input logic rst_b,
-  input logic zeroize,
 
   input  logic en_i,
   input  logic [MLDSA_PROG_ADDR_W-1 : 0] addr_i,
@@ -51,6 +49,9 @@ module mldsa_seq_sec
                 //RESET
                 MLDSA_RESET      : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
 
+                //ZEROIZE
+                MLDSA_ZEROIZE    : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                
                 //Signing initial steps start
                 MLDSA_SIGN_INIT_S   : data_o_rom <= '{opcode:MLDSA_UOP_SKDECODE, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_S1_0_BASE};
                 //NTT(t0)
