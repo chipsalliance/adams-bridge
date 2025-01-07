@@ -321,6 +321,7 @@ module mldsa_seq_prim
                 MLDSA_SIGN_MAKE_C+ 1    : data_o_rom <= '{opcode:MLDSA_UOP_SIB, imm:'h0000, length:'d64, operand1:MLDSA_SIG_C_REG_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 MLDSA_SIGN_SET_C        : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
 
+                MLDSA_SIGN_CHL_E        : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 MLDSA_SIGN_E            : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
 
                 //Verify flow
