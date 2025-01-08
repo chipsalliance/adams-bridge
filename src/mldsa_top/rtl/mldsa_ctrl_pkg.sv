@@ -404,7 +404,8 @@ package mldsa_ctrl_pkg;
     // MLDSA Subroutine listing
     //KG
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_RESET        = 'd0;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = MLDSA_RESET + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_ZEROIZE      = MLDSA_RESET + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = MLDSA_ZEROIZE + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
@@ -421,7 +422,8 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_CLR  = MLDSA_SIGN_SET_W0+ 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_CHECK_C_CLR+ 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_C        = MLDSA_SIGN_MAKE_C+ 2;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_SET_C + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_SET_C + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_CHL_E + 1;
     //Verify
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_H_TR       = MLDSA_VERIFY_S + 9;
@@ -437,7 +439,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_ERROR             = '1;
 
     //Signing Sequencer Subroutine listing
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_INIT_S       = MLDSA_RESET + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_INIT_S       = MLDSA_ZEROIZE + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_VLD  = MLDSA_SIGN_INIT_S + 24;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_VALID_S      = MLDSA_SIGN_CHECK_C_VLD + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_VLD  = MLDSA_SIGN_VALID_S + 1;
