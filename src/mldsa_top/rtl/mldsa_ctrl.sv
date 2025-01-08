@@ -337,7 +337,7 @@ always_comb mldsa_privkey_lock = '0;
   end
 
   //Set busy when engine is in progress
-  always_comb busy_o = ~mldsa_ready & ~mldsa_valid_reg;
+  always_comb busy_o = ~mldsa_ready;
 
 //HWIF to reg block
   always_comb mldsa_reg_hwif_in.reset_b = rst_b;
