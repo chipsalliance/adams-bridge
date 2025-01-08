@@ -25,7 +25,7 @@ interface mldsa_top_cov_if
     logic [2 : 0] mldsa_cmd;
     logic [2 : 0] mldsa_sw_cmd;
     logic zeroize;
-    // logic pcr_sign_mode;
+    logic pcr_sign_mode;
     logic ready;
     logic valid;
 
@@ -40,7 +40,8 @@ interface mldsa_top_cov_if
     // logic pubkeyx_input_outofrange;
     // logic pubkeyy_input_outofrange;
     // logic pubkey_input_invalid;
-    // logic pcr_sign_input_invalid;
+    logic pcr_sign_input_invalid;
+    logic skdecode_error;
     logic keygen_process;
     logic signing_process;
     logic verifying_process;
@@ -48,7 +49,7 @@ interface mldsa_top_cov_if
 
    
     assign mldsa_cmd = mldsa_top.mldsa_ctrl_inst.cmd_reg;
-    // assign pcr_sign_mode = mldsa_top.mldsa_ctrl_inst.pcr_sign_mode;
+    assign pcr_sign_mode = mldsa_top.mldsa_ctrl_inst.pcr_sign_mode;
     assign zeroize = mldsa_top.mldsa_ctrl_inst.zeroize;
     assign ready = mldsa_top.mldsa_ctrl_inst.mldsa_ready;
     assign valid = mldsa_top.mldsa_ctrl_inst.mldsa_valid_reg;
@@ -73,7 +74,9 @@ interface mldsa_top_cov_if
     // assign pubkeyx_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.pubkeyx_input_outofrange;
     // assign pubkeyy_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.pubkeyy_input_outofrange;
     // assign pubkey_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pubkey_input_invalid;
-    // assign pcr_sign_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pcr_sign_input_invalid;
+    assign pcr_sign_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pcr_sign_input_invalid;
+    assign skdecode_error = mldsa_top.mldsa_dsa_ctrl_i.skdecode_error_i;
+
     assign keygen_process = mldsa_top.mldsa_ctrl_inst.keygen_process;
     assign signing_process = mldsa_top.mldsa_ctrl_inst.signing_process;
     assign verifying_process = mldsa_top.mldsa_ctrl_inst.verifying_process;
@@ -84,7 +87,7 @@ interface mldsa_top_cov_if
         cptra_pwrgood_cp: coverpoint cptra_pwrgood;
 
         mldsa_cmd_cp: coverpoint mldsa_cmd;
-        // pcr_sign_cp: coverpoint pcr_sign_mode;
+        pcr_sign_cp: coverpoint pcr_sign_mode;
         zeroize_cp: coverpoint zeroize;
         ready_cp: coverpoint ready;
         valid_cp: coverpoint valid;
@@ -100,17 +103,18 @@ interface mldsa_top_cov_if
         // pubkeyx_input_outofrange_cp: coverpoint pubkeyx_input_outofrange;
         // pubkeyy_input_outofrange_cp: coverpoint pubkeyy_input_outofrange;
         // pubkey_input_invalid_cp: coverpoint pubkey_input_invalid;
-        // pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
+        pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
+        skdecode_error_cp: coverpoint skdecode_error;
 
-        // cmd_ready_cp: cross mldsa_sw_cmd, ready;
+        cmd_ready_cp: cross mldsa_sw_cmd, ready;
         cmd_kv_cp: cross mldsa_cmd, mldsa_privkey_lock;
-        // pcr_ready_cp: cross ready, pcr_sign_mode;
-        // pcr_cmd_cp: cross pcr_sign_mode, mldsa_cmd;
-        // zeroize_pcr_cp: cross zeroize, pcr_sign_mode;
+        pcr_ready_cp: cross ready, pcr_sign_mode;
+        pcr_cmd_cp: cross pcr_sign_mode, mldsa_cmd;
+        zeroize_pcr_cp: cross zeroize, pcr_sign_mode;
         zeroize_cmd_cp: cross zeroize, mldsa_cmd;
         zeroize_error_cp: cross zeroize, error_flag;
         zeroize_ready_cp: cross ready, zeroize;
-        // pcr_sign_input_invalid_cmd_cp: cross error_flag, mldsa_cmd;
+        pcr_sign_input_invalid_cmd_cp: cross error_flag, mldsa_cmd;
         error_keygen_cp: cross error_flag, keygen_process;
         error_signing_cp: cross error_flag, signing_process;
         error_verifying_cp: cross error_flag, verifying_process;
