@@ -653,10 +653,10 @@ always_comb mldsa_privkey_lock = '0;
 
 
   always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begub
+    if (!rst_b) begin
       api_sig_z_re_f <= '0;
       api_sig_z_addr_f <= '0;
-    ebd else if (zeroize) begin
+    end else if (zeroize) begin
       api_sig_z_re_f <= '0;
       api_sig_z_addr_f <= '0;
     end else begin
