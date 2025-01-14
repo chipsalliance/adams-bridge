@@ -32,20 +32,18 @@ interface mldsa_top_cov_if
     logic mldsa_privkey_lock;
 
     logic error_flag;
-    // logic privkey_input_outofrange;
-    // logic r_output_outofrange;
-    // logic s_output_outofrange;
-    // logic r_input_outofrange;
-    // logic s_input_outofrange;
-    // logic pubkeyx_input_outofrange;
-    // logic pubkeyy_input_outofrange;
-    // logic pubkey_input_invalid;
     logic pcr_sign_input_invalid;
     logic skdecode_error;
     logic keygen_process;
     logic signing_process;
     logic verifying_process;
     logic keygen_signing_process;
+
+    logic verify_failure;
+    logic normcheck_failure;
+    logic [2 : 0] normcheck_mode_failure;
+    logic makehint_failure;
+    logic invalid_hint;
 
    
     assign mldsa_cmd = mldsa_top.mldsa_ctrl_inst.cmd_reg;
@@ -66,14 +64,6 @@ interface mldsa_top_cov_if
     assign mldsa_privkey_lock = mldsa_top.mldsa_ctrl_inst.mldsa_privkey_lock;
 
     assign error_flag = mldsa_top.mldsa_dsa_ctrl_i.error_flag;
-    // assign privkey_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.privkey_input_outofrange;
-    // assign r_output_outofrange = mldsa_top.mldsa_dsa_ctrl_i.r_output_outofrange;
-    // assign s_output_outofrange = mldsa_top.mldsa_dsa_ctrl_i.s_output_outofrange;
-    // assign r_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.r_input_outofrange;
-    // assign s_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.s_input_outofrange;
-    // assign pubkeyx_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.pubkeyx_input_outofrange;
-    // assign pubkeyy_input_outofrange = mldsa_top.mldsa_dsa_ctrl_i.pubkeyy_input_outofrange;
-    // assign pubkey_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pubkey_input_invalid;
     assign pcr_sign_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pcr_sign_input_invalid;
     assign skdecode_error = mldsa_top.mldsa_dsa_ctrl_i.skdecode_error_i;
 
@@ -81,6 +71,14 @@ interface mldsa_top_cov_if
     assign signing_process = mldsa_top.mldsa_ctrl_inst.signing_process;
     assign verifying_process = mldsa_top.mldsa_ctrl_inst.verifying_process;
     assign keygen_signing_process = mldsa_top.mldsa_ctrl_inst.keygen_signing_process;
+
+    assign verify_failure = mldsa_top.mldsa_ctrl_inst.clear_verify_valid;
+    assign normcheck_failure = mldsa_top.mldsa_ctrl_inst.normcheck_done_i & mldsa_top.mldsa_ctrl_inst.normcheck_invalid_i;
+    assign normcheck_mode_failure[0] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b00);
+    assign normcheck_mode_failure[1] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b01);
+    assign normcheck_mode_failure[2] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b10);
+    assign makehint_failure = mldsa_top.mldsa_ctrl_inst.makehint_done_i & mldsa_top.mldsa_ctrl_inst.makehint_invalid_i;
+    assign invalid_hint = mldsa_top.mldsa_ctrl_inst.sigdecode_h_invalid_i;
 
     covergroup mldsa_top_cov_grp @(posedge clk);
         reset_cp: coverpoint reset_n;
@@ -95,16 +93,16 @@ interface mldsa_top_cov_if
         mldsa_privkey_lock_cp: coverpoint mldsa_privkey_lock;
 
         error_flag_cp: coverpoint error_flag;
-        // privkey_input_outofrange_cp: coverpoint privkey_input_outofrange;
-        // r_output_outofrange_cp: coverpoint r_output_outofrange;
-        // s_output_outofrange_cp: coverpoint s_output_outofrange;
-        // r_input_outofrange_cp: coverpoint r_input_outofrange;
-        // s_input_outofrange_cp: coverpoint s_input_outofrange;
-        // pubkeyx_input_outofrange_cp: coverpoint pubkeyx_input_outofrange;
-        // pubkeyy_input_outofrange_cp: coverpoint pubkeyy_input_outofrange;
-        // pubkey_input_invalid_cp: coverpoint pubkey_input_invalid;
         pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
         skdecode_error_cp: coverpoint skdecode_error;
+        verify_failure_cp: coverpoint verify_failure;
+        normcheck_mode_failure_cp: coverpoint normcheck_mode_failure {
+            bins mode_0 = {0};
+            bins mode_1 = {1};
+            bins mode_2 = {2};
+        };
+        makehint_failure_cp: coverpoint makehint_failure;
+        invalid_hint_cp: coverpoint invalid_hint;
 
         cmd_ready_cp: cross mldsa_sw_cmd, ready;
         cmd_kv_cp: cross mldsa_cmd, mldsa_privkey_lock;
@@ -120,6 +118,10 @@ interface mldsa_top_cov_if
         error_verifying_cp: cross error_flag, verifying_process;
         error_keygen_signing_cp: cross error_flag, keygen_signing_process;
 
+        normcheck_signing_failure_cp: cross normcheck_mode_failure_cp, signing_process;
+        normcheck_verifying_failure_cp: cross normcheck_mode_failure_cp, verifying_process;
+        normcheck_pcr_failure_cp: cross normcheck_mode_failure_cp, pcr_sign_mode;
+        makehint_pcr_failure_cp: cross makehint_failure, pcr_sign_mode;
 
     endgroup
 
