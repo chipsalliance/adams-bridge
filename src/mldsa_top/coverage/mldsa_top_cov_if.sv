@@ -81,7 +81,6 @@ interface mldsa_top_cov_if
 
     covergroup mldsa_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
-        cptra_pwrgood_cp: coverpoint cptra_pwrgood;
 
         mldsa_cmd_cp: coverpoint mldsa_cmd;
         pcr_sign_cp: coverpoint pcr_sign_mode;
