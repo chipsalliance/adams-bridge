@@ -52,7 +52,7 @@ interface mldsa_top_cov_if
     assign valid = mldsa_top.mldsa_ctrl_inst.mldsa_valid_reg;
 
     always_ff @(posedge clk) begin
-        if (!reset_n) begin
+        if (!rst_b) begin
             mldsa_sw_cmd <= '0;
         end
         else if (mldsa_top.mldsa_reg_inst.decoded_reg_strb.MLDSA_CTRL && mldsa_top.mldsa_reg_inst.decoded_req_is_wr) begin // SW write
@@ -80,7 +80,7 @@ interface mldsa_top_cov_if
     assign invalid_hint = mldsa_top.mldsa_ctrl_inst.sigdecode_h_invalid_i;
 
     covergroup mldsa_top_cov_grp @(posedge clk);
-        reset_cp: coverpoint reset_n;
+        reset_cp: coverpoint rst_b;
         cptra_pwrgood_cp: coverpoint cptra_pwrgood;
 
         mldsa_cmd_cp: coverpoint mldsa_cmd;
