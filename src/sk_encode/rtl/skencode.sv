@@ -54,7 +54,6 @@ module skencode
         output mem_if_t mem_b_rd_req,
         output logic [AHB_DATA_WIDTH-1:0] keymem_a_wr_data,
 
-        output logic skencode_error,
         output logic skencode_done
     );
 
@@ -80,7 +79,7 @@ module skencode
 
     
     logic [2:0] main_state, next_main_state, write_state, next_write_state;
-    logic error_flag, asserted_error_flag;
+    logic error_flag;
     logic [7:0][2:0] encoded_coeffs;
     logic [7:0] encoding_error;
     logic [23:0] one_encoding_string;
@@ -92,10 +91,6 @@ module skencode
 
     assign one_encoding_string = {encoded_coeffs[7],encoded_coeffs[6],encoded_coeffs[5],encoded_coeffs[4],
                                     encoded_coeffs[3],encoded_coeffs[2],encoded_coeffs[1],encoded_coeffs[0]};
-
-    //FIXME enable this later?
-    assign error_flag = 0;//encoding_error[0] | encoding_error[1] | encoding_error[2] | encoding_error[3] |
-                        //encoding_error[4] | encoding_error[5] | encoding_error[6] | encoding_error[7];
     
     
     // State Machine: Updates main_state and write_state based on current conditions and next states.
@@ -109,7 +104,7 @@ module skencode
             write_state <= IDLE;
         end
         else begin
-            if (skencode_error) begin
+            if (error_flag) begin
                 main_state     <= IDLE;
                 write_state    <= IDLE;
             end
@@ -241,7 +236,7 @@ module skencode
     // Locks destination and source addresses when skencode_enable is active.
     // Manages write_buffer and producer_selector based on the main state machine.
     // Issues read requests to memory and increments num_mem_operands during appropriate states.
-    // Signals completion (skencode_done) and checks for errors (skencode_error) based on operation progress.
+    // Signals completion (skencode_done) based on operation progress.
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             write_buffer        <= 'h0;
@@ -250,7 +245,6 @@ module skencode
             locked_dest_addr    <= 'h0;
             locked_src_addr     <= 'h0;
             skencode_done       <= 'h0;
-            skencode_error      <= 'h0;
             mem_a_rd_req        <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_rd_req        <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
@@ -261,7 +255,6 @@ module skencode
             locked_dest_addr    <= 'h0;
             locked_src_addr     <= 'h0;
             skencode_done       <= 'h0;
-            skencode_error      <= 'h0;
             mem_a_rd_req        <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_rd_req        <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
@@ -300,9 +293,6 @@ module skencode
             else begin
                 skencode_done      <= 'h0;
             end
-
-            if (skencode_error == 1'b0 && main_state != IDLE)
-                skencode_error <= error_flag;
         end
     end
     
@@ -396,5 +386,8 @@ module skencode
         end
     end : encoding
     
+    assign error_flag = (|encoding_error) & main_state inside {READ_ENC_and_CONSUME, ENC_and_CONSUME, CONSUME, CONSUME_LAST};
+
+    `ABR_ASSERT_NEVER(SKENCODE_ERROR_FLAG, error_flag, clk, !reset_n)
 
 endmodule
