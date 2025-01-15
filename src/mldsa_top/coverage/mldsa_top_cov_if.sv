@@ -100,7 +100,7 @@ interface mldsa_top_cov_if
             bins mode_0 = {0};
             bins mode_1 = {1};
             bins mode_2 = {2};
-        };
+        }
         makehint_failure_cp: coverpoint makehint_failure;
         invalid_hint_cp: coverpoint invalid_hint;
 
