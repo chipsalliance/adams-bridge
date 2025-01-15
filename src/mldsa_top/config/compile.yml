@@ -43,11 +43,6 @@ targets:
       - $COMPILE_ROOT/rtl/mldsa_top.sv
       - $COMPILE_ROOT/rtl/mldsa_reg.sv
     tops: [mldsa_top]
-  rtl_lint:
-  rtl_lint:
-    waiver_files:
-      - $MSFT_REPO_ROOT/src/mldsa_top/config/design_lint/sglint_waivers
-    options: []
 global:
   tool:
     vcs:
