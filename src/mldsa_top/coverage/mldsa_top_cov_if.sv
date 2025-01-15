@@ -17,8 +17,7 @@
 interface mldsa_top_cov_if     
     (
     input logic           clk,
-    input logic           reset_n,
-    input logic           cptra_pwrgood
+    input logic           rst_b
 
 );
 
