@@ -62,9 +62,9 @@ interface mldsa_top_cov_if
 
     assign mldsa_privkey_lock = mldsa_top.mldsa_ctrl_inst.mldsa_privkey_lock;
 
-    assign error_flag = mldsa_top.mldsa_dsa_ctrl_i.error_flag;
-    assign pcr_sign_input_invalid = mldsa_top.mldsa_dsa_ctrl_i.pcr_sign_input_invalid;
-    assign skdecode_error = mldsa_top.mldsa_dsa_ctrl_i.skdecode_error_i;
+    assign error_flag = mldsa_top.mldsa_ctrl_inst.error_flag;
+    assign pcr_sign_input_invalid = mldsa_top.mldsa_ctrl_inst.pcr_sign_input_invalid;
+    assign skdecode_error = mldsa_top.mldsa_ctrl_inst.skdecode_error_i;
 
     assign keygen_process = mldsa_top.mldsa_ctrl_inst.keygen_process;
     assign signing_process = mldsa_top.mldsa_ctrl_inst.signing_process;
