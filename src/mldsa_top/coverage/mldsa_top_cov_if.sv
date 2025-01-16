@@ -94,10 +94,13 @@ interface mldsa_top_cov_if
         pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
         skdecode_error_cp: coverpoint skdecode_error;
         verify_failure_cp: coverpoint verify_failure;
-        normcheck_mode_failure_cp: coverpoint normcheck_mode_failure {
+        normcheck_mode_failure_sign_cp: coverpoint normcheck_mode_failure {
             bins mode_0 = {0};
             bins mode_1 = {1};
             bins mode_2 = {2};
+        }
+        normcheck_mode_failure_verify_cp: coverpoint normcheck_mode_failure {
+            bins mode_0 = {0};
         }
         makehint_failure_cp: coverpoint makehint_failure;
         invalid_hint_cp: coverpoint invalid_hint;
@@ -116,9 +119,9 @@ interface mldsa_top_cov_if
         error_verifying_cp: cross error_flag, verifying_process;
         error_keygen_signing_cp: cross error_flag, keygen_signing_process;
 
-        normcheck_signing_failure_cp: cross normcheck_mode_failure_cp, signing_process;
-        normcheck_verifying_failure_cp: cross normcheck_mode_failure_cp, verifying_process;
-        normcheck_pcr_failure_cp: cross normcheck_mode_failure_cp, pcr_sign_mode;
+        normcheck_signing_failure_cp: cross normcheck_mode_failure_sign_cp, signing_process;
+        normcheck_verifying_failure_cp: cross normcheck_mode_failure_verify_cp, verifying_process;
+        normcheck_pcr_failure_cp: cross normcheck_mode_failure_sign_cp, pcr_sign_mode;
         makehint_pcr_failure_cp: cross makehint_failure, pcr_sign_mode;
 
     endgroup
