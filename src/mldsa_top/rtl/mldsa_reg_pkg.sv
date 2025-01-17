@@ -31,8 +31,13 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__in_t CTRL;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t PCR_SIGN;
+        mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t EXTERNAL_MU;
     } mldsa_reg__MLDSA_CTRL__in_t;
 
     typedef struct packed{
@@ -120,6 +125,16 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t;
 
     typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic hwclr;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t EXTERNAL_MU;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__in_t;
+
+    typedef struct packed{
         logic hwclr;
     } kv_read_ctrl_reg__read_en__in_t;
 
@@ -184,6 +199,7 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGNATURE__external__in_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__in_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t MLDSA_PRIVKEY_IN;
+        mldsa_reg__MLDSA_EXTERNAL_MU__in_t [16-1:0]MLDSA_EXTERNAL_MU;
         kv_read_ctrl_reg__in_t mldsa_kv_rd_seed_ctrl;
         kv_status_reg__in_t mldsa_kv_rd_seed_status;
         mldsa_reg__intr_block_t__in_t intr_block_rf;
@@ -202,9 +218,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t;
 
     typedef struct packed{
+        logic value;
+    } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__out_t CTRL;
         mldsa_reg__MLDSA_CTRL__ZEROIZE__out_t ZEROIZE;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t PCR_SIGN;
+        mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t EXTERNAL_MU;
     } mldsa_reg__MLDSA_CTRL__out_t;
 
     typedef struct packed{
@@ -280,6 +301,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t;
 
     typedef struct packed{
+        logic [31:0] value;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t EXTERNAL_MU;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__out_t;
+
+    typedef struct packed{
         logic value;
     } kv_read_ctrl_reg__read_en__out_t;
 
@@ -336,6 +365,7 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGNATURE__external__out_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t MLDSA_PRIVKEY_IN;
+        mldsa_reg__MLDSA_EXTERNAL_MU__out_t [16-1:0]MLDSA_EXTERNAL_MU;
         kv_read_ctrl_reg__out_t mldsa_kv_rd_seed_ctrl;
         mldsa_reg__intr_block_t__out_t intr_block_rf;
     } mldsa_reg__out_t;

@@ -160,6 +160,9 @@ module mldsa_ctrl
   logic mldsa_valid_reg;
   logic mldsa_privkey_lock;
 
+  logic external_mu;
+  logic external_mu_mode, external_mu_mode_nxt;
+
   `ifdef CALIPTRA
 //Custom keyvault logic for Caliptra
 
@@ -271,6 +274,7 @@ always_comb mldsa_privkey_lock = '0;
   logic signature_done;
   logic verify_done;
   logic signature_validity_chk_done;
+  logic process_done;
 
   //assign appropriate data to msg interface
   logic [MLDSA_OPR_WIDTH-1:0]  sampler_src;
@@ -281,6 +285,7 @@ always_comb mldsa_privkey_lock = '0;
   logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
+  logic [EXTERNAL_MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] external_mu_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
   logic [7:0][63:0] rho_p_reg;
   logic [3:0][63:0] rho_reg;
@@ -379,6 +384,9 @@ always_comb mldsa_privkey_lock = '0;
   
   always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
   
+  always_comb external_mu = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
+  always_comb mldsa_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
+  
   always_comb begin // mldsa reg writing 
 
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++)begin
@@ -404,9 +412,9 @@ always_comb mldsa_privkey_lock = '0;
     end
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++)begin
-      msg_reg[dword] = mldsa_reg_hwif_out.MLDSA_MSG[MSG_NUM_DWORDS-1-dword].MSG.value;
+      msg_reg[dword] = external_mu_mode? '0 : mldsa_reg_hwif_out.MLDSA_MSG[MSG_NUM_DWORDS-1-dword].MSG.value;
       `ifdef CALIPTRA
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !zeroize;
+      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[dword];
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
       `else
@@ -414,6 +422,10 @@ always_comb mldsa_privkey_lock = '0;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = '0;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
       `endif
+    end
+
+    for (int dword=0; dword < EXTERNAL_MU_NUM_DWORDS; dword++)begin
+      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[EXTERNAL_MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value;
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin
@@ -940,21 +952,32 @@ always_comb mldsa_privkey_lock = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       rho_p_reg <= 0;
-      mu_reg <= 0;
     end
     else if (zeroize) begin
       rho_p_reg <= 0;
-      mu_reg <= 0;
     end
     else if (sampler_state_dv_i) begin
       if (prim_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][767:256];
       end
-      else if (prim_instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
-        mu_reg <= sampler_state_data_i[0][511:0];
-      end
       else if (prim_instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][511:0];
+      end
+    end
+  end
+
+    always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      mu_reg <= 0;
+    end
+    else if (zeroize) begin
+      mu_reg <= 0;
+    end
+    else if (external_mu_mode)
+      mu_reg <= external_mu_reg;
+    else if (sampler_state_dv_i) begin
+      if (prim_instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
+        mu_reg <= sampler_state_data_i[0][511:0];
       end
     end
   end
@@ -1039,7 +1062,22 @@ always_comb mldsa_privkey_lock = '0;
       keygen_signing_process <= keygen_signing_process | keygen_signing_process_nxt;
     end
   end
-  
+
+  always_comb process_done = (keygen_process & keygen_done) |
+                             (signing_process & signature_done) |
+                             (verifying_process & verify_done);
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b)
+      external_mu_mode <= 0;  
+    else if (zeroize)
+      external_mu_mode <= 0;  
+    else if (process_done)
+      external_mu_mode <= 0;
+    else 
+      external_mu_mode <= external_mu_mode | external_mu_mode_nxt;
+  end
+      
   //Clear signature if makehint or normcheck fail
   always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
@@ -1104,6 +1142,7 @@ always_comb mldsa_privkey_lock = '0;
     set_entropy = 0;
     prim_prog_cntr_nxt = MLDSA_RESET;
     prim_seq_en = !zeroize;
+    external_mu_mode_nxt = 0;
 
     unique case (prim_prog_cntr) inside
       MLDSA_RESET : begin 
@@ -1113,25 +1152,30 @@ always_comb mldsa_privkey_lock = '0;
             prim_prog_cntr_nxt = MLDSA_KG_S;
             keygen_process_nxt = 1;
             set_entropy = 1;
+            external_mu_mode_nxt = 0;
           end   
           MLDSA_SIGN : begin  // signing
-            prim_prog_cntr_nxt = MLDSA_SIGN_RND_S;
+            prim_prog_cntr_nxt = MLDSA_SIGN_S;
             signing_process_nxt  = 1;
             set_entropy = 1;
+            external_mu_mode_nxt = external_mu;
           end                                   
           MLDSA_VERIFY : begin  // verifying
             prim_prog_cntr_nxt = MLDSA_VERIFY_S;
             verifying_process_nxt  = 1;
             set_verify_valid = 1;
+            external_mu_mode_nxt = external_mu;
           end                          
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
             prim_prog_cntr_nxt = MLDSA_KG_S;
             keygen_signing_process_nxt  = 1;
             set_entropy = 1;
+            external_mu_mode_nxt = external_mu;
           end
           default : begin
             prim_prog_cntr_nxt = MLDSA_RESET;
             prim_seq_en = 0;
+            external_mu_mode_nxt = 0;
           end
         endcase
       end
@@ -1145,7 +1189,7 @@ always_comb mldsa_privkey_lock = '0;
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
         if (keygen_signing_process) begin
-          prim_prog_cntr_nxt = MLDSA_SIGN_S;
+          prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_MODE;
           signing_process_nxt  = 1;
         end
         else begin
@@ -1155,6 +1199,12 @@ always_comb mldsa_privkey_lock = '0;
       MLDSA_KG_E : begin // end of keygen
         //prim_prog_cntr_nxt = MLDSA_RESET;
         keygen_done = 1;
+      end
+      MLDSA_SIGN_CHECK_MODE : begin
+        if (external_mu_mode)
+          prim_prog_cntr_nxt = MLDSA_SIGN_H_RHO_P;
+        else
+          prim_prog_cntr_nxt = MLDSA_SIGN_H_MU;
       end
       //START of Y access - check if Y is still valid
       MLDSA_SIGN_CHECK_Y_CLR : begin
@@ -1214,6 +1264,12 @@ always_comb mldsa_privkey_lock = '0;
       end
       MLDSA_SIGN_E : begin // end of signature
         signature_done = 1;
+      end
+      MLDSA_VERIFY_CHECK_MODE : begin
+        if (external_mu_mode)
+          prim_prog_cntr_nxt = MLDSA_VERIFY_MAKE_C;
+        else
+          prim_prog_cntr_nxt = MLDSA_VERIFY_H_MU;
       end
       MLDSA_VERIFY_E : begin // end of verify flow
         verify_done = 1;

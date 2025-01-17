@@ -96,6 +96,7 @@ module mldsa_reg (
         logic MLDSA_SIGNATURE;
         logic MLDSA_PRIVKEY_OUT;
         logic MLDSA_PRIVKEY_IN;
+        logic [16-1:0]MLDSA_EXTERNAL_MU;
         logic mldsa_kv_rd_seed_ctrl;
         logic mldsa_kv_rd_seed_status;
         struct packed{
@@ -158,6 +159,9 @@ module mldsa_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
         decoded_reg_strb.MLDSA_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
+        for(int i0=0; i0<16; i0++) begin
+            decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] = cpuif_req_masked & (cpuif_addr == 16'h7320 + i0*16'h4);
+        end
         decoded_reg_strb.mldsa_kv_rd_seed_ctrl = cpuif_req_masked & (cpuif_addr == 16'h8000);
         decoded_reg_strb.mldsa_kv_rd_seed_status = cpuif_req_masked & (cpuif_addr == 16'h8004);
         decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'h8100);
@@ -202,6 +206,10 @@ module mldsa_reg (
                 logic next;
                 logic load_next;
             } PCR_SIGN;
+            struct packed{
+                logic next;
+                logic load_next;
+            } EXTERNAL_MU;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -233,6 +241,12 @@ module mldsa_reg (
                 logic load_next;
             } VERIFY_RES;
         } [16-1:0]MLDSA_VERIFY_RES;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } EXTERNAL_MU;
+        } [16-1:0]MLDSA_EXTERNAL_MU;
         struct packed{
             struct packed{
                 logic next;
@@ -363,6 +377,9 @@ module mldsa_reg (
             struct packed{
                 logic value;
             } PCR_SIGN;
+            struct packed{
+                logic value;
+            } EXTERNAL_MU;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -389,6 +406,11 @@ module mldsa_reg (
                 logic [31:0] value;
             } VERIFY_RES;
         } [16-1:0]MLDSA_VERIFY_RES;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } EXTERNAL_MU;
+        } [16-1:0]MLDSA_EXTERNAL_MU;
         struct packed{
             struct packed{
                 logic value;
@@ -553,6 +575,30 @@ module mldsa_reg (
         end
     end
     assign hwif_out.MLDSA_CTRL.PCR_SIGN.value = field_storage.MLDSA_CTRL.PCR_SIGN.value;
+    // Field: mldsa_reg.MLDSA_CTRL.EXTERNAL_MU
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_CTRL.EXTERNAL_MU.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_CTRL.EXTERNAL_MU.value & ~decoded_wr_biten[5:5]) | (decoded_wr_data[5:5] & decoded_wr_biten[5:5]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_CTRL.EXTERNAL_MU.next = next_c;
+        field_combo.MLDSA_CTRL.EXTERNAL_MU.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_CTRL.EXTERNAL_MU.value <= 1'h0;
+        end else if(field_combo.MLDSA_CTRL.EXTERNAL_MU.load_next) begin
+            field_storage.MLDSA_CTRL.EXTERNAL_MU.value <= field_combo.MLDSA_CTRL.EXTERNAL_MU.next;
+        end
+    end
+    assign hwif_out.MLDSA_CTRL.EXTERNAL_MU.value = field_storage.MLDSA_CTRL.EXTERNAL_MU.value;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_ENTROPY[].ENTROPY
         always_comb begin
@@ -709,6 +755,35 @@ module mldsa_reg (
     assign hwif_out.MLDSA_PRIVKEY_IN.req_is_wr = decoded_req_is_wr;
     assign hwif_out.MLDSA_PRIVKEY_IN.wr_data = decoded_wr_data;
     assign hwif_out.MLDSA_PRIVKEY_IN.wr_biten = decoded_wr_biten;
+    for(genvar i0=0; i0<16; i0++) begin
+        // Field: mldsa_reg.MLDSA_EXTERNAL_MU[].EXTERNAL_MU
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+                next_c = (field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.we) begin // HW Write - we
+                next_c = hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.next = next_c;
+            field_combo.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value <= 32'h0;
+            end else if(field_combo.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.load_next) begin
+                field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value <= field_combo.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.next;
+            end
+        end
+        assign hwif_out.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value = field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value;
+    end
     // Field: mldsa_reg.mldsa_kv_rd_seed_ctrl.read_en
     always_comb begin
         automatic logic [0:0] next_c;

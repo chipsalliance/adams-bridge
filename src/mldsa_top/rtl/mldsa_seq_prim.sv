@@ -193,16 +193,17 @@ module mldsa_seq_prim
 
                 //Signing start
                 //rnd_seed=Keccak(entropy||counter)
-                MLDSA_SIGN_RND_S        : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_ENTROPY_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};                
-                MLDSA_SIGN_RND_S+ 1     : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256,    imm:'h0000, length:'d08, operand1:MLDSA_CNT_ID,     operand2:MLDSA_NOP, operand3:MLDSA_DEST_LFSR_SEED_REG_ID};
-                MLDSA_SIGN_RND_S+ 2     : data_o_rom <= '{opcode:MLDSA_UOP_LFSR,        imm:'h0000, length:'d00, operand1:MLDSA_NOP,        operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_SIGN_S            : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_ENTROPY_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};                
+                MLDSA_SIGN_S+ 1         : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256,    imm:'h0000, length:'d08, operand1:MLDSA_CNT_ID,     operand2:MLDSA_NOP, operand3:MLDSA_DEST_LFSR_SEED_REG_ID};
+                MLDSA_SIGN_S+ 2         : data_o_rom <= '{opcode:MLDSA_UOP_LFSR,        imm:'h0000, length:'d00, operand1:MLDSA_NOP,        operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_SIGN_CHECK_MODE   : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //μ ←H(tr||M,512)
-                MLDSA_SIGN_S            : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_TR_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
-                MLDSA_SIGN_S+ 1         : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:'d66, operand1:MLDSA_MSG_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_MU_REG_ID};
+                MLDSA_SIGN_H_MU         : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_TR_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_SIGN_H_MU + 1     : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:'d66, operand1:MLDSA_MSG_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_MU_REG_ID};
                 //ρ′=Keccak(K||rnd|| μ)
-                MLDSA_SIGN_S+ 2         : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_K_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
-                MLDSA_SIGN_S+ 3         : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_SIGN_RND_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
-                MLDSA_SIGN_S+ 4         : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_RHO_P_REG_ID};
+                MLDSA_SIGN_H_RHO_P      : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_K_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_SIGN_H_RHO_P+ 1   : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_SIGN_RND_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
+                MLDSA_SIGN_H_RHO_P+ 2   : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_RHO_P_REG_ID};
                 //Check Y valid
                 MLDSA_SIGN_CHECK_Y_CLR  : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_UOP_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //lfsr_seed=Keccak(re_entropy||counter)
@@ -339,6 +340,7 @@ module mldsa_seq_prim
                 MLDSA_VERIFY_S+ 8       : data_o_rom <= '{opcode:MLDSA_UOP_NORMCHK, imm:MLDSA_NORMCHK_Z, length:'d00, operand1:MLDSA_Z_6_BASE, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //tr ←H(pk,512)
                 MLDSA_VERIFY_H_TR           : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_TR_REG_ID};
+                MLDSA_VERIFY_CHECK_MODE     : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //μ ←H(tr||M,512)
                 MLDSA_VERIFY_H_MU           : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_TR_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 MLDSA_VERIFY_H_MU+ 1        : data_o_rom <= '{opcode:MLDSA_UOP_SHAKE256, imm:'h0000, length:'d66, operand1:MLDSA_MSG_ID, operand2:MLDSA_NOP, operand3:MLDSA_DEST_MU_REG_ID};
