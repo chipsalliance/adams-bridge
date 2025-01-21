@@ -1778,6 +1778,88 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
     end
 `endif
 
+logic sig_addr;
+int fd;
+initial begin
+    fd = $fopen("mldsa_test_prints.log", "w");
+    if(fd == 0) $error("Cannot open file %s for writing", "mldsa_test_prints.log");
+end
+always@(posedge clk) begin
+    if (kv_seed_data_present && $past(kv_seed_data_present_set, 8)) begin
+        $fdisplay(fd,"[%t] KV_SEED: 0x%x", $realtime, seed_reg); $fflush(fd);
+    end
+    else
+        foreach (mldsa_reg_hwif_in.MLDSA_SEED[dword])
+            if (mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe && mldsa_reg_inst.decoded_reg_strb.MLDSA_SEED[dword] && mldsa_reg_inst.decoded_req_is_wr) begin
+                $fdisplay(fd,"[%t] Wr SEED[%d]: 0x%x", $realtime, dword, mldsa_reg_inst.decoded_wr_data[31:0]); $fflush(fd);
+            end
+
+    if (mldsa_reg_inst.decoded_reg_strb.MLDSA_PUBKEY)
+        if (mldsa_reg_inst.decoded_req_is_wr) begin
+            $fdisplay(fd,"[%t] SW Wr PubK: 0x%x Addr: %p", $realtime, mldsa_reg_inst.decoded_wr_data[31:0], api_pubkey_mem_addr); $fflush(fd);
+        end
+    if (mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack) begin
+        $fdisplay(fd,"[%t] SW Rd PubK: 0x%x Addr: %p", $realtime, mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data, api_pubkey_mem_addr_f); $fflush(fd);
+    end
+    else if (pk_t1_wren_i) begin
+        $fdisplay(fd,"[%t] HW Wr PubK: 0x%x Addr: 0x%x Strb: 0x%x", $realtime, pubkey_ram_wdata, pubkey_ram_waddr, pubkey_ram_wstrobe); $fflush(fd);
+    end
+
+    foreach (mldsa_reg_inst.decoded_reg_strb.MLDSA_MSG[dw])
+        if (mldsa_reg_inst.decoded_reg_strb.MLDSA_MSG[dw] && mldsa_reg_inst.decoded_req_is_wr) begin
+            $fdisplay(fd,"[%t] SW Wr MSG[%d]: 0x%x", $realtime, dw, mldsa_reg_inst.decoded_wr_data[31:0]); $fflush(fd);
+        end
+        else if (mldsa_reg_inst.decoded_reg_strb.MLDSA_MSG[dw]) begin
+            $fdisplay(fd,"[%t] SW Rd MSG[%d]: 0x%x", $realtime, dw, mldsa_reg_inst.readback_data[31:0]); $fflush(fd);
+        end
+
+    if (mldsa_reg_inst.decoded_reg_strb.MLDSA_SIGNATURE) begin
+        if (mldsa_reg_inst.decoded_req_is_wr && api_sig_c_dec) begin
+            $fdisplay(fd,"[%t] SW Wr Sigt: 0x%x SigC Addr: %p", $realtime, mldsa_reg_inst.decoded_wr_data[31:0], api_sig_c_addr); $fflush(fd);
+        end
+        else if (mldsa_reg_inst.decoded_req_is_wr && api_sig_h_dec) begin
+            $fdisplay(fd,"[%t] SW Wr Sigt: 0x%x SigC Addr: %p", $realtime, mldsa_reg_inst.decoded_wr_data[31:0], api_sig_h_addr); $fflush(fd);
+        end
+        else if (mldsa_reg_inst.decoded_req_is_wr && api_sig_z_dec) begin
+            $fdisplay(fd,"[%t] SW Wr Sigt: 0x%x SigC Addr: %p", $realtime, mldsa_reg_inst.decoded_wr_data[31:0], api_sig_z_addr); $fflush(fd);
+        end
+        sig_addr <= api_sig_z_re? api_sig_z_addr : (api_sig_c_dec ? api_sig_c_addr: api_sig_h_addr);
+    end
+    if (mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack) begin
+        $fdisplay(fd,"[%t] SW Rd Sigt: 0x%x Addr: %p", $realtime, mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data, sig_addr); $fflush(fd);
+    end
+
+    foreach (mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dw])
+        if (mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dw].VERIFY_RES.we) begin
+            $fdisplay(fd,"[%t] Wr VERIFY_RES[%d]: 0x%x", $realtime, VERIFY_RES_NUM_DWORDS-1-dw, mldsa_reg_hwif_in.MLDSA_VERIFY_RES[VERIFY_RES_NUM_DWORDS-1-dw].VERIFY_RES.next); $fflush(fd);
+        end
+
+    if (keygen_process_nxt && !keygen_process) begin
+        $fdisplay(fd,"[%t] Start KeyGen", $realtime); $fflush(fd);
+    end
+    else if (keygen_process && zeroize) begin
+        $fdisplay(fd,"[%t] End KeyGen", $realtime); $fflush(fd);
+    end
+    if (signing_process_nxt && !signing_process) begin
+        $fdisplay(fd,"[%t] Start Signing", $realtime); $fflush(fd);
+    end
+    else if (signing_process && zeroize) begin
+        $fdisplay(fd,"[%t] End Signing. Signature: %p", $realtime, signature_reg); $fflush(fd);
+    end
+    if (verifying_process_nxt && !verifying_process) begin
+        $fdisplay(fd,"[%t] Start Verify", $realtime); $fflush(fd);
+    end
+    else if (verifying_process && zeroize) begin
+        $fdisplay(fd,"[%t] End Verify", $realtime); $fflush(fd);
+    end
+    if (keygen_signing_process_nxt && !keygen_signing_process) begin
+        $fdisplay(fd,"[%t] Start KeyGen-Signing", $realtime); $fflush(fd);
+    end
+    else if (keygen_signing_process && zeroize) begin
+        $fdisplay(fd,"[%t] End KeyGen-Signing", $realtime); $fflush(fd);
+    end
+end
+
   `ABR_ASSERT_KNOWN(ERR_CTRL_FSM_X, {ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SIGN_CTRL_FSM_X, {sign_ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
