@@ -73,10 +73,12 @@ package mldsa_reg_uvm;
         mldsa_reg__MLDSA_CTRL_bit_cg CTRL_bit_cg[3];
         mldsa_reg__MLDSA_CTRL_bit_cg ZEROIZE_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_bit_cg PCR_SIGN_bit_cg[1];
+        mldsa_reg__MLDSA_CTRL_bit_cg EXTERNAL_MU_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_fld_cg fld_cg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
         rand uvm_reg_field PCR_SIGN;
+        rand uvm_reg_field EXTERNAL_MU;
 
         function new(string name = "mldsa_reg__MLDSA_CTRL");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -94,10 +96,13 @@ package mldsa_reg_uvm;
             this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
             this.PCR_SIGN = new("PCR_SIGN");
             this.PCR_SIGN.configure(this, 1, 4, "WO", 1, 'h0, 1, 1, 0);
+            this.EXTERNAL_MU = new("EXTERNAL_MU");
+            this.EXTERNAL_MU.configure(this, 1, 5, "WO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(CTRL_bit_cg[bt]) CTRL_bit_cg[bt] = new();
                 foreach(ZEROIZE_bit_cg[bt]) ZEROIZE_bit_cg[bt] = new();
                 foreach(PCR_SIGN_bit_cg[bt]) PCR_SIGN_bit_cg[bt] = new();
+                foreach(EXTERNAL_MU_bit_cg[bt]) EXTERNAL_MU_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();
@@ -288,6 +293,36 @@ package mldsa_reg_uvm;
                 fld_cg = new();
         endfunction : build
     endclass : mldsa_reg__MLDSA_VERIFY_RES
+
+    // Reg - mldsa_reg::MLDSA_EXTERNAL_MU
+    class mldsa_reg__MLDSA_EXTERNAL_MU extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        mldsa_reg__MLDSA_EXTERNAL_MU_bit_cg EXTERNAL_MU_bit_cg[32];
+        mldsa_reg__MLDSA_EXTERNAL_MU_fld_cg fld_cg;
+        rand uvm_reg_field EXTERNAL_MU;
+
+        function new(string name = "mldsa_reg__MLDSA_EXTERNAL_MU");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.EXTERNAL_MU = new("EXTERNAL_MU");
+            this.EXTERNAL_MU.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(EXTERNAL_MU_bit_cg[bt]) EXTERNAL_MU_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : mldsa_reg__MLDSA_EXTERNAL_MU
 
     // Mem - mldsa_reg::MLDSA_PUBKEY
     class mldsa_reg__MLDSA_PUBKEY extends uvm_reg_block;
@@ -934,6 +969,7 @@ package mldsa_reg_uvm;
         rand mldsa_reg__MLDSA_SIGN_RND MLDSA_SIGN_RND[8];
         rand mldsa_reg__MLDSA_MSG MLDSA_MSG[16];
         rand mldsa_reg__MLDSA_VERIFY_RES MLDSA_VERIFY_RES[16];
+        rand mldsa_reg__MLDSA_EXTERNAL_MU MLDSA_EXTERNAL_MU[16];
         rand mldsa_reg__MLDSA_PUBKEY MLDSA_PUBKEY;
         rand mldsa_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand mldsa_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
@@ -1006,6 +1042,13 @@ package mldsa_reg_uvm;
                 
                 this.MLDSA_VERIFY_RES[i0].build();
                 this.default_map.add_reg(this.MLDSA_VERIFY_RES[i0], 'hd8 + i0*'h4);
+            end
+            foreach(this.MLDSA_EXTERNAL_MU[i0]) begin
+                this.MLDSA_EXTERNAL_MU[i0] = new($sformatf("MLDSA_EXTERNAL_MU[%0d]", i0));
+                this.MLDSA_EXTERNAL_MU[i0].configure(this);
+                
+                this.MLDSA_EXTERNAL_MU[i0].build();
+                this.default_map.add_reg(this.MLDSA_EXTERNAL_MU[i0], 'h118 + i0*'h4);
             end
             this.MLDSA_PUBKEY = new("MLDSA_PUBKEY");
             this.MLDSA_PUBKEY.configure(this);
