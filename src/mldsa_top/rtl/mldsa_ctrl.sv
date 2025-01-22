@@ -152,6 +152,7 @@ module mldsa_ctrl
   input pcr_signing_t pcr_signing_data,
   `endif
 
+  input logic debugUnlock_or_scan_mode_switch,
   output logic busy_o,
 
   //Interrupts
@@ -388,7 +389,7 @@ always_comb mldsa_privkey_lock = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
   
-  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
+  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || debugUnlock_or_scan_mode_switch;
   
   always_comb external_mu = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   always_comb mldsa_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;

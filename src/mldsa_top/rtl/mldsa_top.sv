@@ -69,6 +69,8 @@ module mldsa_top
   //PCR Signing
   input pcr_signing_t pcr_signing_data,
   `endif
+  //Zeroize the engine if entering debug or scan mode
+  input logic debugUnlock_or_scan_mode_switch,
 
   output logic                      busy_o,
 
@@ -418,7 +420,7 @@ mldsa_ctrl mldsa_ctrl_inst
 
   .error_intr(error_intr),
   .notif_intr(notif_intr),
-  .* //custom interface connects by name
+  .debugUnlock_or_scan_mode_switch
 );
 
 always_comb zeroize_mem_we = (zeroize_mem.rd_wr_en == RW_WRITE);

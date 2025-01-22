@@ -137,6 +137,7 @@ import kv_defines_pkg::*;
       .kv_read(),
       .kv_rd_resp(kv_rd_resp),
 `endif
+      .debugUnlock_or_scan_mode_switch(0),
       .busy_o(),
       .error_intr(),
       .notif_intr()
