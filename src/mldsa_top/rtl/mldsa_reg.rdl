@@ -62,23 +62,24 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Control ---- */
     reg {
         name = "MLDSA component control register type definition";
-        desc = "Control register to set the type of MLDSA operations.
-                [br] bit #[1:0]: This can be: 
+        desc = "Control register to set the type of MLDSA operations.";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Control command field. This can be: 
                 [br]            000 for NONE
                 [br]            001 for KEYGEN
                 [br]            010 for SIGNING
                 [br]            011 for VERIFYING
                 [br]            100 for KEYGEN+SIGN
-
-                [br] bit #3: Zeroize all internal registers after MLDSA process, to avoid SCA leakage.
-                ";
-
-        default sw = w;
-        default hw = r;
-        default resetsignal = reset_b;
-        field {desc = "Control command field"; swwe = mldsa_ready; hwclr;} CTRL[3] = 3'b0;
-        field {desc = "Zeroize all internal registers"; singlepulse;} ZEROIZE = 1'b0;
+                
+                [br] After each software write, hardware will erase the register"; swwe = mldsa_ready; hwclr;} CTRL[3] = 3'b0;
+        field {desc = "Zeroize all internal registers: Zeroize all internal registers and memories to avoid SCA leakage.
+                                [br] Software write generates only a single-cycle pulse on the 
+                                hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
         field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = mldsa_ready; hwclr;} PCR_SIGN = 1'b0;
+        field {desc = "ExternalMu Mode"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU = 1'b0;
     
     } MLDSA_CTRL;
 
@@ -177,6 +178,19 @@ addrmap mldsa_reg {
     
     } MLDSA_VERIFY_RES[16];
 
+    /* ---- MLDSA Component Input EXTERNAL_MU ---- */
+    reg {
+        name = "MLDSA component external_mu register type definition";
+        desc = "16 32-bit registers storing the external_mu in big-endian representation.
+                The external_mu can be any 512-bit value in [0 : 2^512-1].";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
+    
+    } MLDSA_EXTERNAL_MU[16];
+    
     /* ---- MLDSA Component Public Key ---- */
     external mem {
         name = "MLDSA component public key register type definition";

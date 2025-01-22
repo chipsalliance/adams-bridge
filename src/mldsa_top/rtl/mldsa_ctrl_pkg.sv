@@ -34,6 +34,7 @@ package mldsa_ctrl_pkg;
 
     localparam SEED_NUM_DWORDS = 8;
     localparam MSG_NUM_DWORDS = 16;
+    localparam EXTERNAL_MU_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam PRIVKEY_REG_NUM_DWORDS = 32;
     localparam PRIVKEY_REG_RHO_NUM_DWORDS = 8;
@@ -409,9 +410,11 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_RND_S        = MLDSA_KG_E + 2;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_SIGN_RND_S + 3;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_CLR  = MLDSA_SIGN_S+ 5;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_KG_E + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_MODE   = MLDSA_SIGN_S + 3;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_MU         = MLDSA_SIGN_CHECK_MODE + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_RHO_P      = MLDSA_SIGN_H_MU + 2;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_CLR  = MLDSA_SIGN_H_RHO_P + 3;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_CHECK_Y_CLR + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 3;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_CLR = MLDSA_SIGN_MAKE_Y_S+ 14;
@@ -427,7 +430,8 @@ package mldsa_ctrl_pkg;
     //Verify
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_H_TR       = MLDSA_VERIFY_S + 9;
-    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_H_MU       = MLDSA_VERIFY_H_TR + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_CHECK_MODE = MLDSA_VERIFY_H_TR + 1;
+    localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_H_MU       = MLDSA_VERIFY_CHECK_MODE + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_MAKE_C     = MLDSA_VERIFY_H_MU + 2;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_NTT_C      = MLDSA_VERIFY_MAKE_C + 1;
     localparam [MLDSA_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_NTT_T1     = MLDSA_VERIFY_NTT_C + 1;
