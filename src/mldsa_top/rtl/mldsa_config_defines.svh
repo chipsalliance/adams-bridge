@@ -22,18 +22,38 @@
 
   `define ABR_ICG           abr_clk_gate
 
-  `define ABR_MEM_TEST(_depth, _width) abr_1r1w_``_depth``x``_width``_ram 
-
-  `define ABR_MEM(_depth, _width) \
+  `define ABR_MEM(_depth, _width, _mem_name) \
   abr_1r1w_ram \
   #( .DEPTH(``_depth``), \
-     .DATA_WIDTH(``_width``)) 
+     .DATA_WIDTH(``_width``)) \
+   mldsa_``_mem_name``_inst\
+   (\
+      .clk_i(clk_i),\
+      .we_i(mldsa_memory_export.``_mem_name``_we_i),\
+      .waddr_i(mldsa_memory_export.``_mem_name``_waddr_i),\
+      .wdata_i(mldsa_memory_export.``_mem_name``_wdata_i),\
+      .re_i(mldsa_memory_export.``_mem_name``_re_i),\
+      .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
+      .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
+   );
 
-  `define ABR_MEM_BE(_depth, _width) \
+  `define ABR_MEM_BE(_depth, _width, _mem_name) \
   abr_1r1w_be_ram \
   #( .DEPTH(``_depth``), \
-     .DATA_WIDTH(``_width``)) 
+     .DATA_WIDTH(``_width``))  \
+     mldsa_``_mem_name``_inst\
+     (\
+        .clk_i(clk_i),\
+        .we_i(mldsa_memory_export.``_mem_name``_we_i),\
+        .waddr_i(mldsa_memory_export.``_mem_name``_waddr_i),\
+        .wdata_i(mldsa_memory_export.``_mem_name``_wdata_i),\
+        .wstrobe_i(mldsa_memory_export.``_mem_name``_wstrobe_i),\
+        .re_i(mldsa_memory_export.``_mem_name``_re_i),\
+        .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
+        .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
+     );
   
+
   `define MLDSA_CUSTOM_INF // KV interface\
                            output kv_read_t kv_read,\
                            input kv_rd_resp_t kv_rd_resp,\
