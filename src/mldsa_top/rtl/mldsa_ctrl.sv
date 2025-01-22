@@ -426,6 +426,7 @@ always_comb mldsa_privkey_lock = '0;
 
     for (int dword=0; dword < EXTERNAL_MU_NUM_DWORDS; dword++)begin
       external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[EXTERNAL_MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value;
+      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin

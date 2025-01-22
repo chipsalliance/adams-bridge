@@ -765,9 +765,6 @@ module mldsa_reg (
             if(decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
                 next_c = (field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
-            end else if(hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.we) begin // HW Write - we
-                next_c = hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.next;
-                load_next_c = '1;
             end else if(hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.hwclr) begin // HW Clear
                 next_c = '0;
                 load_next_c = '1;
