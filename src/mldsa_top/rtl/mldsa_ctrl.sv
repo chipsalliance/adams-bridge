@@ -1714,8 +1714,8 @@ mldsa_seq_sec mldsa_seq_sec_inst
   .data_o(sec_instr_o)
 );
 
-always_comb prim_instr = (prim_prog_cntr == MLDSA_ZEROIZE)? '0 : prim_instr_o;
-always_comb sec_instr = (sec_prog_cntr == MLDSA_ZEROIZE)? '0 : sec_instr_o;
+always_comb prim_instr = ((prim_prog_cntr == MLDSA_ZEROIZE) | (prim_prog_cntr == MLDSA_RESET))? '0 : prim_instr_o;
+always_comb sec_instr = ((sec_prog_cntr == MLDSA_ZEROIZE) | (sec_prog_cntr == MLDSA_RESET))? '0 : sec_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
