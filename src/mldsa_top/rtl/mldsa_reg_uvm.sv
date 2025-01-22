@@ -294,6 +294,36 @@ package mldsa_reg_uvm;
         endfunction : build
     endclass : mldsa_reg__MLDSA_VERIFY_RES
 
+    // Reg - mldsa_reg::MLDSA_EXTERNAL_MU
+    class mldsa_reg__MLDSA_EXTERNAL_MU extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        mldsa_reg__MLDSA_EXTERNAL_MU_bit_cg EXTERNAL_MU_bit_cg[32];
+        mldsa_reg__MLDSA_EXTERNAL_MU_fld_cg fld_cg;
+        rand uvm_reg_field EXTERNAL_MU;
+
+        function new(string name = "mldsa_reg__MLDSA_EXTERNAL_MU");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.EXTERNAL_MU = new("EXTERNAL_MU");
+            this.EXTERNAL_MU.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(EXTERNAL_MU_bit_cg[bt]) EXTERNAL_MU_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : mldsa_reg__MLDSA_EXTERNAL_MU
+
     // Mem - mldsa_reg::MLDSA_PUBKEY
     class mldsa_reg__MLDSA_PUBKEY extends uvm_reg_block;
         rand uvm_mem m_mem;
@@ -357,36 +387,6 @@ package mldsa_reg_uvm;
             this.default_map.add_mem(this.m_mem, 0);
         endfunction : build
     endclass : mldsa_reg__MLDSA_PRIVKEY_IN
-
-    // Reg - mldsa_reg::MLDSA_EXTERNAL_MU
-    class mldsa_reg__MLDSA_EXTERNAL_MU extends uvm_reg;
-        protected uvm_reg_data_t m_current;
-        protected uvm_reg_data_t m_data;
-        protected bit            m_is_read;
-
-        mldsa_reg__MLDSA_EXTERNAL_MU_bit_cg EXTERNAL_MU_bit_cg[32];
-        mldsa_reg__MLDSA_EXTERNAL_MU_fld_cg fld_cg;
-        rand uvm_reg_field EXTERNAL_MU;
-
-        function new(string name = "mldsa_reg__MLDSA_EXTERNAL_MU");
-            super.new(name, 32, build_coverage(UVM_CVR_ALL));
-        endfunction : new
-        extern virtual function void sample_values();
-        extern protected virtual function void sample(uvm_reg_data_t  data,
-                                                      uvm_reg_data_t  byte_en,
-                                                      bit             is_read,
-                                                      uvm_reg_map     map);
-
-        virtual function void build();
-            this.EXTERNAL_MU = new("EXTERNAL_MU");
-            this.EXTERNAL_MU.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
-            if (has_coverage(UVM_CVR_REG_BITS)) begin
-                foreach(EXTERNAL_MU_bit_cg[bt]) EXTERNAL_MU_bit_cg[bt] = new();
-            end
-            if (has_coverage(UVM_CVR_FIELD_VALS))
-                fld_cg = new();
-        endfunction : build
-    endclass : mldsa_reg__MLDSA_EXTERNAL_MU
 
     // Reg - kv_read_ctrl_reg
     class kv_read_ctrl_reg extends uvm_reg;
@@ -969,11 +969,11 @@ package mldsa_reg_uvm;
         rand mldsa_reg__MLDSA_SIGN_RND MLDSA_SIGN_RND[8];
         rand mldsa_reg__MLDSA_MSG MLDSA_MSG[16];
         rand mldsa_reg__MLDSA_VERIFY_RES MLDSA_VERIFY_RES[16];
+        rand mldsa_reg__MLDSA_EXTERNAL_MU MLDSA_EXTERNAL_MU[16];
         rand mldsa_reg__MLDSA_PUBKEY MLDSA_PUBKEY;
         rand mldsa_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand mldsa_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
         rand mldsa_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
-        rand mldsa_reg__MLDSA_EXTERNAL_MU MLDSA_EXTERNAL_MU[16];
         rand kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
         rand kv_status_reg mldsa_kv_rd_seed_status;
         rand mldsa_reg__intr_block_t intr_block_rf;
@@ -1043,6 +1043,13 @@ package mldsa_reg_uvm;
                 this.MLDSA_VERIFY_RES[i0].build();
                 this.default_map.add_reg(this.MLDSA_VERIFY_RES[i0], 'hd8 + i0*'h4);
             end
+            foreach(this.MLDSA_EXTERNAL_MU[i0]) begin
+                this.MLDSA_EXTERNAL_MU[i0] = new($sformatf("MLDSA_EXTERNAL_MU[%0d]", i0));
+                this.MLDSA_EXTERNAL_MU[i0].configure(this);
+                
+                this.MLDSA_EXTERNAL_MU[i0].build();
+                this.default_map.add_reg(this.MLDSA_EXTERNAL_MU[i0], 'h118 + i0*'h4);
+            end
             this.MLDSA_PUBKEY = new("MLDSA_PUBKEY");
             this.MLDSA_PUBKEY.configure(this);
             this.MLDSA_PUBKEY.build();
@@ -1059,13 +1066,6 @@ package mldsa_reg_uvm;
             this.MLDSA_PRIVKEY_IN.configure(this);
             this.MLDSA_PRIVKEY_IN.build();
             this.default_map.add_submap(this.MLDSA_PRIVKEY_IN.default_map, 'h6000);
-            foreach(this.MLDSA_EXTERNAL_MU[i0]) begin
-                this.MLDSA_EXTERNAL_MU[i0] = new($sformatf("MLDSA_EXTERNAL_MU[%0d]", i0));
-                this.MLDSA_EXTERNAL_MU[i0].configure(this);
-                
-                this.MLDSA_EXTERNAL_MU[i0].build();
-                this.default_map.add_reg(this.MLDSA_EXTERNAL_MU[i0], 'h7320 + i0*'h4);
-            end
             this.mldsa_kv_rd_seed_ctrl = new("mldsa_kv_rd_seed_ctrl");
             this.mldsa_kv_rd_seed_ctrl.configure(this);
 

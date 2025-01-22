@@ -101,6 +101,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_VERIFY_RES__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t EXTERNAL_MU;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__in_t;
+
+    typedef struct packed{
         logic rd_ack;
         logic [31:0] rd_data;
         logic wr_ack;
@@ -123,14 +131,6 @@ package mldsa_reg_pkg;
         logic [31:0] rd_data;
         logic wr_ack;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t;
-
-    typedef struct packed{
-        logic hwclr;
-    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t;
-
-    typedef struct packed{
-        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t EXTERNAL_MU;
-    } mldsa_reg__MLDSA_EXTERNAL_MU__in_t;
 
     typedef struct packed{
         logic hwclr;
@@ -193,11 +193,11 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGN_RND__in_t [8-1:0]MLDSA_SIGN_RND;
         mldsa_reg__MLDSA_MSG__in_t [16-1:0]MLDSA_MSG;
         mldsa_reg__MLDSA_VERIFY_RES__in_t [16-1:0]MLDSA_VERIFY_RES;
+        mldsa_reg__MLDSA_EXTERNAL_MU__in_t [16-1:0]MLDSA_EXTERNAL_MU;
         mldsa_reg__MLDSA_PUBKEY__external__in_t MLDSA_PUBKEY;
         mldsa_reg__MLDSA_SIGNATURE__external__in_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__in_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t MLDSA_PRIVKEY_IN;
-        mldsa_reg__MLDSA_EXTERNAL_MU__in_t [16-1:0]MLDSA_EXTERNAL_MU;
         kv_read_ctrl_reg__in_t mldsa_kv_rd_seed_ctrl;
         kv_status_reg__in_t mldsa_kv_rd_seed_status;
         mldsa_reg__intr_block_t__in_t intr_block_rf;
@@ -267,6 +267,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_VERIFY_RES__out_t;
 
     typedef struct packed{
+        logic [31:0] value;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t EXTERNAL_MU;
+    } mldsa_reg__MLDSA_EXTERNAL_MU__out_t;
+
+    typedef struct packed{
         logic req;
         logic [11:0] addr;
         logic req_is_wr;
@@ -297,14 +305,6 @@ package mldsa_reg_pkg;
         logic [31:0] wr_data;
         logic [31:0] wr_biten;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t;
-
-    typedef struct packed{
-        logic [31:0] value;
-    } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t;
-
-    typedef struct packed{
-        mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t EXTERNAL_MU;
-    } mldsa_reg__MLDSA_EXTERNAL_MU__out_t;
 
     typedef struct packed{
         logic value;
@@ -359,11 +359,11 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_SIGN_RND__out_t [8-1:0]MLDSA_SIGN_RND;
         mldsa_reg__MLDSA_MSG__out_t [16-1:0]MLDSA_MSG;
         mldsa_reg__MLDSA_VERIFY_RES__out_t [16-1:0]MLDSA_VERIFY_RES;
+        mldsa_reg__MLDSA_EXTERNAL_MU__out_t [16-1:0]MLDSA_EXTERNAL_MU;
         mldsa_reg__MLDSA_PUBKEY__external__out_t MLDSA_PUBKEY;
         mldsa_reg__MLDSA_SIGNATURE__external__out_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
         mldsa_reg__MLDSA_PRIVKEY_IN__external__out_t MLDSA_PRIVKEY_IN;
-        mldsa_reg__MLDSA_EXTERNAL_MU__out_t [16-1:0]MLDSA_EXTERNAL_MU;
         kv_read_ctrl_reg__out_t mldsa_kv_rd_seed_ctrl;
         mldsa_reg__intr_block_t__out_t intr_block_rf;
     } mldsa_reg__out_t;

@@ -178,6 +178,19 @@ addrmap mldsa_reg {
     
     } MLDSA_VERIFY_RES[16];
 
+    /* ---- MLDSA Component Input EXTERNAL_MU ---- */
+    reg {
+        name = "MLDSA component external_mu register type definition";
+        desc = "16 32-bit registers storing the external_mu in big-endian representation.
+                The external_mu can be any 512-bit value in [0 : 2^512-1].";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
+    
+    } MLDSA_EXTERNAL_MU[16];
+    
     /* ---- MLDSA Component Public Key ---- */
     external mem {
         name = "MLDSA component public key register type definition";
@@ -223,19 +236,6 @@ addrmap mldsa_reg {
         mementries = 1224;
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
-
-    /* ---- MLDSA Component Input EXTERNAL_MU ---- */
-    reg {
-        name = "MLDSA component external_mu register type definition";
-        desc = "16 32-bit registers storing the external_mu in big-endian representation.
-                The external_mu can be any 512-bit value in [0 : 2^512-1].";
-
-        default sw = w;
-        default hw = r;
-        default resetsignal = reset_b;
-        field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
-    
-    } MLDSA_EXTERNAL_MU[16];
 
     kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl @0x8000;
     kv_status_reg mldsa_kv_rd_seed_status;

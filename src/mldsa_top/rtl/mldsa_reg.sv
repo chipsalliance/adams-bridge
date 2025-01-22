@@ -92,11 +92,11 @@ module mldsa_reg (
         logic [8-1:0]MLDSA_SIGN_RND;
         logic [16-1:0]MLDSA_MSG;
         logic [16-1:0]MLDSA_VERIFY_RES;
+        logic [16-1:0]MLDSA_EXTERNAL_MU;
         logic MLDSA_PUBKEY;
         logic MLDSA_SIGNATURE;
         logic MLDSA_PRIVKEY_OUT;
         logic MLDSA_PRIVKEY_IN;
-        logic [16-1:0]MLDSA_EXTERNAL_MU;
         logic mldsa_kv_rd_seed_ctrl;
         logic mldsa_kv_rd_seed_status;
         struct packed{
@@ -151,6 +151,9 @@ module mldsa_reg (
         for(int i0=0; i0<16; i0++) begin
             decoded_reg_strb.MLDSA_VERIFY_RES[i0] = cpuif_req_masked & (cpuif_addr == 16'hd8 + i0*16'h4);
         end
+        for(int i0=0; i0<16; i0++) begin
+            decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] = cpuif_req_masked & (cpuif_addr == 16'h118 + i0*16'h4);
+        end
         decoded_reg_strb.MLDSA_PUBKEY = cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
         decoded_reg_strb.MLDSA_SIGNATURE = cpuif_req_masked & (cpuif_addr >= 16'h2000) & (cpuif_addr <= 16'h2000 + 16'h1213);
@@ -159,9 +162,6 @@ module mldsa_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
         decoded_reg_strb.MLDSA_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
-        for(int i0=0; i0<16; i0++) begin
-            decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] = cpuif_req_masked & (cpuif_addr == 16'h7320 + i0*16'h4);
-        end
         decoded_reg_strb.mldsa_kv_rd_seed_ctrl = cpuif_req_masked & (cpuif_addr == 16'h8000);
         decoded_reg_strb.mldsa_kv_rd_seed_status = cpuif_req_masked & (cpuif_addr == 16'h8004);
         decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'h8100);
@@ -735,26 +735,6 @@ module mldsa_reg (
         end
         assign hwif_out.MLDSA_VERIFY_RES[i0].VERIFY_RES.value = field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value;
     end
-    assign hwif_out.MLDSA_PUBKEY.req = decoded_reg_strb.MLDSA_PUBKEY;
-    assign hwif_out.MLDSA_PUBKEY.addr = decoded_addr[11:0];
-    assign hwif_out.MLDSA_PUBKEY.req_is_wr = decoded_req_is_wr;
-    assign hwif_out.MLDSA_PUBKEY.wr_data = decoded_wr_data;
-    assign hwif_out.MLDSA_PUBKEY.wr_biten = decoded_wr_biten;
-    assign hwif_out.MLDSA_SIGNATURE.req = decoded_reg_strb.MLDSA_SIGNATURE;
-    assign hwif_out.MLDSA_SIGNATURE.addr = decoded_addr[12:0];
-    assign hwif_out.MLDSA_SIGNATURE.req_is_wr = decoded_req_is_wr;
-    assign hwif_out.MLDSA_SIGNATURE.wr_data = decoded_wr_data;
-    assign hwif_out.MLDSA_SIGNATURE.wr_biten = decoded_wr_biten;
-    assign hwif_out.MLDSA_PRIVKEY_OUT.req = decoded_reg_strb.MLDSA_PRIVKEY_OUT;
-    assign hwif_out.MLDSA_PRIVKEY_OUT.addr = decoded_addr[12:0];
-    assign hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr = decoded_req_is_wr;
-    assign hwif_out.MLDSA_PRIVKEY_OUT.wr_data = decoded_wr_data;
-    assign hwif_out.MLDSA_PRIVKEY_OUT.wr_biten = decoded_wr_biten;
-    assign hwif_out.MLDSA_PRIVKEY_IN.req = decoded_reg_strb.MLDSA_PRIVKEY_IN;
-    assign hwif_out.MLDSA_PRIVKEY_IN.addr = decoded_addr[12:0];
-    assign hwif_out.MLDSA_PRIVKEY_IN.req_is_wr = decoded_req_is_wr;
-    assign hwif_out.MLDSA_PRIVKEY_IN.wr_data = decoded_wr_data;
-    assign hwif_out.MLDSA_PRIVKEY_IN.wr_biten = decoded_wr_biten;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_EXTERNAL_MU[].EXTERNAL_MU
         always_comb begin
@@ -781,6 +761,26 @@ module mldsa_reg (
         end
         assign hwif_out.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value = field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value;
     end
+    assign hwif_out.MLDSA_PUBKEY.req = decoded_reg_strb.MLDSA_PUBKEY;
+    assign hwif_out.MLDSA_PUBKEY.addr = decoded_addr[11:0];
+    assign hwif_out.MLDSA_PUBKEY.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLDSA_PUBKEY.wr_data = decoded_wr_data;
+    assign hwif_out.MLDSA_PUBKEY.wr_biten = decoded_wr_biten;
+    assign hwif_out.MLDSA_SIGNATURE.req = decoded_reg_strb.MLDSA_SIGNATURE;
+    assign hwif_out.MLDSA_SIGNATURE.addr = decoded_addr[12:0];
+    assign hwif_out.MLDSA_SIGNATURE.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLDSA_SIGNATURE.wr_data = decoded_wr_data;
+    assign hwif_out.MLDSA_SIGNATURE.wr_biten = decoded_wr_biten;
+    assign hwif_out.MLDSA_PRIVKEY_OUT.req = decoded_reg_strb.MLDSA_PRIVKEY_OUT;
+    assign hwif_out.MLDSA_PRIVKEY_OUT.addr = decoded_addr[12:0];
+    assign hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLDSA_PRIVKEY_OUT.wr_data = decoded_wr_data;
+    assign hwif_out.MLDSA_PRIVKEY_OUT.wr_biten = decoded_wr_biten;
+    assign hwif_out.MLDSA_PRIVKEY_IN.req = decoded_reg_strb.MLDSA_PRIVKEY_IN;
+    assign hwif_out.MLDSA_PRIVKEY_IN.addr = decoded_addr[12:0];
+    assign hwif_out.MLDSA_PRIVKEY_IN.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLDSA_PRIVKEY_IN.wr_data = decoded_wr_data;
+    assign hwif_out.MLDSA_PRIVKEY_IN.wr_biten = decoded_wr_biten;
     // Field: mldsa_reg.mldsa_kv_rd_seed_ctrl.read_en
     always_comb begin
         automatic logic [0:0] next_c;
