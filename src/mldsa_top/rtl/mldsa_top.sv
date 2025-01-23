@@ -321,6 +321,11 @@ mldsa_ctrl mldsa_ctrl_inst
   .INTT_trigger(INTT_trigger),
 `endif
 
+`ifdef CALIPTRA
+  .kv_read(kv_read),
+  .kv_rd_resp(kv_rd_resp),
+  .pcr_signing_data(pcr_signing_data),
+`endif
 
   //control interface
   .mldsa_reg_hwif_in_o(mldsa_reg_hwif_in),
@@ -420,7 +425,7 @@ mldsa_ctrl mldsa_ctrl_inst
 
   .error_intr(error_intr),
   .notif_intr(notif_intr),
-  .debugUnlock_or_scan_mode_switch
+  .debugUnlock_or_scan_mode_switch(debugUnlock_or_scan_mode_switch)
 );
 
 always_comb zeroize_mem_we = (zeroize_mem.rd_wr_en == RW_WRITE);
