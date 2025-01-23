@@ -38,22 +38,30 @@ package mldsa_params_pkg;
   
   parameter COEFF_PER_CLK = 4;
 
-//Memory interface - FIXME calculate the width based on depth not the other way
-  parameter MLDSA_MEM_MAX_DEPTH = 1408; //FIXME
+
+  
+  //Memory interface
+  parameter MLDSA_MEM_MAX_DEPTH = 1408;
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH;
   parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
 
-  parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
+  //parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
+  //parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
+  parameter MLDSA_MEM_INST0_DEPTH = 1664/2; //9.75 KB
   parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
+  parameter MLDSA_MEM_INST0_DATA_W = MLDSA_MEM_DATA_WIDTH;
   parameter MLDSA_MEM_INST1_DEPTH = 576; //6.75 KB
   parameter MLDSA_MEM_INST1_ADDR_W = $clog2(MLDSA_MEM_INST1_DEPTH);
+  parameter MLDSA_MEM_INST1_DATA_W = MLDSA_MEM_DATA_WIDTH;
   parameter MLDSA_MEM_INST2_DEPTH = 1408; //16.5 KB
   parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
+  parameter MLDSA_MEM_INST2_DATA_W = MLDSA_MEM_DATA_WIDTH;
   parameter MLDSA_MEM_INST3_DEPTH = 128; //1.5 KB
   parameter MLDSA_MEM_INST3_ADDR_W = $clog2(MLDSA_MEM_INST3_DEPTH);
+  parameter MLDSA_MEM_INST3_DATA_W = MLDSA_MEM_DATA_WIDTH;
   parameter MLDSA_MEM_W1_DEPTH = 512;
-  parameter MLDSA_MEM_W1_ADDR_WIDTH = $clog2(MLDSA_MEM_W1_DEPTH);
-  parameter MLDSA_MEM_W1_DATA_WIDTH = 4;
+  parameter MLDSA_MEM_W1_ADDR_W = $clog2(MLDSA_MEM_W1_DEPTH);
+  parameter MLDSA_MEM_W1_DATA_W = 4;
 
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;
@@ -78,5 +86,5 @@ endpackage
 
 `endif
 //======================================================================
-// EOF ecc_params.sv
+// EOF mldsa_params_pkg.sv
 //======================================================================
