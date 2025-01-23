@@ -1032,10 +1032,7 @@ always_comb mldsa_privkey_lock = '0;
       keygen_signing_process <= 0;
     end
     else begin
-      mldsa_valid_reg <= mldsa_valid_reg | 
-                             (keygen_process & keygen_done) |
-                             (signing_process & signature_done) |
-                             (verifying_process & verify_done);
+      mldsa_valid_reg <= mldsa_valid_reg | process_done;
       y_valid <= set_y_valid ? 1 :
                  clear_y_valid ? 0 :
                  y_valid;
@@ -1051,10 +1048,10 @@ always_comb mldsa_privkey_lock = '0;
       verify_valid <= set_verify_valid ? 1 :
                       clear_verify_valid ? 0 :
                       verify_valid;
-      keygen_process <= keygen_process | keygen_process_nxt;
-      signing_process <= signing_process | signing_process_nxt;
-      verifying_process <= verifying_process | verifying_process_nxt;
-      keygen_signing_process <= keygen_signing_process | keygen_signing_process_nxt;
+      keygen_process <= process_done ? '0 : keygen_process | keygen_process_nxt;
+      signing_process <= process_done ? '0 : signing_process | signing_process_nxt;
+      verifying_process <= process_done ? '0 : verifying_process | verifying_process_nxt;
+      keygen_signing_process <= process_done ? '0 : keygen_signing_process | keygen_signing_process_nxt;
     end
   end
 
@@ -1065,7 +1062,7 @@ always_comb mldsa_privkey_lock = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
       external_mu_mode <= 0;  
-    else if (zeroize)
+    else if (zeroize | process_done)
       external_mu_mode <= 0;  
     else if (process_done)
       external_mu_mode <= 0;
