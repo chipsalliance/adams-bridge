@@ -58,8 +58,9 @@ package mldsa_ctrl_pkg;
     localparam LFSR_W = RND_W / 2;
 
     localparam SK_MEM_DEPTH = 1192;
-    localparam SK_MEM_BANK_DEPTH = 1192/2;
-    localparam SK_MEM_ADDR_W = $clog2(SK_MEM_BANK_DEPTH);
+    localparam SK_MEM_BANK_DEPTH = SK_MEM_DEPTH/2;
+    localparam SK_MEM_BANK_ADDR_W = $clog2(SK_MEM_BANK_DEPTH);
+    localparam SK_MEM_BANK_DATA_W = DATA_WIDTH;
 
     localparam SIG_Z_MEM_DATA_W = 160;
     localparam SIG_Z_MEM_NUM_DWORD = SIG_Z_MEM_DATA_W/32;
@@ -80,7 +81,6 @@ package mldsa_ctrl_pkg;
     localparam PK_MEM_OFFSET_W = $clog2(PK_MEM_DATA_W/32);
     localparam PK_RHO_REG_ADDR_W = $clog2(PRIVKEY_REG_RHO_NUM_DWORDS);
     
-
     typedef struct packed {
         logic [7:0][63:0] tr;
         logic [3:0][63:0] K;

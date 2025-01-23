@@ -136,6 +136,12 @@ module mldsa_ctrl
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
+  //Memory interface export
+  mldsa_sram_if.req sk_bank0_mem_if,
+  mldsa_sram_if.req sk_bank1_mem_if,
+  mldsa_sram_be_if.req sig_z_mem_if,
+  mldsa_sram_be_if.req pk_mem_if,
+
   output mem_if_t zeroize_mem_o,
 
   `ifdef CALIPTRA
@@ -146,6 +152,7 @@ module mldsa_ctrl
   input pcr_signing_t pcr_signing_data,
   `endif
 
+  input logic debugUnlock_or_scan_mode_switch,
   output logic busy_o,
 
   //Interrupts
@@ -382,7 +389,7 @@ always_comb mldsa_privkey_lock = '0;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
   
-  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
+  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || debugUnlock_or_scan_mode_switch;
   
   always_comb external_mu = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   always_comb mldsa_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
@@ -469,17 +476,17 @@ always_comb mldsa_privkey_lock = '0;
 
   //Request muxing
   logic [1:0] sk_ram_we_bank, sk_ram_re_bank;
-  logic [1:0][SK_MEM_ADDR_W-1:0] sk_ram_waddr_bank, sk_ram_raddr_bank;
+  logic [1:0][SK_MEM_BANK_ADDR_W-1:0] sk_ram_waddr_bank, sk_ram_raddr_bank;
   logic [1:0][DATA_WIDTH-1:0] sk_ram_wdata, sk_ram_rdata;
 
   logic [1:0] skencode_keymem_we_bank, pwr2rnd_keymem_we_bank, api_keymem_we_bank;
-  logic [SK_MEM_ADDR_W:0] api_sk_waddr, api_sk_raddr;
-  logic [SK_MEM_ADDR_W:0] api_sk_mem_waddr, api_sk_mem_raddr;
+  logic [SK_MEM_BANK_ADDR_W:0] api_sk_waddr, api_sk_raddr;
+  logic [SK_MEM_BANK_ADDR_W:0] api_sk_mem_waddr, api_sk_mem_raddr;
   logic [4:0] api_sk_reg_waddr, api_sk_reg_raddr;
 
   logic [1:0] api_keymem_re_bank, api_keymem_re_bank_f;
   logic [1:0] skdecode_re_bank;
-  logic [1:0][SK_MEM_ADDR_W:0] skdecode_rdaddr;
+  logic [1:0][SK_MEM_BANK_ADDR_W:0] skdecode_rdaddr;
 
   logic api_keymem_wr_dec, api_sk_reg_wr_dec;
   logic api_keymem_rd_dec, api_sk_reg_rd_dec, api_sk_reg_rd_dec_f;
@@ -509,10 +516,10 @@ always_comb mldsa_privkey_lock = '0;
 
       sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | api_keymem_we_bank[i] | zeroize_mem_we;
 
-      sk_ram_waddr_bank[i] = ({SK_MEM_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_ADDR_W:1]) |
-                             ({SK_MEM_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_ADDR_W:1] ) |
-                             ({SK_MEM_ADDR_W{api_keymem_we_bank[i]}} & api_sk_mem_waddr[SK_MEM_ADDR_W:1]) |
-                             ({SK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_ADDR_W-1:0]);
+      sk_ram_waddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:1] ) |
+                             ({SK_MEM_BANK_ADDR_W{api_keymem_we_bank[i]}} & api_sk_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_BANK_ADDR_W-1:0]);
                  
       sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
                         ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
@@ -528,12 +535,12 @@ always_comb mldsa_privkey_lock = '0;
 
       skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
 
-      skdecode_rdaddr[i] = skdecode_keymem_if_i[i].addr[SK_MEM_ADDR_W:0];
+      skdecode_rdaddr[i] = skdecode_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:0];
 
       sk_ram_re_bank[i] = skdecode_re_bank[i] | api_keymem_re_bank[i];
 
-      sk_ram_raddr_bank[i] = ({SK_MEM_ADDR_W{skdecode_re_bank[i]}} & skdecode_rdaddr[i][SK_MEM_ADDR_W:1]) |
-                             ({SK_MEM_ADDR_W{api_keymem_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_ADDR_W:1]);
+      sk_ram_raddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skdecode_re_bank[i]}} & skdecode_rdaddr[i][SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{api_keymem_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_BANK_ADDR_W:1]);
 
     end
   end
@@ -553,29 +560,19 @@ always_comb mldsa_privkey_lock = '0;
                                   {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1] |
                                   {DATA_WIDTH{api_sk_reg_rd_dec_f}} & privkey_reg_rdata;
 
-  `ABR_MEM(SK_MEM_BANK_DEPTH,DATA_WIDTH)
-  mldsa_sk_ram_bank0
-  (
-    .clk_i(clk),
-    .we_i(sk_ram_we_bank[0]),
-    .waddr_i(sk_ram_waddr_bank[0]),
-    .wdata_i(sk_ram_wdata[0]),
-    .re_i(sk_ram_re_bank[0]),
-    .raddr_i(sk_ram_raddr_bank[0]),
-    .rdata_o(sk_ram_rdata[0])
-  );
+  always_comb sk_bank0_mem_if.we_i = (sk_ram_we_bank[0]);
+  always_comb sk_bank0_mem_if.waddr_i = (sk_ram_waddr_bank[0]);
+  always_comb sk_bank0_mem_if.wdata_i = (sk_ram_wdata[0]);
+  always_comb sk_bank0_mem_if.re_i = (sk_ram_re_bank[0]);
+  always_comb sk_bank0_mem_if.raddr_i = (sk_ram_raddr_bank[0]);
+  always_comb sk_ram_rdata[0] = sk_bank0_mem_if.rdata_o;
 
-  `ABR_MEM(SK_MEM_BANK_DEPTH,DATA_WIDTH)
-  mldsa_sk_ram_bank1
-  (
-    .clk_i(clk),
-    .we_i(sk_ram_we_bank[1]),
-    .waddr_i(sk_ram_waddr_bank[1]),
-    .wdata_i(sk_ram_wdata[1]),
-    .re_i(sk_ram_re_bank[1]),
-    .raddr_i(sk_ram_raddr_bank[1]),
-    .rdata_o(sk_ram_rdata[1])
-  );
+  always_comb sk_bank1_mem_if.we_i = (sk_ram_we_bank[1]);
+  always_comb sk_bank1_mem_if.waddr_i = (sk_ram_waddr_bank[1]);
+  always_comb sk_bank1_mem_if.wdata_i = (sk_ram_wdata[1]);
+  always_comb sk_bank1_mem_if.re_i = (sk_ram_re_bank[1]);
+  always_comb sk_bank1_mem_if.raddr_i = (sk_ram_raddr_bank[1]);
+  always_comb sk_ram_rdata[1] = sk_bank1_mem_if.rdata_o;
 
   //Private Key External Memory
   always_ff @(posedge clk or negedge rst_b) begin
@@ -694,18 +691,13 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb api_sig_z_re = mldsa_valid_reg & api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
-  `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W)
-  mldsa_sig_z_ram
-  (
-    .clk_i(clk),
-    .we_i(sig_z_ram_we),
-    .waddr_i(sig_z_ram_waddr),
-    .wstrobe_i(sig_z_ram_wstrobe),
-    .wdata_i(sig_z_ram_wdata),
-    .re_i(sig_z_ram_re),
-    .raddr_i(sig_z_ram_raddr),
-    .rdata_o(sig_z_ram_rdata)
-  );
+  always_comb sig_z_mem_if.we_i = (sig_z_ram_we);
+  always_comb sig_z_mem_if.waddr_i = (sig_z_ram_waddr);
+  always_comb sig_z_mem_if.wstrobe_i = (sig_z_ram_wstrobe);
+  always_comb sig_z_mem_if.wdata_i = (sig_z_ram_wdata);
+  always_comb sig_z_mem_if.re_i = (sig_z_ram_re);
+  always_comb sig_z_mem_if.raddr_i = (sig_z_ram_raddr);
+  always_comb sig_z_ram_rdata = sig_z_mem_if.rdata_o;
 
   //read requests
   always_comb sig_z_ram_re = (sigdecode_z_rd_req_i.rd_wr_en == RW_READ) | api_sig_z_re;
@@ -834,18 +826,14 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb api_pubkey_re = mldsa_valid_reg & api_pubkey_dec & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
 
-  `ABR_MEM_BE(64,320)
-  mldsa_pubkey_ram
-  (
-    .clk_i(clk),
-    .we_i(pubkey_ram_we),
-    .waddr_i(pubkey_ram_waddr),
-    .wstrobe_i(pubkey_ram_wstrobe),
-    .wdata_i(pubkey_ram_wdata),
-    .re_i(pubkey_ram_re),
-    .raddr_i(pubkey_ram_raddr),
-    .rdata_o(pubkey_ram_rdata)
-  );
+
+  always_comb pk_mem_if.we_i = (pubkey_ram_we);
+  always_comb pk_mem_if.waddr_i = (pubkey_ram_waddr);
+  always_comb pk_mem_if.wstrobe_i = (pubkey_ram_wstrobe);
+  always_comb pk_mem_if.wdata_i = (pubkey_ram_wdata);
+  always_comb pk_mem_if.re_i = (pubkey_ram_re);
+  always_comb pk_mem_if.raddr_i = (pubkey_ram_raddr);
+  always_comb pubkey_ram_rdata = pk_mem_if.rdata_o;
 
   assign pubkey_ram_rdata_t1 = pubkey_ram_rdata;
 
@@ -882,7 +870,7 @@ always_comb mldsa_privkey_lock = '0;
 
 
   always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
-                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_pubkey_mem_addr.offset*32));
+                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_PUBKEY.wr_data << api_pubkey_mem_addr.offset*32));
 
 
   //pk reg read flop
