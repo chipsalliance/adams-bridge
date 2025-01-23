@@ -386,7 +386,7 @@ always_comb mldsa_privkey_lock = '0;
   
   always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value;
   
-  always_comb external_mu = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
+  always_comb external_mu = 0; //mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value; //TODO: enable after ExternalMu validation
   always_comb mldsa_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   
   always_comb begin // mldsa reg writing 
