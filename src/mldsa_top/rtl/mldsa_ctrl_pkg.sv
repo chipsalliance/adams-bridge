@@ -34,7 +34,7 @@ package mldsa_ctrl_pkg;
 
     localparam SEED_NUM_DWORDS = 8;
     localparam MSG_NUM_DWORDS = 16;
-    localparam EXTERNAL_MU_NUM_DWORDS = 16;
+    localparam MU_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam PRIVKEY_REG_NUM_DWORDS = 32;
     localparam PRIVKEY_REG_RHO_NUM_DWORDS = 8;

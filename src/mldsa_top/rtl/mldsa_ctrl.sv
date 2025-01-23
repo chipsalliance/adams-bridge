@@ -285,7 +285,9 @@ always_comb mldsa_privkey_lock = '0;
   logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
   logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
-  logic [EXTERNAL_MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] external_mu_reg;
+  logic internal_mu_we;
+  logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] internal_mu_reg;
+  logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] external_mu_reg;
   logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
   logic [7:0][63:0] rho_p_reg;
   logic [3:0][63:0] rho_reg;
@@ -424,8 +426,10 @@ always_comb mldsa_privkey_lock = '0;
       `endif
     end
 
-    for (int dword=0; dword < EXTERNAL_MU_NUM_DWORDS; dword++)begin
-      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[EXTERNAL_MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value;
+    for (int dword=0; dword < MU_NUM_DWORDS; dword++)begin
+      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value;
+      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we = internal_mu_we & !external_mu & !zeroize;
+      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[MU_NUM_DWORDS-1-dword];
       mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
     end
   
@@ -967,20 +971,10 @@ always_comb mldsa_privkey_lock = '0;
     end
   end
 
-    always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      mu_reg <= 0;
-    end
-    else if (zeroize) begin
-      mu_reg <= 0;
-    end
-    else if (external_mu_mode)
-      mu_reg <= external_mu_reg;
-    else if (sampler_state_dv_i) begin
-      if (prim_instr.operand3 == MLDSA_DEST_MU_REG_ID) begin
-        mu_reg <= sampler_state_data_i[0][511:0];
-      end
-    end
+  always_comb begin
+    internal_mu_we = sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_MU_REG_ID);
+    internal_mu_reg = sampler_state_data_i[0][511:0];
+    mu_reg = external_mu_reg;
   end
 
   // without zeroize to make it more complex
