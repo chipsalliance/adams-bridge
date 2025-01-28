@@ -185,7 +185,8 @@ addrmap mldsa_reg {
                 The external_mu can be any 512-bit value in [0 : 2^512-1].";
 
         default sw = w;
-        default hw = r;
+        default hw = rw;
+        default we = true;
         default resetsignal = reset_b;
         field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
     
