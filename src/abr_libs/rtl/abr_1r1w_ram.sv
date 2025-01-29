@@ -33,7 +33,9 @@ module abr_1r1w_ram #(
     );
 
     //storage element
+    // VCS coverage off
     logic [DEPTH-1:0][DATA_WIDTH-1:0] ram;
+    // VCS coverage on
 
     always @(posedge clk_i) begin
         if (we_i) begin
@@ -67,9 +69,7 @@ module abr_1r1w_ram #(
     output logic [DATA_WIDTH-1:0]      rdata_o
     );
 
-    // synopsys coverage_off
     (* ram_style = "block" *) reg [DATA_WIDTH-1:0] ram [DEPTH-1:0];
-    // synopsys coverage_on
     
     always @(posedge clk_i) begin
         if (we_i) begin

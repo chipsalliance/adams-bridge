@@ -70,9 +70,9 @@ module abr_1r1w_be_ram #(
 `else
 
     //storage element
-    // synopsys coverage_off
+    // VCS coverage off
    logic [(DATA_WIDTH/STROBE_WIDTH)-1:0][STROBE_WIDTH-1:0] ram [DEPTH-1:0];
-    // synopsys coverage_on
+    // VCS coverage on
 
     always @(posedge clk_i) begin
         if (we_i) begin
@@ -120,9 +120,7 @@ module bytewrite_tdp_ram_rf #(
 );
 
     // Core memory storage (True Dual Port)
-    // synopsys coverage_off
      (* ram_style = "block" *) reg [DATA_WIDTH-1:0] ram_block [DEPTH-1:0];  // Memory array
-    // synopsys coverage_on
 
     integer i;
 
