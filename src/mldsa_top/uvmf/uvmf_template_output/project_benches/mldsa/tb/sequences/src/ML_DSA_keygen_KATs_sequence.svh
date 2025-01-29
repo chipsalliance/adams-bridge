@@ -73,6 +73,18 @@ class ML_DSA_keygen_KATs_sequence extends mldsa_bench_sequence_base;
 
       `uvm_info("KAT", $sformatf("Running KeyGen KAT %0d", i), UVM_LOW);
 
+      // Wait for ready flag in MLDSA_STATUS
+      ready = 0;
+      while (!ready) begin
+        reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+        if (status != UVM_IS_OK) begin
+          `uvm_error("REG_READ_FAIL", "Failed to read MLDSA_STATUS");
+        end else begin
+          `uvm_info("REG_READ_PASS", $sformatf("MLDSA_STATUS: %h", data), UVM_HIGH);
+        end
+        ready = data[0];
+      end
+
       // Write SEED to MLDSA_SEED registers
       foreach (reg_model.MLDSA_SEED[j]) begin
         reg_model.MLDSA_SEED[j].write(status, kat_SEED[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -93,15 +105,15 @@ class ML_DSA_keygen_KATs_sequence extends mldsa_bench_sequence_base;
       end
 
       // Wait for ready flag in MLDSA_STATUS
-      ready = 0;
-      while (!ready) begin
+      valid =0;
+      while(!valid) begin
         reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
-          `uvm_error("REG_READ_FAIL", "Failed to read MLDSA_STATUS");
+          `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
         end else begin
-          `uvm_info("REG_READ_PASS", $sformatf("MLDSA_STATUS: %h", data), UVM_HIGH);
+          `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
         end
-        ready = data[0];
+        valid = data[1];
       end
 
       // Read and validate PK
