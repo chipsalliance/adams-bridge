@@ -101,6 +101,8 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_VERIFY_RES__in_t;
 
     typedef struct packed{
+        logic [31:0] next;
+        logic we;
         logic hwclr;
     } mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t;
 
