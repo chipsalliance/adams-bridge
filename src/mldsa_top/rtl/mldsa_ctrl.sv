@@ -840,7 +840,7 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb pkdecode_rd_en = prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
 
-  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:342]}) & ~msg_hold;
+  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]}) & ~msg_hold;
 
   //read requests
   always_comb pubkey_ram_re = sampler_pk_rd_en | pkdecode_rd_en | api_pubkey_re;
