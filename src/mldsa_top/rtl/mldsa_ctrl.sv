@@ -166,9 +166,11 @@ module mldsa_ctrl
   logic mldsa_ready;
   logic mldsa_valid_reg;
   logic mldsa_privkey_lock;
+  logic kv_seed_data_present;
 
   logic external_mu;
   logic external_mu_mode, external_mu_mode_nxt;
+
 
   `ifdef CALIPTRA
 //Custom keyvault logic for Caliptra
@@ -180,7 +182,6 @@ module mldsa_ctrl
   kv_error_code_e kv_seed_error;
   logic kv_seed_ready, kv_seed_done;
   //KV Seed Data Present
-  logic kv_seed_data_present;
   logic kv_seed_data_present_set, kv_seed_data_present_reset;
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
@@ -245,15 +246,6 @@ end
 
 always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 
-always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
-  if (!rst_b)
-    mldsa_privkey_lock <= '0;
-  else if (zeroize)
-    mldsa_privkey_lock <= '0;
-  else if (kv_seed_data_present_set)
-    mldsa_privkey_lock <= '1;
-end
-
 `else
 always_comb begin: mldsa_kv_ctrl_reg
   //ready when fsm is not busy
@@ -268,7 +260,7 @@ always_comb begin: mldsa_kv_ctrl_reg
   mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
 end
 
-always_comb mldsa_privkey_lock = '0;
+always_comb kv_seed_data_present = '0;
 `endif
 
   logic [2:0] cmd_reg;
@@ -495,8 +487,22 @@ always_comb mldsa_privkey_lock = '0;
 
   logic api_keymem_wr_dec, api_sk_reg_wr_dec;
   logic api_keymem_rd_dec, api_sk_reg_rd_dec, api_sk_reg_rd_dec_f;
+  logic api_keymem_rd_vld;
   logic [DATA_WIDTH-1:0] privkey_reg_rdata;
   logic [DATA_WIDTH-1:0] privkey_out_rdata;
+
+  always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
+    if (!rst_b)
+      mldsa_privkey_lock <= '1;
+    else if (zeroize)
+      mldsa_privkey_lock <= '1;
+    //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
+    else if (~kv_seed_data_present & (keygen_process & keygen_done))
+      mldsa_privkey_lock <= '0;
+  end
+  
+  always_comb api_keymem_rd_vld = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
+                                  mldsa_valid_reg & ~mldsa_privkey_lock ;
 
   always_comb api_sk_waddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
   always_comb api_sk_raddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
@@ -534,9 +540,7 @@ always_comb mldsa_privkey_lock = '0;
   
   always_comb begin
     for (int i = 0; i < 2; i++) begin
-      api_keymem_re_bank[i] = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
-                              mldsa_valid_reg & keygen_process &
-                              api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
+      api_keymem_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
 
       skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
 
@@ -610,7 +614,7 @@ always_comb mldsa_privkey_lock = '0;
     end else if (zeroize) begin
       privkey_reg_rdata <= '0;
     end else begin
-      if (mldsa_valid_reg & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & api_sk_reg_rd_dec) begin
+      if (api_keymem_rd_vld & api_sk_reg_rd_dec) begin
         privkey_reg_rdata <= privatekey_reg.raw[api_sk_reg_raddr];
       end
     end
@@ -647,7 +651,7 @@ always_comb mldsa_privkey_lock = '0;
     end
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & keygen_process & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
+  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
 
   //No write to PRIVKEY_OUT allowed - just ack it
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
