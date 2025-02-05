@@ -369,12 +369,9 @@ module abr_sha3pad
       // set, it moves to Pad state.
       StMessage: begin
         sel_mux = MuxFifo;
+        en_msgbuf = msg_valid_i && msg_partial;
 
-        if (msg_valid_i && msg_partial) begin
-          st_d = StMessage;
-
-          en_msgbuf = 1'b 1;
-        end else if (sent_blocksize & keccak_ack) begin
+        if (sent_blocksize & keccak_ack) begin
           // Check block completion first even process is set.
           st_d = StMessage;
 
@@ -401,12 +398,9 @@ module abr_sha3pad
       // new round until the current one completes.
       StMessageWait: begin
         sel_mux = MuxFifo;
+        en_msgbuf = msg_valid_i && msg_partial;
 
-        if (msg_valid_i && msg_partial) begin
-          st_d = StMessageWait;
-
-          en_msgbuf = 1'b 1;
-        end else if (sent_blocksize) begin
+        if (sent_blocksize) begin
           st_d = StMessageWait;
 
           hold_msg = 1'b 1;
@@ -632,7 +626,7 @@ module abr_sha3pad
 
   always_comb begin
     unique case (sel_mux)
-      MuxFifo:    msg_ready_o = en_msgbuf | (msg_valid_i & ~hold_msg);
+      MuxFifo:    msg_ready_o = en_msgbuf | ~hold_msg;
       MuxPrefix:  msg_ready_o = 1'b 0;
       MuxFuncPad: msg_ready_o = 1'b 0;
       MuxZeroEnd: msg_ready_o = 1'b 0;

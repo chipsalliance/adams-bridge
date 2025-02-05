@@ -921,7 +921,7 @@ always_comb kv_seed_data_present = '0;
       msg_data <= '0;
     end else if (zeroize) begin
       msg_data <= '0;
-    end else begin
+    end else if (~msg_hold) begin
       unique case (sampler_src) inside
         MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
@@ -1326,7 +1326,7 @@ always_comb kv_seed_data_present = '0;
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << prim_instr.length[$clog2(MsgStrbW)-1:0]);
  
-always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
+always_comb msg_hold = ~msg_rdy_i;
 
 //Last cycle when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
