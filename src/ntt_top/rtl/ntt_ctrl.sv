@@ -698,17 +698,18 @@ always_comb begin
     //Since there's an input buffer, valid_count is counted in steps of 4, so it ends at 64
     arc_RD_EXEC_RD_BUF      = (read_fsm_state_ps == RD_EXEC )  && ct_mode && (!buf0_valid && (buf_count == 0)) && (rd_valid_count < 'h40);
 
-    //This arc is only for gs mode. Execution is done when all 63 addr locations have been read. Since there's no input buffer, valid_count ends at 63. 
-    arc_RD_EXEC_RD_STAGE    = (read_fsm_state_ps == RD_EXEC )  && ((gs_mode || pwo_mode || pwm_intt_mode) && (rd_valid_count == 'h3f));
+    //This arc is only for gs/pwo mode. Execution is done when all 63 addr locations have been read. Since there's no input buffer, valid_count ends at 63. 
+    // arc_RD_EXEC_RD_STAGE    = (read_fsm_state_ps == RD_EXEC )  && ((gs_mode || pwo_mode || pwm_intt_mode) && (rd_valid_count == 'h3f));
+    arc_RD_EXEC_RD_STAGE    = (read_fsm_state_ps == RD_EXEC) & (((gs_mode | pwm_intt_mode) & (rd_valid_count == 'h3f)) | ((pwo_mode) & (rd_valid_count >= 'h3f))); //>= 3f to ensure we don't miss sampler_valid pulses or if non-sampler mode, we don't do an extra read
 
     //All rounds of NTT or INTT are done. Go to IDLE and wait for next command. In PWO mode, if ntt_enable is given, start next op
     arc_RD_STAGE_IDLE       = (read_fsm_state_ps == RD_STAGE)  && (ntt_done || intt_done || (pwo_done && !ntt_enable));
 
-    //This arc is only for ct mode. Move to EXEC_WAIT state when the last read is done. No more reads to perform, but the buffer needs to be emptied
-    arc_RD_EXEC_EXEC_WAIT   = (read_fsm_state_ps == RD_EXEC )  && ((ct_mode && (((buf_count == 'h3) && (rd_valid_count == 'h3c)))) || (pwo_mode && !sampler_valid));
+    //This arc is only for ct mode/pwo mode with sampler. Move to EXEC_WAIT state when the last read is done. No more reads to perform, but the buffer needs to be emptied
+    arc_RD_EXEC_EXEC_WAIT   = (read_fsm_state_ps == RD_EXEC )  && ((ct_mode && (((buf_count == 'h3) && (rd_valid_count == 'h3c)))) || ((pwo_mode && !sampler_valid) && (rd_valid_count < 'h40)));
 
     //This arc is only for pwo mode. Move back to RD_EXEC when sampler_valid is available
-    arc_EXEC_WAIT_RD_EXEC   = (read_fsm_state_ps == EXEC_WAIT) && (pwo_mode && sampler_valid && (rd_valid_count < 'h3f));
+    arc_EXEC_WAIT_RD_EXEC   = (read_fsm_state_ps == EXEC_WAIT) && (pwo_mode && sampler_valid && (rd_valid_count < 'h40));
 
     //This arc is only for ct mode. When valid_count is 64 and buf_count is 3 (meaning all 4 buffers have been used), move to RD_STAGE indicating that round is done
     arc_EXEC_WAIT_RD_STAGE  = (read_fsm_state_ps == EXEC_WAIT) && (rd_valid_count == 'h40) && (buf_count == 'h3);
@@ -762,8 +763,8 @@ always_comb begin
         end
         RD_EXEC: begin
             read_fsm_state_ns       = arc_RD_EXEC_RD_BUF ? RD_BUF :
-                                        arc_RD_EXEC_RD_STAGE ? RD_STAGE : 
-                                        arc_RD_EXEC_EXEC_WAIT ? EXEC_WAIT : RD_EXEC;
+                                        arc_RD_EXEC_EXEC_WAIT ? EXEC_WAIT :
+                                        arc_RD_EXEC_RD_STAGE ? RD_STAGE : RD_EXEC;
             buf_wren_ntt            = ct_mode;
             buf_rden_ntt            = ct_mode;
             incr_mem_rd_addr        = (ntt_mode inside {ct, gs, pwm_intt}) & !pwm_intt_mode;
@@ -820,7 +821,8 @@ always_comb begin
         arc_WR_STAGE_WR_MEM     = (write_fsm_state_ps == WR_STAGE) && ((ct_mode && !ntt_done) || (pwo_mode && !pwo_done)); // || (pwo_mode && (!pwo_done /*|| ntt_enable*/)));
     end
     else begin 
-        arc_WR_MEM_WR_STAGE     = (write_fsm_state_ps == WR_MEM)   && ((ct_mode || pwo_mode) && (wr_valid_count == 'h3f)); //(mem_wr_addr == (mem_wr_base_addr + MEM_LAST_ADDR)); //this arc is for ct mode, 
+        // arc_WR_MEM_WR_STAGE     = (write_fsm_state_ps == WR_MEM)   && ((ct_mode || pwo_mode) && (wr_valid_count == 'h3f)); //(mem_wr_addr == (mem_wr_base_addr + MEM_LAST_ADDR)); //this arc is for ct mode, 
+        arc_WR_MEM_WR_STAGE     = (write_fsm_state_ps == WR_MEM) & ((ct_mode & (wr_valid_count == 'h3f)) | (pwo_mode & (wr_valid_count == 'h40)));
         arc_WR_STAGE_WR_MEM     = (write_fsm_state_ps == WR_STAGE) && (ct_mode && !ntt_done);
     end
 
@@ -848,7 +850,7 @@ always_comb begin
     //Assumption - no bubbles in NTT or INTT. If bubbles, need to consider sampler_valid
     //TODO: can WR_WAIT state be removed? fsm can finish all 64 addr in WR_MEM state?
     arc_WR_MEM_WR_WAIT      = shuffle_en ? (write_fsm_state_ps == WR_MEM)   && (((gs_mode || pwm_intt_mode) &&  (buf0_valid && (wr_valid_count == 'h3c))) || (pwo_mode && butterfly_ready && (wr_valid_count == 'h3f)))
-                                        : (write_fsm_state_ps == WR_MEM) && (((gs_mode || pwm_intt_mode) && (buf0_valid && (wr_valid_count == 'h3c))) || (pwo_mode && !butterfly_ready && (wr_valid_count < 'h3f))); // || (ct_mode && (wr_valid_count == 'h3f)));
+                                        : (write_fsm_state_ps == WR_MEM) && (((gs_mode || pwm_intt_mode) && (buf0_valid && (wr_valid_count == 'h3c))) || (pwo_mode && !butterfly_ready && (wr_valid_count < 'h40))); // || (ct_mode && (wr_valid_count == 'h3f)));
 
     //This arc is only for pwo mode. Move back from wait to write state when there's a valid BFU output
     arc_WR_WAIT_WR_MEM      = (write_fsm_state_ps == WR_WAIT) && (pwo_mode && butterfly_ready);
