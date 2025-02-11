@@ -34,11 +34,11 @@ Adam’s Bridge accelerator has all the necessary components to execute a pure h
 
 The security level of ML-DSA defined by NIST are as follows:
 
-| Algorithm Name | Security Level | k   | l   |
-| :------------- | :------------- | :-- | :-- |
-| ML-DSA-44      | Level-2        | 4   | 4   |
-| ML-DSA-65      | Level-3        | 6   | 5   |
-| ML-DSA-87      | Level-5        | 8   | 7   |
+| Algorithm Name | Security Level |
+|:---------------|:---------------|
+| ML-DSA-44      | Level-2        |
+| ML-DSA-65      | Level-3        |
+| ML-DSA-87      | Level-5        |
 
 CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and the current architecture only supports this parameter set.
 
@@ -360,12 +360,13 @@ Masking and shuffling countermeasures are integrated into the architecture and c
 
 The area overhead associated with enabling these countermeasures is as follows:
 
-|                   | Freq [MHz]       |           400 |                        |     |           600 |                        |
-| ----------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
-| **"Protected"**   | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **keygen**        | 15,200           |         0.038 | 26,316                 |     |         0.025 | 39,474                 |
-| **Signing (Ave)** | 142,800          |         0.357 | 2,801                  |     |         0.238 | 4,202                  |
-| **Verifying**     | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
+|                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
+| --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Protected"**       | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **keygen**            | 15,200           |         0.038 | 26,316                 |     |         0.025 | 39,474                 |
+| **Signing (1 round)** | 35,700           |         0.089 | 11,204                 |     |         0.060 | 16,807                 |
+| **Signing (Ave)**     | 142,800          |         0.357 | 2,801                  |     |         0.238 | 4,202                  |
+| **Verifying**         | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
 
 
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and the current architecture only supports this parameter set.
