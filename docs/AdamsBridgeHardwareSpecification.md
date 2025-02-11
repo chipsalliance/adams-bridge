@@ -402,6 +402,16 @@ The following table shows the required memory instances for ML-DSA-87:
 | mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
 | mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
 
+### Signing perofrmance
+
+The signing operation is the most time-consuming part of the MLDSA algorithm. However, it is not constant-time due to the inherent nature of ML-DSA. The signing process involves a loop that continues until all validity checks are passed. The number of iterations depends on the provided privkey, message, and sign_rnd.
+
+According to FIPS 204 recommendations, there is no mechanism to interrupt the signing loop. Nevertheless, for the ML-DSA-87 parameter set, the average number of required loops is 3.85.
+
+To hit higher perofrmance, several engine can be used in a parallel fashion. While the signing performance determines the total requried cores. 
+
+As an exmaple, to hit 100,000 IOPS @600MHz with unprotected architecture, we needs:
+100,000 IOPS /  5,639 IOPS = 17.7 -> 18 cores.
 
 # Proposed architecture
 
