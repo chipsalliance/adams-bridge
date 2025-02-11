@@ -35,12 +35,12 @@ Adam’s Bridge accelerator has all the necessary components to execute a pure h
 The security level of ML-DSA defined by NIST are as follows:
 
 | Algorithm Name | Security Level |
-|:---------------|:---------------|
+| :------------- | :------------- |
 | ML-DSA-44      | Level-2        |
 | ML-DSA-65      | Level-3        |
-| ML-DSA-87      | Level-5        |
+| **ML-DSA-87**  | **Level-5**    |
 
-CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and the current architecture only supports this parameter set.
+CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
 
 # API
 
@@ -150,16 +150,8 @@ This register is used to support both deterministic and hedge variants of ML-DSA
 
 ## message
 
-This architecture supports pre-hash ML-DSA defined by NIST. In other words, the architecture signs a digest of the message rather than the message directly.  
-
-Obtaining at least λ bits of classical security strength against collision attacks requires that the digest to be signed be at least 2λ bits in length. For ML-DSA-87 with λ=256, the length of digest (hashed message) is 512 bits (64 Bytes).
-
-Hence, the engine only supports pre-hash signing/verifying ML-DSA operations, the assumption is the given input is the hash of a pure message. Based on FIPS 204 \[3\], the hashed message needs to be extended by some pre-defined OIDs. 
-
-PH𝑀 ← H(𝑀)  
-𝑀′ ← BytesToBits(IntegerToBytes(1,1) ∥ IntegerToBytes(|𝑐𝑡𝑥|, 1\) ∥ 𝑐𝑡𝑥 ∥ OID ∥ PH𝑀)
-
-The defined API takes PH𝑀 from the user, and the engine takes care of the prefix internally.
+This architecture supports PureML-DSA defined by NIST with an empty ctx.
+However, the current architecture only supports the message size of 512 bits. This restrection will be removed
 
 ## verification result
 
@@ -356,7 +348,7 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 | **Verifying**         | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
 
 
-Masking and shuffling countermeasures are integrated into the architecture and can be configured to be enabled or disabled at synthesis time. 
+**NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configureble to be enabled or disabled at synthesis time.
 
 The area overhead associated with enabling these countermeasures is as follows:
 
@@ -369,7 +361,8 @@ The area overhead associated with enabling these countermeasures is as follows:
 | **Verifying**         | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
 
 
-- CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and the current architecture only supports this parameter set.
+
+- CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
 - The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm.
 - The requried area for the protected ML-DSA-87 is ??mm2 @5nm.
 - The design is converging today at 600MHz.
@@ -381,8 +374,6 @@ The value of k and l is determined based on the security level of the system def
 
 | Algorithm Name | Security Level | k   | l   |
 | :------------- | :------------- | :-- | :-- |
-| ML-DSA-44      | Level-2        | 4   | 4   |
-| ML-DSA-65      | Level-3        | 6   | 5   |
 | ML-DSA-87      | Level-5        | 8   | 7   |
 
 In the hardware design, using an instruction-set processor yields a smaller, simpler, and more controllable design. By fine-tuning hardware acceleration, we achieve efficiency without excessive logic overhead. We implement all computation blocks in hardware while maintaining flexibility for future extensions. This adaptability proves crucial in a rapidly evolving field like post-quantum cryptography (PQC), even amidst existing HW architectures.
@@ -2524,23 +2515,36 @@ The algorithm for signing is presented below. We will explain the specifics of e
 
 The following table shows the operations for each sequencer:
 
-| Sequencer 2          |                                                 | Sequencer 1             |               |
-| :------------------- | :---------------------------------------------- | :---------------------- | :------------ |
-| Initial steps        | (ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*)            | μ ←H(*tr*               |               |*M*,512) | Challenge Generation
-|                      | sˆ1 ←NTT(s1)                                    | ρ′←H(*K*                |               |*rnd*||μ,512)
-|                      | sˆ2 ←NTT(s2)                                    | y ←ExpandMask(ρ′ ,κ)    |               |
-|                      | ˆt0 ←NTT(t0)                                    | w ←NTT−1(Aˆ ◦NTT(y))    |               |
-| *Validity Checks*    | *c*ˆ ←NTT(*c*)                                  | (w1,w0) ←Decompose(w)   |               |
-|                      | ⟨⟨*c*s1⟩⟩←NTT−1(*c*ˆ◦ sˆ1)                  | *c*˜←H(μ                |               |w1Encode(w1),2λ)
-|                      | ⟨⟨*c*s2⟩⟩←NTT−1(*c*ˆ◦ sˆ2)                  | *c* ←SampleInBall(*c*˜) |               |
-|                      | z ←y \+⟨⟨*c*s1⟩⟩                            | *κ ←κ \+ℓ*              |               |
-|                      | r0 ←(w0 −⟨⟨*c*s2⟩⟩)                         |                         |               |
-|                      | ⟨⟨*c*t0⟩⟩←NTT−1(*c*ˆ◦ tˆ0)                  |                         |               |
-|                      | h ←MakeHint(w1, w0−⟨⟨*c*s2⟩⟩+⟨⟨*c*t0⟩⟩) |                         |               |
-|                      |                                                 |                         | z             ||∞ ≥ γ1 −β 
-|                      |                                                 |                         | r0            ||∞ ≥ γ2 −β 
-|                      |                                                 |                         | ⟨⟨*c*t0⟩⟩ ||∞ ≥ γ2 
-| Signature Generation | σ ←sigEncode(*c*˜,z mod±*q*,h)                  |                         |               |
+| Sequencer 1          |                               |
+| -------------------- | :---------------------------- |
+| Challenge Generation | μ ←H(*tr* \|\|*M*,512)        |
+|                      | ρ′←H(*K*\|\|*rnd*\|\|μ,512)   |
+|                      | y ←ExpandMask(ρ′ ,κ)          |
+|                      | w ←NTT−1(Aˆ ◦NTT(y))          |
+|                      | (w1,w0) ←Decompose(w)         |
+|                      | *c*˜←H(μ \|\|w1Encode(w1),2λ) |
+|                      | *c* ←SampleInBall(*c*˜)       |
+|                      | *κ ←κ \+ℓ*                    |
+
+
+
+| Sequencer 2          |                                                 |
+| :------------------- | :---------------------------------------------- |
+| Initial steps        | (ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*)            |
+|                      | sˆ1 ←NTT(s1)                                    |
+|                      | sˆ2 ←NTT(s2)                                    |
+|                      | ˆt0 ←NTT(t0)                                    |
+| Validity Checks      | *c*ˆ ←NTT(*c*)                                  |
+|                      | \⟨\⟨*c*s1\⟩\⟩←NTT−1(*c*ˆ◦ sˆ1)              |
+|                      | ⟨⟨*c*s2⟩⟩←NTT−1(*c*ˆ◦ sˆ2)                  |
+|                      | z ←y \+⟨⟨*c*s1⟩⟩                            |
+|                      | r0 ←(w0 −⟨⟨*c*s2⟩⟩)                         |
+|                      | ⟨⟨*c*t0⟩⟩←NTT−1(*c*ˆ◦ tˆ0)                  |
+|                      | h ←MakeHint(w1, w0−⟨⟨*c*s2⟩⟩+⟨⟨*c*t0⟩⟩) |
+|                      | \|\|z\|\|∞ ≥ γ1 −β                              |
+|                      | \|\|r0 \|\|∞ ≥ γ2 −β                            |
+|                      | \|\|⟨⟨*c*t0⟩⟩\|\|∞ ≥ γ2                     |
+| Signature Generation | σ ←sigEncode(*c*˜,z mod±*q*,h)                  |
 
 ### (ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*)
 
@@ -2736,28 +2740,25 @@ If all checks show the successful signature, then the sigEncode unit will be cal
 ### μ ←H(*tr*||*M*,512)
 
 The other sequencer starts with running Keccak operation on tr and the given message. tr and the message are stored in register API as inputs, and we need to perform SHAKE256 with to generate 512 bits output.  
-Since the engine only supports prehash signing/verifying ML-DSA operations, the assumption is the given message is the hash of a pure message. Based on FIPS 204 \[3\], the hashed message needs to be extended by some pre-defined OIDs. 
 
-| Operation    | opcode       | operand | operand      | operand |
-| :----------- | :----------- | :------ | :----------- | :------ |
-| μ\=Keccak(tr |              | M)      | Keccak\_SIPO | tr      | 64 bytes
-|              | Keccak\_SIPO | 1       | 1 byte       |         |
-|              | Keccak\_SIPO | OID     | 11 bytes     |         |
-|              | Keccak\_SIPO | Message | 64 bytes     |         |
-|              | Keccak\_PISO | μ       | 64 bytes     |         |
+| Operation           | opcode       | operand | operand  | operand |
+| :------------------ | :----------- | :------ | :------- | :------ |
+| μ\=Keccak(tr\|\| M) | Keccak\_SIPO | tr      | 64 bytes |         |
+|                     | Keccak\_SIPO | 0       | 2 bytes  |         |
+|                     | Keccak\_SIPO | Message | 64 bytes |         |
+|                     | Keccak\_PISO | μ       | 64 bytes |         |
 
-Firstly, we need to fill Keccak input buffer with tr and then concatenate it with message. NIST may apply some changes in this operation by adding some constant value into this concatenation. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the μ value into a special register.
 
 ### ρ′←H(*K*||*rnd*||μ,512)
 
 We need to run Keccak operation on K, rnd, and μ values. K and rnd are stored in register API as inputs, and μ is stored in an internal register. we need to perform SHAKE256 with to generate 512 bits output.
 
-| Operation    | opcode       | operand   | operand       | operand |
-| :----------- | :----------- | :-------- | :------------ | :------ |
-| ρ′\=Keccak(K |              | rnd       |               | μ)      | Keccak\_SIPO | K | 4 (x64 words)
-|              | Keccak\_SIPO | sign\_rnd | 4 (x64 words) |         |
-|              | Keccak\_SIPO | μ         | 8 (x64 words) |         |
-|              | Keccak\_PISO | ρ′        | 8 (x64 words) |         |
+| Operation                     | opcode       | operand   | operand       | operand |
+| :---------------------------- | :----------- | :-------- | :------------ | :------ |
+| ρ′\=Keccak(K \|\| rnd \|\| μ) | Keccak\_SIPO | K         | 4 (x64 words) |         |
+|                               | Keccak\_SIPO | sign\_rnd | 4 (x64 words) |         |
+|                               | Keccak\_SIPO | μ         | 8 (x64 words) |         |
+|                               | Keccak\_PISO | ρ′        | 8 (x64 words) |         |
 
 Firstly, we need to fill Keccak input buffer with K and then concatenate it with sign\_rnd and μ. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the ρ′ value into a special register.
 
@@ -2864,11 +2865,11 @@ We need to call INTT for Ay by passing three addresses. Temp address can be the 
 
 The decompose unit takes w from memory and splits it into two parts. It saves w0 in memory and sends w1 to the Keccak SIPO for SampleInBall. However, SIPO requires the μ prefix before receiving the w1 values. Therefore, the high-level controller should provide μ before using decompose. After completing the decompose operation, the high-level controller needs to add the necessary padding for H(μ||w1Encode(w1),2λ). Then, by activating the SampleInBall, the Keccak will start and the data in the SIPO will be processed.
 
-| Operation             | opcode      | operand          | operand  | operand |
-| :-------------------- | :---------- | :--------------- | :------- | :------ |
-| H(μ                   |             | w1Encode(w1),2λ) | LDKeccak | μ       | 64 bytes
-| (w1,w0) ←Decompose(w) | Decomp\_Enc | w                | w0       |         |
-| H(μ                   |             | w1Encode(w1),2λ) | LDKeccak | padding |
+| Operation                 | opcode      | operand          | operand  | operand |
+| :------------------------ | :---------- | :--------------- | :------- | :------ |
+| H(μ \|\| w1Encode(w1),2λ) | LDKeccak    | μ                | 64 bytes |         |
+| (w1,w0) ←Decompose(w)     | Decomp\_Enc | w                | w0       |         |
+| H(μ                       |             | w1Encode(w1),2λ) | LDKeccak | padding |
 
 ### *c* ←SampleInBall(*c*˜)
 
@@ -2989,15 +2990,12 @@ The sequencer runs Keccak operation on pk. pk is stored in register API as input
 
 The sequencer starts with running Keccak operation on tr and the given message. tr is stored in an internal register from the previous step, and the message is stored in register API as input, and we need to perform SHAKE256 with to generate 512 bits output.
 
-| Operation    | opcode       | operand | operand      | operand |
-| :----------- | :----------- | :------ | :----------- | :------ |
-| μ\=Keccak(tr |              | M)      | Keccak\_SIPO | tr      | 64 bytes
-|              | Keccak\_SIPO | 1       | 1 byte       |         |
-|              | Keccak\_SIPO | OID     | 11 bytes     |         |
-|              | Keccak\_SIPO | Message | 64 bytes     |         |
-|              | Keccak\_PISO | μ       | 64 bytes     |         |
-
-Firstly, we need to fill Keccak input buffer with tr and then concatenate it with message. NIST may apply some changes in this operation by adding some constant value into this concatenation. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the μ value into a special register.
+| Operation            | opcode       | operand | operand  | operand |
+| :------------------- | :----------- | :------ | :------- | :------ |
+| μ\=Keccak(tr \|\| M) | Keccak\_SIPO | tr      | 64 bytes |         |
+|                      | Keccak\_SIPO | 0       | 2 bytes  |         |
+|                      | Keccak\_SIPO | Message | 64 bytes |         |
+|                      | Keccak\_PISO | μ       | 64 bytes |         |
 
 ### *c* ←SampleInBall(*c*˜)
 
@@ -3072,20 +3070,19 @@ We need to call INTT for Az\_ct1 by passing three addresses. Temp address can be
 
 In the UseHint phase, the decompose unit retrieves w from memory and divides it into two components. Next, w1 is refreshed through useHint, encoded, and forwarded to the Keccak SIPO. Nonetheless, the μ prefix must precede w1 before SIPO can accept it. Therefore, the high-level controller should provide μ before using decompose. After completing the UseHint operation, the high-level controller needs to add the necessary padding for H(μ||w1Encode(w1),2λ). Then, the Keccak will start and the data in the SIPO will be stored at register API as verification result.
 
-| Operation           | opcode     | operand             | operand  | operand |
-| :------------------ | :--------- | :------------------ | :------- | :------ |
-| H(μ                 |            | w1Encode(w1),2λ)    | LDKeccak | μ       | 64 bytes
-| w ′ ←UseHint(h,w ′) | USEHINT    | w                   | H        |         |
-| H(μ                 |            | w1Encode(w1),2λ)    | LDKeccak | padding |
-|                     | EN\_Keccak |                     |          |         |
-|                     | RDKeccak   | Verification Result |          |         |
+| Operation                 | opcode     | operand             | operand  | operand |
+| :------------------------ | :--------- | :------------------ | :------- | :------ |
+| H(μ \|\| w1Encode(w1),2λ) | LDKeccak   | μ                   | 64 bytes |         |
+| w ′ ←UseHint(h,w ′)       | USEHINT    | w                   | H        |         |
+| H(μ                       |            | w1Encode(w1),2λ)    | LDKeccak | padding |
+|                           | EN\_Keccak |                     |          |         |
+|                           | RDKeccak   | Verification Result |          |         |
 
 References:
 
-| \[1\] | The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022\. \[Online\]. Available: https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/. |
-| :---- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| \[2\] | NIST, "PQC Standardization Process: Announcing Four Candidates to be Standardized, Plus Fourth Round Candidates," \[Online\]. Available: https://csrc.nist.gov/news/2022/pqc-candidates-to-be-standardized-and-round-4. \[Accessed 2022\].                                                                                                                                                                                        |
-| \[3\] | NIST, "FIPS 204 Module-Lattice-Based Digital Signature Standard," August 13, 2024\.                                                                                                                                                                                                                                                                                                                                               |
+[1] The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022. [Online]. Available: [White House](https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/).
 
+[2] NIST, "PQC Standardization Process: Announcing Four Candidates to be Standardized, Plus Fourth Round Candidates," [Online]. Available: [NIST PQC](https://csrc.nist.gov/news/2022/pqc-candidates-to-be-standardized-and-round-4). [Accessed 2022].
 
+[3] NIST, "FIPS 204 Module-Lattice-Based Digital Signature Standard," August 13, 2024.
 
