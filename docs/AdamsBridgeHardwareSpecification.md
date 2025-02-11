@@ -178,30 +178,159 @@ ML-DSA component signature register type definition 1149 32-bit registers storin
 
 ## ​Keygen 
 
-​ 
+```cpp
+Input:
+    seed  
+    entropy
 
-​ 
+Output:
+    sk_out
+    pk
 
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0
+while read_data == 0:
+    read_data = read(ADDR_STATUS)
+
+// Feed the required inputs
+write(ADDR_SEED, seed)
+write(ADDR_ENTROPY, entropy)
+
+// Trigger the core for performing Keygen
+write(ADDR_CTRL, {29'b0, 3'b001})  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0
+while read_data == 0:
+    read_data = read(ADDR_STATUS)
+
+// Reading the outputs
+sk_out = read(ADDR_SK)
+pk = read(ADDR_PK)
+
+// Return the outputs
+return sk_out, pk
+```
+​ 
 ## ​Signing 
 
-​ 
+```cpp
+​Input:
+    msg            
+    sk_in          
+    sign_rnd       
+    entropy        
 
-​ 
+Output:
+    signature  
 
-​ 
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_MSG, msg);
+write(ADDR_SK_IN, sk_in);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+
+// Trigger the core for performing Signing
+write(ADDR_CTRL, {29'b0, 3'b010});  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
 
 ## ​Verifying 
 
-​ 
+```cpp
+Input:
+    msg                    
+    pk                    
+    signature          
+
+Output:
+    verification_result   
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_MSG, msg);
+write(ADDR_PK, pk);
+write(ADDR_SIGNATURE, signature);
+
+// Trigger the core for performing Verifying
+write(ADDR_CTRL, {29'b0, 3'b011});  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Return the output (verification_result)
+return verification_result;
+```
 
 ## Keygen \+ Signing 
 
-​ 
-
-​ 
-
 This mode decreases storage costs for the secret key (SK) by recalling keygen and using an on-the-fly SK during the signing process.
 
+```cpp
+Input:
+    seed        
+    msg
+    sign_rnd       
+    entropy        
+
+Output:
+    signature  
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_SEED, seed);
+write(ADDR_MSG, msg);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+
+// Trigger the core for performing Keygen + Signing
+write(ADDR_CTRL, {29'b0, 3'b100});  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
 ​ 
 
 # Proposed architecture
@@ -1120,7 +1249,7 @@ The initial memory contains the indexes as follows:
 | 44 | 176 | 177 | 178 | 179 |
 | 45 | 180 | 181 | 182 | 183 |
 | 46 | 184 | 185 | 186 | 187 |
-| 47 | 188 | 189 | 190 | 191sample in ball |
+| 47 | 188 | 189 | 190 | 191 |
 | 48 | 192 | 193 | 194 | 195 |
 | 49 | 196 | 197 | 198 | 199 |
 | 50 | 200 | 201 | 202 | 203 |
