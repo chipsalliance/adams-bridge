@@ -123,6 +123,7 @@ Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
 ### EXTERNAL_MU 
 
 Enable ExternalMu Mode.
+(this mode is hard turned off for now.)
 
 ## status 
 
@@ -146,7 +147,7 @@ Enable ExternalMu Mode.
 
 Entropy is required for SCA countermeasures to randomize the inputs with no change in the outputs. The entropy can be any 512-bit value in \[0 : 2^512-1\]. 
 
-The ML-DSA-87 countermeasure requires several random vectors to randomize the intermediate values. A DRBG unit is used to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
+The ML-DSA-87 countermeasure requires several random vectors to randomize the intermediate values. An internal mechanism is considered to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
 
 ## seed
 
@@ -209,7 +210,7 @@ write(ADDR_SEED, seed)
 write(ADDR_ENTROPY, entropy)
 
 // Trigger the core for performing Keygen
-write(ADDR_CTRL, {29'b0, 3'b001})  // (STATUS flag will be changed to 2'b00)
+write(ADDR_CTRL, KEYGEN_CMD)  // (STATUS flag will be changed to 2'b00)
 
 // Wait for the core to be ready and valid (STATUS flag should be 2'b11)
 read_data = 0
@@ -249,7 +250,7 @@ write(ADDR_SIGN_RND, sign_rnd);
 write(ADDR_ENTROPY, entropy);
 
 // Trigger the core for performing Signing
-write(ADDR_CTRL, {29'b0, 3'b010});  // (STATUS flag will be changed to 2'b00)
+write(ADDR_CTRL, SIGN_CMD);  // (STATUS flag will be changed to 2'b00)
 
 // Wait for the core to be ready and valid (STATUS flag should be 2'b11)
 read_data = 0;
@@ -287,7 +288,7 @@ write(ADDR_PK, pk);
 write(ADDR_SIGNATURE, signature);
 
 // Trigger the core for performing Verifying
-write(ADDR_CTRL, {29'b0, 3'b011});  // (STATUS flag will be changed to 2'b00)
+write(ADDR_CTRL, VERIFY_CMD);  // (STATUS flag will be changed to 2'b00)
 
 // Wait for the core to be ready and valid (STATUS flag should be 2'b11)
 read_data = 0;
@@ -329,7 +330,7 @@ write(ADDR_SIGN_RND, sign_rnd);
 write(ADDR_ENTROPY, entropy);
 
 // Trigger the core for performing Keygen + Signing
-write(ADDR_CTRL, {29'b0, 3'b100});  // (STATUS flag will be changed to 2'b00)
+write(ADDR_CTRL, KEYGEN_SIGN_CMD);  // (STATUS flag will be changed to 2'b00)
 
 // Wait for the core to be ready and valid (STATUS flag should be 2'b11)
 read_data = 0;
