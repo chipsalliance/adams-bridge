@@ -58,8 +58,9 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 | sign\_rnd                   | Input           | Sign            | 32            |
 | message                     | Input           | Sign/Verify     | 64            |
 | verification result         | Output          | Verify          | 64            |
+| External_Mu                 | Input           | Sign/Verify     | 64            |
 | pk                          | Input/Output    | Keygen/Verify   | 2592          |
-| signature                   | Input/Output    | Sign/Verify     | 4627          |
+| signature                   | Input/Output    | Sign/Verify     | 4627 (+1)     |
 | sk\_out (software only)     | Output          | Keygen          | 4896          |
 | sk\_in                      | Input           | Signing         | 4896          |
 | Interrupt                   | Output          | All             | 520           |
@@ -78,11 +79,13 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 
 ​The control register consists of the following flags: 
 
-| Bits     | Identifier | Access | Reset | Decoded | Name |
-| :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:4\] | \-         | \-     | \-    |         | \-   |
-| \[3\]    | ZEROIZE    | w      | 0x0   |         | \-   |
-| \[2:0\]  | CTRL       | w      | 0x0   |         | \-   |
+| Bits     | Identifier  | Access | Reset | Decoded | Name |
+| :------- | :---------- | :----- | :---- | :------ | :--- |
+| \[31:6\] | \-          | \-     | \-    |         | \-   |
+| \[5\]    | EXTERNAL_MU | w      | 0x0   |         | \-   |
+| \[4\]    | PCR_SIGN    | w      | 0x0   |         | \-   |
+| \[3\]    | ZEROIZE     | w      | 0x0   |         | \-   |
+| \[2:0\]  | CTRL        | w      | 0x0   |         | \-   |
 
 ### ​CTRL 
 
@@ -108,10 +111,18 @@ CTRL command field contains two bits indicating:
 
 ​Trigs the core to start the keygen+signing operation for a message block.  This mode decreases storage costs for the secret key (SK) by recalling keygen and using an on-the-fly SK during the signing process.
 
-### zeroize
+### ZEROIZE
 
 Zeroize all internal registers: Zeroize all internal registers after process to avoid SCA leakage.  
 Software write generates only a single-cycle pulse on the hardware interface and then will be erased.
+
+### PCR_SIGN 
+
+Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
+
+### EXTERNAL_MU 
+
+Enable ExternalMu Mode.
 
 ## status 
 
@@ -155,7 +166,7 @@ However, the current architecture only supports the message size of 512 bits. Th
 
 ## verification result
 
-To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a defined value, and if they are equal the signature is valid.
+To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a certain segment of signature (segment c\~), and if they are equal the signature is valid.
 
 ## sk\_out
 
@@ -169,11 +180,11 @@ This register stores the private key for signing. This register should be set be
 
 ## pk
 
-ML-DSA component public key register type definition 648 32-bit registers storing the public key in big-endian representation. These registers is read by Adams Bridge user after keygen operation, or be set before verifying operation. 
+ML-DSA component public key register type definition storing the public key in big-endian representation. These registers is read by Adams Bridge user after keygen operation, or be set before verifying operation. 
 
 ## signature
 
-ML-DSA component signature register type definition 1149 32-bit registers storing the signature of the message in big-endian representation. These registers is read by Adams Bridge user after signing operation, or be set before verifying operation. 
+ML-DSA component signature register type definition storing the signature of the message in big-endian representation. These registers is read by Adams Bridge user after signing operation, or be set before verifying operation. 
 
 # ​Pseudocode 
 
@@ -1992,7 +2003,7 @@ To optimize area, 1 dword of ‘y’ buffer is written directly to the register 
 
 At the end of all polynomials, the hintsum is written to the register API to construct the y\[ω\+k-1:ω\] locations of the byte string.
 
-It is possible that during the last cycle of a given polynomial, the index buffer contains \< 1 dword of index values to be written to the reg API. To accommodate this scenario, the controller flushes out the buffer at the end of each polynomial and writes the remaining data to the register API. 
+It is possible that during the last cycle of the last polynomial, the index buffer contains \< 1 dword of index values to be written to the reg API. To accommodate this scenario, the controller flushes out the buffer at the end of the last polynomial and writes the remaining data to the register API.
 
 ## W1Encode
 
