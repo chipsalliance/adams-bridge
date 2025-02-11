@@ -374,9 +374,32 @@ The area overhead associated with enabling these countermeasures is as follows:
 
 
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
-- The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm.
-- The requried area for the protected ML-DSA-87 is ??mm2 @5nm.
+- The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm including:
+    - 0.0146mm2 for stdcell
+    - 0.0220mm2 for ram area for 57.38 KB memory.
+ 
+- The requried area for the protected ML-DSA-87 is 0.114mm2 @5nm including:
+    - 0.0921mm2 for stdcell
+    - 0.0220mm2 for ram area for 57.38 KB memory.
+
 - The design is converging today at 600MHz.
+
+### Memory requirement
+
+The following table shows the required memory instances for ML-DSA-87:
+
+| Instance                                     | Depth | Data Width | Strobe Width |
+| -------------------------------------------- | ----- | ---------- | ------------ |
+| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank0 | 596   | 32         |              |
+| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank1 | 596   | 32         |              |
+| mldsa_top.mldsa_w1_mem_inst                  | 512   | 4          |              |
+| mldsa_top.mldsa_ram_inst0_bank0              | 832   | 96         |              |
+| mldsa_top.mldsa_ram_inst0_bank1              | 832   | 96         |              |
+| mldsa_top.mldsa_ram_inst1                    | 576   | 96         |              |
+| mldsa_top.mldsa_ram_inst2                    | 1408  | 96         |              |
+| mldsa_top.mldsa_ram_inst3                    | 128   | 96         |              |
+| mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
+| mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
 
 
 # Proposed architecture
