@@ -374,15 +374,15 @@ The area overhead associated with enabling these countermeasures is as follows:
 
 
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
-- The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm including:
+- The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm:
     - 0.0146mm2 for stdcell
     - 0.0220mm2 for ram area for 57.38 KB memory.
  
-- The requried area for the protected ML-DSA-87 is 0.114mm2 @5nm including:
+- The requried area for the protected ML-DSA-87 is 0.114mm2 @5nm:
     - 0.0921mm2 for stdcell
     - 0.0220mm2 for ram area for 57.38 KB memory.
 
-- The design is converging today at 600MHz.
+- The design is converging today at 600MHz at low, med & high voltage corners.
 
 ### Memory requirement
 
@@ -2318,9 +2318,18 @@ The UseHint operation in the verifying operation is as follows (with the gray co
 
 For w0 condition we have:
 
-{if w0=0 or w0\>2 w1←w1-1 mod 16 else w1←w1+1 mod 16 
+- if w0=0 or w0 > γ_2:  w1←w1-1 mod 16 
+- else:                 w1←w1+1 mod 16 
 
 # High-Level architecture
+
+In our proposed architecture, we define specific instructions for various submodules, including SHAKE256, SHAKE128, NTT, INTT, etc. Each instruction is associated with an opcode and operands. By customizing these instructions, we can tailor the engine's behavior to different security levels.
+
+To execute the required instructions, a high-level controller acts as a sequencer, orchestrating a precise sequence of operations. Within the architecture, several memory blocks are accessible to submodules. However, it's the sequencer's responsibility to provide the necessary memory addresses for each operation. Additionally, the sequencer handles instruction fetching, decoding, operand retrieval, and overall data flow management.
+
+The high-level architecture of Adams Bridge controller is illustrated as follows:
+
+![A diagram of a diagramDescription automatically generated](./images/media/image3.png)
 
 ## Sequencer
 
@@ -2377,14 +2386,6 @@ The following table lists different operations used in the high-level controller
 | POWER2ROUND src, dest0, dest1 | Perform Power2Round on t data at memory address src and store t0 at register API address dest0 and t1 at register API address dest1                             |
 | SIG\_DECODE\_Z src, dest      | Perform sigDecode\_z on data at register API address src and store the results at memory address dest                                                           |
 | SIG\_DECODE\_H src, dest      | Perform sigDecode\_h on data at register API address src and store the results at memory address dest                                                           |
-
-**Color definition:**
-
-| API         |
-| :---------- |
-| Register ID |
-| Memory      |
-| Constant    |
 
 ## Keygen Operation:
 
@@ -2587,8 +2588,8 @@ We need to call skDecode for s1, s2, and t0 by passing the required addresses.
 | Operation    | opcode   | operand | operand | operand |
 | :----------- | :------- | :------ | :------ | :------ |
 | skDecode(s1) | skDecode | s1      | s1      |         |
-| skDecode(s2) |          | s2      | s2      |         |
-| skDecode(t0) |          | t0      | t0      |         |
+| skDecode(s2) | skDecode | s2      | s2      |         |
+| skDecode(t0) | skDecode | t0      | t0      |         |
 
 ### sˆ1 ←NTT(s1)
 
@@ -3104,13 +3105,13 @@ We need to call INTT for Az\_ct1 by passing three addresses. Temp address can be
 
 In the UseHint phase, the decompose unit retrieves w from memory and divides it into two components. Next, w1 is refreshed through useHint, encoded, and forwarded to the Keccak SIPO. Nonetheless, the μ prefix must precede w1 before SIPO can accept it. Therefore, the high-level controller should provide μ before using decompose. After completing the UseHint operation, the high-level controller needs to add the necessary padding for H(μ||w1Encode(w1),2λ). Then, the Keccak will start and the data in the SIPO will be stored at register API as verification result.
 
-| Operation                 | opcode     | operand             | operand  | operand |
-| :------------------------ | :--------- | :------------------ | :------- | :------ |
-| H(μ \|\| w1Encode(w1),2λ) | LDKeccak   | μ                   | 64 bytes |         |
-| w ′ ←UseHint(h,w ′)       | USEHINT    | w                   | H        |         |
-| H(μ                       |            | w1Encode(w1),2λ)    | LDKeccak | padding |
-|                           | EN\_Keccak |                     |          |         |
-|                           | RDKeccak   | Verification Result |          |         |
+| Operation                  | opcode     | operand             | operand  | operand |
+| :------------------------- | :--------- | :------------------ | :------- | :------ |
+| H(μ \|\| w1Encode(w1),2λ)  | LDKeccak   | μ                   | 64 bytes |         |
+| w ′ ←UseHint(h,w ′)        | USEHINT    | w                   | H        |         |
+| H(μ  \|\| w1Encode(w1),2λ) | LDKeccak   | padding             |          |         |
+|                            | EN\_Keccak |                     |          |         |
+|                            | RDKeccak   | Verification Result |          |         |
 
 References:
 
