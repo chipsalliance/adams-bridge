@@ -8,245 +8,7 @@ V0.1
 
 **August 2024**
 
-**Table of Contents:**
-
-[1\.	Introduction	6](#introduction)
-
-[2\.	High-Level Overview	6](#high-level-overview)
-
-[3\.	API	8](#api)
-
-[3.1.	name	8](#name)
-
-[3.2.	version	8](#version )
-
-[3.3.	CTRL	8](#ctrl )
-
-[3.3.1.	​CTRL	9](#​ctrl )
-
-[3.3.2.	zeroize	9](#zeroize)
-
-[3.4.	status	9](#status )
-
-[3.4.1.	READY	10](#ready )
-
-[3.4.2.	​VALID	10](#​valid )
-
-[3.5.	entropy	10](#entropy)
-
-[3.6.	seed	10](#seed)
-
-[3.7.	sign\_rnd	10](#sign_rnd)
-
-[3.8.	message	10](#message)
-
-[3.9.	verification result	11](#verification-result)
-
-[3.10.	sk\_out	11](#sk_out)
-
-[3.11.	sk\_in	11](#sk_in)
-
-[3.12.	pk	11](#pk)
-
-[3.13.	signature	11](#signature)
-
-[4\.	​Pseudocode	12](#​pseudocode )
-
-[4.1.	​Keygen	12](#​keygen )
-
-[4.2.	​Signing	13](#​signing )
-
-[4.3.	​Verifying	14](#​verifying )
-
-[4.4.	Keygen \+ Signing	15](#keygen-+-signing )
-
-[5\.	Proposed architecture	16](#proposed-architecture)
-
-[5.1.	Keccak	17](#keccak)
-
-[5.2.	Stage 1: Keccak – Expand Mask – Memory	18](#stage-1:-keccak-–-expand-mask-–-memory)
-
-[5.2.1.	Keccak Unit	19](#keccak-unit)
-
-[5.2.2.	Expand Mask	19](#expand-mask)
-
-[5.2.3.	Performance	21](#performance)
-
-[5.3.	Stage 2: Memory-NTT-Memory	21](#stage-2:-memory-ntt-memory)
-
-[5.3.1.	NTT Architecture	21](#ntt-architecture)
-
-[5.3.2.	Performance	34](#performance-1)
-
-[5.3.3.	NTT shuffling countermeasure	34](#ntt-shuffling-countermeasure)
-
-[5.4.	Stage 3: Keccak \- SampleRejq – Pointwise Mult- Memory	39](#stage-3:-keccak---samplerejq-–-pointwise-mult--memory)
-
-[5.4.1.	Keccak Unit	40](#keccak-unit-1)
-
-[5.4.2.	Rejection Sampler	41](#rejection-sampler)
-
-[5.4.3.	Performance	43](#performance-2)
-
-[5.5.	Stage 4: Memory – Decompose – Encode – Keccak	43](#stage-4:-memory-–-decompose-–-encode-–-keccak)
-
-[5.5.1.	Decompose Unit	43](#decompose-unit)
-
-[5.5.2.	Performance	45](#performance-3)
-
-[5.6.	INTT	45](#intt)
-
-[5.6.1.	INTT shuffling countermeasure	53](#intt-shuffling-countermeasure)
-
-[5.7.	Point-wise Multiplication	56](#point-wise-multiplication)
-
-[5.8.	RejBounded	57](#rejbounded)
-
-[5.9.	Stage 5: SampleInBall – Memory	61](#stage-5:-sampleinball-–-memory)
-
-[5.9.1.	Keccak Unit	61](#keccak-unit-2)
-
-[5.9.2.	SampleInBall	62](#sampleinball)
-
-[5.10.	Decompose Architecture	65](#decompose-architecture)
-
-[5.11.	MakeHint Architecture	70](#makehint-architecture)
-
-[5.11.1.	Hint Sum and Hint BitPack	72](#hint-sum-and-hint-bitpack)
-
-[5.12.	W1Encode	74](#w1encode)
-
-[5.13.	Norm Check	77](#norm-check)
-
-[5.14.	skDecode	79](#skdecode)
-
-[5.15.	sigEncode\_z	81](#sigencode_z)
-
-[5.16.	PISO Buffer	83](#piso-buffer)
-
-[5.17.	Power2Round	83](#power2round)
-
-[5.18.	skEncode	86](#skencode)
-
-[5.19.	pkDecode	87](#pkdecode)
-
-[5.20.	sigDecode\_z	88](#sigdecode_z)
-
-[5.21.	sigDecode\_h	89](#sigdecode_h)
-
-[5.22.	UseHint	91](#usehint)
-
-[6\.	High-Level architecture	92](#high-level-architecture)
-
-[6.1.	Sequencer	92](#sequencer)
-
-[6.2.	Keygen Operation:	94](#keygen-operation:)
-
-[6.2.1.	(p,p',K)= H(ξ||K||L ,1024)	94](#\(p,p',k\)=-h\(ξ||k||l-,1024\))
-
-[6.2.2.	(s1,s2)←ExpandS(ρ′)	95](#\(s1,s2\)←expands\(ρ′\))
-
-[6.2.3.	NTT(s1)	95](#ntt\(s1\))
-
-[6.2.4.	Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(s1)	96](#aˆ-←expanda\(ρ\)-and-aˆ-◦ntt\(s1\))
-
-[6.2.5.	NTT−1(Aˆ ◦NTT(s1))	97](#ntt−1\(aˆ-◦ntt\(s1\)\))
-
-[6.2.6.	t ←NTT−1(Aˆ ◦NTT(s1))+s2	97](#t-←ntt−1\(aˆ-◦ntt\(s1\)\)+s2)
-
-[6.2.7.	(t1,t0)←Power2Round(t,*d*) AND *pk* ←pkEncode(ρ,t1)	97](#\(t1,t0\)←power2round\(t,d\)-and-pk-←pkencode\(ρ,t1\)-and-sk-←skencode\(t0\))
-
-[6.2.8.	*tr* ←H(BytesToBits(*pk*),512)	97](#tr-←h\(bytestobits\(pk\),512\))
-
-[6.2.9.	*sk* ←skEncode(ρ,*K*,*tr*,s1,s2,t0)	98](#sk-←skencode\(ρ,k,tr,s1,s2,t0\))
-
-[6.3.	Signing	98](#signing)
-
-[6.3.1.	(ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*)	100](#\(ρ,k,tr,s1,s2,t0\)←skdecode\(sk\))
-
-[6.3.2.	sˆ1 ←NTT(s1)	100](#sˆ1-←ntt\(s1\))
-
-[6.3.3.	sˆ2 ←NTT(s2)	100](#sˆ2-←ntt\(s2\))
-
-[6.3.4.	ˆt0 ←NTT(t0)	101](#ˆt0-←ntt\(t0\))
-
-[6.3.5.	*c*ˆ ←NTT(*c*)	101](#cˆ-←ntt\(c\))
-
-[6.3.6.	⟨⟨*c*s1⟩⟩←NTT−1(*c*ˆ◦ sˆ1)	101](#⟨⟨cs1⟩⟩←ntt−1\(cˆ◦-sˆ1\))
-
-[6.3.7.	⟨⟨*c*s2⟩⟩←NTT−1(*c*ˆ◦ sˆ2)	102](#⟨⟨cs2⟩⟩←ntt−1\(cˆ◦-sˆ2\))
-
-[6.3.8.	z ←y \+⟨⟨*c*s1⟩⟩	102](#z-←y-+⟨⟨cs1⟩⟩)
-
-[6.3.9.	r0 ←(w0 −⟨⟨*c*s2⟩⟩)	102](#r0-←\(w0-−⟨⟨cs2⟩⟩\))
-
-[6.3.10.	⟨⟨*c*t0⟩⟩←NTT−1(*c*ˆ◦ tˆ0)	102](#⟨⟨ct0⟩⟩←ntt−1\(cˆ◦-tˆ0\))
-
-[6.3.11.	h ←MakeHint(w1,r0+⟨⟨*c*t0⟩⟩)	103](#h-←makehint\(w1,r0+⟨⟨ct0⟩⟩\))
-
-[6.3.12.	||z||∞ ≥ γ1 −β	103](#||z||∞-≥-γ1-−β)
-
-[6.3.13.	||r0||∞ ≥ γ2 −β	103](#||r0||∞-≥-γ2-−β)
-
-[6.3.14.	||⟨⟨*c*t0⟩⟩||∞ ≥ γ2	104](#||⟨⟨ct0⟩⟩||∞-≥-γ2)
-
-[6.3.15.	σ ←sigEncode(*c*˜,z mod±*q*,h)	104](#σ-←sigencode\(c˜,z-mod±q,h\))
-
-[6.3.16.	μ ←H(*tr*||*M*,512)	104](#μ-←h\(tr||m,512\))
-
-[6.3.17.	ρ′←H(*K*||*rnd*||μ,512)	105](#ρ′←h\(k||rnd||μ,512\))
-
-[6.3.18.	y ←ExpandMask(ρ’ ,κ)	105](#y-←expandmask\(ρ’-,κ\))
-
-[6.3.19.	NTT(y)	106](#ntt\(y\))
-
-[6.3.20.	Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(y)	106](#aˆ-←expanda\(ρ\)-and-aˆ-◦ntt\(y\))
-
-[6.3.21.	w ←NTT−1(Aˆ ◦NTT(y))	107](#w-←ntt−1\(aˆ-◦ntt\(y\)\))
-
-[6.3.22.	(w1,w0) ←Decompose(w) AND *c*˜←H(μ||w1Encode(w1),2λ)	107](#\(w1,w0\)-←decompose\(w\)-and-c˜←h\(μ||w1encode\(w1\),2λ\))
-
-[6.3.23.	*c* ←SampleInBall(*c*˜)	108](#c-←sampleinball\(c˜\))
-
-[6.3.24.	κ ←κ \+ℓ	108](#κ-←κ-+ℓ)
-
-[6.4.	Verifying	108](#verifying)
-
-[6.4.1.	(ρ,t1)←pkDecode(*pk*)	109](#\(ρ,t1\)←pkdecode\(pk\))
-
-[6.4.2.	(*c*˜,z,h)←sigDecode(σ)	109](#\(c˜,z,h\)←sigdecode\(σ\))
-
-[6.4.3.	||z||∞ ≥ γ1 −β	109](#||z||∞-≥-γ1-−β-1)
-
-[6.4.4.	\[\[number of 1’s in h is ≤ ω\]\]	110](#[[number-of-1’s-in-h-is-≤-ω]])
-
-[6.4.5.	z ←NTT(z)	110](#z-←ntt\(z\))
-
-[6.4.6.	Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(z)	110](#aˆ-←expanda\(ρ\)-and-aˆ-◦ntt\(z\))
-
-[6.4.7.	tr ←H(pk,512)	111](#tr-←h\(pk,512\))
-
-[6.4.8.	μ ←H(*tr*||*M*,512)	111](#μ-←h\(tr||m,512\)-1)
-
-[6.4.9.	*c* ←SampleInBall(*c*˜)	112](#c-←sampleinball\(c˜\)-1)
-
-[6.4.10.	*c*ˆ ←NTT(*c*)	112](#cˆ-←ntt\(c\)-1)
-
-[6.4.11.	*c*ˆ ←NTT(*c*)	112](#cˆ-←ntt\(c\)-2)
-
-[6.4.12.	t1 ←NTT(t1)	112](#t1-←ntt\(t1\))
-
-[6.4.13.	NTT(*c*) ◦NTT(t1)	112](#ntt\(c\)-◦ntt\(t1\))
-
-[6.4.14.	A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1)	113](#a-ˆ-◦ntt\(z\)-−ntt\(c\)-◦ntt\(t1\))
-
-[6.4.15.	w′ ←NTT-1(A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1))	113](#w′-←ntt-1\(a-ˆ-◦ntt\(z\)-−ntt\(c\)-◦ntt\(t1\)\))
-
-[6.4.16.	w ′ ←UseHint(h,w ′) AND *c*˜←H(μ||w1Encode(w1),2λ)	113](#w-′-←usehint\(h,w-′\)-and-c˜←h\(μ||w1encode\(w1\),2λ\))
-
-# 
-
-1. # Introduction {#introduction}
+1. # Introduction
 
 The advent of quantum computers poses a serious challenge to the security of cloud infrastructures and services, as they can potentially break the existing public-key cryptosystems, such as RSA and elliptic curve cryptography (ECC). Even though the gap between today’s quantum computers and the threats they pose to current public-key cryptography is large, the cloud landscape should act proactively and initiate the transition to the post-quantum era as early as possible. To comply with that, the U.S. government issued a National Security Memorandum in May 2022 that mandated federal agencies to migrate to PQC by 2035 \[1\]. 
 
@@ -258,13 +20,13 @@ Adam’s bridge was a mythological structure that existed to cross the formidabl
 
 In this presentation, we share the architectural characteristics of our post-quantum Adams Bridge implementation. Our proposed work divides the operations in the algorithms into multiple stages and executes them using pipelined processing architecture. We use an optimized cascading method within each stage and fine-tune each module individually to exploit multi-levels of parallelism to accelerate post-quantum Dilithium computation on hardware platforms to address performance and complexity challenges of PQC implementation. Our proposed architecture uses various optimization techniques, including multi-levels of parallelism, designing reconfigurable cores, and implementing interleaved and pipelined architecture achieving significant speedup while maintaining high security and scalability. Our work can facilitate the adoption and deployment of PQC in cloud computing and enhance the security and efficiency of cloud services and applications in the post-quantum era.
 
-2. # High-Level Overview {#high-level-overview}
+2. # High-Level Overview
 
 Adam’s Bridge accelerator has all the necessary components to execute a pure hardware PQC operation. The main operations that involve more computational complexity, such as NTT, hashing, and sampling units, are explained as follows.
 
  ![A diagram of a programDescription automatically generated](./images/media/image2.png)
 
-3. # API {#api}
+3. # API
 
 The ML-DSA-87 architecture inputs and outputs are described in the following table.
 
@@ -286,15 +48,15 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 | Interrupt | Output | All | 520 |
 | Total |  |  | 18440 |
 
-1. ## name {#name}
+1. ## name
 
 ​Read-only register consists of the name of component. 
 
-2. ## version  {#version }
+2. ## version 
 
 ​Read-only register consists of the version of component. 
 
-3. ## CTRL  {#ctrl }
+3. ## CTRL 
 
 ​The control register consists of the following flags: 
 
@@ -304,7 +66,7 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 | \[3\] | ZEROIZE | w | 0x0 |  | \- |
 | \[2:0\] | CTRL | w | 0x0 |  | \- |
 
-1. ### ​CTRL  {#​ctrl }
+1. ### ​CTRL 
 
 CTRL command field contains two bits indicating:
 
@@ -328,12 +90,12 @@ CTRL command field contains two bits indicating:
 
 ​Trigs the core to start the keygen+signing operation for a message block.  This mode decreases storage costs for the secret key (SK) by recalling keygen and using an on-the-fly SK during the signing process.
 
-2. ### zeroize {#zeroize}
+2. ### zeroize
 
 Zeroize all internal registers: Zeroize all internal registers after process to avoid SCA leakage.  
 Software write generates only a single-cycle pulse on the hardware interface and then will be erased.
 
-4. ## status  {#status }
+4. ## status 
 
 ​The read-only status register consists of the following flags: 
 
@@ -343,32 +105,32 @@ Software write generates only a single-cycle pulse on the hardware interface and
 | \[1\] | VALID | r | 0x0 |  | \- |
 | \[0\] | READY | r | 0x0 |  | \- |
 
-1. ### READY  {#ready }
+1. ### READY 
 
 ​Indicates if the core is ready to process the inputs. 
 
-2. ### ​VALID  {#​valid }
+2. ### ​VALID 
 
 ​Indicates if the process is computed and the output is valid. 
 
-5. ## entropy {#entropy}
+5. ## entropy
 
 Entropy is required for SCA countermeasures to randomize the inputs with no change in the outputs. The entropy can be any 512-bit value in \[0 : 2^512-1\]. 
 
 The ML-DSA-87 countermeasure requires several random vectors to randomize the intermediate values. A DRBG unit is used to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
 
-6. ## seed {#seed}
+6. ## seed
 
 Adams Bridge component seed register type definition 8 32-bit registers storing the 256-bit seed for keygen in big-endian representation. The seed can be any 256-bit value in \[0 : 2^256-1\].
 
-7. ## sign\_rnd {#sign_rnd}
+7. ## sign\_rnd
 
 This register is used to support both deterministic and hedge variants of ML-DSA. The content of this register is the only difference between the deterministic and hedged variant of ML-DSA.
 
 - In the “hedged” variant, sign\_rnd is the output of an RBG.  
 - In the “deterministic” variant, sign\_rnd is a 256-bit string consisting entirely of zeroes. 
 
-  8. ## message {#message}
+  8. ## message
 
 This architecture supports pre-hash ML-DSA defined by NIST. In other words, the architecture signs a digest of the message rather than the message directly.  
 
@@ -381,49 +143,49 @@ PH𝑀 ← H(𝑀)
 
 The defined API takes PH𝑀 from the user, and the engine takes care of the prefix internally.
 
-9. ## verification result {#verification-result}
+9. ## verification result
 
 To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a defined value, and if they are equal the signature is valid.
 
-10. ## sk\_out {#sk_out}
+10. ## sk\_out
 
 This register stores the private key for keygen if seed is given by software. This register is read by ML-DSA user, i.e., software, after keygen operation.
 
 If seed comes from key vault, this register will not contain the private key to avoid exposing secret assets to software.
 
-11. ## sk\_in {#sk_in}
+11. ## sk\_in
 
 This register stores the private key for signing. This register should be set before signing operation.
 
-12. ## pk {#pk}
+12. ## pk
 
 ML-DSA component public key register type definition 648 32-bit registers storing the public key in big-endian representation. These registers is read by Adams Bridge user after keygen operation, or be set before verifying operation. 
 
-13. ## signature {#signature}
+13. ## signature
 
 ML-DSA component signature register type definition 1149 32-bit registers storing the signature of the message in big-endian representation. These registers is read by Adams Bridge user after signing operation, or be set before verifying operation. 
 
-4. # ​Pseudocode  {#​pseudocode }
+4. # ​Pseudocode 
 
-   14. ## ​Keygen  {#​keygen }
-
-​ 
-
-​ 
-
-15. ## ​Signing  {#​signing }
+   14. ## ​Keygen 
 
 ​ 
 
 ​ 
 
-​ 
-
-16. ## ​Verifying  {#​verifying }
+15. ## ​Signing 
 
 ​ 
 
-17. ## Keygen \+ Signing  {#keygen-+-signing }
+​ 
+
+​ 
+
+16. ## ​Verifying 
+
+​ 
+
+17. ## Keygen \+ Signing 
 
 ​ 
 
@@ -433,7 +195,7 @@ This mode decreases storage costs for the secret key (SK) by recalling keygen an
 
 ​ 
 
-5. # Proposed architecture {#proposed-architecture}
+5. # Proposed architecture
 
 The value of k and l is determined based on the security level of the system defined by NIST as follows:
 
@@ -455,7 +217,7 @@ The high-level architecture of Adams Bridge controller is illustrated as follows
 
 ![A diagram of a diagramDescription automatically generated](./images/media/image3.png)
 
-18. ## Keccak {#keccak}
+18. ## Keccak
 
 Hashing operation takes a significant portion of PQC latency. All samplers need to be fed by hashing functions. i.e., SHAKE128 and SHAKE256. Therefore, to improve the efficiency of the implementation, one should increase efficiency on the Keccak core, providing higher throughput using fewer hardware resources. Keccak core requires 24 rounds of the sponge function computation. We develop a dedicated SIPO (serial-in, parallel-out) and PISO (parallel-in, serial-out) for interfacing with this core in its input and output, respectively.
 
@@ -477,7 +239,7 @@ There are two possible scenarios when the Keccak state has to be saved in the PI
 2) PISO buffer EMPTY flag is set.  
    In this situation, the state can be transferred to PISO buffer and the following round of Keccak (if any) can be started.
 
-   19. ## Stage 1: Keccak – Expand Mask – Memory {#stage-1:-keccak-–-expand-mask-–-memory}
+   19. ## Stage 1: Keccak – Expand Mask – Memory
 
 Dilithium samples the polynomials that make up the vectors and matrices independently, using a fixed seed value and a nonce value that increases the security as the input for Keccak. Keccak is used to take these seed and nonce and generate random stream bits. 
 
@@ -497,7 +259,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a systemDescription automatically generated](./images/media/image4.png)
 
-1. ### Keccak Unit {#keccak-unit}
+1. ### Keccak Unit
 
 Keccak is used in SHAKE-256 configuration for expand mask operation. Hence, it will take the input data and generate 1088-bit output after each round. We propose implementing of Keccak while each round takes 12 cycles. The format of input data is as follows:
 
@@ -513,7 +275,7 @@ There are two paths for Keccak input. While the input can be set by controller f
 
 Expand mask cannot take all 1088-bit output parallelly since it makes hardware architecture too costly and complex, and also there is no other input from Keccak for the next 12 cycles. Therefore, we propose a parallel-input serial-output (PISO) unit in between to store the Keccak output and feed rejection unit sequentially.
 
-2. ### Expand Mask {#expand-mask}
+2. ### Expand Mask
 
 This unit takes data from the output of SHAKE-256 stored in a PISO buffer. The required cycles for this unit is 4.7 rounds of Keccak for one polynomial and 35 rounds of Keccak for all required polynomial (l polynomial which l=7 for ML-DSA-87). 
 
@@ -529,19 +291,19 @@ After 12 cycles, 48 coefficients are processed by the expand mask unit, and ther
 
 ![A diagram of a computer componentDescription automatically generated](./images/media/image6.png)
 
-3. ### Performance {#performance}
+3. ### Performance
 
 Sampling a polynomial with 256 coefficients takes 256/4=64 cycles. The first round of Keccak needs 12 cycles, and the rest of Keccak operation will be parallel with expand mask operation. 
 
 For a complete expand mask for Dilithium ML-DSA-87 with 7 polynomials, 7\*64+12=460 cycles are required using sequential operation. However, our design can be duplicated to enable parallel sampling for two different polynomials. Having two parallel design results in 268 cycles, while three parallel design results in 204 cycles at the cost of more resource utilization.
 
-20. ## Stage 2: Memory-NTT-Memory {#stage-2:-memory-ntt-memory}
+20. ## Stage 2: Memory-NTT-Memory
 
 The most computationally intensive operation in lattice-based PQC schemes is polynomial multiplication which can be accelerated using NTT. However, NTT is still a performance bottleneck in lattice-based cryptography. We propose improved NTT architecture with highly efficient modular reduction. This architecture supports NTT, INTT, and point-wise multiplication (PWM) to enhance the design from resource sharing point-of-view while reducing the pre-processing cost of NTT and post-processing cost of INTT. 
 
 Our NTT architecture exploits a merged-layer NTT technique using two pipelined stages with two parallel cores in each stage level, making 4 butterfly cores in total. Our proposed parallel pipelined butterfly cores enable us to perform Radix-4 NTT/INTT operation with 4 parallel coefficients. While memory bandwidth limits the efficiency of the butterfly operation, we use a specific memory pattern to store four coefficients per address. 
 
-1. ### NTT Architecture {#ntt-architecture}
+1. ### NTT Architecture
 
 An NTT operation can be regarded as an iterative operation by applying a sequence of butterfly operations on the input polynomial coefficients. A butterfly operation is an arithmetic operation that combines two coefficients to obtain two outputs. By repeating this process for different pairs of coefficients, the NTT operation can be computed in a logarithmic number of steps. 
 
@@ -978,7 +740,7 @@ The modular multiplication is implemented with a 3-stage pipeline architecture. 
 
 We do not need extra multiplications for our modular reduction, unlike Barrett and Montgomery algorithms. The operations of our reduction do not depend on the input data and do not leak any information. Our reduction using the modulus q= 8,380,417 is fast, efficient and constant-time.
 
-2. ### Performance {#performance-1}
+2. ### Performance
 
 For a complete NTT operation with 8 layers, i.e., n \= 256, the proposed architecture takes 82=4      rounds. Each round involves 2564=64 operations in pipelined architecture. Hence, the latency of each round is equal to 64 (read from memory) \+ 8 (2 sequential butterfly latency) \+ 4 (input buffer latency) \+ 2 (wait between each two stages) \= 78 cycles. 
 
@@ -994,7 +756,7 @@ The total latency would be 4×78=312 cycles.
 
 For a complete NTT/INTT operation for Dilithium ML-DSA-87 with 7 or 8 polynomials, 7\*312=2184 or 8\*312=2496 cycles are required. However, our design can be duplicated to enable parallel NTT for two different polynomials. Having two parallel design results in 1248 cycles.
 
-3. ### NTT shuffling countermeasure {#ntt-shuffling-countermeasure}
+3. ### NTT shuffling countermeasure
 
 To protect NTT, we have two options – shuffling the order of execution of coefficients and masking in-order computation such that NTT performs operation on two input shares per coefficient and produces two output shares. While masking is a strong countermeasure for side-channel attacks, it requires at least 4x the area and adds 4x the latency to one NTT operation. Shuffling is an implementation trick that can be used to provide randomization to some degree without area or latency overhead. In Adam’s Bridge, we employ a combination of both for protected design. One NTT core will have shuffling for both NTT and INTT modes. The second NTT core will have shuffling and masking on the first layer of computation for INTT mode with cascaded connection from a masked PWM module. In NTT mode, the second NTT core will employ only shuffling. PWM operations are masked by default. PWA and PWS operations are shuffled by default.
 
@@ -1157,7 +919,7 @@ buffer write addr=indexf10
 
 buffer read addr=countregular
 
-21. ## Stage 3: Keccak \- SampleRejq – Pointwise Mult- Memory {#stage-3:-keccak---samplerejq-–-pointwise-mult--memory}
+21. ## Stage 3: Keccak \- SampleRejq – Pointwise Mult- Memory
 
 Dilithium (or Kyber) samples the polynomials that make up the vectors and matrices independently, using a fixed seed value and a nonce value that increases the security as the input for Keccak. Keccak is used to take these seed and nonce and generate random stream bits. 
 
@@ -1179,7 +941,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a computer hardware systemDescription automatically generated](./images/media/image16.png)
 
-1. ### Keccak Unit {#keccak-unit-1}
+1. ### Keccak Unit
 
 Keccak is used in SHAKE-128 configuration for rejection sampling operation. Hence, it will take the input data and generates 1344-bit output after each round. We propose implementing of Keccak while each round takes 12 cycles. The format of input data is as follows:
 
@@ -1195,7 +957,7 @@ There are two paths for Keccak input. While the input can be set by controller f
 
 Rejection sampler cannot take all 1344-bit output parallelly since it makes hardware architecture too costly and complex, and also there is no other input from Keccak for the next 12 cycles. Therefore, we propose a parallel-input serial-output (PISO) unit in between to store the Keccak output and feed rejection unit sequentially.
 
-2. ### Rejection Sampler {#rejection-sampler}
+2. ### Rejection Sampler
 
 This unit takes data from the output of SHAKE-128 stored in a PISO buffer. The required cycles for this unit are variable due to the non-deterministic pattern of rejection sampling. However, at least 5 Keccak rounds are required to provide 256 coefficients.
 
@@ -1243,15 +1005,15 @@ There are 5 rejection sampler circuits corresponding to each 24-bit input. The c
 
 ![A diagram of a diagramDescription automatically generated](./images/media/image18.png)
 
-3. ### Performance {#performance-2}
+3. ### Performance
 
 For processing each round of Keccak using rejection sampling unit, we need 12 to 13 cycles that result in 60-65 cycles for each polynomial with 256 coefficients. 
 
 For a complete rejection sampling for Dilithium ML-DSA-87 with 8\*7=56 polynomials, 3360 to 3640 cycles are required using sequential operation. However, our design can be duplicated to enable parallel sampling for two different polynomials. Having two parallel design results in 1680 to 1820 cycles, while three parallel design results in 1120 to 1214 cycles at the cost of more resource utilization.
 
-22. ## Stage 4: Memory – Decompose – Encode – Keccak  {#stage-4:-memory-–-decompose-–-encode-–-keccak}
+22. ## Stage 4: Memory – Decompose – Encode – Keccak 
 
-    1. ### Decompose Unit {#decompose-unit}
+    1. ### Decompose Unit
 
 Decompose unit is used in signing operation of Dilithium. It decomposes r into (r1,r0) such that r ≡ r1(2γ2)+r0 mod q. The output of decompose has two parts. While r0 will be stored into memory, r1 will be encoded and then be stored into Keccak SIPO input buffer to run SHAKE256. 
 
@@ -1265,13 +1027,13 @@ Due to our memory configuration that stores 4 coefficients per address, we need 
 
 ![A diagram of a computer programDescription automatically generated](./images/media/image20.png)
 
-2. ### Performance {#performance-3}
+2. ### Performance
 
 There are k polynomials with 256 coefficients for each that need to be fed into decompose unit in pipeline method. After having 1088-bit input into SIPO, Keccak will be enabled parallel with decompose and encode units.  However, the last round of Keccak will be performed after processing all coefficients. Each round of Keccak takes 12 cycles which allows processing of 48 coefficients. Since the output length of each encode unit is 4 bits, Keccak works faster than decompose/encode units and SIPO will not have overflow issue.
 
 For a complete decompose/encode/hash operation for Dilithium ML-DSA-87 with 8 polynomials, 8\*256/4 \+ 12 \= 524 cycles are required using pipelined architecture.
 
-23. ## INTT {#intt}
+23. ## INTT
 
 A merged-layer INTT technique uses two pipelined stages with two parallel cores in each stage level, making 4 butterfly cores in total. The parallel pipelined butterfly cores enable us to perform Radix-4 INTT operation with 4 parallel coefficients. 
 
@@ -1623,7 +1385,7 @@ After completing all stages, the memory contents would be as follows:
 
 The proposed method saves the time needed for shuffling and reordering, while using only a little more memory.
 
-1. ### INTT shuffling countermeasure {#intt-shuffling-countermeasure}
+1. ### INTT shuffling countermeasure
 
 Similar to NTT operation, INTT requires shuffling the order of execution of coefficients in order to mitigate SCA attacks. Refer to section 5.3.3 for details on NTT shuffling. In INTT mode, the chunks are split in the following pattern into 16 chunks:
 
@@ -1734,7 +1496,7 @@ E.g. if selected chunk is 5, and rand\_index is 2
 
 	Write address \= 5 \+ (2\*16), 5 \+ (3\*16), 5 \+ (0\*16), 5 \+ (1\*16) \= 37, 53, 5, 21
 
-24. ## Point-wise Multiplication {#point-wise-multiplication}
+24. ## Point-wise Multiplication
 
 Polynomial in NTT domain can be performed using point-wise multiplication (PWM). Considering the current architecture with 4 butterfly units, there are 4 modular multiplications that can be reused in point-wise multiplication operation. This approach enhances the design from an optimization perspective by resource sharing technique. \`
 
@@ -1744,7 +1506,7 @@ There are 2 memories containing polynomial f and g, with 4 coefficients per each
 
 The proposed NTT method preserves the memory contents in sequence without needing to shuffle and reorder them, so the point-wise multiplication can be sped up by using consistent reading/writing addresses from both memories.
 
-25. ## RejBounded {#rejbounded}
+25. ## RejBounded
 
 This unit takes data from the output of SHAKE-256 stored in a PISO buffer. The required cycles for this unit are variable due to the non-deterministic pattern of sampling. However, at least 1 Keccak round is required to provide 256 coefficients.
 
@@ -1839,7 +1601,7 @@ There are 8 rejection sampler circuits corresponding to each 4-bit input. The co
 
 ![A diagram of a computer componentDescription automatically generated](./images/media/image24.png)
 
-26. ## Stage 5: SampleInBall – Memory  {#stage-5:-sampleinball-–-memory}
+26. ## Stage 5: SampleInBall – Memory 
 
 SampleInBall is a procedure that uses the SHAKE256 of a seed ρ to produce a random element of Bτ. The procedure uses the Fisher-Yates shuffle method. The signs of the nonzero entries of c are determined by the first 8 bytes of H(ρ), and the following bytes of H(ρ) are used to determine the locations of those nonzero entries.
 
@@ -1849,7 +1611,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a sign-building processDescription automatically generated](./images/media/image25.png)
 
-1. ### Keccak Unit {#keccak-unit-2}
+1. ### Keccak Unit
 
 Keccak is used in SHAKE-256 configuration for SampleInBall operation. Hence, it will take the input seed  with 256-bit and generates 1088-bit output after each round. 
 
@@ -1859,7 +1621,7 @@ The remaining random bits are used for sampling. Since each 8-bit is used for on
 
 SampleInBall cannot take all samples parallelly since it makes hardware architecture too costly and complex. Therefore, we propose a parallel-input serial-output (PISO) unit in between to store the Keccak output and feed SampleInBall unit sequentially.
 
-2. ### SampleInBall {#sampleinball}
+2. ### SampleInBall
 
 This unit takes data from the output of SHAKE-256 stored in a PISO buffer. The required cycles for this unit are variable due to the non-deterministic pattern of sampling. But this operation can only be finished with 60 valid samples.
 
@@ -1927,7 +1689,7 @@ The read data from address j will be updated with 1 or q-1 based on the s value,
 
 When i and j have the same address, both ports try to write to the same location in the second cycle. To avoid this, the red path is used to turn off port a for address j. But then, j will be changed in the same buffer that has i (port b) and will be saved into memory.
 
-27. ## Decompose Architecture {#decompose-architecture}
+27. ## Decompose Architecture
 
 Decompose algorithm plays a crucial role by breaking down the coefficients of a polynomial into smaller parts. Decompose calculates high and low bits r1 and r0 such that:
 
@@ -1999,7 +1761,7 @@ r0=r0-1=r-q+1-1=r-q≡r mod q
 
 *r0 value based on the given r considering boarder case*
 
-28. ## MakeHint Architecture {#makehint-architecture}
+28. ## MakeHint Architecture
 
 The basic approach of the MakeHint(z, r) function involves decomposing both r and r+z into two parts: (r1, r0) for r and (rz1, rz0) for r+z. It then proceeds to evaluate whether r1 and rz1 are identical. In the event that r1 does not match rz1, it indicates that a hint is necessary to proceed. This process is essential for determining when additional information is required to resolve discrepancies between the compared segments.
 
@@ -2023,7 +1785,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a computer programDescription automatically generated](./images/media/image37.png)
 
-1. ### Hint Sum and Hint BitPack {#hint-sum-and-hint-bitpack}
+1. ### Hint Sum and Hint BitPack
 
 In Dilithium signing algorithm, the output of Makehint (hint output) is further processed to generate the encoded ‘h’ component of the signature. Additionally, one of the validity checks in signing algorithm uses hint sum to determine validity of the generated signature. These post-processing steps can be embedded into the Makehint architecture to avoid latency overhead while maintaining low complexity. The following figure shows the embedded logic into Makehint to generate the required outputs.
 
@@ -2061,7 +1823,7 @@ At the end of all polynomials, the hintsum is written to the register API to con
 
 It is possible that during the last cycle of a given polynomial, the index buffer contains \< 1 dword of index values to be written to the reg API. To accommodate this scenario, the controller flushes out the buffer at the end of each polynomial and writes the remaining data to the register API. 
 
-29. ## W1Encode {#w1encode}
+29. ## W1Encode
 
 The signer’s commitment is shown by w, while this value needs to be decomposed into two shares to provide the required hint as a part of signature. The output of decompose is shown by (w1, w0) which presents the higher and lower parts of the given input. While w0 can be stored into the memory, the value of w1 is required to compute commitment hash using SHAKE256 operation. The following equation shows this operation:
 
@@ -2121,7 +1883,7 @@ The following table reports the SIPO input for different Keccak rounds.
 
 When the whole polynomials are done in the first 8 rounds of Keccak and Keccak done signal is asserted, the encode done signal is asserted and the high-level controller resumes control and adds the necessary padding to SIPO to finish the SHAKE256 process.
 
-30. ## Norm Check {#norm-check}
+30. ## Norm Check
 
 The figure provided illustrates the finite field range for polynomial coefficients. It indicates that each coefficient is an integer ranging from 0 to q-1:
 
@@ -2157,7 +1919,7 @@ The proposed design is configurable and accepts different bounds to reduce the r
 | r0 | K | K\*256 | 512 (for 4\) |
 | ct0 | k | K\*256 | 512 (for 4\) |
 
-31. ## skDecode {#skdecode}
+31. ## skDecode
 
 The given sk to the core for performing a signing operation has been encoded, and skDecode is responsible to reverse the encoding procedure to divide sk to the appropriate portions. The initial segments within sk should be allocated to variables p, K, and tr, corresponding to sizes of 256 bits, 256 bits, and 512 bits, respectively, without necessitating any modifications.
 
@@ -2213,7 +1975,7 @@ T0 unpack:
 
 In case of t0 unpack, the t0 sample buffer can hold up to 64+52 \= 116 bits of data. The buffer generates a full signal that is used to stall key memory reads for a cycle before continuing to write to the buffer.
 
-32. ## sigEncode\_z {#sigencode_z}
+32. ## sigEncode\_z
 
 The sigEncode\_z operation converts a signature into a sequence of bytes. This operation has three distinct parts, namely c, z, and h. The first part simply writes the c into the register API as it is. The last part also uses the MakeHint structure to combine the MakeHint outputs into register API. However, the middle part, that is z, requires encoding.
 
@@ -2231,7 +1993,7 @@ Using two parallel read ports, 8 encoding units read 8 coefficients from the mem
 
 ![A diagram of a machineDescription automatically generated](./images/media/image49.png)
 
-33. ## PISO Buffer {#piso-buffer}
+33. ## PISO Buffer
 
 The output of the Keccak unit is used to feed four different samplers at varying data rates. The Parallel in Serial out buffer is a generic buffer that can take the full width of the Keccak state and deliver it to the sampler units at the appropriate data rates.
 
@@ -2239,7 +2001,7 @@ Input data from the Keccak can come at 1088 or 1344 bits per clock. During expan
 
 Output data rate varies \- 32 bits for RejBounded and SampleInBall, 80 bits for Expand Mask and 120 bits for SampleRejq.
 
-34. ## Power2Round {#power2round}
+34. ## Power2Round
 
 Power2Round function is used to split each coefficient of vector t to two parts (similar to decompose unit). Power2Round calculates high and low bits r1 and r0 such that:
 
@@ -2272,7 +2034,7 @@ The diagram illustrates the structure of the power2round mechanism integrated wi
 
 ![A diagram of a computerDescription automatically generated](./images/media/image53.png)
 
-35. ## skEncode {#skencode}
+35. ## skEncode
 
 The SkEncode operation requires multiple inputs (skEncode(ρ, K, tr, s1, s2, t0)). But ρ, K, tr, and t0 have been preloaded into the API through different operations. In terms of s1 and s2, SkEncode serves as a conversion tool that maps the values of these coefficients using the following equation:
 
@@ -2282,7 +2044,7 @@ For ML-DSA-87 with η=2, there are only 5 possible values for the s1 and s2 coef
 
 ![A diagram of a computer programDescription automatically generated](./images/media/image54.png)
 
-36. ## pkDecode {#pkdecode}
+36. ## pkDecode
 
 During the verification process, the provided pk must be decoded. The initial 256 bits of pk include ρ exactly as it is. The bits that follow consist of t1 polynomials. According to ML-DSA-87 protocol, each set of 10 bits represents a single coefficient. Therefore, these 10 bits need to be read, shifted left by 13 bits, and the outcome should be saved into memory.
 
@@ -2290,7 +2052,7 @@ The architecture is as follows:
 
 ![A diagram of a computer codeDescription automatically generated](./images/media/image55.png)
 
-37. ## sigDecode\_z {#sigdecode_z}
+37. ## sigDecode\_z
 
 The sigDecode operation reverses the sigEncode. This operation has three distinct parts, namely c, z, and h. The first part simply writes the c from the register API as it is. The last part also uses the HintBitUnpack structure to combine the MakeHint outputs into register API. However, the middle part, that is z, requires decoding.
 
@@ -2304,7 +2066,7 @@ The high-level architecture is as follows:
 
 ![A diagram of a machineDescription automatically generated](./images/media/image56.png)
 
-38. ## sigDecode\_h {#sigdecode_h}
+38. ## sigDecode\_h
 
 The sigDecode function reverses sigEncode and is composed of three separate segments: c, z, and h. The h part uses the HintBitUnpack structure to decode given Hint and store it into memory.
 
@@ -2335,7 +2097,7 @@ Example hint processing:
 
 In each cycle, the positions indicated by y\[rd\_ptr\] are flipped to 1 in the bitmap. Once a polynomial is finished, the bitmap, read pointer, current polynomial map, etc are all reset to prepare for the next polynomial. In this way, sigdecode\_h takes (64\*8 \= 512\) cycles to finish writing all coefficients to the internal memory (a few additional cycles are required for control state transitions). 
 
-39. ## UseHint {#usehint}
+39. ## UseHint
 
 To reconstruct the signer's commitment, it is necessary to update the approximate computed value labeled as w' by utilizing the provided hint. Hence, the value of w’ should be decomposed, and its higher part should be altered if the related hint equals 1 for that coefficient. Subsequently, the higher part requires encoding through the W1Encode operation and must be stored into the Keccak SIPO.
 
@@ -2353,9 +2115,9 @@ For w0 condition we have:
 
 {if w0=0 or w0\>2 w1←w1-1 mod 16 else w1←w1+1 mod 16 
 
-6. # High-Level architecture {#high-level-architecture}
+6. # High-Level architecture
 
-   40. ## Sequencer {#sequencer}
+   40. ## Sequencer
 
 High-Level controller works as a sequencer to perform a specific sequence of operations. There are several blocks of memory in the architecture that can be accessed by sub-modules. However, the sequencer would be responsible for passing the required addresses for each operation. 
 
@@ -2419,13 +2181,13 @@ The following table lists different operations used in the high-level controller
 | Memory |
 | Constant |
 
-41. ## Keygen Operation: {#keygen-operation:}
+41. ## Keygen Operation:
 
 The algorithm for keygen is presented below. We will explain the specifics of each operation in the following subsections.
 
 ![A screenshot of a computer programDescription automatically generated](./images/media/image60.png)
 
-1. ### (p,p',K)= H(ξ||K||L ,1024) {#(p,p',k)=-h(ξ||k||l-,1024)}
+1. ### (p,p',K)= H(ξ||K||L ,1024)
 
 Keygen starts with running Keccak operation on seed to derive three different values. Seed is a value stored in register API, and we need to perform SHAKE256 with 256-bit inputs to generate 1024 bits output.
 
@@ -2440,7 +2202,7 @@ Keygen starts with running Keccak operation on seed to derive three different va
 
 Firstly, we need to fill Keccak input buffer with seed and then run the Keccak core. After that, the Keccak output stored in PISO is used to set the p, p’, and K values.
 
-2. ### (s1,s2)←ExpandS(ρ′) {#(s1,s2)←expands(ρ′)}
+2. ### (s1,s2)←ExpandS(ρ′)
 
 We use the previous step's p' as the input for the Keccak and run the rejbounded sampler. For each polynomial, we need to feed the Keccak input buffer with p' and a constant value of length 16 bits. To do this, we first feed the 512-bit p' into SIPO, and then we add a 16 bits value (which acts as a counter from 0 to 14\) to the end of the fed p' and then padding starts from there. 
 
@@ -2463,7 +2225,7 @@ Then we run the rejbounded sampler 15 times with the shake256 mode. We can mask 
 |  | Keccak\_SIPO | p' | 14 |  |
 |  | rejbounded | s2\_7 |  |  |
 
-3. ### NTT(s1) {#ntt(s1)}
+3. ### NTT(s1)
 
 We need to call NTT for s1 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2474,7 +2236,7 @@ We need to call NTT for s1 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | s1\_6 | temp | s1\_6\_ntt |
 
-4. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(s1) {#aˆ-←expanda(ρ)-and-aˆ-◦ntt(s1)}
+4. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(s1)
 
 We perform rejection sampling and PWM simultaneously. This step takes p from the first step and appends two bytes of Keccak SIPO to the end of the given p and then starts padding from there. We run the rejection sampler 56 times with shake128 mode, where k \* l=56.
 
@@ -2514,7 +2276,7 @@ We can mask the latency of SIPO, the Keccak\_SIPO can be invoked when PWM/Reject
 |  | Rejection\_sampler |  |  |  |
 |  | pwm\_accu | DONTCARE | s1\_6\_ntt | As7 |
 
-5. ### NTT−1(Aˆ ◦NTT(s1)) {#ntt−1(aˆ-◦ntt(s1))}
+5. ### NTT−1(Aˆ ◦NTT(s1))
 
 We need to call INTT for As1 by passing three addresses. Temp address can be the same for all INTT calls while init and destination are different.
 
@@ -2525,7 +2287,7 @@ We need to call INTT for As1 by passing three addresses. Temp address can be the
 |  | … |  |  |  |
 |  | INTT | As7 | temp | As7\_intt |
 
-6. ### t ←NTT−1(Aˆ ◦NTT(s1))+s2 {#t-←ntt−1(aˆ-◦ntt(s1))+s2}
+6. ### t ←NTT−1(Aˆ ◦NTT(s1))+s2
 
 We need to call point-wise addition for As1 results and s2 by passing three addresses. 
 
@@ -2536,7 +2298,7 @@ We need to call point-wise addition for As1 results and s2 by passing three addr
 |  | … |  |  |  |
 |  | PWA | As7\_intt | s2\_7 | t7 |
 
-7. ### (t1,t0)←Power2Round(t,*d*) AND *pk* ←pkEncode(ρ,t1) AND *sk* ←skEncode(t0) {#(t1,t0)←power2round(t,d)-and-pk-←pkencode(ρ,t1)-and-sk-←skencode(t0)}
+7. ### (t1,t0)←Power2Round(t,*d*) AND *pk* ←pkEncode(ρ,t1) AND *sk* ←skEncode(t0)
 
 We need to call power2round for t results from the previous step, and the results are stored in two different addresses to API for sk and pk. 
 
@@ -2546,7 +2308,7 @@ We need to call power2round for t results from the previous step, and the result
 
 NOTE: The value of ρ needs to be also stored into register API for pk.
 
-8. ### *tr* ←H(BytesToBits(*pk*),512) {#tr-←h(bytestobits(pk),512)}
+8. ### *tr* ←H(BytesToBits(*pk*),512)
 
 The value of pk from register API needs to be read and stored into Keccak SIPO to perform SHAKE256. Due to long size of pk, 20 rounds of Keccak is required to executed to generate 512-bit tr.
 
@@ -2555,7 +2317,7 @@ The value of pk from register API needs to be read and stored into Keccak SIPO t
 | tr=Keccak(pk) | Keccak\_SIPO | pk | 2592 bytes |  |
 |  | Keccak\_PISO | tr | 64 bytes |  |
 
-9. ### *sk* ←skEncode(ρ,*K*,*tr*,s1,s2,t0) {#sk-←skencode(ρ,k,tr,s1,s2,t0)}
+9. ### *sk* ←skEncode(ρ,*K*,*tr*,s1,s2,t0)
 
 The value of ρ, *K* needs to be stored into register API, while *tr* and *t0* are already stored by previous steps. 
 
@@ -2566,7 +2328,7 @@ We need to call skEncode for s1 and s2 coefficients and the results are stored i
 | *sk* ←skEncode(s1) | skEncode | s1 | sk |  |
 | *sk* ←skEncode(s2) | skEncode | S2 | sk |  |
 
-42. ## Signing {#signing}
+42. ## Signing
 
 Signing operation is the most challenging operation for ML-DSA. From a high-level perspective, the required operation for performing a signing operation can be shown as follows:
 
@@ -2600,7 +2362,7 @@ The following table shows the operations for each sequencer:
 |  | ||⟨⟨*c*t0⟩⟩||∞ ≥ γ2 |  |  |
 | Signature Generation | σ ←sigEncode(*c*˜,z mod±*q*,h) |  |  |
 
-1. ### (ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*) {#(ρ,k,tr,s1,s2,t0)←skdecode(sk)}
+1. ### (ρ,*K*,*tr*,s1,s2,t0)←skDecode(*sk*)
 
 We need to call skDecode for s1, s2, and t0 by passing the required addresses. 
 
@@ -2610,7 +2372,7 @@ We need to call skDecode for s1, s2, and t0 by passing the required addresses.
 | skDecode(s2) |  | s2 | s2 |  |
 | skDecode(t0) |  | t0 | t0 |  |
 
-2. ### sˆ1 ←NTT(s1) {#sˆ1-←ntt(s1)}
+2. ### sˆ1 ←NTT(s1)
 
 We need to call NTT for s1 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2621,7 +2383,7 @@ We need to call NTT for s1 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | s1\_6 | temp | s1\_6\_ntt |
 
-3. ### sˆ2 ←NTT(s2) {#sˆ2-←ntt(s2)}
+3. ### sˆ2 ←NTT(s2)
 
 We need to call NTT for t0 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2632,7 +2394,7 @@ We need to call NTT for t0 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | t0\_7 | temp | t0\_7\_ntt |
 
-4. ### ˆt0 ←NTT(t0) {#ˆt0-←ntt(t0)}
+4. ### ˆt0 ←NTT(t0)
 
 We need to call NTT for s2 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2643,7 +2405,7 @@ We need to call NTT for s2 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | s2\_7 | temp | s2\_7\_ntt |
 
-5. ### *c*ˆ ←NTT(*c*) {#cˆ-←ntt(c)}
+5. ### *c*ˆ ←NTT(*c*)
 
 This is the part where two sequencers sync up. Sequencer 1 will pause until the second sequencer finishes the SampleInBall operation and the ready flag from SampleInBall tells the first sequencer to go on. 
 
@@ -2653,7 +2415,7 @@ We need to call NTT for c by passing three addresses. Temp address can be the sa
 | :---- | :---- | :---- | :---- | :---- |
 | NTT(c) | NTT | c | temp | c\_ntt |
 
-6. ### ⟨⟨*c*s1⟩⟩←NTT−1(*c*ˆ◦ sˆ1) {#⟨⟨cs1⟩⟩←ntt−1(cˆ◦-sˆ1)}
+6. ### ⟨⟨*c*s1⟩⟩←NTT−1(*c*ˆ◦ sˆ1)
 
 We need firstly to call PWM to perform point-wise multiplication between c and s1.
 
@@ -2673,7 +2435,7 @@ Then, we need to call INTT for cs1 by passing three addresses. Temp address can 
 |  | … |  |  |  |
 |  | INTT | cs1\_6\_ntt | temp | cs1\_6 |
 
-7. ### ⟨⟨*c*s2⟩⟩←NTT−1(*c*ˆ◦ sˆ2) {#⟨⟨cs2⟩⟩←ntt−1(cˆ◦-sˆ2)}
+7. ### ⟨⟨*c*s2⟩⟩←NTT−1(*c*ˆ◦ sˆ2)
 
 We need first to call PWM to perform point-wise multiplication between c and s2.
 
@@ -2693,7 +2455,7 @@ Then, we need to call INTT for cs2 by passing three addresses. Temp address can 
 |  | … |  |  |  |
 |  | INTT | cs2\_7\_ntt | temp | cs2\_7 |
 
-8. ### z ←y \+⟨⟨*c*s1⟩⟩ {#z-←y-+⟨⟨cs1⟩⟩}
+8. ### z ←y \+⟨⟨*c*s1⟩⟩
 
 We need to call PWA to perform point-wise addition between cs1 and y.
 
@@ -2704,7 +2466,7 @@ We need to call PWA to perform point-wise addition between cs1 and y.
 |  | … |  |  |  |
 |  | PWA | y\_6 | cs1\_6 | z\_6 |
 
-9. ### r0 ←(w0 −⟨⟨*c*s2⟩⟩) {#r0-←(w0-−⟨⟨cs2⟩⟩)}
+9. ### r0 ←(w0 −⟨⟨*c*s2⟩⟩)
 
 We need to call PWS to perform point-wise subtraction between w0 and cs2.
 
@@ -2715,7 +2477,7 @@ We need to call PWS to perform point-wise subtraction between w0 and cs2.
 |  | … |  |  |  |
 |  | PWS | w0\_7 | cs2\_7 | r0\_7 |
 
-10. ### ⟨⟨*c*t0⟩⟩←NTT−1(*c*ˆ◦ tˆ0) {#⟨⟨ct0⟩⟩←ntt−1(cˆ◦-tˆ0)}
+10. ### ⟨⟨*c*t0⟩⟩←NTT−1(*c*ˆ◦ tˆ0)
 
 We need first to call PWM to perform point-wise multiplication between c and t0.
 
@@ -2735,7 +2497,7 @@ Then, we need to call INTT for ct0 by passing three addresses. Temp address can 
 |  | … |  |  |  |
 |  | INTT | ct0\_7\_ntt | temp | ct0\_7 |
 
-11. ### h ←MakeHint(w1,r0+⟨⟨*c*t0⟩⟩) {#h-←makehint(w1,r0+⟨⟨ct0⟩⟩)}
+11. ### h ←MakeHint(w1,r0+⟨⟨*c*t0⟩⟩)
 
 We need to call PWA to perform point-wise addition between r0 and ct0.
 
@@ -2752,7 +2514,7 @@ Then, we need to call MakeHint for hint\_r. It will process the entire hint\_r p
 | :---- | :---- | :---- | :---- | :---- |
 | hint\_r=PWA(r0, ct0) | MAKEHINT | hint\_r\_0 | h |  |
 
-12. ### ||z||∞ ≥ γ1 −β {#||z||∞-≥-γ1-−β}
+12. ### ||z||∞ ≥ γ1 −β
 
 We need to call Norm\_Check to perform validity check on z. The output will be stored as an individual flag in the high-level architecture.
 
@@ -2760,7 +2522,7 @@ We need to call Norm\_Check to perform validity check on z. The output will be s
 | :---- | :---- | :---- | :---- | :---- |
 | Valid=NormCheck(z) | NormChk | z | mode |  |
 
-13. ### ||r0||∞ ≥ γ2 −β {#||r0||∞-≥-γ2-−β}
+13. ### ||r0||∞ ≥ γ2 −β
 
 We need to call Norm\_Check to perform validity check on r0. The output will be stored as an individual flag in the high-level architecture.
 
@@ -2768,7 +2530,7 @@ We need to call Norm\_Check to perform validity check on r0. The output will be 
 | :---- | :---- | :---- | :---- | :---- |
 | Valid=NormCheck(r0) | NormChk | r | mode |  |
 
-14. ### ||⟨⟨*c*t0⟩⟩||∞ ≥ γ2 {#||⟨⟨ct0⟩⟩||∞-≥-γ2}
+14. ### ||⟨⟨*c*t0⟩⟩||∞ ≥ γ2
 
 We need to call Norm\_Check to perform validity check on ct0. The output will be stored as an individual flag in the high-level architecture.
 
@@ -2776,7 +2538,7 @@ We need to call Norm\_Check to perform validity check on ct0. The output will be
 | :---- | :---- | :---- | :---- | :---- |
 | Valid=NormCheck(ct0) | NormChk | ct0 | mode |  |
 
-15. ### σ ←sigEncode(*c*˜,z mod±*q*,h) {#σ-←sigencode(c˜,z-mod±q,h)}
+15. ### σ ←sigEncode(*c*˜,z mod±*q*,h)
 
 This step writes the final signature into the register API. Before that, the high-level design will check all four flags coming from:
 
@@ -2791,7 +2553,7 @@ If all checks show the successful signature, then the sigEncode unit will be cal
 | :---- | :---- | :---- | :---- | :---- |
 | σ=sigEncode(c,z) | sigEncode | c | z | σ |
 
-16. ### μ ←H(*tr*||*M*,512) {#μ-←h(tr||m,512)}
+16. ### μ ←H(*tr*||*M*,512)
 
 The other sequencer starts with running Keccak operation on tr and the given message. tr and the message are stored in register API as inputs, and we need to perform SHAKE256 with to generate 512 bits output.  
 Since the engine only supports prehash signing/verifying ML-DSA operations, the assumption is the given message is the hash of a pure message. Based on FIPS 204 \[3\], the hashed message needs to be extended by some pre-defined OIDs. 
@@ -2806,7 +2568,7 @@ Since the engine only supports prehash signing/verifying ML-DSA operations, the 
 
 Firstly, we need to fill Keccak input buffer with tr and then concatenate it with message. NIST may apply some changes in this operation by adding some constant value into this concatenation. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the μ value into a special register.
 
-17. ### ρ′←H(*K*||*rnd*||μ,512) {#ρ′←h(k||rnd||μ,512)}
+17. ### ρ′←H(*K*||*rnd*||μ,512)
 
 We need to run Keccak operation on K, rnd, and μ values. K and rnd are stored in register API as inputs, and μ is stored in an internal register. we need to perform SHAKE256 with to generate 512 bits output.
 
@@ -2819,7 +2581,7 @@ We need to run Keccak operation on K, rnd, and μ values. K and rnd are stored i
 
 Firstly, we need to fill Keccak input buffer with K and then concatenate it with sign\_rnd and μ. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the ρ′ value into a special register.
 
-18. ### y ←ExpandMask(ρ’ ,κ) {#y-←expandmask(ρ’-,κ)}
+18. ### y ←ExpandMask(ρ’ ,κ)
 
 We use the previous step's p' as the input for the Keccak and run the ExpandMask sampler. For each polynomial, we need to feed the Keccak input buffer with p' and a register value of length 16 bits. To do this, we first feed the 512-bit p' into SIPO, and then we add a 16 bits value (which acts as a counter from 0 to 6\) to the end of the fed p' and then padding starts from there. 
 
@@ -2840,7 +2602,7 @@ Then we run the ExpandMask sampler 7 times with the shake256 mode. We can mask t
 |  | LDKeccak | κ \+6 | 2 bytes |  |
 |  | Exp\_Mask | y\_6 |  |  |
 
-19. ### NTT(y) {#ntt(y)}
+19. ### NTT(y)
 
 We need to call NTT for s1 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2851,7 +2613,7 @@ We need to call NTT for s1 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | y\_6 | temp | y\_6\_ntt |
 
-20. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(y) {#aˆ-←expanda(ρ)-and-aˆ-◦ntt(y)}
+20. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(y)
 
 We perform rejection sampling and PWM simultaneously. This step takes p from and appends two bytes of Keccak SIPO to the end of the given p and then starts padding from there. We run the rejection sampler 56 times with shake128 mode, where k \* l=56.
 
@@ -2907,7 +2669,7 @@ We can mask the latency of SIPO, the Keccak\_SIPO can be invoked when PWM/Reject
 |  | Rejection\_sampler |  |  |  |
 |  | pwm\_accu | DONTCARE | y\_6\_ntt | Ay7 |
 
-21. ### w ←NTT−1(Aˆ ◦NTT(y)) {#w-←ntt−1(aˆ-◦ntt(y))}
+21. ### w ←NTT−1(Aˆ ◦NTT(y))
 
 We need to call INTT for Ay by passing three addresses. Temp address can be the same for all INTT calls while init and destination are different.
 
@@ -2918,7 +2680,7 @@ We need to call INTT for Ay by passing three addresses. Temp address can be the 
 |  | … |  |  |  |
 |  | INTT | Ay7 | temp | w\_7 |
 
-22. ### (w1,w0) ←Decompose(w) AND *c*˜←H(μ||w1Encode(w1),2λ) {#(w1,w0)-←decompose(w)-and-c˜←h(μ||w1encode(w1),2λ)}
+22. ### (w1,w0) ←Decompose(w) AND *c*˜←H(μ||w1Encode(w1),2λ)
 
 The decompose unit takes w from memory and splits it into two parts. It saves w0 in memory and sends w1 to the Keccak SIPO for SampleInBall. However, SIPO requires the μ prefix before receiving the w1 values. Therefore, the high-level controller should provide μ before using decompose. After completing the decompose operation, the high-level controller needs to add the necessary padding for H(μ||w1Encode(w1),2λ). Then, by activating the SampleInBall, the Keccak will start and the data in the SIPO will be processed.
 
@@ -2928,7 +2690,7 @@ The decompose unit takes w from memory and splits it into two parts. It saves w0
 | (w1,w0) ←Decompose(w) | Decomp\_Enc | w | w0 |  |
 | H(μ||w1Encode(w1),2λ) | LDKeccak | padding |  |  |
 
-23. ### *c* ←SampleInBall(*c*˜) {#c-←sampleinball(c˜)}
+23. ### *c* ←SampleInBall(*c*˜)
 
 We take the SIPO value from the last step as the Keccak input and run SampleInBall. The output stays in the SampleInBall memory.
 
@@ -2936,7 +2698,7 @@ We take the SIPO value from the last step as the Keccak input and run SampleInBa
 | :---- | :---- | :---- | :---- | :---- |
 | *c* ←SampleInBall(*c*˜1) | SMPL\_INBALL |  |  |  |
 
-24. ### κ ←κ \+ℓ {#κ-←κ-+ℓ}
+24. ### κ ←κ \+ℓ
 
 High-level controller increases the value of κ by l.
 
@@ -2944,13 +2706,13 @@ High-level controller increases the value of κ by l.
 | :---- | :---- | :---- | :---- | :---- |
 | κ ←κ \+ℓ | Update\_k |  |  |  |
 
-43. ## Verifying {#verifying}
+43. ## Verifying
 
 The algorithm for verifying is presented below. We will explain the specifics of each operation in the following subsections.
 
 ![A screenshot of a computer programDescription automatically generated](./images/media/image63.png)
 
-1. ### (ρ,t1)←pkDecode(*pk*) {#(ρ,t1)←pkdecode(pk)}
+1. ### (ρ,t1)←pkDecode(*pk*)
 
 We need to call pkDecode to decode the given pk for t1 values.
 
@@ -2958,7 +2720,7 @@ We need to call pkDecode to decode the given pk for t1 values.
 | :---- | :---- | :---- | :---- | :---- |
 | *t1←pkDecode(pk)* | pkDecode | *pk* | t1 |  |
 
-2. ### (*c*˜,z,h)←sigDecode(σ)  {#(c˜,z,h)←sigdecode(σ)}
+2. ### (*c*˜,z,h)←sigDecode(σ) 
 
 We need to call sigDecode to decode the given signature for z and h values.
 
@@ -2967,7 +2729,7 @@ We need to call sigDecode to decode the given signature for z and h values.
 | (z,h)←sigDecode(σ) | sigDecode\_z | *σ\_z* | z |  |
 |  | sigDecode\_h | *σ\_h* | h |  |
 
-3. ### ||z||∞ ≥ γ1 −β {#||z||∞-≥-γ1-−β-1}
+3. ### ||z||∞ ≥ γ1 −β
 
 We need to call Norm\_Check to perform validity check on the given z. The output will be stored as an individual flag in the high-level architecture.
 
@@ -2975,7 +2737,7 @@ We need to call Norm\_Check to perform validity check on the given z. The output
 | :---- | :---- | :---- | :---- | :---- |
 | Valid=NormCheck(z) | NormChk | z | mode |  |
 
-4. ### \[\[number of 1’s in h is ≤ ω\]\] {#[[number-of-1’s-in-h-is-≤-ω]]}
+4. ### \[\[number of 1’s in h is ≤ ω\]\]
 
 We need to call HintSum to perform validity check on the given h. The output will be stored as an individual flag in the high-level architecture.
 
@@ -2983,7 +2745,7 @@ We need to call HintSum to perform validity check on the given h. The output wil
 | :---- | :---- | :---- | :---- | :---- |
 | Valid=HintSum(h) | HINTSUM | h |  |  |
 
-5. ### z ←NTT(z) {#z-←ntt(z)}
+5. ### z ←NTT(z)
 
 We need to call NTT for z by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -2994,7 +2756,7 @@ We need to call NTT for z by passing three addresses. Temp address can be the sa
 |  | … |  |  |  |
 |  | NTT | z\_6 | temp | z\_6\_ntt |
 
-6. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(z) {#aˆ-←expanda(ρ)-and-aˆ-◦ntt(z)}
+6. ### Aˆ ←ExpandA(ρ) AND Aˆ ◦NTT(z)
 
 We perform rejection sampling and PWM simultaneously. This step takes p from the register API and appends two bytes of Keccak SIPO to the end of the given p and then starts padding from there. We run the rejection sampler 56 times with shake128 mode, where k \* l=56.
 
@@ -3034,7 +2796,7 @@ We can mask the latency of SIPO, the Keccak\_SIPO can be invoked when PWM/Reject
 |  | Rejection\_sampler |  |  |  |
 |  | pwm\_accu | DONTCARE | z\_6\_ntt | Az7 |
 
-7. ### tr ←H(pk,512) {#tr-←h(pk,512)}
+7. ### tr ←H(pk,512)
 
 The sequencer runs Keccak operation on pk. pk is stored in register API as input, and we need to perform SHAKE256 with to generate 512 bits output.
 
@@ -3043,7 +2805,7 @@ The sequencer runs Keccak operation on pk. pk is stored in register API as input
 | tr=Keccak(pk) | Keccak\_SIPO | pk | 2592 bytes |  |
 |  | Keccak\_PISO | tr | 64 bytes |  |
 
-8. ### μ ←H(*tr*||*M*,512) {#μ-←h(tr||m,512)-1}
+8. ### μ ←H(*tr*||*M*,512)
 
 The sequencer starts with running Keccak operation on tr and the given message. tr is stored in an internal register from the previous step, and the message is stored in register API as input, and we need to perform SHAKE256 with to generate 512 bits output.
 
@@ -3057,7 +2819,7 @@ The sequencer starts with running Keccak operation on tr and the given message. 
 
 Firstly, we need to fill Keccak input buffer with tr and then concatenate it with message. NIST may apply some changes in this operation by adding some constant value into this concatenation. Then we run the Keccak core, and the Keccak output stored in PISO is used to set the μ value into a special register.
 
-9. ### *c* ←SampleInBall(*c*˜) {#c-←sampleinball(c˜)-1}
+9. ### *c* ←SampleInBall(*c*˜)
 
 We take the c\~ values from register API as the Keccak input and run SampleInBall. The output stays in the SampleInBall memory.
 
@@ -3066,7 +2828,7 @@ We take the c\~ values from register API as the Keccak input and run SampleInBal
 |  | Keccak\_SIPO | c\~ | 64 bytes |  |
 | *c* ←SampleInBall(*c*˜) | SMPL\_INBALL |  |  |  |
 
-10. ### *c*ˆ ←NTT(*c*) {#cˆ-←ntt(c)-1}
+10. ### *c*ˆ ←NTT(*c*)
 
 We need to call NTT for c by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -3074,7 +2836,7 @@ We need to call NTT for c by passing three addresses. Temp address can be the sa
 | :---- | :---- | :---- | :---- | :---- |
 | NTT(c) | NTT | c | temp | c\_ntt |
 
-11. ### *c*ˆ ←NTT(*c*) {#cˆ-←ntt(c)-2}
+11. ### *c*ˆ ←NTT(*c*)
 
 We need to call NTT for c by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -3082,7 +2844,7 @@ We need to call NTT for c by passing three addresses. Temp address can be the sa
 | :---- | :---- | :---- | :---- | :---- |
 | NTT(c) | NTT | c | temp | c\_ntt |
 
-12. ### t1 ←NTT(t1) {#t1-←ntt(t1)}
+12. ### t1 ←NTT(t1)
 
 We need to call NTT for t1 by passing three addresses. Temp address can be the same for all NTT calls while init and destination are different.
 
@@ -3093,7 +2855,7 @@ We need to call NTT for t1 by passing three addresses. Temp address can be the s
 |  | … |  |  |  |
 |  | NTT | t1\_7 | temp | t1\_7\_ntt |
 
-13. ### NTT(*c*) ◦NTT(t1) {#ntt(c)-◦ntt(t1)}
+13. ### NTT(*c*) ◦NTT(t1)
 
 We need to call point-wise multiplication between c and all t1 polynomials in NTT domain. 
 
@@ -3104,7 +2866,7 @@ We need to call point-wise multiplication between c and all t1 polynomials in NT
 |  | … |  |  |  |
 | . | PWM | c\_ntt | t1\_7\_ntt | ct1\_7 |
 
-14. ### A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1) {#a-ˆ-◦ntt(z)-−ntt(c)-◦ntt(t1)}
+14. ### A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1)
 
 We need to call point-wise subtraction between Az and ct1 polynomials in NTT domain. 
 
@@ -3115,7 +2877,7 @@ We need to call point-wise subtraction between Az and ct1 polynomials in NTT dom
 |  | … |  |  |  |
 | . | PWS | Az\_7 | ct1\_7 | Az\_ct1\_7 |
 
-15. ### w′ ←NTT-1(A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1)) {#w′-←ntt-1(a-ˆ-◦ntt(z)-−ntt(c)-◦ntt(t1))}
+15. ### w′ ←NTT-1(A ˆ ◦NTT(z*)* −NTT(*c*) ◦NTT(t1))
 
 We need to call INTT for Az\_ct1 by passing three addresses. Temp address can be the same for all INTT calls while init and destination are different.
 
@@ -3126,7 +2888,7 @@ We need to call INTT for Az\_ct1 by passing three addresses. Temp address can be
 |  | … |  |  |  |
 |  | INTT | Az\_ct1\_7 | temp | w’\_7 |
 
-16. ### w ′ ←UseHint(h,w ′) AND *c*˜←H(μ||w1Encode(w1),2λ) {#w-′-←usehint(h,w-′)-and-c˜←h(μ||w1encode(w1),2λ)}
+16. ### w ′ ←UseHint(h,w ′) AND *c*˜←H(μ||w1Encode(w1),2λ)
 
 In the UseHint phase, the decompose unit retrieves w from memory and divides it into two components. Next, w1 is refreshed through useHint, encoded, and forwarded to the Keccak SIPO. Nonetheless, the μ prefix must precede w1 before SIPO can accept it. Therefore, the high-level controller should provide μ before using decompose. After completing the UseHint operation, the high-level controller needs to add the necessary padding for H(μ||w1Encode(w1),2λ). Then, the Keccak will start and the data in the SIPO will be stored at register API as verification result.
 
