@@ -428,7 +428,7 @@ The high-level architecture of Adams Bridge controller is illustrated as follows
 
 ![A diagram of a diagramDescription automatically generated](./images/media/image3.png)
 
-## Keccak
+## Keccak architecture
 
 Hashing operation takes a significant portion of PQC latency. All samplers need to be fed by hashing functions. i.e., SHAKE128 and SHAKE256. Therefore, to improve the efficiency of the implementation, one should increase efficiency on the Keccak core, providing higher throughput using fewer hardware resources. Keccak core requires 24 rounds of the sponge function computation. We develop a dedicated SIPO (serial-in, parallel-out) and PISO (parallel-in, serial-out) for interfacing with this core in its input and output, respectively.
 
@@ -450,7 +450,15 @@ There are two possible scenarios when the Keccak state has to be saved in the PI
 2) PISO buffer EMPTY flag is set.  
    In this situation, the state can be transferred to PISO buffer and the following round of Keccak (if any) can be started.
 
-## Stage 1: Keccak – Expand Mask – Memory
+### PISO Buffer
+
+The output of the Keccak unit is used to feed four different samplers at varying data rates. The Parallel in Serial out buffer is a generic buffer that can take the full width of the Keccak state and deliver it to the sampler units at the appropriate data rates.
+
+Input data from the Keccak can come at 1088 or 1344 bits per clock. During expand mask operation, the buffer needs to be written from a write pointer while valid data remains in the buffer. All other modes only require writing the full Keccak state into the buffer when it is empty.
+
+Output data rate varies \- 32 bits for RejBounded and SampleInBall, 80 bits for Expand Mask and 120 bits for SampleRejq.
+
+## Expand Mask architecture
 
 Dilithium samples the polynomials that make up the vectors and matrices independently, using a fixed seed value and a nonce value that increases the security as the input for Keccak. Keccak is used to take these seed and nonce and generate random stream bits. 
 
@@ -470,7 +478,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a systemDescription automatically generated](./images/media/image4.png)
 
-### Keccak Unit
+### Keccak interface to Expand Mask
 
 Keccak is used in SHAKE-256 configuration for expand mask operation. Hence, it will take the input data and generate 1088-bit output after each round. We propose implementing of Keccak while each round takes 12 cycles. The format of input data is as follows:
 
@@ -502,19 +510,17 @@ After 12 cycles, 48 coefficients are processed by the expand mask unit, and ther
 
 ![A diagram of a computer componentDescription automatically generated](./images/media/image6.png)
 
-### Performance
+### Performance of Expand Mask
 
 Sampling a polynomial with 256 coefficients takes 256/4=64 cycles. The first round of Keccak needs 12 cycles, and the rest of Keccak operation will be parallel with expand mask operation. 
 
 For a complete expand mask for Dilithium ML-DSA-87 with 7 polynomials, 7\*64+12=460 cycles are required using sequential operation. However, our design can be duplicated to enable parallel sampling for two different polynomials. Having two parallel design results in 268 cycles, while three parallel design results in 204 cycles at the cost of more resource utilization.
 
-## Stage 2: Memory-NTT-Memory
+## NTT architecture
 
 The most computationally intensive operation in lattice-based PQC schemes is polynomial multiplication which can be accelerated using NTT. However, NTT is still a performance bottleneck in lattice-based cryptography. We propose improved NTT architecture with highly efficient modular reduction. This architecture supports NTT, INTT, and point-wise multiplication (PWM) to enhance the design from resource sharing point-of-view while reducing the pre-processing cost of NTT and post-processing cost of INTT. 
 
 Our NTT architecture exploits a merged-layer NTT technique using two pipelined stages with two parallel cores in each stage level, making 4 butterfly cores in total. Our proposed parallel pipelined butterfly cores enable us to perform Radix-4 NTT/INTT operation with 4 parallel coefficients. While memory bandwidth limits the efficiency of the butterfly operation, we use a specific memory pattern to store four coefficients per address. 
-
-### NTT Architecture
 
 An NTT operation can be regarded as an iterative operation by applying a sequence of butterfly operations on the input polynomial coefficients. A butterfly operation is an arithmetic operation that combines two coefficients to obtain two outputs. By repeating this process for different pairs of coefficients, the NTT operation can be computed in a logarithmic number of steps. 
 
@@ -885,7 +891,7 @@ With this memory access pattern, writes to the memory are in order (0, 1, 2, 3, 
 
 At the end of NTT operation, results must be located in the section with the dest base address. This will also provide the benefit of preserving the original input for later use in keygen or signing operations. The same memory access pattern is followed for INTT operation as well. Note that Adam’s bridge controller may choose to make interim and dest base addresses the same to save on memory usage. In this case, the requirement is still to have a separate src base address to preserve original input polynomial coefficients in memory.
 
-#### *Modular Reduction*
+#### Modular Reduction in NTT
 
 The modular addition/subtraction in hardware platform can be implemented by one additional subtraction/addition operations, as follows:
 
@@ -951,7 +957,7 @@ The modular multiplication is implemented with a 3-stage pipeline architecture. 
 
 We do not need extra multiplications for our modular reduction, unlike Barrett and Montgomery algorithms. The operations of our reduction do not depend on the input data and do not leak any information. Our reduction using the modulus q= 8,380,417 is fast, efficient and constant-time.
 
-### Performance
+### Performance of NTT
 
 For a complete NTT operation with 8 layers, i.e., n \= 256, the proposed architecture takes 82=4      rounds. Each round involves 2564=64 operations in pipelined architecture. Hence, the latency of each round is equal to 64 (read from memory) \+ 8 (2 sequential butterfly latency) \+ 4 (input buffer latency) \+ 2 (wait between each two stages) \= 78 cycles. 
 
@@ -1130,7 +1136,7 @@ buffer write addr=indexf10
 
 buffer read addr=countregular
 
-## Stage 3: Keccak \- SampleRejq – Pointwise Mult- Memory
+## Rejection Sampler architecture
 
 Dilithium (or Kyber) samples the polynomials that make up the vectors and matrices independently, using a fixed seed value and a nonce value that increases the security as the input for Keccak. Keccak is used to take these seed and nonce and generate random stream bits. 
 
@@ -1152,7 +1158,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a computer hardware systemDescription automatically generated](./images/media/image16.png)
 
-### Keccak Unit
+### Keccak interface to Rejection Sampler
 
 Keccak is used in SHAKE-128 configuration for rejection sampling operation. Hence, it will take the input data and generates 1344-bit output after each round. We propose implementing of Keccak while each round takes 12 cycles. The format of input data is as follows:
 
@@ -1216,35 +1222,13 @@ There are 5 rejection sampler circuits corresponding to each 24-bit input. The c
 
 ![A diagram of a diagramDescription automatically generated](./images/media/image18.png)
 
-### Performance
+### Performance of SampleRejq
 
 For processing each round of Keccak using rejection sampling unit, we need 12 to 13 cycles that result in 60-65 cycles for each polynomial with 256 coefficients. 
 
 For a complete rejection sampling for Dilithium ML-DSA-87 with 8\*7=56 polynomials, 3360 to 3640 cycles are required using sequential operation. However, our design can be duplicated to enable parallel sampling for two different polynomials. Having two parallel design results in 1680 to 1820 cycles, while three parallel design results in 1120 to 1214 cycles at the cost of more resource utilization.
 
-## Stage 4: Memory – Decompose – Encode – Keccak 
-
-### Decompose Unit
-
-Decompose unit is used in signing operation of Dilithium. It decomposes r into (r1,r0) such that r ≡ r1(2γ2)+r0 mod q. The output of decompose has two parts. While r0 will be stored into memory, r1 will be encoded and then be stored into Keccak SIPO input buffer to run SHAKE256. 
-
-![A diagram of a processDescription automatically generated](./images/media/image19.png)
-
-There are k polynomials (k=8 for ML-DSA-87) that needs to be decomposed as follows:
-
-w=w0  wk-1 
-
-Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
-
-![A diagram of a computer programDescription automatically generated](./images/media/image20.png)
-
-### Performance
-
-There are k polynomials with 256 coefficients for each that need to be fed into decompose unit in pipeline method. After having 1088-bit input into SIPO, Keccak will be enabled parallel with decompose and encode units.  However, the last round of Keccak will be performed after processing all coefficients. Each round of Keccak takes 12 cycles which allows processing of 48 coefficients. Since the output length of each encode unit is 4 bits, Keccak works faster than decompose/encode units and SIPO will not have overflow issue.
-
-For a complete decompose/encode/hash operation for Dilithium ML-DSA-87 with 8 polynomials, 8\*256/4 \+ 12 \= 524 cycles are required using pipelined architecture.
-
-## INTT
+## INTT architecture
 
 A merged-layer INTT technique uses two pipelined stages with two parallel cores in each stage level, making 4 butterfly cores in total. The parallel pipelined butterfly cores enable us to perform Radix-4 INTT operation with 4 parallel coefficients. 
 
@@ -1707,7 +1691,7 @@ E.g. if selected chunk is 5, and rand\_index is 2
 
     Write address \= 5 \+ (2\*16), 5 \+ (3\*16), 5 \+ (0\*16), 5 \+ (1\*16) \= 37, 53, 5, 21
 
-## Point-wise Multiplication
+## Point-wise Multiplication architecture
 
 Polynomial in NTT domain can be performed using point-wise multiplication (PWM). Considering the current architecture with 4 butterfly units, there are 4 modular multiplications that can be reused in point-wise multiplication operation. This approach enhances the design from an optimization perspective by resource sharing technique. \`
 
@@ -1717,7 +1701,7 @@ There are 2 memories containing polynomial f and g, with 4 coefficients per each
 
 The proposed NTT method preserves the memory contents in sequence without needing to shuffle and reorder them, so the point-wise multiplication can be sped up by using consistent reading/writing addresses from both memories.
 
-## RejBounded
+## RejBounded architecture
 
 This unit takes data from the output of SHAKE-256 stored in a PISO buffer. The required cycles for this unit are variable due to the non-deterministic pattern of sampling. However, at least 1 Keccak round is required to provide 256 coefficients.
 
@@ -1812,7 +1796,7 @@ There are 8 rejection sampler circuits corresponding to each 4-bit input. The co
 
 ![A diagram of a computer componentDescription automatically generated](./images/media/image24.png)
 
-## Stage 5: SampleInBall – Memory 
+## SampleInBall architecture
 
 SampleInBall is a procedure that uses the SHAKE256 of a seed ρ to produce a random element of Bτ. The procedure uses the Fisher-Yates shuffle method. The signs of the nonzero entries of c are determined by the first 8 bytes of H(ρ), and the following bytes of H(ρ) are used to determine the locations of those nonzero entries.
 
@@ -1822,7 +1806,7 @@ High-level architecture is illustrated as follows:
 
 ![A diagram of a sign-building processDescription automatically generated](./images/media/image25.png)
 
-### Keccak Unit
+### Keccak interface to SampleInBall
 
 Keccak is used in SHAKE-256 configuration for SampleInBall operation. Hence, it will take the input seed  with 256-bit and generates 1088-bit output after each round. 
 
@@ -1902,6 +1886,19 @@ When i and j have the same address, both ports try to write to the same location
 
 ## Decompose Architecture
 
+Decompose unit is used in signing operation of Dilithium. It decomposes r into (r1,r0) such that r ≡ r1(2γ2)+r0 mod q. The output of decompose has two parts. While r0 will be stored into memory, r1 will be encoded and then be stored into Keccak SIPO input buffer to run SHAKE256. 
+
+![A diagram of a processDescription automatically generated](./images/media/image19.png)
+
+There are k polynomials (k=8 for ML-DSA-87) that needs to be decomposed as follows:
+
+w=w0  wk-1 
+
+Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
+
+![A diagram of a computer programDescription automatically generated](./images/media/image20.png)
+
+
 Decompose algorithm plays a crucial role by breaking down the coefficients of a polynomial into smaller parts. Decompose calculates high and low bits r1 and r0 such that:
 
 r \= r1 · 2 2 \+r0  mod q
@@ -1972,6 +1969,12 @@ r0=r0-1=r-q+1-1=r-q≡r mod q
 
 *r0 value based on the given r considering boarder case*
 
+### Performance of Decompose
+
+There are k polynomials with 256 coefficients for each that need to be fed into decompose unit in pipeline method. After having 1088-bit input into SIPO, Keccak will be enabled parallel with decompose and encode units.  However, the last round of Keccak will be performed after processing all coefficients. Each round of Keccak takes 12 cycles which allows processing of 48 coefficients. Since the output length of each encode unit is 4 bits, Keccak works faster than decompose/encode units and SIPO will not have overflow issue.
+
+For a complete decompose/encode/hash operation for Dilithium ML-DSA-87 with 8 polynomials, 8\*256/4 \+ 12 \= 524 cycles are required using pipelined architecture.
+
 ## MakeHint Architecture
 
 The basic approach of the MakeHint(z, r) function involves decomposing both r and r+z into two parts: (r1, r0) for r and (rz1, rz0) for r+z. It then proceeds to evaluate whether r1 and rz1 are identical. In the event that r1 does not match rz1, it indicates that a hint is necessary to proceed. This process is essential for determining when additional information is required to resolve discrepancies between the compared segments.
@@ -2034,7 +2037,7 @@ At the end of all polynomials, the hintsum is written to the register API to con
 
 It is possible that during the last cycle of the last polynomial, the index buffer contains \< 1 dword of index values to be written to the reg API. To accommodate this scenario, the controller flushes out the buffer at the end of the last polynomial and writes the remaining data to the register API.
 
-## W1Encode
+## W1Encode Architecture
 
 The signer’s commitment is shown by w, while this value needs to be decomposed into two shares to provide the required hint as a part of signature. The output of decompose is shown by (w1, w0) which presents the higher and lower parts of the given input. While w0 can be stored into the memory, the value of w1 is required to compute commitment hash using SHAKE256 operation. The following equation shows this operation:
 
@@ -2094,7 +2097,7 @@ The following table reports the SIPO input for different Keccak rounds.
 
 When the whole polynomials are done in the first 8 rounds of Keccak and Keccak done signal is asserted, the encode done signal is asserted and the high-level controller resumes control and adds the necessary padding to SIPO to finish the SHAKE256 process.
 
-## Norm Check
+## Norm Check Architecture
 
 The figure provided illustrates the finite field range for polynomial coefficients. It indicates that each coefficient is an integer ranging from 0 to q-1:
 
@@ -2130,7 +2133,7 @@ The proposed design is configurable and accepts different bounds to reduce the r
 | r0                | K                     | K\*256             | 512 (for 4\)          |
 | ct0               | k                     | K\*256             | 512 (for 4\)          |
 
-## skDecode
+## skDecode Architecture
 
 The given sk to the core for performing a signing operation has been encoded, and skDecode is responsible to reverse the encoding procedure to divide sk to the appropriate portions. The initial segments within sk should be allocated to variables p, K, and tr, corresponding to sizes of 256 bits, 256 bits, and 512 bits, respectively, without necessitating any modifications.
 
@@ -2186,7 +2189,7 @@ T0 unpack:
 
 In case of t0 unpack, the t0 sample buffer can hold up to 64+52 \= 116 bits of data. The buffer generates a full signal that is used to stall key memory reads for a cycle before continuing to write to the buffer.
 
-## sigEncode\_z
+## sigEncode\_z Architecture
 
 The sigEncode\_z operation converts a signature into a sequence of bytes. This operation has three distinct parts, namely c, z, and h. The first part simply writes the c into the register API as it is. The last part also uses the MakeHint structure to combine the MakeHint outputs into register API. However, the middle part, that is z, requires encoding.
 
@@ -2204,15 +2207,7 @@ Using two parallel read ports, 8 encoding units read 8 coefficients from the mem
 
 ![A diagram of a machineDescription automatically generated](./images/media/image49.png)
 
-## PISO Buffer
-
-The output of the Keccak unit is used to feed four different samplers at varying data rates. The Parallel in Serial out buffer is a generic buffer that can take the full width of the Keccak state and deliver it to the sampler units at the appropriate data rates.
-
-Input data from the Keccak can come at 1088 or 1344 bits per clock. During expand mask operation, the buffer needs to be written from a write pointer while valid data remains in the buffer. All other modes only require writing the full Keccak state into the buffer when it is empty.
-
-Output data rate varies \- 32 bits for RejBounded and SampleInBall, 80 bits for Expand Mask and 120 bits for SampleRejq.
-
-## Power2Round
+## Power2Round Architecture
 
 Power2Round function is used to split each coefficient of vector t to two parts (similar to decompose unit). Power2Round calculates high and low bits r1 and r0 such that:
 
@@ -2245,7 +2240,7 @@ The diagram illustrates the structure of the power2round mechanism integrated wi
 
 ![A diagram of a computerDescription automatically generated](./images/media/image53.png)
 
-## skEncode
+## skEncode Architecture
 
 The SkEncode operation requires multiple inputs (skEncode(ρ, K, tr, s1, s2, t0)). But ρ, K, tr, and t0 have been preloaded into the API through different operations. In terms of s1 and s2, SkEncode serves as a conversion tool that maps the values of these coefficients using the following equation:
 
@@ -2255,7 +2250,7 @@ For ML-DSA-87 with η=2, there are only 5 possible values for the s1 and s2 coef
 
 ![A diagram of a computer programDescription automatically generated](./images/media/image54.png)
 
-## pkDecode
+## pkDecode Architecture
 
 During the verification process, the provided pk must be decoded. The initial 256 bits of pk include ρ exactly as it is. The bits that follow consist of t1 polynomials. According to ML-DSA-87 protocol, each set of 10 bits represents a single coefficient. Therefore, these 10 bits need to be read, shifted left by 13 bits, and the outcome should be saved into memory.
 
@@ -2263,7 +2258,7 @@ The architecture is as follows:
 
 ![A diagram of a computer codeDescription automatically generated](./images/media/image55.png)
 
-## sigDecode\_z
+## sigDecode\_z Architecture
 
 The sigDecode operation reverses the sigEncode. This operation has three distinct parts, namely c, z, and h. The first part simply writes the c from the register API as it is. The last part also uses the HintBitUnpack structure to combine the MakeHint outputs into register API. However, the middle part, that is z, requires decoding.
 
@@ -2277,7 +2272,7 @@ The high-level architecture is as follows:
 
 ![A diagram of a machineDescription automatically generated](./images/media/image56.png)
 
-## sigDecode\_h
+## sigDecode\_h Architecture
 
 The sigDecode function reverses sigEncode and is composed of three separate segments: c, z, and h. The h part uses the HintBitUnpack structure to decode given Hint and store it into memory.
 
@@ -2308,7 +2303,7 @@ Example hint processing:
 
 In each cycle, the positions indicated by y\[rd\_ptr\] are flipped to 1 in the bitmap. Once a polynomial is finished, the bitmap, read pointer, current polynomial map, etc are all reset to prepare for the next polynomial. In this way, sigdecode\_h takes (64\*8 \= 512\) cycles to finish writing all coefficients to the internal memory (a few additional cycles are required for control state transitions). 
 
-## UseHint
+## UseHint Architecture
 
 To reconstruct the signer's commitment, it is necessary to update the approximate computed value labeled as w' by utilizing the provided hint. Hence, the value of w’ should be decomposed, and its higher part should be altered if the related hint equals 1 for that coefficient. Subsequently, the higher part requires encoding through the W1Encode operation and must be stored into the Keccak SIPO.
 
