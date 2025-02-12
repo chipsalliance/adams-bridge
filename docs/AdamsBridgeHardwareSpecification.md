@@ -1146,11 +1146,35 @@ After sampling a polynomial with 256 coefficients, nonce will be changed and a n
 
 The output of this operation results in a matrix of polynomial with k rows and l column while each polynomial includes 256 coefficients.
 
-A0,0  A0,l-1  ⋱  Ak-1,0  Ak-1,l-1 k×l
-
+$$
+\begin{bmatrix}
+A_{0,0} & \cdots & A_{0,l-1} \\
+\vdots & \ddots & \vdots \\
+A_{k-1,0} & \cdots & A_{k-1,l-1}
+\end{bmatrix}
+_{k*l}
+$$
 Rejection sampling is used in all three operations of Dilithium, i.e., keygen, sign, and verify. Since based on the specification of the Dilithium (and Kyber), the sampled coefficients are considered in NTT domain, the output of rejection sampler can directly be used for polynomial multiplication operation, as follows:
 
-A0,0  A0,l-1  ⋱  Ak-1,0  Ak-1,l-1 °s1,0  s1,l-1 \=A0,0 °s1,0+…+A0,l-1°s1,l-1  Ak-1,0°s1,0+…+Ak-1,l-1°s1,l-1 
+$$
+\begin{bmatrix}
+A_{0,0} & \cdots & A_{0,l-1} \\
+\vdots & \ddots & \vdots \\
+A_{k-1,0} & \cdots & A_{k-1,l-1}
+\end{bmatrix}
+\circ
+\begin{bmatrix}
+s_{1,0} \\
+\vdots \\
+s_{1,l-1}
+\end{bmatrix}
+=
+\begin{bmatrix}
+A_{0,0} \circ s_{1,0} + \cdots + A_{0,l-1} \circ s_{1,l-1} \\
+\vdots \\
+A_{k-1,0} \circ s_{1,0} + \cdots + A_{k-1,l-1} \circ s_{1,l-1}
+\end{bmatrix}
+$$
 
 We propose an architecture to remove the cost of memory access from Keccak to rejection sampler, and from rejection sampler to polynomial multiplier. To achieve this, we need to have a balanced throughput between all these modules to avoid large buffering or conflict between them.
 
@@ -1184,15 +1208,19 @@ Our proposed polynomial multiplier can perform point-wise multiplication on four
 
 On the output side, as the rejection sampling might fail, the rejection rate for each input is:
 
-rejection\_rate= 1-q223=1-8380471223=0.0009764≈10-3
+$$rejection\_rate= 1-q/2^23=1-8380471/2^23=0.0009764≈10^{-3}$$
 
 Hence, the probability of failure to provide 4 appropriate coefficients from 4 inputs would be:
 
-1-1-rejection\_rate4=0.00399
+$$1-(1-rejection\_rate)^4=0.00399$$
 
 To reduce the failure probability and avoid any wait cycle in polynomial multiplication, 5 coefficients are fed into rejection while only 4 of them will be passed to polynomial multiplication. This decision reduces the probability of failure to
 
-1-probability of having 5 good inputs-probability of having 4 good inputs=1-1-rejectionrate5-rejectionrate\*5 4 1-rejectionrate4=0.00000998≈10-5
+$$
+1 - (\text{probability of having 5 good inputs}) - (\text{probability of having 4 good inputs}) = 
+1 - (1 - \text{rejection\_rate})^5 - \text{rejection\_rate} \cdot 
+\binom{5}{4} \cdot (1 - \text{rejection\_rate})^4 = 0.00000998≈10^{-5}
+$$
 
 Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
@@ -1732,15 +1760,20 @@ Our proposed NTT can perform on four coefficients per cycle that also helps to a
 
 On the output side, as the RejBouned sampling might fail, the rejection rate for each input is:
 
-rejection\_rate=116=0.0625
+$$rejection\_rate=1/16=0.0625$$
 
 Hence, the probability of failure to provide 4 appropriate coefficients from 4 inputs would be:
 
-1-1-rejection\_rate4=0.2275
+$$1-(1-rejection\_rate)^4=0.2275$$
 
 To reduce the failure probability and avoid any wait cycle in polynomial multiplication, 5 coefficients are fed into rejection while only 4 of them will be passed to polynomial multiplication. This decision reduces the probability of failure to
 
-1-probability of having 5 good inputs-probability of having 4 good inputs=1-1-rejectionrate5-rejectionrate\*5 4 1-rejectionrate4=0.0344
+$$
+1 - (\text{probability of having 5 good inputs}) - (\text{probability of having 4 good inputs}) = 
+1 - (1 - \text{rejection\_rate})^5 - \text{rejection\_rate} \cdot 
+\binom{5}{4} \cdot (1 - \text{rejection\_rate})^4 = 0.0344
+$$
+
 
 The following is the probability of failure for a design that has 4 samplings per cycle:
 
@@ -1852,11 +1885,11 @@ Validity check on the input sample depends on the iteration number i while a sam
 
 To reduce the failure probability and avoid any wait cycle in polynomial multiplication, 4 samples are fed into SampleInBall while only 1 of them will be passed to shuffling unit. This decision reduces the probability of failure to:
 
-probability of having 4 rejected inputs=rejectionrate4
+$probability of having 4 rejected inputs=(rejection rate)^4$
 
 In the worst case scenario (the first iteration with i=196), the failure probability is:
 
-0.230464=0.00282
+$(0.23046)^4=0.00282$
 
 The unused coefficients will be processed in the next cycle when i increments. The architecture is as follows:
 
@@ -2064,7 +2097,14 @@ Since SHAKE256 takes only 1088 bits per each round, we have to feed these values
 
 There are k polynomials (k=8 for ML-DSA-87) that needs to be decomposed as follows:
 
-w=w0  wk-1 
+$$
+w=
+\begin{bmatrix}
+w_0  \\
+\vdots \\
+w_{k-1}
+\end{bmatrix}
+$$
 
 Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
 
@@ -2088,7 +2128,7 @@ The following table reports the SIPO input for different Keccak rounds.
 
 | Keccak SHAKE256 Round | Buffer input  | Bits |
 | :-------------------- | :------------ | :--- |
-| 1                     |               | 512  |
+| 1                     | μ             | 512  |
 |                       | w0\[143:0\]   | 576  |
 | 2                     | w0\[255:144\] | 448  |
 |                       | w1\[159:0\]   | 640  |
@@ -2116,7 +2156,7 @@ The figure provided illustrates the finite field range for polynomial coefficien
 
 The infinity norm is defined as follows:
 
-For an element w  Z , w \= |w|, the absolute value of *w*. For an element w  Zq,w \= w mod q . For an element *w* of *R* or *Rq*, w \= max0i\<256 wi . For a length-*m* vector w with entries from *R* or *Rq*, w \= max0i\<m w\[i\] . 
+For an element w ∈ Z , $∥w∥∞ = |w|$, the absolute value of w. For an element $w ∈ Z_q$,$∥w∥∞ = w mod^ ±  q$ . For an element *w* of *R* or *Rq*, $∥w∥∞ = max0≤i<256 ∥wi∥∞$ . For a length-*m* vector w with entries from *R* or *Rq*, $∥w∥∞ = max0≤i<m ∥w[i]∥∞$ . 
 
 In the context of norm definition within a finite field, when a value for the bound is provided, the norm check determines whether the coefficient falls below the bound or exceeds the q-bound, which is highlighted in red in the following figure. 
 
@@ -2124,9 +2164,9 @@ In the context of norm definition within a finite field, when a value for the bo
 
 There are three different validity checks with different bounds during signing operations as follows:
 
-1) z  1 \-  
-2) r0  2 \-  
-3) ⟨⟨ct0⟩⟩  2
+1) $$	|(|z|)|_∞  ≥ γ1 -β $$  
+2) $$	|(|r0|)|_∞  ≥ γ2 -β $$  
+3) $$ 	|⟨⟨ct0⟩⟩|_∞  ≥ γ2 $$
 
 Vector z contains l polynomials  (l=7 for ML-DSA-87) and r0 and ct0 contains k polynomials (k=8 for ML-DSA-87) that needs to be evaluated by norm check operation. 
 
@@ -2226,7 +2266,7 @@ r \= r1 · 2d \+r0  mod q
 
 where:
 
-\-2d-1\<r02d-1
+$-2^(d-1)<r_0≤2^(d-1)$
 
 **Definition:**
 
