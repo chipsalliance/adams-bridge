@@ -1827,15 +1827,15 @@ The NTT unit needs to take four coefficients per cycle. This implies that the ou
 ![A screenshot of a gameDescription automatically generated](./images/media/image26.png)
 
 SampleInBall algorithm is as follows:
-
-1) Initialize c \= c0 c1 . . . c255 \= 0 0 . . . 0   
+```cpp
+1) Initialize c = c0 c1 . . . c255 = 0 0 . . . 0   
 2) for i := 256 − τ to 255   
 3)     j ← {0, 1, . . . , i}   
 4)     s ← {0, 1}   
 5)     ci := cj   
 6)     cj := (−1)s   
 7) return c
-
+```
 SampleInBall includes three main operations:
 
 1) Check the validity of input samples respect to parameter i (line 3 of algorithm)  
@@ -1892,7 +1892,14 @@ Decompose unit is used in signing operation of Dilithium. It decomposes r into (
 
 There are k polynomials (k=8 for ML-DSA-87) that needs to be decomposed as follows:
 
-w=w0  wk-1 
+$$
+w=
+\begin{bmatrix}
+w_0  \\
+\vdots \\
+w_{k-1}
+\end{bmatrix}
+$$
 
 Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
 
@@ -1901,11 +1908,15 @@ Due to our memory configuration that stores 4 coefficients per address, we need 
 
 Decompose algorithm plays a crucial role by breaking down the coefficients of a polynomial into smaller parts. Decompose calculates high and low bits r1 and r0 such that:
 
-r \= r1 · 2 2 \+r0  mod q
+$$
+r = r_1  · 2 γ_2  + r_0   {mod} q
+$$
 
 where:
 
-\-2\<r02
+$$
+-γ2 < r0 \leq γ2
+$$
 
 except for the border case when r \- r0=q – 1. In the border case, the high bits r1 are made zero, and the low bits r0 are reduced by one.
 
