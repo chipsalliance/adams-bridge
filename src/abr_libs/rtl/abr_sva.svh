@@ -23,12 +23,12 @@
 `define STRINGIFY(__x) `"__x`"
 
 // ABR_ASSERT_RPT is available to change the reporting mechanism when an assert fails
-`define ABR_ASSERT_RPT(name)                                                  \
-`ifdef UVM                                                                \
-  assert_rpt_pkg::assert_rpt($sformatf("[%m] %s (%s:%0d)",                \
-                             name, `__FILE__, `__LINE__));                \
-`else                                                                     \
-  $fatal(1, "[ABR_ASSERT FAILED] [%m] %s (%s:%0d)",name, `__FILE__, `__LINE__);  \
+`define ABR_ASSERT_RPT(name)                                                    \
+`ifdef UVM                                                                      \
+  uvm_pkg::uvm_report_error("ABR_ASSERT FAILED", name, uvm_pkg::UVM_NONE,       \
+                            `__FILE__, `__LINE__);                              \
+`else                                                                           \
+  $fatal(1, "[ABR_ASSERT FAILED] [%m] %s (%s:%0d)",name, `__FILE__, `__LINE__); \
 `endif
 
 // Assert a concurrent property directly.
