@@ -383,7 +383,7 @@ The area overhead associated with enabling these countermeasures is as follows:
     - 0.0921mm2 for stdcell
     - 0.0220mm2 for ram area for 57.38 KB memory.
 
-- The design is converging today at 600MHz at low, med & high voltage corners.
+- The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
 ### Memory requirement
 
@@ -406,12 +406,7 @@ The following table shows the required memory instances for ML-DSA-87:
 
 The signing operation is the most time-consuming part of the MLDSA algorithm. However, it is not constant-time due to the inherent nature of ML-DSA. The signing process involves a loop that continues until all validity checks are passed. The number of iterations depends on the provided privkey, message, and sign_rnd.
 
-According to FIPS 204 recommendations, there is no mechanism to interrupt the signing loop. Nevertheless, for the ML-DSA-87 parameter set, the average number of required loops is 3.85.
-
-To hit higher perofrmance, several engine can be used in a parallel fashion. While the signing performance determines the total requried cores. 
-
-As an exmaple, to hit 100,000 IOPS @600MHz with unprotected architecture, we needs:
-100,000 IOPS /  5,639 IOPS = 17.7 -> 18 cores.
+According to FIPS 204 recommendations, there is no mechanism to interrupt the signing loop. Nevertheless, for the ML-DSA-87 parameter set, the average number of required loops is 3.85. 
 
 # Proposed architecture
 
