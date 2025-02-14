@@ -1826,5 +1826,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
+  `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
 
 endmodule
