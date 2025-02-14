@@ -921,7 +921,7 @@ always_comb kv_seed_data_present = '0;
       msg_data <= '0;
     end else if (zeroize) begin
       msg_data <= '0;
-    end else begin
+    end else if (~msg_hold) begin
       unique case (sampler_src) inside
         MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
@@ -1326,7 +1326,7 @@ always_comb kv_seed_data_present = '0;
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << prim_instr.length[$clog2(MsgStrbW)-1:0]);
  
-always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
+always_comb msg_hold = ~msg_rdy_i;
 
 //Last cycle when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
@@ -1826,5 +1826,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
+  `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
 
 endmodule
