@@ -10,6 +10,7 @@
 // #define MLEN 64
 #define MLEN 65536
 #define M_PRIME 1
+// #define RND_SIGN 1
 
 #ifndef PREHASH
     #define PREHASH 0
@@ -35,8 +36,10 @@ void sizeTToByteArray(size_t value, uint8_t* array);
 size_t byteArrayToSizeT(uint8_t* array);
 void create_message_prime(uint8_t *PHM, uint8_t *M_prime);
 
+#ifndef RND_SIGN
+    const uint8_t rnd[32] = {0};
+#endif
 
-const uint8_t rnd[32] = {0};
 
 void create_message_prime(uint8_t *PHM, uint8_t *M_prime) {
     #if PREHASH == 1
@@ -158,6 +161,10 @@ int main(int argc, char *argv[]) {
 
     uint8_t pk[CRYPTO_PUBLICKEYBYTES];
     uint8_t sk[CRYPTO_SECRETKEYBYTES];
+#ifdef RND_SIGN
+    uint8_t rnd[SEEDBYTES];
+#endif
+    
     uint8_t external_seed[SEEDBYTES];
     uint8_t m[MLEN + CRYPTO_BYTES] = {0};
     uint8_t m2[MLEN + CRYPTO_BYTES];
@@ -224,8 +231,18 @@ int main(int argc, char *argv[]) {
                 mlen = byteArrayToSizeT(mlen_array);
                 printf("message lenght is %04X\n", (unsigned int)mlen);
                 readFile(input_file, m, mlen);
+
+                char m_hex[2 * MLEN + 1];
+                byteArrayToHexString(m, mlen, m_hex);
+                printf("m_hex is %s\n", m_hex);
 #endif
                 readFile(input_file, sk, CRYPTO_SECRETKEYBYTES);
+#ifdef RND_SIGN
+                readFile(input_file, rnd, SEEDBYTES);
+                char rnd_hex[2 * SEEDBYTES + 1];
+                byteArrayToHexString(rnd, SEEDBYTES, rnd_hex);
+                printf("rnd_hex is %s\n", rnd_hex);
+#endif
 
                 crypto_sign(sm, &smlen, m, rnd, mlen, sk);
 
