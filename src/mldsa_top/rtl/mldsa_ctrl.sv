@@ -1225,7 +1225,9 @@ always_comb kv_seed_data_present = '0;
       end
       //START of C access - check if C is still valid
       MLDSA_SIGN_CHECK_C_CLR : begin
-        if (c_valid) begin //Stalled until C can be overwritten
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else if (c_valid) begin //Stalled until C can be overwritten
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
