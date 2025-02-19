@@ -43,7 +43,7 @@ Simulation:
  - Verilator
    - `Version 5.012`
  - Mentor Graphics QVIP
-   - `Version 2021.2.1` of AHB/APB models
+   - `Version 2021.2.1` of AHB models
  - UVM installation
    - `Version 1.1d`
  - Mentor Graphics UVM-Frameworks
@@ -160,15 +160,15 @@ The UVM Framework generation tool was used to create the baseline UVM testbench 
 - [MLDSA87](src/mldsa_top/uvmf)
 
 **Prerequisites**:<BR>
-- QVIP 2021.2.1 for Mentor Graphics (provides the AHB/APB VIP)
+- QVIP 2021.2.1 for Mentor Graphics (provides the AHB VIP)
 - UVM 1.1d installation
 - Mentor Graphics UVM-Framework installation
 
 **Steps:**<BR>
 1. Compile UVM 1.1d library
-1. Compile the AHB/APB QVIP source
+1. Compile the AHB QVIP source
 1. Compile the Mentor Graphics UVM-Frameworks base library
-1. Compile the UVMF wrapper for APB/AHB in src/abr_libs
+1. Compile the UVMF wrapper for AHB in src/abr_libs/uvmf
 1. Compile the `verification_ip` provided for the target testbench
 1. ALL compilation steps may be completed by using the file-list found at `src/<block>/uvmf_<name>/config/<name>.vf`
 1. NOTE: `adams-bridge/src/<block>/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/testbench/hdl_top.sv` is the top-level TB wrapper for the system
