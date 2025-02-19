@@ -186,3 +186,5 @@ Follow Caliptra Regression tests as described [here](https://github.com/chipsall
 ## **NOTES** ##
 
 * The internal registers are auto rendered at the [GitHub page](https://chipsalliance.github.io/caliptra-rtl/main/internal-regs/?p=clp.mldsa_reg)
+
+* Important: The rendered documentation is based on the submodule version of Adams Bridge at [caliptra-rtl repo](https://github.com/chipsalliance/caliptra-rtl/tree/main/submodules), NOT the tip of the Adams Bridge main branch. Changes in the main branch may not be reflected in the documentation until the submodule is updated.
