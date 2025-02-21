@@ -578,7 +578,7 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received pwo_done\n");
-/*
+
     $display("PWM+INTT operation\n");
     operation = "PWM INTT";
     mode_tb = pwm_intt;
@@ -594,7 +594,7 @@ task ntt_top_test();
     $display("Received pwo_done\n");
     svalid_tb = 1'b0;
     @(posedge clk_tb);
-    */
+
         end
     join_any
     $display("End of test\n");
