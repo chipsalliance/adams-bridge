@@ -153,7 +153,7 @@ ntt_wrapper dut (
     .ntt_enable(enable_tb),
     .load_tb_values(load_tb_values),
     .load_tb_addr(load_tb_addr),
-    .shuffle_en(1'b1),
+    .shuffle_en(1'b0),
     .random(random_tb),
     .masking_en(masking_en_tb),
     .rnd_i(230'h0),
@@ -564,7 +564,15 @@ task ntt_top_test();
     svalid_tb <= 1'b0;
     repeat(10) @(posedge clk_tb);
     svalid_tb <= 1'b1;
-    repeat(45) @(posedge clk_tb);
+    repeat(41) @(posedge clk_tb);
+    svalid_tb <= 1'b0;
+    repeat(5) @(posedge clk_tb);
+    svalid_tb <= 1'b1;
+    @(posedge clk_tb);
+    svalid_tb <= 1'b0;
+    repeat(10) @(posedge clk_tb);
+    svalid_tb <= 1'b1;
+    @(posedge clk_tb);
     svalid_tb <= 1'b0;
     $display("Waiting for pwo_done\n");
     while(ntt_done_tb == 1'b0)
@@ -586,7 +594,7 @@ task ntt_top_test();
     $display("Received pwo_done\n");
     svalid_tb = 1'b0;
     @(posedge clk_tb);
-    
+
         end
     join_any
     $display("End of test\n");
