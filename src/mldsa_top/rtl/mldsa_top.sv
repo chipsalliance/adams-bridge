@@ -1147,60 +1147,60 @@ always_comb makehint_mem_rd_data = mldsa_mem_rdata[1];
 always_comb sigencode_mem_rd_data = mldsa_mem_rdata0_bank;
 always_comb pwr2rnd_mem_rd_data = mldsa_mem_rdata0_bank;
 
-//Memory instance 0 bank 0
+///Memory instance 0 bank 0
 always_comb mldsa_memory_export.mem_inst0_bank0_we_i = (mldsa_mem_we0_bank[0]);
 always_comb mldsa_memory_export.mem_inst0_bank0_waddr_i = (mldsa_mem_waddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:0]);
 always_comb mldsa_memory_export.mem_inst0_bank0_wdata_i = (mldsa_mem_wdata0_bank[0]);
-always_comb mldsa_memory_export.mem_inst0_bank0_re_i = (mldsa_mem_re0_bank[0]);
-always_comb mldsa_memory_export.mem_inst0_bank0_raddr_i = (mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:0]);
+always_comb mldsa_memory_export.mem_inst0_bank0_re_i = zeroize_mem_we ? 1'b1: (mldsa_mem_re0_bank[0]);
+always_comb mldsa_memory_export.mem_inst0_bank0_raddr_i = zeroize_mem_we ? '0: (mldsa_mem_raddr0_bank[0][MLDSA_MEM_INST0_ADDR_W-1:0]);
 always_comb mldsa_mem_rdata0_bank[0] = mldsa_memory_export.mem_inst0_bank0_rdata_o;
 
 //Memory instance 0 bank 1
 always_comb mldsa_memory_export.mem_inst0_bank1_we_i = (mldsa_mem_we0_bank[1]);
 always_comb mldsa_memory_export.mem_inst0_bank1_waddr_i = (mldsa_mem_waddr0_bank[1][MLDSA_MEM_INST0_ADDR_W-1:0]);
 always_comb mldsa_memory_export.mem_inst0_bank1_wdata_i = (mldsa_mem_wdata0_bank[1]);
-always_comb mldsa_memory_export.mem_inst0_bank1_re_i = (mldsa_mem_re0_bank[1]);
-always_comb mldsa_memory_export.mem_inst0_bank1_raddr_i = (mldsa_mem_raddr0_bank[1][MLDSA_MEM_INST0_ADDR_W-1:0]);
+always_comb mldsa_memory_export.mem_inst0_bank1_re_i = zeroize_mem_we ? 1'b1: (mldsa_mem_re0_bank[1]);
+always_comb mldsa_memory_export.mem_inst0_bank1_raddr_i = zeroize_mem_we ? '0: (mldsa_mem_raddr0_bank[1][MLDSA_MEM_INST0_ADDR_W-1:0]);
 always_comb mldsa_mem_rdata0_bank[1] = mldsa_memory_export.mem_inst0_bank1_rdata_o;
 
 //Memory instance 1
 always_comb mldsa_memory_export.mem_inst1_we_i = (mldsa_mem_we[1]);
 always_comb mldsa_memory_export.mem_inst1_waddr_i = (mldsa_mem_waddr[1][MLDSA_MEM_INST1_ADDR_W-1:0]);
 always_comb mldsa_memory_export.mem_inst1_wdata_i = (mldsa_mem_wdata[1]);
-always_comb mldsa_memory_export.mem_inst1_re_i = (mldsa_mem_re[1]);
-always_comb mldsa_memory_export.mem_inst1_raddr_i = (mldsa_mem_raddr[1][MLDSA_MEM_INST1_ADDR_W-1:0]);
+always_comb mldsa_memory_export.mem_inst1_re_i = zeroize_mem_we ? 1'b1: (mldsa_mem_re[1]);
+always_comb mldsa_memory_export.mem_inst1_raddr_i = zeroize_mem_we ? '0: (mldsa_mem_raddr[1][MLDSA_MEM_INST1_ADDR_W-1:0]);
 always_comb mldsa_mem_rdata[1] = mldsa_memory_export.mem_inst1_rdata_o;
 
 //Memory instance 2
 always_comb mldsa_memory_export.mem_inst2_we_i = (mldsa_mem_we[2]);
 always_comb mldsa_memory_export.mem_inst2_waddr_i = (mldsa_mem_waddr[2][MLDSA_MEM_INST2_ADDR_W-1:0]);
 always_comb mldsa_memory_export.mem_inst2_wdata_i = (mldsa_mem_wdata[2]);
-always_comb mldsa_memory_export.mem_inst2_re_i = (mldsa_mem_re[2]);
-always_comb mldsa_memory_export.mem_inst2_raddr_i = (mldsa_mem_raddr[2][MLDSA_MEM_INST2_ADDR_W-1:0]);
+always_comb mldsa_memory_export.mem_inst2_re_i = zeroize_mem_we ? 1'b1: (mldsa_mem_re[2]);
+always_comb mldsa_memory_export.mem_inst2_raddr_i = zeroize_mem_we ? '0: (mldsa_mem_raddr[2][MLDSA_MEM_INST2_ADDR_W-1:0]);
 always_comb mldsa_mem_rdata[2] = mldsa_memory_export.mem_inst2_rdata_o;
 
 //Memory instance 3
 always_comb mldsa_memory_export.mem_inst3_we_i = (mldsa_mem_we[3]);
 always_comb mldsa_memory_export.mem_inst3_waddr_i = (mldsa_mem_waddr[3][MLDSA_MEM_INST3_ADDR_W-1:0]);
 always_comb mldsa_memory_export.mem_inst3_wdata_i = (mldsa_mem_wdata[3]);
-always_comb mldsa_memory_export.mem_inst3_re_i = (mldsa_mem_re[3]);
-always_comb mldsa_memory_export.mem_inst3_raddr_i = (mldsa_mem_raddr[3][MLDSA_MEM_INST3_ADDR_W-1:0]);
+always_comb mldsa_memory_export.mem_inst3_re_i = zeroize_mem_we ? 1'b1: (mldsa_mem_re[3]);
+always_comb mldsa_memory_export.mem_inst3_raddr_i = zeroize_mem_we ? '0: (mldsa_mem_raddr[3][MLDSA_MEM_INST3_ADDR_W-1:0]);
 always_comb mldsa_mem_rdata[3] = mldsa_memory_export.mem_inst3_rdata_o;
 
 //SK Memory Bank 0
 always_comb mldsa_memory_export.sk_mem_bank0_we_i = sk_bank0_mem_if.we_i;
 always_comb mldsa_memory_export.sk_mem_bank0_waddr_i = sk_bank0_mem_if.waddr_i;
 always_comb mldsa_memory_export.sk_mem_bank0_wdata_i = sk_bank0_mem_if.wdata_i;
-always_comb mldsa_memory_export.sk_mem_bank0_re_i = sk_bank0_mem_if.re_i;
-always_comb mldsa_memory_export.sk_mem_bank0_raddr_i = sk_bank0_mem_if.raddr_i;
+always_comb mldsa_memory_export.sk_mem_bank0_re_i = zeroize_mem_we ? 1'b1: sk_bank0_mem_if.re_i;
+always_comb mldsa_memory_export.sk_mem_bank0_raddr_i = zeroize_mem_we ? '0: sk_bank0_mem_if.raddr_i;
 always_comb sk_bank0_mem_if.rdata_o = mldsa_memory_export.sk_mem_bank0_rdata_o;
 
 //SK Memory Bank 1
 always_comb mldsa_memory_export.sk_mem_bank1_we_i = sk_bank1_mem_if.we_i;
 always_comb mldsa_memory_export.sk_mem_bank1_waddr_i = sk_bank1_mem_if.waddr_i;
 always_comb mldsa_memory_export.sk_mem_bank1_wdata_i = sk_bank1_mem_if.wdata_i;
-always_comb mldsa_memory_export.sk_mem_bank1_re_i = sk_bank1_mem_if.re_i;
-always_comb mldsa_memory_export.sk_mem_bank1_raddr_i = sk_bank1_mem_if.raddr_i;
+always_comb mldsa_memory_export.sk_mem_bank1_re_i = zeroize_mem_we ? 1'b1: sk_bank1_mem_if.re_i;
+always_comb mldsa_memory_export.sk_mem_bank1_raddr_i = zeroize_mem_we ? '0: sk_bank1_mem_if.raddr_i;
 always_comb sk_bank1_mem_if.rdata_o = mldsa_memory_export.sk_mem_bank1_rdata_o;
 
 //Sig Z Memory
@@ -1208,8 +1208,8 @@ always_comb mldsa_memory_export.sig_z_mem_we_i = sig_z_mem_if.we_i;
 always_comb mldsa_memory_export.sig_z_mem_waddr_i = sig_z_mem_if.waddr_i;
 always_comb mldsa_memory_export.sig_z_mem_wdata_i = sig_z_mem_if.wdata_i;
 always_comb mldsa_memory_export.sig_z_mem_wstrobe_i = sig_z_mem_if.wstrobe_i;
-always_comb mldsa_memory_export.sig_z_mem_re_i = sig_z_mem_if.re_i;
-always_comb mldsa_memory_export.sig_z_mem_raddr_i = sig_z_mem_if.raddr_i;
+always_comb mldsa_memory_export.sig_z_mem_re_i = zeroize_mem_we ? 1'b1: sig_z_mem_if.re_i;
+always_comb mldsa_memory_export.sig_z_mem_raddr_i = zeroize_mem_we ? '0: sig_z_mem_if.raddr_i;
 always_comb sig_z_mem_if.rdata_o = mldsa_memory_export.sig_z_mem_rdata_o;
 
 //PK Memory
@@ -1217,8 +1217,8 @@ always_comb mldsa_memory_export.pk_mem_we_i = pk_mem_if.we_i;
 always_comb mldsa_memory_export.pk_mem_waddr_i = pk_mem_if.waddr_i;
 always_comb mldsa_memory_export.pk_mem_wdata_i = pk_mem_if.wdata_i;
 always_comb mldsa_memory_export.pk_mem_wstrobe_i = pk_mem_if.wstrobe_i;
-always_comb mldsa_memory_export.pk_mem_re_i = pk_mem_if.re_i;
-always_comb mldsa_memory_export.pk_mem_raddr_i = pk_mem_if.raddr_i;
+always_comb mldsa_memory_export.pk_mem_re_i = zeroize_mem_we ? 1'b1: pk_mem_if.re_i;
+always_comb mldsa_memory_export.pk_mem_raddr_i = zeroize_mem_we ? '0: pk_mem_if.raddr_i;
 always_comb pk_mem_if.rdata_o = mldsa_memory_export.pk_mem_rdata_o;
 
 `ABR_ASSERT_MUTEX(ERR_MEM_0_0_RD_ACCESS_MUTEX, {ntt_mem_re0_bank[0][0],pwo_a_mem_re0_bank[0][0],pwo_b_mem_re0_bank[0][0],ntt_mem_re0_bank[1][0],
