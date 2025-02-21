@@ -134,6 +134,7 @@ module ntt_top
     //ntt_ctrl output connections
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
     logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
+    logic ntt_done_int;
 
     //pwm mem data_out connections
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a, pwm_rd_data_b, pwm_rd_data_c; 
@@ -250,8 +251,17 @@ module ntt_top
         .pw_rden(pw_rden),
         .pw_wren(pw_wren),
         .busy(ntt_busy),
-        .done(ntt_done)
+        .done(ntt_done_int)
     );
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            ntt_done <= 'b0;
+        else if (zeroize)
+            ntt_done <= 'b0;
+        else
+            ntt_done <= ntt_done_int;
+    end
 
     //Twiddle lookup
     ntt_twiddle_lookup #(
