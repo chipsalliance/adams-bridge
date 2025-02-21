@@ -182,11 +182,11 @@ module abr_sha3
   end
 
   always_ff  @(posedge clk_i or negedge rst_b) begin
-    if      (!rst_b)                                    state_valid <= 1'b0;
-    else if (zeroize)                                   state_valid <= 1'b0;
-    else if ((st_d == StSqueeze_sparse) & ~state_valid) state_valid <= 1'b1;
-    else if (state_valid_hold_i)                        state_valid <= state_valid;
-    else                                                state_valid <= 1'b0;
+    if      (!rst_b)                                                state_valid <= 1'b0; //reset
+    else if (zeroize)                                               state_valid <= 1'b0; //zeroize
+    else if ((st_d == StSqueeze_sparse) & (st != StSqueeze_sparse)) state_valid <= 1'b1; //assert on transition to squeeze
+    else if (state_valid_hold_i)                                    state_valid <= state_valid; //hold current value
+    else                                                            state_valid <= 1'b0; //de-assert
   end
 
   assign block_processed_o = keccak_complete;

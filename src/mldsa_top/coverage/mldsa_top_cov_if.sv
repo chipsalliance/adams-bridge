@@ -126,6 +126,102 @@ interface mldsa_top_cov_if
 
     endgroup
 
+
+
+
+    // SIGN Z encoding
+    localparam int NUM_ENC  = 4;
+    localparam int GAMMA1   = 19;
+    localparam int REG_SIZE = 23;
+    localparam int MLDSA_GAMMA1_RANGE = 2**GAMMA1;
+    localparam int MLDSA_Q  = 8380417;
+
+    logic [(NUM_ENC*2)-1:0] eq_flags;
+    logic [(NUM_ENC*2)-1:0] less_flags;
+    logic [(NUM_ENC*2)-1:0] greater_flags;
+    logic enc_unit_equal;
+    logic enc_unit_less;
+    logic enc_unit_greater;
+
+    genvar sig_enc_i;
+    generate
+        for(sig_enc_i = 0; sig_enc_i < NUM_ENC; sig_enc_i++) begin : enc_loop
+        // For the upper instance
+        assign eq_flags[sig_enc_i*2]   = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i == MLDSA_GAMMA1_RANGE);
+        assign less_flags[sig_enc_i*2] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i <  MLDSA_GAMMA1_RANGE);
+        assign greater_flags[sig_enc_i*2] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i > MLDSA_GAMMA1_RANGE);
+        
+        // For the lower instance
+        assign eq_flags[sig_enc_i*2+1]   = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i == MLDSA_GAMMA1_RANGE);
+        assign less_flags[sig_enc_i*2+1] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i <  MLDSA_GAMMA1_RANGE);
+        assign greater_flags[sig_enc_i*2+1] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i > MLDSA_GAMMA1_RANGE);
+        end
+    endgenerate
+
+    // OR-reduce the flags: if any instance meets the condition, the corresponding signal is 1.
+    assign enc_unit_equal   = (|eq_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
+    assign enc_unit_less    = (|less_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
+    assign enc_unit_greater = (|greater_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
+    // Sign_z to cover the aggregated conditions
+    covergroup sign_z_enc_agg_cg @(posedge clk);
+        coverpoint enc_unit_equal {
+            bins hit = {1'b1};
+        }
+        coverpoint enc_unit_less {
+            bins hit = {1'b1};
+        }
+        coverpoint enc_unit_greater {
+            bins hit = {1'b1};
+        }
+    endgroup
+
+    // The FSM cases are: 'h0, 'h1, 'h2, MLDSA_Q-1, MLDSA_Q-2, and default.
+    logic [(NUM_ENC*2)-1:0] skenc_state0_flags;
+    logic [(NUM_ENC*2)-1:0] skenc_state1_flags;
+    logic [(NUM_ENC*2)-1:0] skenc_state2_flags;
+    logic [(NUM_ENC*2)-1:0] skenc_state_mq1_flags;
+    logic [(NUM_ENC*2)-1:0] skenc_state_mq2_flags;
+    logic skenc_state0_agg, skenc_state1_agg, skenc_state2_agg, skenc_state_mq1_agg, skenc_state_mq2_agg;
+
+    genvar sk_enc_i;
+    generate
+    for (sk_enc_i = 0; sk_enc_i < NUM_ENC; sk_enc_i++) begin : sk_enc_loop
+        // For mem_a_rd_data element
+        assign skenc_state0_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h0);
+        assign skenc_state1_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h1);
+        assign skenc_state2_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h2);
+        assign skenc_state_mq1_flags[sk_enc_i*2] = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 1);
+        assign skenc_state_mq2_flags[sk_enc_i*2] = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 2);
+        // For mem_b_rd_data element
+        assign skenc_state0_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h0);
+        assign skenc_state1_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h1);
+        assign skenc_state2_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h2);
+        assign skenc_state_mq1_flags[sk_enc_i*2+1] = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 1);
+        assign skenc_state_mq2_flags[sk_enc_i*2+1] = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 2);
+    end
+    endgenerate
+
+    // OR-reduce each set of flags and ensure the FSM is not in IDLE.
+    // (Assuming mldsa_top.skencode_inst.state and its IDLE constant are accessible.)
+    assign skenc_state0_agg    = (|skenc_state0_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+    assign skenc_state1_agg    = (|skenc_state1_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+    assign skenc_state2_agg    = (|skenc_state2_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+    assign skenc_state_mq1_agg = (|skenc_state_mq1_flags) & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+    assign skenc_state_mq2_agg = (|skenc_state_mq2_flags) & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+
+    // Now create a covergroup that samples these aggregated flags.
+    covergroup skencode_agg_cg @(posedge clk);
+        coverpoint skenc_state0_agg    { bins hit = {1'b1}; }
+        coverpoint skenc_state1_agg    { bins hit = {1'b1}; }
+        coverpoint skenc_state2_agg    { bins hit = {1'b1}; }
+        coverpoint skenc_state_mq1_agg { bins hit = {1'b1}; }
+        coverpoint skenc_state_mq2_agg { bins hit = {1'b1}; }
+    endgroup
+    
+    // Instantiate the covergroup
+    skencode_agg_cg skencode_agg_cov = new();
+    sign_z_enc_agg_cg sign_z_enc_agg_cov_grp1 = new();
+
     mldsa_top_cov_grp mldsa_top_cov_grp1 = new();
 
 endinterface

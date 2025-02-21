@@ -166,9 +166,11 @@ module mldsa_ctrl
   logic mldsa_ready;
   logic mldsa_valid_reg;
   logic mldsa_privkey_lock;
+  logic kv_seed_data_present;
 
   logic external_mu;
   logic external_mu_mode, external_mu_mode_nxt;
+
 
   `ifdef CALIPTRA
 //Custom keyvault logic for Caliptra
@@ -180,7 +182,6 @@ module mldsa_ctrl
   kv_error_code_e kv_seed_error;
   logic kv_seed_ready, kv_seed_done;
   //KV Seed Data Present
-  logic kv_seed_data_present;
   logic kv_seed_data_present_set, kv_seed_data_present_reset;
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
@@ -245,15 +246,6 @@ end
 
 always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 
-always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
-  if (!rst_b)
-    mldsa_privkey_lock <= '0;
-  else if (zeroize)
-    mldsa_privkey_lock <= '0;
-  else if (kv_seed_data_present_set)
-    mldsa_privkey_lock <= '1;
-end
-
 `else
 always_comb begin: mldsa_kv_ctrl_reg
   //ready when fsm is not busy
@@ -268,7 +260,7 @@ always_comb begin: mldsa_kv_ctrl_reg
   mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
 end
 
-always_comb mldsa_privkey_lock = '0;
+always_comb kv_seed_data_present = '0;
 `endif
 
   logic [2:0] cmd_reg;
@@ -312,6 +304,7 @@ always_comb mldsa_privkey_lock = '0;
   mldsa_seq_instr_t sec_instr_o, sec_instr;
 
   logic msg_done;
+  logic msg_last;
   logic [MsgStrbW-1:0] last_msg_strobe;
   logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt;
   logic msg_hold;
@@ -494,8 +487,22 @@ always_comb mldsa_privkey_lock = '0;
 
   logic api_keymem_wr_dec, api_sk_reg_wr_dec;
   logic api_keymem_rd_dec, api_sk_reg_rd_dec, api_sk_reg_rd_dec_f;
+  logic api_keymem_rd_vld;
   logic [DATA_WIDTH-1:0] privkey_reg_rdata;
   logic [DATA_WIDTH-1:0] privkey_out_rdata;
+
+  always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
+    if (!rst_b)
+      mldsa_privkey_lock <= '1;
+    else if (zeroize)
+      mldsa_privkey_lock <= '1;
+    //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
+    else if (~kv_seed_data_present & (keygen_process & keygen_done))
+      mldsa_privkey_lock <= '0;
+  end
+  
+  always_comb api_keymem_rd_vld = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
+                                  mldsa_valid_reg & ~mldsa_privkey_lock ;
 
   always_comb api_sk_waddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
   always_comb api_sk_raddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
@@ -533,9 +540,7 @@ always_comb mldsa_privkey_lock = '0;
   
   always_comb begin
     for (int i = 0; i < 2; i++) begin
-      api_keymem_re_bank[i] = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
-                              mldsa_valid_reg & keygen_process &
-                              api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
+      api_keymem_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
 
       skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
 
@@ -609,7 +614,7 @@ always_comb mldsa_privkey_lock = '0;
     end else if (zeroize) begin
       privkey_reg_rdata <= '0;
     end else begin
-      if (mldsa_valid_reg & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & api_sk_reg_rd_dec) begin
+      if (api_keymem_rd_vld & api_sk_reg_rd_dec) begin
         privkey_reg_rdata <= privatekey_reg.raw[api_sk_reg_raddr];
       end
     end
@@ -646,7 +651,7 @@ always_comb mldsa_privkey_lock = '0;
     end
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & keygen_process & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
+  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
 
   //No write to PRIVKEY_OUT allowed - just ack it
   assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
@@ -843,7 +848,7 @@ always_comb mldsa_privkey_lock = '0;
 
   always_comb pkdecode_rd_en = prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
 
-  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:342]}) & ~msg_hold;
+  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]}) & ~msg_hold;
 
   //read requests
   always_comb pubkey_ram_re = sampler_pk_rd_en | pkdecode_rd_en | api_pubkey_re;
@@ -916,17 +921,17 @@ always_comb mldsa_privkey_lock = '0;
       msg_data <= '0;
     end else if (zeroize) begin
       msg_data <= '0;
-    end else begin
+    end else if (~msg_hold) begin
       unique case (sampler_src) inside
-        MLDSA_SEED_ID:        msg_data <= msg_done ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_RHO_ID:         msg_data <= msg_done ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
-        MLDSA_RHO_P_ID:       msg_data <= msg_done ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
+        MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
+        MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
+        MLDSA_RHO_P_ID:       msg_data <= msg_last ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
         MLDSA_TR_ID:          msg_data <= privatekey_reg.enc.tr[sampler_src_offset[2:0]];
         MLDSA_MSG_ID:         msg_data <= {msg_p_reg[{sampler_src_offset[3:0],1'b1}],msg_p_reg[{sampler_src_offset[3:0],1'b0}]};
         MLDSA_K_ID:           msg_data <= privatekey_reg.enc.K[sampler_src_offset[1:0]];
         MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
         MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_done ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
+        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,(kappa_reg + sampler_imm[2:0])} : rho_p_reg[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
@@ -1220,7 +1225,9 @@ always_comb mldsa_privkey_lock = '0;
       end
       //START of C access - check if C is still valid
       MLDSA_SIGN_CHECK_C_CLR : begin
-        if (c_valid) begin //Stalled until C can be overwritten
+        if (signature_validity_chk_done) 
+          prim_prog_cntr_nxt = MLDSA_SIGN_E;
+        else if (c_valid) begin //Stalled until C can be overwritten
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
         else begin
@@ -1321,11 +1328,12 @@ always_comb mldsa_privkey_lock = '0;
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << prim_instr.length[$clog2(MsgStrbW)-1:0]);
  
-always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
+always_comb msg_hold = ~msg_rdy_i;
 
-//Done when msg count is equal to length
+//Last cycle when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_done = (msg_cnt >= prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+always_comb msg_last = (msg_cnt == prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+always_comb msg_done = (msg_cnt > prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1344,7 +1352,7 @@ always_ff @(posedge clk or negedge rst_b) begin
                msg_valid ? msg_cnt + 'd1 : msg_cnt;
     msg_valid_o <= msg_hold ? msg_valid_o : msg_valid;
     msg_strobe_o <= msg_hold ? msg_strobe_o :
-                    msg_done ? last_msg_strobe : '1;
+                    msg_last ? last_msg_strobe : '1;
   end
 end
 
@@ -1392,6 +1400,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_src = prim_instr.operand1;
         sampler_imm = prim_instr.imm;
         if (msg_done & ~msg_hold) begin
+          msg_valid = 0;
           if (prim_instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
           else ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
         end
@@ -1819,5 +1828,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
+  `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
 
 endmodule
