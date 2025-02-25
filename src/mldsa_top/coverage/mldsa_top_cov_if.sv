@@ -17,7 +17,8 @@
 interface mldsa_top_cov_if     
     (
     input logic           clk,
-    input logic           rst_b
+    input logic           rst_b,
+    input logic           debugUnlock_or_scan_mode_switch
 
 );
 
@@ -81,6 +82,7 @@ interface mldsa_top_cov_if
 
     covergroup mldsa_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
+        debugUnlock_or_scan_mode_switch_cp: coverpoint debugUnlock_or_scan_mode_switch;
 
         mldsa_cmd_cp: coverpoint mldsa_cmd;
         pcr_sign_cp: coverpoint pcr_sign_mode;
