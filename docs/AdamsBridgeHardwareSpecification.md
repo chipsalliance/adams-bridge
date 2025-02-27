@@ -354,10 +354,10 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 |                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Unprotected"**     | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Keygen**            | 15,200           |         0.038 | 26,316                 |     |         0.025 | 39,474                 |
+| **Keygen**            | 15,600           |         0.039 | 25,641                 |     |         0.026 | 38,462                 |
 | **Signing (1 round)** | 26,600           |         0.067 | 15,038                 |     |         0.044 | 22,556                 |
 | **Signing (Ave)**     | 106,400          |         0.266 | 3,759                  |     |         0.177 | 5,639                  |
-| **Verifying**         | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
+| **Verifying**         | 18,800           |         0.047 | 21,277                 |     |         0.031 | 31,915                 |
 
 
 **NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configureble to be enabled or disabled at synthesis time.
@@ -367,10 +367,10 @@ The area overhead associated with enabling these countermeasures is as follows:
 |                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Protected"**       | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **keygen**            | 15,200           |         0.038 | 26,316                 |     |         0.025 | 39,474                 |
-| **Signing (1 round)** | 35,700           |         0.089 | 11,204                 |     |         0.060 | 16,807                 |
-| **Signing (Ave)**     | 142,800          |         0.357 | 2,801                  |     |         0.238 | 4,202                  |
-| **Verifying**         | 18,500           |         0.046 | 21,622                 |     |         0.031 | 32,432                 |
+| **keygen**            | 15,600           |         0.039 | 25,641                 |     |         0.026 | 38,462                 |
+| **Signing (1 round)** | 36,700           |         0.092 | 10,899                 |     |         0.061 | 16,349                 |
+| **Signing (Ave)**     | 146,800          |         0.367 | 2,725                  |     |         0.245 | 4,087                  |
+| **Verifying**         | 18,800           |         0.047 | 21,277                 |     |         0.031 | 31,915                 |
 
 
 
