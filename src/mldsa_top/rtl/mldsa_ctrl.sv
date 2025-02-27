@@ -858,10 +858,10 @@ always_comb kv_seed_data_present = '0;
 
   always_comb begin
     unique case (pkdecode_rd_offset_f[1:0])
-      2'b00: pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
-      2'b01: pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
-      2'b10: pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
-      2'b11: pkdecode_rd_data_o = pubkey_ram_rdata_t1[31:24];
+      2'b00:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
+      2'b01:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
+      2'b10:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
+      default: pkdecode_rd_data_o = pubkey_ram_rdata_t1[31:24];
     endcase
   end
 
