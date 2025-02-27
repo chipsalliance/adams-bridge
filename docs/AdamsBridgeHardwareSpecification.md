@@ -889,7 +889,7 @@ With this memory access pattern, writes to the memory are in order (0, 1, 2, 3, 
 | 2     | dest              | interim            |
 | 3     | interim           | dest               |
 
-At the end of NTT operation, results must be located in the section with the dest base address. This will also provide the benefit of preserving the original input for later use in keygen or signing operations. The same memory access pattern is followed for INTT operation as well. Note that Adam’s bridge controller may choose to make interim and dest base addresses the same to save on memory usage. In this case, the requirement is still to have a separate src base address to preserve original input polynomial coefficients in memory.
+At the end of NTT operation, results must be located in the section with the dest base address. This will also provide the benefit of preserving the original input for later use in keygen or signing operations. The same memory access pattern is followed for INTT operation as well. Note that Adam’s bridge controller may choose to make src and dest base addresses the same to save on memory usage, when original coefficients need not be preserved. In this case, the requirement is still to have a separate interim base address to avoid memory conflicts during NTT operation.
 
 #### Modular Reduction in NTT
 
