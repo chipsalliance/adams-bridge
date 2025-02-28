@@ -858,10 +858,10 @@ always_comb kv_seed_data_present = '0;
 
   always_comb begin
     unique case (pkdecode_rd_offset_f[1:0])
-      2'b00: pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
-      2'b01: pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
-      2'b10: pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
-      2'b11: pkdecode_rd_data_o = pubkey_ram_rdata_t1[31:24];
+      2'b00:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
+      2'b01:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
+      2'b10:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
+      default: pkdecode_rd_data_o = pubkey_ram_rdata_t1[31:24];
     endcase
   end
 
@@ -873,8 +873,8 @@ always_comb kv_seed_data_present = '0;
                                 ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr.addr) |
                                 ({PK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[PK_MEM_ADDR_W-1:0]);
 
-  always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & 'h3FF << pk_t1_wr_addr_i[1:0]*10) |
-                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & ('hF << api_pubkey_mem_addr.offset*4)) |
+  always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & PK_MEM_WSTROBE_W'('h3FF << pk_t1_wr_addr_i[1:0]*10)) |
+                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & PK_MEM_WSTROBE_W'('hF << api_pubkey_mem_addr.offset*4)) |
                                    ({PK_MEM_WSTROBE_W{zeroize_mem_we}});
 
 

@@ -92,7 +92,7 @@ module sigdecode_z_unit
         else begin 
             r0_reg      <= r0;
             carry0_reg  <= carry0;
-            opb1        <= sub_i ? MLDSA_Q : ~MLDSA_Q;
+            opb1        <= sub_i ? {1'b0, MLDSA_Q} : {1'b1, ~MLDSA_Q};
             sub_n       <= !sub_i;
         end
     end
