@@ -61,6 +61,8 @@ module sigdecode_h
     logic [$clog2(MLDSA_N)-1:0] bitmap_ptr;
     logic hint_rd_en;
     mem_if_t mem_wr_req_int;
+    logic OR_remaining_encoded_h_i; //TODO: add a comment and explain what this bit does
+    logic check_zero_bytes;
 
     //TODO: look into remaining_zero - to save some latency, we can save y[w-1:0] as we read them and
     //keep track of what coeffs are being written to memory. If we see that the last y[i] coeff has been written
@@ -93,10 +95,21 @@ module sigdecode_h
             mem_wr_data         <= {REG_SIZE'(bitmap[8'(bitmap_ptr+3)]), REG_SIZE'(bitmap[8'(bitmap_ptr+2)]), REG_SIZE'(bitmap[8'(bitmap_ptr+1)]), REG_SIZE'(bitmap[8'(bitmap_ptr)])};
             hint                <= hint_rd_en ? {encoded_h_i[7'(rd_ptr+3)], encoded_h_i[7'(rd_ptr+2)], encoded_h_i[7'(rd_ptr+1)], encoded_h_i[7'(rd_ptr)]} : 'h0;
             mem_wr_req          <= mem_wr_req_int;
-            sigdecode_h_error   <= ~sigdecode_h_done & (hintsum < hintsum_prev_poly);
+            sigdecode_h_error   <= ~sigdecode_h_done & ((hintsum < hintsum_prev_poly) | OR_remaining_encoded_h_i);
         end
     end
 
+    always_comb begin
+        OR_remaining_encoded_h_i = 0;
+        for(int i=0; i< (MLDSA_OMEGA-1); i++) begin
+            if ((i >= rd_ptr) && check_zero_bytes && poly_count == MLDSA_K-1)
+                OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
+            else
+                OR_remaining_encoded_h_i=0;
+        end
+    end
+
+    
     //bitmap construction
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -137,6 +150,7 @@ module sigdecode_h
         .rst_bitmap(rst_bitmap),
         .curr_poly_map(curr_poly_map),
         .bitmap_ptr(bitmap_ptr),
+        .check_zero_bytes(check_zero_bytes),
         .hint_rd_en(hint_rd_en)
     );
 

@@ -42,6 +42,7 @@ module sigdecode_h_ctrl
         output logic rst_bitmap, 
         output logic [3:0] curr_poly_map,
         output logic [$clog2(MLDSA_N)-1:0] bitmap_ptr,
+        output logic check_zero_bytes, // TODO: add a comment to explain why this one is in the port list
         output logic hint_rd_en
     );
 
@@ -184,6 +185,19 @@ module sigdecode_h_ctrl
         end
         else if (incr_rd_ptr) begin
             rd_ptr <= (rem_hintsum >= 'h4) ? rd_ptr + 'h4 : 7'(rd_ptr + rem_hintsum);
+        end
+    end
+
+    //Rd ptr logic
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            check_zero_bytes    <= 'h0;
+        end
+        else if (zeroize) begin
+            check_zero_bytes    <= 'h0;
+        end
+        else begin
+            check_zero_bytes    <= (read_fsm_state_ps == SDH_RD_IDLE);
         end
     end
 
