@@ -309,7 +309,7 @@ module mldsa_seq_prim
 
                 MLDSA_SIGN_MAKE_W_S+ 63 : data_o_rom <= '{opcode:MLDSA_UOP_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP3_BASE, operand3:MLDSA_W0_7_BASE};
 
-                //Set Y valid //FIXME this can move before MAKE_W if we opt accumulator to not have to read dest
+                //Set Y valid
                 MLDSA_SIGN_SET_Y        : data_o_rom <= '{opcode:MLDSA_UOP_NOP, imm:'h0000, length:'d00, operand1:MLDSA_UOP_NOP, operand2:MLDSA_NOP, operand3:MLDSA_NOP};
                 //(w1,w0) ←Decompose(w) AND c˜←H(μ||w1Encode(w1),2λ)
                 MLDSA_SIGN_MAKE_W_S+ 65 : data_o_rom <= '{opcode:MLDSA_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:MLDSA_NOP, operand3:MLDSA_NOP};

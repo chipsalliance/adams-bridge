@@ -30,7 +30,7 @@ package mldsa_params_pkg;
   //----------------------------------------------------------------
   parameter MLDSA_Q = 23'd8380417;
   parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1;
-  parameter REG_SIZE = 24; //FIXME
+  parameter REG_SIZE = 24;
   parameter MLDSA_N = 256;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
   parameter MLDSA_K = 8;

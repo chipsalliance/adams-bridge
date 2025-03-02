@@ -294,7 +294,6 @@ addrmap mldsa_reg {
 
             // Specific enables for the events defined in this
             // event type in the instantiating peripheral.
-            // TODO: Add en, sts, trig, cnt for all tracked errors
             field {desc = "Enable bit for Internal Errors";               } error_internal_en = 1'b0;
         };
 
@@ -465,7 +464,6 @@ addrmap mldsa_reg {
         /* ---- Reset assignment for Error Events ---- */
         error_internal_intr_r.error_internal_sts -> resetsignal = hard_reset_b;
         error_internal_intr_count_r.cnt          -> resetsignal = hard_reset_b;
-        // TODO: Use this same reset for the error incrementor pulse too?
 
         /* ---- Interrupt Event Dynamic Assignments ---- */
         error_internal_intr_r.error_internal_sts -> enable = error_intr_en_r.error_internal_en;
