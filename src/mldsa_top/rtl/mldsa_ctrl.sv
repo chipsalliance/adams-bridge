@@ -1066,7 +1066,7 @@ always_comb kv_seed_data_present = '0;
   //Clear signature if makehint or normcheck fail
   always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
-  //FIXME jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
+  //Jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
   always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
                                    (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
@@ -1262,7 +1262,9 @@ always_comb kv_seed_data_present = '0;
         verify_done = 1;
       end
       default : begin
-        if (signature_validity_chk_done) 
+        if (clear_verify_valid)
+          prim_prog_cntr_nxt = MLDSA_VERIFY_E;
+        else if (signature_validity_chk_done) 
           prim_prog_cntr_nxt = MLDSA_SIGN_E;
         else if (subcomponent_busy) begin //Stalled until sub-component is done 
           prim_prog_cntr_nxt = prim_prog_cntr;
@@ -1275,7 +1277,6 @@ always_comb kv_seed_data_present = '0;
   end
 
 //Controller prim_instr decode - drives sampler and primary ntt
-//FIXME latch the sampler mode here
   always_comb begin
     sampler_mode_o = MLDSA_SAMPLER_NONE;
     if (prim_instr.opcode.sampler_en) begin
@@ -1304,18 +1305,18 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb sampler_src_offset = {4'b0, msg_cnt}; //fixme
+  always_comb sampler_src_offset = {4'b0, msg_cnt};
 
   //passing a bit on the immediate field to mux between temp address locations
   always_comb ntt_temp_address[0] = prim_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
 
-  //FIXME one interface here?
+  //optimization - could be one interface here?
   always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
                                          interim_base_addr:ntt_temp_address[0],
                                          dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
-                                         pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
+  always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
+                                         pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
                                          pw_base_addr_c:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb dest_base_addr_o = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
@@ -1547,7 +1548,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
       end
       //END of C access - SET C valid
       //Need to protect C the entire validity checks so that challenge generation doesn't overwrite the valid c~
-      //FIXME another place to consider odd/even counter on challenge/validity
+      //another place to consider odd/even counter on challenge/validity
       MLDSA_SIGN_CLEAR_C : begin
         clear_c_valid = 1;
         sec_prog_cntr_nxt = MLDSA_SIGN_CHECK_C_VLD;
@@ -1620,13 +1621,13 @@ mldsa_seq_prim mldsa_seq_prim_inst
   //passing a bit on the immediate field to mux between temp address locations
   always_comb ntt_temp_address[1] = sec_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
 
-  //FIXME one interface here?
+  //one interface here?
   always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
                                          interim_base_addr:ntt_temp_address[1],
                                          dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
-  always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src
-                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //FIXME PWO src or sampler src
+  always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
+                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
                                          pw_base_addr_c:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
