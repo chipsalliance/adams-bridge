@@ -638,7 +638,6 @@ decompose_inst (
   .w1_o(decomp_msg_data[0]),
   .buffer_en(decomp_msg_valid),
 
-  //TODO: check what high level controller requirement is
   .decompose_done(decompose_done)
 );
 

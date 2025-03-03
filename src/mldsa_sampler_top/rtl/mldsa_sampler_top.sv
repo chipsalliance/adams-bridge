@@ -438,7 +438,7 @@ always_comb sampler_ntt_data_o = rejs_data;
     .data_o(rejs_data_q)
   );
   
-  //FIXME HACK
+//optimization - align sampler data in ntt
 always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
   if (!rst_b) begin
     rejs_data <= 0;
