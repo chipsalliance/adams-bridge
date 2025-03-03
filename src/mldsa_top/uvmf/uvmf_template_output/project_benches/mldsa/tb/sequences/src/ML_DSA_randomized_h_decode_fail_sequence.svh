@@ -43,7 +43,7 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
 
     // Randomize the failure parameters
     if (!randomize(fail_index, fail_bit) with {
-        fail_index inside {[0:20]};   // Randomly select a byte in h
+        fail_index inside {[0:20]};   // Randomly select a word in h
         fail_bit inside {[0:31]};      // Bit position (0 to 31)
     }) begin
       `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure parameters");
