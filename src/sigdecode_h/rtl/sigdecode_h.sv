@@ -61,8 +61,12 @@ module sigdecode_h
     logic [$clog2(MLDSA_N)-1:0] bitmap_ptr;
     logic hint_rd_en;
     mem_if_t mem_wr_req_int;
-    logic OR_remaining_encoded_h_i; //TODO: add a comment and explain what this bit does
+    logic OR_remaining_encoded_h_i;
     logic check_zero_bytes;
+    logic hint_ok;
+    logic [7:0] prev_hint_byte;
+    logic hint_rd_en_f, hint_rd_en_pulse;
+    logic first_hint;
 
     //TODO: look into remaining_zero - to save some latency, we can save y[w-1:0] as we read them and
     //keep track of what coeffs are being written to memory. If we see that the last y[i] coeff has been written
@@ -79,6 +83,10 @@ module sigdecode_h
             mem_wr_req.addr     <= 'h0;
             mem_wr_req.rd_wr_en <= RW_IDLE;
             sigdecode_h_error   <= 'b0;
+            hint_rd_en_f        <= 'b0;
+            hint_ok             <= 'b1;
+            prev_hint_byte      <= 'h0;
+            first_hint          <= 'h0;
         end
         else if (zeroize) begin
             hintsum             <= 'h0;
@@ -88,6 +96,10 @@ module sigdecode_h
             mem_wr_req.addr     <= 'h0;
             mem_wr_req.rd_wr_en <= RW_IDLE;
             sigdecode_h_error   <= 'b0;
+            hint_rd_en_f        <= 'b0;
+            hint_ok             <= 'b1;
+            prev_hint_byte      <= 'h0;
+            first_hint          <= 'h0;
         end
         else begin
             hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[MLDSA_OMEGA+poly_count];
@@ -95,9 +107,26 @@ module sigdecode_h
             mem_wr_data         <= {REG_SIZE'(bitmap[8'(bitmap_ptr+3)]), REG_SIZE'(bitmap[8'(bitmap_ptr+2)]), REG_SIZE'(bitmap[8'(bitmap_ptr+1)]), REG_SIZE'(bitmap[8'(bitmap_ptr)])};
             hint                <= hint_rd_en ? {encoded_h_i[7'(rd_ptr+3)], encoded_h_i[7'(rd_ptr+2)], encoded_h_i[7'(rd_ptr+1)], encoded_h_i[7'(rd_ptr)]} : 'h0;
             mem_wr_req          <= mem_wr_req_int;
-            sigdecode_h_error   <= ~sigdecode_h_done & ((hintsum < hintsum_prev_poly) | OR_remaining_encoded_h_i);
+            
+            //Trigger error in the following conditions:
+            //1. If hintsum is not in ascending order in encoded_h[w+k-1:w] bytes
+            //2. If bytes after the last non-zero hint of last non-zero hintsum poly are not 0s
+            //3. If hints encoded in encoded_h[w-1:0] are not in ascending order
+            sigdecode_h_error   <= ~sigdecode_h_done & ((hintsum < hintsum_prev_poly) | OR_remaining_encoded_h_i | ~hint_ok);
+            hint_rd_en_f        <= hint_rd_en;
+            prev_hint_byte      <= hint_rd_en_f ? hint[3] : 'h0; //Latch last hint in current cycle to be compared in next cycle
+            first_hint          <= hint_rd_en_pulse; //Indicates when first hint is processed for a given poly
+
+            //Check correctness of hint vector. If indices are not in ascending order, hint_ok is flipped triggering an error
+            hint_ok             <= hint_rd_en_f ? ( curr_poly_map[0] ? (first_hint ? (prev_hint_byte <= hint[0]) : (prev_hint_byte < hint[0])) : 'b1) &  //for first hint, prev byte = 0, hint[0] can also be 0 which is allowed
+                                                ((curr_poly_map[0] & curr_poly_map[1]) ? (hint[0] < hint[1]) : 'b1) & 
+                                                ((curr_poly_map[1] & curr_poly_map[2]) ? (hint[1] < hint[2]) : 'b1) & 
+                                                ((curr_poly_map[2] & curr_poly_map[3]) ? (hint[2] < hint[3]) : 'b1) 
+                                                : 'b1;
         end
     end
+
+    assign hint_rd_en_pulse = hint_rd_en & ~hint_rd_en_f;
 
     always_comb begin
         OR_remaining_encoded_h_i = 0;
@@ -108,7 +137,6 @@ module sigdecode_h
                 OR_remaining_encoded_h_i=0;
         end
     end
-
     
     //bitmap construction
     always_ff @(posedge clk or negedge reset_n) begin
