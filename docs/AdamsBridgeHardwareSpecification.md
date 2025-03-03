@@ -2369,7 +2369,7 @@ The hint (h segment of the signature) must follow a specific pattern. Any violat
 The rules for a valid hint are as follows:
 
 1) The HINTSUM\_i values must be in ascending order. Repeated values are allowed, meaning a polynomial may have no non-zero coefficients.
-2) The maximum allowable value for HINTSUM\_i is ω.
+2) The maximum allowable value for HINTSUM_i is ω. Since the values must be in ascending order, if HINTSUM\_i = ω for any i < k-1, then all subsequent HINTSUM values must also be ω.
 3) Within each polynomial, non-zero coefficient indices must be unique and arranged in ascending order.
 4) If HINTSUM\_(k-1) is less than ω, all hint values from Hint\_(HINTSUM\_(k-1)) to Hint\_(ω-1) must be zero.
 
