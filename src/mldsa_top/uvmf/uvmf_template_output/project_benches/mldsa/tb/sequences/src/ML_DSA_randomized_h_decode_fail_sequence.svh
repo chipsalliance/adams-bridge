@@ -20,7 +20,6 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
   `uvm_object_utils(ML_DSA_randomized_h_decode_fail_sequence);
 
   // Members to control randomized failure
-  int fail_register;   // 0: PUBKEY, 1: MSG, 2: SIGNATURE
   int fail_index;      // Index of the word to modify
   int fail_bit;        // Bit position to modify
 
@@ -52,7 +51,7 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
       `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing index: %0d", fail_index), UVM_LOW);
       if (fail_index==0 && fail_bit > 23) begin
         if (!randomize(fail_bit) with {
-          fail_bit inside {[0:23]};      // Bit position (0 to 23)
+          fail_bit inside {[0:23]};      // Bit position (0 to 23) because the first word of the last by is unused
           }) begin
             `uvm_error("RANDOMIZE_FAIL", "Failed to randomize Failing register");
           end else begin
@@ -70,9 +69,9 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
     end else begin
       `uvm_info("MAP_INIT", "mldsa_uvm_rm.default_map is initialized", UVM_LOW);
     end
-    // ---------------------------------------------------------
-    //                    SIGNING TEST
-    // ---------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    //                    Verification Failure TEST with SignDecode H
+    // ----------------------------------------------------------------------------
 
     while(!ready) begin
       reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
@@ -244,7 +243,7 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
       end
     end
     // ---------------------------------------------------------
-    //         VERIFIACTION  FAILURE TEST IS DONE
+    //         Verification Failure TEST with SignDecode H IS DONE
     // ---------------------------------------------------------
 
   endtask
