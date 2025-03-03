@@ -2354,6 +2354,25 @@ Example hint processing:
 
 In each cycle, the positions indicated by y\[rd\_ptr\] are flipped to 1 in the bitmap. Once a polynomial is finished, the bitmap, read pointer, current polynomial map, etc are all reset to prepare for the next polynomial. In this way, sigdecode\_h takes (64\*8 \= 512\) cycles to finish writing all coefficients to the internal memory (a few additional cycles are required for control state transitions). 
 
+### Hint rules
+The hint (h segment of the signature) must follow a specific pattern. Any violation of these rules renders the hint (and signature) invalid. In such cases, the sigDecode_h architecture raises an error, causing the verification process to fail. The structure of h is as follows:
+
+| Byte 0  | Byte 1  | Byte 2  | ... | Byte ω-1  | Byte ω     | Byte ω+1   | ... | Byte ω+k-1   |
+|---------|---------|---------|-----|-----------|------------|------------|-----|--------------|
+| Hint\_0 | Hint\_1 | Hint\_2 | ... | Hint\_ω-1 | HINTSUM\_0 | HINTSUM\_1 | ... | HINTSUM\_k-1 |
+
+
+- HINTSUM_0 represents the number of non-zero coefficients in poly_0.
+
+- For subsequent polynomials (poly\_i, where i > 0), the number of non-zero coefficients is determined by HINTSUM\_i - HINTSUM\_(i-1).
+
+The rules for a valid hint are as follows:
+
+1) The HINTSUM\_i values must be in ascending order. Repeated values are allowed, meaning a polynomial may have no non-zero coefficients.
+2) The maximum allowable value for HINTSUM_i is ω. Since the values must be in ascending order, if HINTSUM\_i = ω for any i < k-1, then all subsequent HINTSUM values must also be ω.
+3) Within each polynomial, non-zero coefficient indices must be unique and arranged in ascending order.
+4) If HINTSUM\_(k-1) is less than ω, all hint values from Hint\_(HINTSUM\_(k-1)) to Hint\_(ω-1) must be zero.
+
 ## UseHint Architecture
 
 To reconstruct the signer's commitment, it is necessary to update the approximate computed value labeled as w' by utilizing the provided hint. Hence, the value of w’ should be decomposed, and its higher part should be altered if the related hint equals 1 for that coefficient. Subsequently, the higher part requires encoding through the W1Encode operation and must be stored into the Keccak SIPO.
