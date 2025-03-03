@@ -25,7 +25,8 @@ addrmap mldsa_reg {
     signal {activelow; async; cpuif_reset; field_reset;} reset_b;
     signal {activelow; async;} hard_reset_b;
     signal {} mldsa_ready;
-
+    signal {} msg_stream_ready;
+    
 
     /* -----------------------
     * Register definitive definitions
@@ -80,6 +81,7 @@ addrmap mldsa_reg {
                                 hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
         field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = mldsa_ready; hwclr;} PCR_SIGN = 1'b0;
         field {desc = "ExternalMu Mode"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU = 1'b0;
+        field {desc = "Enable streaming mode to get message for signing/verifying operation."; swwe = mldsa_ready; hwclr;} STREAMING_MODE = 1'b0;
     
     } MLDSA_CTRL;
 
@@ -93,6 +95,8 @@ addrmap mldsa_reg {
                                 a control command and process the inputs.  
                 bit #1: VALID : ​Indicates if the process is done and the
                                 result is valid. 
+                bit #2: MSG_STREAM_READY: indicates if the core is ready 
+                                        to recieve the message in streaming mode.
                 ";
 
         default sw = r;
@@ -100,6 +104,7 @@ addrmap mldsa_reg {
         default resetsignal = reset_b;
         field {desc = "Status ready bit";} READY = 1'b0;
         field {desc = "Status valid bit";} VALID = 1'b0;
+        field {desc = "The core is ready to recieve the message in streaming mode";} MSG_STREAM_READY = 1'b0;
     
     } MLDSA_STATUS;
 
@@ -148,6 +153,50 @@ addrmap mldsa_reg {
     } MLDSA_SIGN_RND[8];
 
 
+    /* ---- MLDSA Input Message Size Configuration ---- */
+    reg {
+        name = "MLDSA Input Message Size Register in streaming mode";
+        desc = "Defines the total size of the input message in bytes in streaming mode.
+                The message size is not restricted to whole bytes; if the size is not byte-aligned,
+                the number of valid bits in the last byte is specified separately.
+                A fully byte-aligned message does not require additional bit alignment configuration.";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Total message size in bytes"; swwe = mldsa_ready; hwclr;} MSG_SIZE[32] = 32'b0;
+    
+    } MLDSA_MSG_SIZE;
+
+    /* ---- MLDSA Input Message Bit Alignment Configuration ---- */
+    reg {
+        name = "MLDSA Input Message Bit Alignment Register in streaming mode";
+        desc = "Specifies the number of valid bits in the last byte of the input message in streaming mode.
+                This field is used when the message size is not byte-aligned.
+                A value of zero indicates the message is fully byte-aligned.";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Number of valid bits in the last message byte (0-7)"; swwe = mldsa_ready; hwclr;} MSG_LAST_BITS[3] = 3'b0;
+    
+    } MLDSA_MSG_BIT_ALIGN;
+
+    /* ---- MLDSA Component Input Message in stream mode ---- */
+    reg {
+        name = "MLDSA component message register type definition in streaming mode";
+        desc = "2 32-bit registers storing the message in big-endian representation.";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Input message field in streaming mode"; swwe = msg_stream_ready; hwclr;} STREAMING_MSG[32] = 32'b0;
+    
+    } MLDSA_STREAMING_MSG[2];
+
     /* ---- MLDSA Component Input Message ---- */
     reg {
         name = "MLDSA component message register type definition";
@@ -162,6 +211,32 @@ addrmap mldsa_reg {
     
     } MLDSA_MSG[16];
 
+    /* ---- MLDSA Component Input Context Config ---- */
+    reg {
+        name = "MLDSA component Input Context Config register type definition";
+        desc = "Registers defining the size of the context.
+                The context is an optional byte-string.";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Context Byte size field"; swwe = mldsa_ready; hwclr;} CTX_SIZE[8] = 8'b0;
+    
+    } MLDSA_CTX_CONFIG;
+
+    /* ---- MLDSA Component Input Context ---- */
+    reg {
+        name = "MLDSA component context register type definition";
+        desc = "up tp 255 bytes registers storing the context in big-endian representation.";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Input context field"; swwe = mldsa_ready; hwclr;} CTX[32] = 32'b0;
+    
+    } MLDSA_CTX[64];
 
     /* ---- MLDSA Component Verify Result ---- */
     reg {
