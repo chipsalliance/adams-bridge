@@ -15,9 +15,9 @@
 //----------------------------------------------------------------------
 //
 
-class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
+class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base;
 
-  `uvm_object_utils(ML_DSA_randomized_verif_fail_sequence);
+  `uvm_object_utils(ML_DSA_randomized_h_decode_fail_sequence);
 
   // Members to control randomized failure
   int fail_register;   // 0: PUBKEY, 1: MSG, 2: SIGNATURE
@@ -43,30 +43,25 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
     #400;
 
     // Randomize the failure parameters
-    if (!randomize(fail_register, fail_bit) with {
-        fail_register inside {[0:2]};   // Randomly select PUBKEY, MSG, or SIGNATURE
+    if (!randomize(fail_index, fail_bit) with {
+        fail_index inside {[0:83]};   // Randomly select a byte in h
         fail_bit inside {[0:31]};      // Bit position (0 to 31)
     }) begin
       `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure parameters");
     end else begin
-      `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing register: %0d, bit: %0d", fail_register, fail_bit), UVM_LOW);
-        if (fail_register == 0 && !randomize(fail_index) with {
-          fail_index inside {[0:647]};  // Assuming max index is 647 for PUBKEY
-        }) begin
-          `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for PK");
-        end
-        else if (fail_register == 1 && !randomize(fail_index) with {
-          fail_index inside {[0:15]};  // Assuming max index is 15 for PUBKEY
-        }) begin
-          `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
-        end
-        else if (fail_register == 2 && !randomize(fail_index) with {
-          fail_index inside {[0:1155]};  // Assuming max index is 1156 for PUBKEY 1157th word is tested with decode_h_fail test
-        }) begin
-          `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
-        end
-        `uvm_info("MAP_INIT", "mldsa_uvm_rm.default_map is initialized", UVM_LOW);
-        `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing index: %0d", fail_index), UVM_LOW);
+      `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing index: %0d", fail_index), UVM_LOW);
+      if (fail_index==0 && fail_bit > 23) begin
+        if (!randomize(fail_bit) with {
+          fail_bit inside {[0:23]};      // Bit position (0 to 23)
+          }) begin
+            `uvm_error("RANDOMIZE_FAIL", "Failed to randomize Failing register");
+          end else begin
+            `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing register: bit: %0d", fail_bit), UVM_LOW);
+          end
+      end
+      else begin
+        `uvm_info("FAIL_TEST_SEQ", $sformatf("Failing register: bit: %0d", fail_bit), UVM_LOW);
+      end
     end
 
 
@@ -191,9 +186,6 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
 
     // Writing MLDSA_MSG register
     foreach (reg_model.MLDSA_MSG[i]) begin
-      if (fail_register == 1 && i == fail_index) begin
-        MSG[i] ^= (1 << fail_bit); // Flip the selected bit
-      end
       reg_model.MLDSA_MSG[i].write(status, MSG[i], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG[%0d]", i));
@@ -204,26 +196,21 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
 
     // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
     for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
-      if (fail_register == 2 && i == fail_index) begin
+      if (i == fail_index) begin
         SIG[i] ^= (1 << fail_bit); // Flip the selected bit
       end
       reg_model.MLDSA_SIGNATURE.m_mem.write(status, i, SIG[i], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
           `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
       end else begin
-          `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
+          if (i == fail_index) begin            
+            `uvm_info("REG_WRITE", $sformatf("Failure injected to MLDSA_SIGNATURE[%0d] with %0h", i, SIG[i]), UVM_LOW);
+          end else begin
+            `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
+          end
       end
     end
 
-    if (fail_register == 0) begin
-      PK[fail_index] ^= (1 << fail_bit); // Flip the selected bit    
-      reg_model.MLDSA_PUBKEY.m_mem.write(status, fail_index, PK[fail_index], UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", fail_index));
-      end else begin
-          `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", fail_index, PK[fail_index]), UVM_LOW);
-      end
-    end
 
 //=========================================================
 
