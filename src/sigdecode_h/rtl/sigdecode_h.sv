@@ -62,7 +62,6 @@ module sigdecode_h
     logic hint_rd_en;
     mem_if_t mem_wr_req_int;
     logic OR_remaining_encoded_h_i;
-    logic check_zero_bytes;
     logic hint_ok;
     logic [7:0] prev_hint_byte;
     logic hint_rd_en_f, hint_rd_en_pulse;
@@ -131,7 +130,7 @@ module sigdecode_h
     always_comb begin
         OR_remaining_encoded_h_i = 0;
         for(int i=0; i< (MLDSA_OMEGA-1); i++) begin
-            if ((i >= rd_ptr) && check_zero_bytes && poly_count == MLDSA_K-1)
+            if (i >= encoded_h_i[(MLDSA_OMEGA+MLDSA_K)-1])
                 OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
             else
                 OR_remaining_encoded_h_i=0;
@@ -178,7 +177,6 @@ module sigdecode_h
         .rst_bitmap(rst_bitmap),
         .curr_poly_map(curr_poly_map),
         .bitmap_ptr(bitmap_ptr),
-        .check_zero_bytes(check_zero_bytes),
         .hint_rd_en(hint_rd_en)
     );
 
