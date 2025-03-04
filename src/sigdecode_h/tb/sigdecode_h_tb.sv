@@ -142,39 +142,54 @@ task sigdecode_h_test_check;
     //Check output
     hintsum_prev = 0;
     ptr = 0;
-    for (int poly = 0; poly < 8; poly++) begin
-        $display("Poly %0d", poly);
-        hintsum_y = y_tb[75+poly];
-        hintsum_curr = hintsum_y - hintsum_prev;
-
-        if (hintsum_y < hintsum_prev) begin
-            $error("Invalid signature, exiting");
-            break;
-        end
-
-        while(!dut.sdh_ctrl_inst.poly_done_rd) @(posedge clk_tb);
-        @(posedge clk_tb); //Wait a clk for bitmap to be updated
+    fork
         
-        rem_hintsum = hintsum_curr;
-        // $display("hintsum = %0d, y = %0d, prev = %0d, rem = %0d", hintsum_curr, hintsum_y, hintsum_prev, rem_hintsum);
-        if (hintsum_curr > 0) begin
-            while (rem_hintsum > 0) begin
-                // $display("ptr = %0d, index = %0d", ptr, y_tb[ptr]);
-                if (~dut.bitmap[y_tb[ptr]]) begin
-                        $error("Expected 1 in bitmap index %0d", y_tb[ptr]);
+        begin
+            for (int poly = 0; poly < 8; poly++) begin
+                $display("Poly %0d", poly);
+                hintsum_y = y_tb[75+poly];
+                hintsum_curr = hintsum_y - hintsum_prev;
+
+                if (hintsum_y < hintsum_prev) begin
+                    $error("Invalid signature, exiting");
+                    break;
                 end
-                ptr++;
-                rem_hintsum--;
+
+                while((!dut.sdh_ctrl_inst.poly_done_rd) & !dut.sigdecode_h_error) @(posedge clk_tb);
+                @(posedge clk_tb); //Wait a clk for bitmap to be updated
+                
+                rem_hintsum = hintsum_curr;
+                // $display("hintsum = %0d, y = %0d, prev = %0d, rem = %0d", hintsum_curr, hintsum_y, hintsum_prev, rem_hintsum);
+                if (hintsum_curr > 0) begin
+                    while (rem_hintsum > 0) begin
+                        // $display("ptr = %0d, index = %0d", ptr, y_tb[ptr]);
+                        if (~dut.bitmap[y_tb[ptr]]) begin
+                                $error("Expected 1 in bitmap index %0d", y_tb[ptr]);
+                        end
+                        ptr++;
+                        rem_hintsum--;
+                    end
+                end
+                else begin
+                    if (dut.bitmap > 256'h0)
+                        $error("Curr poly hintsum = %0d, expecting all 0s in bitmap", hintsum_curr);
+                end
+
+                hintsum_prev = hintsum_y;
+                @(posedge clk_tb);
             end
         end
-        else begin
-            if (dut.bitmap > 256'h0)
-                $error("Curr poly hintsum = %0d, expecting all 0s in bitmap", hintsum_curr);
-        end
+        begin
+            while (!dut.sigdecode_h_error & !dut.sigdecode_h_done) @(posedge clk_tb);
 
-        hintsum_prev = hintsum_y;
-        @(posedge clk_tb);
-    end
+            if (dut.sigdecode_h_error) begin
+                $display("Sigdecode error. Test failed!");
+                $finish;
+            end
+            else
+                $display("Test passed");
+        end
+    join
 endtask
 
 initial begin
