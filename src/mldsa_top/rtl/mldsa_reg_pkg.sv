@@ -35,9 +35,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTRL__STREAMING_MODE__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__in_t CTRL;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t PCR_SIGN;
         mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t EXTERNAL_MU;
+        mldsa_reg__MLDSA_CTRL__STREAMING_MODE__in_t STREAMING_MODE;
     } mldsa_reg__MLDSA_CTRL__in_t;
 
     typedef struct packed{
@@ -49,8 +54,13 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_STATUS__VALID__in_t;
 
     typedef struct packed{
+        logic next;
+    } mldsa_reg__MLDSA_STATUS__MSG_STREAM_READY__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_STATUS__READY__in_t READY;
         mldsa_reg__MLDSA_STATUS__VALID__in_t VALID;
+        mldsa_reg__MLDSA_STATUS__MSG_STREAM_READY__in_t MSG_STREAM_READY;
     } mldsa_reg__MLDSA_STATUS__in_t;
 
     typedef struct packed{
@@ -84,11 +94,61 @@ package mldsa_reg_pkg;
         logic [31:0] next;
         logic we;
         logic hwclr;
+    } mldsa_reg__MLDSA_MSG_SIZE__MSG_SIZE__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_SIZE__MSG_SIZE__in_t MSG_SIZE;
+    } mldsa_reg__MLDSA_MSG_SIZE__in_t;
+
+    typedef struct packed{
+        logic [2:0] next;
+        logic we;
+        logic hwclr;
+    } mldsa_reg__MLDSA_MSG_BIT_ALIGN__MSG_LAST_BITS__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_BIT_ALIGN__MSG_LAST_BITS__in_t MSG_LAST_BITS;
+    } mldsa_reg__MLDSA_MSG_BIT_ALIGN__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic hwclr;
+    } mldsa_reg__MLDSA_STREAMING_MSG__STREAMING_MSG__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_STREAMING_MSG__STREAMING_MSG__in_t STREAMING_MSG;
+    } mldsa_reg__MLDSA_STREAMING_MSG__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic hwclr;
     } mldsa_reg__MLDSA_MSG__MSG__in_t;
 
     typedef struct packed{
         mldsa_reg__MLDSA_MSG__MSG__in_t MSG;
     } mldsa_reg__MLDSA_MSG__in_t;
+
+    typedef struct packed{
+        logic [7:0] next;
+        logic we;
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__in_t CTX_SIZE;
+    } mldsa_reg__MLDSA_CTX_CONFIG__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTX__CTX__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX__CTX__in_t CTX;
+    } mldsa_reg__MLDSA_CTX__in_t;
 
     typedef struct packed{
         logic [31:0] next;
@@ -186,6 +246,7 @@ package mldsa_reg_pkg;
         logic reset_b;
         logic hard_reset_b;
         logic mldsa_ready;
+        logic msg_stream_ready;
         mldsa_reg__MLDSA_NAME__in_t [2-1:0]MLDSA_NAME;
         mldsa_reg__MLDSA_VERSION__in_t [2-1:0]MLDSA_VERSION;
         mldsa_reg__MLDSA_CTRL__in_t MLDSA_CTRL;
@@ -193,7 +254,12 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_ENTROPY__in_t [16-1:0]MLDSA_ENTROPY;
         mldsa_reg__MLDSA_SEED__in_t [8-1:0]MLDSA_SEED;
         mldsa_reg__MLDSA_SIGN_RND__in_t [8-1:0]MLDSA_SIGN_RND;
+        mldsa_reg__MLDSA_MSG_SIZE__in_t MLDSA_MSG_SIZE;
+        mldsa_reg__MLDSA_MSG_BIT_ALIGN__in_t MLDSA_MSG_BIT_ALIGN;
+        mldsa_reg__MLDSA_STREAMING_MSG__in_t [2-1:0]MLDSA_STREAMING_MSG;
         mldsa_reg__MLDSA_MSG__in_t [16-1:0]MLDSA_MSG;
+        mldsa_reg__MLDSA_CTX_CONFIG__in_t MLDSA_CTX_CONFIG;
+        mldsa_reg__MLDSA_CTX__in_t [64-1:0]MLDSA_CTX;
         mldsa_reg__MLDSA_VERIFY_RES__in_t [16-1:0]MLDSA_VERIFY_RES;
         mldsa_reg__MLDSA_EXTERNAL_MU__in_t [16-1:0]MLDSA_EXTERNAL_MU;
         mldsa_reg__MLDSA_PUBKEY__external__in_t MLDSA_PUBKEY;
@@ -222,10 +288,15 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t;
 
     typedef struct packed{
+        logic value;
+    } mldsa_reg__MLDSA_CTRL__STREAMING_MODE__out_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__out_t CTRL;
         mldsa_reg__MLDSA_CTRL__ZEROIZE__out_t ZEROIZE;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t PCR_SIGN;
         mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t EXTERNAL_MU;
+        mldsa_reg__MLDSA_CTRL__STREAMING_MODE__out_t STREAMING_MODE;
     } mldsa_reg__MLDSA_CTRL__out_t;
 
     typedef struct packed{
@@ -254,11 +325,51 @@ package mldsa_reg_pkg;
 
     typedef struct packed{
         logic [31:0] value;
+    } mldsa_reg__MLDSA_MSG_SIZE__MSG_SIZE__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_SIZE__MSG_SIZE__out_t MSG_SIZE;
+    } mldsa_reg__MLDSA_MSG_SIZE__out_t;
+
+    typedef struct packed{
+        logic [2:0] value;
+    } mldsa_reg__MLDSA_MSG_BIT_ALIGN__MSG_LAST_BITS__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_BIT_ALIGN__MSG_LAST_BITS__out_t MSG_LAST_BITS;
+    } mldsa_reg__MLDSA_MSG_BIT_ALIGN__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } mldsa_reg__MLDSA_STREAMING_MSG__STREAMING_MSG__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_STREAMING_MSG__STREAMING_MSG__out_t STREAMING_MSG;
+    } mldsa_reg__MLDSA_STREAMING_MSG__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
     } mldsa_reg__MLDSA_MSG__MSG__out_t;
 
     typedef struct packed{
         mldsa_reg__MLDSA_MSG__MSG__out_t MSG;
     } mldsa_reg__MLDSA_MSG__out_t;
+
+    typedef struct packed{
+        logic [7:0] value;
+    } mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__out_t CTX_SIZE;
+    } mldsa_reg__MLDSA_CTX_CONFIG__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } mldsa_reg__MLDSA_CTX__CTX__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX__CTX__out_t CTX;
+    } mldsa_reg__MLDSA_CTX__out_t;
 
     typedef struct packed{
         logic [31:0] value;
@@ -359,7 +470,12 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_ENTROPY__out_t [16-1:0]MLDSA_ENTROPY;
         mldsa_reg__MLDSA_SEED__out_t [8-1:0]MLDSA_SEED;
         mldsa_reg__MLDSA_SIGN_RND__out_t [8-1:0]MLDSA_SIGN_RND;
+        mldsa_reg__MLDSA_MSG_SIZE__out_t MLDSA_MSG_SIZE;
+        mldsa_reg__MLDSA_MSG_BIT_ALIGN__out_t MLDSA_MSG_BIT_ALIGN;
+        mldsa_reg__MLDSA_STREAMING_MSG__out_t [2-1:0]MLDSA_STREAMING_MSG;
         mldsa_reg__MLDSA_MSG__out_t [16-1:0]MLDSA_MSG;
+        mldsa_reg__MLDSA_CTX_CONFIG__out_t MLDSA_CTX_CONFIG;
+        mldsa_reg__MLDSA_CTX__out_t [64-1:0]MLDSA_CTX;
         mldsa_reg__MLDSA_VERIFY_RES__out_t [16-1:0]MLDSA_VERIFY_RES;
         mldsa_reg__MLDSA_EXTERNAL_MU__out_t [16-1:0]MLDSA_EXTERNAL_MU;
         mldsa_reg__MLDSA_PUBKEY__external__out_t MLDSA_PUBKEY;
