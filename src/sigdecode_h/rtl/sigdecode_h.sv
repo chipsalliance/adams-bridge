@@ -130,7 +130,7 @@ module sigdecode_h
 
     always_comb begin
         OR_remaining_encoded_h_i = 0;
-        for(int i=0; i< (MLDSA_OMEGA-1); i++) begin
+        for(int i=0; i<MLDSA_OMEGA; i++) begin
             if (i >= encoded_h_i[(MLDSA_OMEGA+MLDSA_K)-1])
                 OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
             else
