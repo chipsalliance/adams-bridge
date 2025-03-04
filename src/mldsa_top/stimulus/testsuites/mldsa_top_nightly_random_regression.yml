@@ -6,7 +6,7 @@ contents:
       tags: ["L1", "MLDSA_TOP",  "random"]
       path: ""
       weight: 100
-      generations: 2000
+      generations: 2500
       formats: 
         generate: "reseed {template}.yml -seed {seed}"
         path: "{template_basename}__{seed}.yml"
@@ -14,6 +14,6 @@ contents:
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_key_gen_and_sign_test   : { weight 5 }
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_test   : { weight 5 }
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_all_test   : { weight 5 }
-        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_fail_test   : { weight 5 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_fail_test   : { weight 40 }
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_zeroize_test   : { weight 5 }
-        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_h_decode_fail_test   : { weight 75 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_h_decode_fail_test   : { weight 40 }
