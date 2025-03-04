@@ -62,6 +62,7 @@ module sigdecode_h
     logic hint_rd_en;
     mem_if_t mem_wr_req_int;
     logic OR_remaining_encoded_h_i;
+    logic hintsum_max_error_i;
     logic hint_ok;
     logic [7:0] prev_hint_byte;
     logic hint_rd_en_f, hint_rd_en_pulse;
@@ -111,7 +112,7 @@ module sigdecode_h
             //1. If hintsum is not in ascending order in encoded_h[w+k-1:w] bytes
             //2. If bytes after the last non-zero hint of last non-zero hintsum poly are not 0s
             //3. If hints encoded in encoded_h[w-1:0] are not in ascending order
-            sigdecode_h_error   <= ~sigdecode_h_done & ((hintsum < hintsum_prev_poly) | OR_remaining_encoded_h_i | ~hint_ok);
+            sigdecode_h_error   <= ~sigdecode_h_done & ((hintsum < hintsum_prev_poly) | OR_remaining_encoded_h_i | ~hint_ok | hintsum_max_error_i);
             hint_rd_en_f        <= hint_rd_en;
             prev_hint_byte      <= hint_rd_en_f ? hint[3] : 'h0; //Latch last hint in current cycle to be compared in next cycle
             first_hint          <= hint_rd_en_pulse; //Indicates when first hint is processed for a given poly
@@ -134,6 +135,14 @@ module sigdecode_h
                 OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
             else
                 OR_remaining_encoded_h_i=0;
+        end
+    end
+
+    always_comb begin
+        hintsum_max_error_i = 0;
+        for(int i=0; i< MLDSA_K; i++) begin
+            if (encoded_h_i[MLDSA_OMEGA+i] > MLDSA_OMEGA)
+                hintsum_max_error_i = 1'b1;
         end
     end
     
