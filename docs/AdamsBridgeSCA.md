@@ -11,7 +11,7 @@
 
 See NIST FIPS 204 document for the pseudo codes and symbols. 
 
-# Threat Model for Securing Adams Bridge Against Side-Channel Attacks {#threat-model-for-securing-adams-bridge-against-side-channel-attacks}
+# Threat Model for Securing Adams Bridge Against Side-Channel Attacks
 
 ## Introduction
 
