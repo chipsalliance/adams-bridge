@@ -1,12 +1,11 @@
-![A logo with green arrows in a circleDescription automatically generated][image1]
+![OCP Logo](./images/OCP_logo.png)
 
-Side-Channel Countermeasures for 
+<p style="text-align: center;">Side-Channel Countermeasures for Adam’s Bridge Accelerator</p>
 
-Adam’s Bridge Accelerator
+<p style="text-align: center;">Version 1.0</p>
 
-V0.1
+<div style="page-break-after: always"></div>
 
-**October 2024**
 
 Table of Contents  
 [Threat Model for Securing Adams Bridge Against Side-Channel Attacks	3](#threat-model-for-securing-adams-bridge-against-side-channel-attacks)
