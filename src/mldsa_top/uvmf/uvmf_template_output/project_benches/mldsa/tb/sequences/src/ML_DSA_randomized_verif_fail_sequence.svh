@@ -61,7 +61,7 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
           `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
         end
         else if (fail_register == 2 && !randomize(fail_index) with {
-          fail_index inside {[0:1155]};  // Assuming max index is 1156 for PUBKEY 1157th word is tested with decode_h_fail test
+          fail_index inside {[1:1156]};  // Assuming max index is 1156 for PUBKEY 1157th word is tested with decode_h_fail test
         }) begin
           `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
         end
