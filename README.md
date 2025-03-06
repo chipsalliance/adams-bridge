@@ -15,11 +15,7 @@ limitations under the License.*_<BR>
 
 # **Adam's Bridge Hands-On Guide** #
 ## **Post-Quantum Cryptography IP Core**
-_*Last Update: 2025/02/19*_
-
-:warning:**$${\textsf{\color{red}DISCLAIMER:\ This\ repository\ is\ under\ active\ development\ towards\ a\ release\ on\ branch\ main.}}$$**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**$${\textsf{\color{red}Functionality\ or\ quality\ is\ not\ guaranteed.}}$$**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**$${\textsf{\color{red}Do\ not\ integrate\ this\ into\ a\ production\ design!}}$$**<br>
+_*Last Update: 2025/03/05*_
 
 ## **Release Consumption and Integration** ##
 Prior official releases are available at: https://github.com/chipsalliance/adams-bridge/releases<br>
