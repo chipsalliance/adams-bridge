@@ -238,8 +238,9 @@ module sigdecode_h_ctrl
                 latch_hintsum       = 'b1;
             end
             SDH_RD_EXEC: begin
-                read_fsm_state_ns   = arc_SDH_RD_EXEC_SDH_RD_INIT ? SDH_RD_INIT :
-                                    arc_SDH_RD_EXEC_SDH_RD_IDLE ? SDH_RD_IDLE : SDH_RD_EXEC;
+                read_fsm_state_ns   = arc_SDH_RD_EXEC_SDH_RD_IDLE ? SDH_RD_IDLE :
+                                      arc_SDH_RD_EXEC_SDH_RD_INIT ? SDH_RD_INIT :
+                                      SDH_RD_EXEC;
                 incr_rd_ptr         = (~poly_done_rd);
                 decr_rem_hintsum    = 'b1;
                 hint_rd_en          = ~arc_SDH_RD_EXEC_SDH_RD_INIT & ~arc_SDH_RD_EXEC_SDH_RD_IDLE;
@@ -281,12 +282,14 @@ module sigdecode_h_ctrl
                 rst_wr_addr         = 'b1;
             end
             SDH_WR_INIT: begin
-                write_fsm_state_ns  = arc_SDH_WR_INIT_SDH_WR_MEM ? SDH_WR_MEM :
-                                      arc_SDH_WR_INIT_SDH_WR_IDLE ? SDH_WR_IDLE : SDH_WR_INIT;
+                write_fsm_state_ns  = arc_SDH_WR_INIT_SDH_WR_IDLE ? SDH_WR_IDLE :
+                                      arc_SDH_WR_INIT_SDH_WR_MEM ? SDH_WR_MEM :
+                                      SDH_WR_INIT;
             end
             SDH_WR_MEM: begin
-                write_fsm_state_ns  = arc_SDH_WR_MEM_SDH_WR_INIT ? SDH_WR_INIT :
-                                      arc_SDH_WR_MEM_SDH_WR_IDLE ? SDH_WR_IDLE : SDH_WR_MEM;
+                write_fsm_state_ns  = arc_SDH_WR_MEM_SDH_WR_IDLE ? SDH_WR_IDLE :
+                                      arc_SDH_WR_MEM_SDH_WR_INIT ? SDH_WR_INIT :
+                                      SDH_WR_MEM;
                 incr_wr_addr        = 'b1;
                 incr_poly           = poly_done_wr; 
                 rd_wr_en            = RW_WRITE;
