@@ -1,0 +1,9 @@
+---
+# Random seed desired...
+# seed: 4098270334
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_randomized_two_verif_on_fail_test'
+testname: ML_DSA_randomized_two_verif_on_fail_test
+# seed: 3816967433
+parameters:
+  dilithium_command: "test_dilithium5"
