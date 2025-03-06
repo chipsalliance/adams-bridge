@@ -24,8 +24,12 @@ _*Last Update: 2025/03/05*_
 - AdamsBridge testplan: see docs/ folder
 - AdamsBridge README updates to clarify test cases and running with VCS
 - ML-DSA-87 – Based on FIPS204
+    - Supporting Pure ML-DSA
+    - Embedded shuffling and masking countermeasures
+    - AHB register interface
+    - Keyvault interface
 - Verification
     - Smoke tests for all scenarios described in test plan passing
     - Nightly regression on ML-DSA-87 block on-going
-    - UVMF for ML-DSA-87
+    - UVM for ML-DSA-87
     - Formal Verification
