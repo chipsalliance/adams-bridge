@@ -90,7 +90,12 @@ module mldsa_reg (
         logic [16-1:0]MLDSA_ENTROPY;
         logic [8-1:0]MLDSA_SEED;
         logic [8-1:0]MLDSA_SIGN_RND;
+        logic MLDSA_MSG_SIZE;
+        logic MLDSA_MSG_BIT_ALIGN;
+        logic [2-1:0]MLDSA_STREAMING_MSG;
         logic [16-1:0]MLDSA_MSG;
+        logic MLDSA_CTX_CONFIG;
+        logic [64-1:0]MLDSA_CTX;
         logic [16-1:0]MLDSA_VERIFY_RES;
         logic [16-1:0]MLDSA_EXTERNAL_MU;
         logic MLDSA_PUBKEY;
@@ -145,14 +150,23 @@ module mldsa_reg (
         for(int i0=0; i0<8; i0++) begin
             decoded_reg_strb.MLDSA_SIGN_RND[i0] = cpuif_req_masked & (cpuif_addr == 16'h78 + i0*16'h4);
         end
-        for(int i0=0; i0<16; i0++) begin
-            decoded_reg_strb.MLDSA_MSG[i0] = cpuif_req_masked & (cpuif_addr == 16'h98 + i0*16'h4);
+        decoded_reg_strb.MLDSA_MSG_SIZE = cpuif_req_masked & (cpuif_addr == 16'h98);
+        decoded_reg_strb.MLDSA_MSG_BIT_ALIGN = cpuif_req_masked & (cpuif_addr == 16'h9c);
+        for(int i0=0; i0<2; i0++) begin
+            decoded_reg_strb.MLDSA_STREAMING_MSG[i0] = cpuif_req_masked & (cpuif_addr == 16'ha0 + i0*16'h4);
         end
         for(int i0=0; i0<16; i0++) begin
-            decoded_reg_strb.MLDSA_VERIFY_RES[i0] = cpuif_req_masked & (cpuif_addr == 16'hd8 + i0*16'h4);
+            decoded_reg_strb.MLDSA_MSG[i0] = cpuif_req_masked & (cpuif_addr == 16'ha8 + i0*16'h4);
+        end
+        decoded_reg_strb.MLDSA_CTX_CONFIG = cpuif_req_masked & (cpuif_addr == 16'he8);
+        for(int i0=0; i0<64; i0++) begin
+            decoded_reg_strb.MLDSA_CTX[i0] = cpuif_req_masked & (cpuif_addr == 16'hec + i0*16'h4);
         end
         for(int i0=0; i0<16; i0++) begin
-            decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] = cpuif_req_masked & (cpuif_addr == 16'h118 + i0*16'h4);
+            decoded_reg_strb.MLDSA_VERIFY_RES[i0] = cpuif_req_masked & (cpuif_addr == 16'h1ec + i0*16'h4);
+        end
+        for(int i0=0; i0<16; i0++) begin
+            decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] = cpuif_req_masked & (cpuif_addr == 16'h22c + i0*16'h4);
         end
         decoded_reg_strb.MLDSA_PUBKEY = cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h1000) & (cpuif_addr <= 16'h1000 + 16'ha1f);
@@ -210,6 +224,10 @@ module mldsa_reg (
                 logic next;
                 logic load_next;
             } EXTERNAL_MU;
+            struct packed{
+                logic next;
+                logic load_next;
+            } STREAMING_MODE;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -233,8 +251,38 @@ module mldsa_reg (
             struct packed{
                 logic [31:0] next;
                 logic load_next;
+            } MSG_SIZE;
+        } MLDSA_MSG_SIZE;
+        struct packed{
+            struct packed{
+                logic [2:0] next;
+                logic load_next;
+            } MSG_LAST_BITS;
+        } MLDSA_MSG_BIT_ALIGN;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } STREAMING_MSG;
+        } [2-1:0]MLDSA_STREAMING_MSG;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
             } MSG;
         } [16-1:0]MLDSA_MSG;
+        struct packed{
+            struct packed{
+                logic [7:0] next;
+                logic load_next;
+            } CTX_SIZE;
+        } MLDSA_CTX_CONFIG;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } CTX;
+        } [64-1:0]MLDSA_CTX;
         struct packed{
             struct packed{
                 logic [31:0] next;
@@ -380,6 +428,9 @@ module mldsa_reg (
             struct packed{
                 logic value;
             } EXTERNAL_MU;
+            struct packed{
+                logic value;
+            } STREAMING_MODE;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -399,8 +450,33 @@ module mldsa_reg (
         struct packed{
             struct packed{
                 logic [31:0] value;
+            } MSG_SIZE;
+        } MLDSA_MSG_SIZE;
+        struct packed{
+            struct packed{
+                logic [2:0] value;
+            } MSG_LAST_BITS;
+        } MLDSA_MSG_BIT_ALIGN;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } STREAMING_MSG;
+        } [2-1:0]MLDSA_STREAMING_MSG;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
             } MSG;
         } [16-1:0]MLDSA_MSG;
+        struct packed{
+            struct packed{
+                logic [7:0] value;
+            } CTX_SIZE;
+        } MLDSA_CTX_CONFIG;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } CTX;
+        } [64-1:0]MLDSA_CTX;
         struct packed{
             struct packed{
                 logic [31:0] value;
@@ -599,6 +675,30 @@ module mldsa_reg (
         end
     end
     assign hwif_out.MLDSA_CTRL.EXTERNAL_MU.value = field_storage.MLDSA_CTRL.EXTERNAL_MU.value;
+    // Field: mldsa_reg.MLDSA_CTRL.STREAMING_MODE
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_CTRL.STREAMING_MODE.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_CTRL.STREAMING_MODE.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTRL.STREAMING_MODE.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_CTRL.STREAMING_MODE.next = next_c;
+        field_combo.MLDSA_CTRL.STREAMING_MODE.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_CTRL.STREAMING_MODE.value <= 1'h0;
+        end else if(field_combo.MLDSA_CTRL.STREAMING_MODE.load_next) begin
+            field_storage.MLDSA_CTRL.STREAMING_MODE.value <= field_combo.MLDSA_CTRL.STREAMING_MODE.next;
+        end
+    end
+    assign hwif_out.MLDSA_CTRL.STREAMING_MODE.value = field_storage.MLDSA_CTRL.STREAMING_MODE.value;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_ENTROPY[].ENTROPY
         always_comb begin
@@ -680,6 +780,89 @@ module mldsa_reg (
         end
         assign hwif_out.MLDSA_SIGN_RND[i0].SIGN_RND.value = field_storage.MLDSA_SIGN_RND[i0].SIGN_RND.value;
     end
+    // Field: mldsa_reg.MLDSA_MSG_SIZE.MSG_SIZE
+    always_comb begin
+        automatic logic [31:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_MSG_SIZE.MSG_SIZE.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_MSG_SIZE && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_MSG_SIZE.MSG_SIZE.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_MSG_SIZE.MSG_SIZE.we) begin // HW Write - we
+            next_c = hwif_in.MLDSA_MSG_SIZE.MSG_SIZE.next;
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_MSG_SIZE.MSG_SIZE.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_MSG_SIZE.MSG_SIZE.next = next_c;
+        field_combo.MLDSA_MSG_SIZE.MSG_SIZE.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_MSG_SIZE.MSG_SIZE.value <= 32'h0;
+        end else if(field_combo.MLDSA_MSG_SIZE.MSG_SIZE.load_next) begin
+            field_storage.MLDSA_MSG_SIZE.MSG_SIZE.value <= field_combo.MLDSA_MSG_SIZE.MSG_SIZE.next;
+        end
+    end
+    assign hwif_out.MLDSA_MSG_SIZE.MSG_SIZE.value = field_storage.MLDSA_MSG_SIZE.MSG_SIZE.value;
+    // Field: mldsa_reg.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS
+    always_comb begin
+        automatic logic [2:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_MSG_BIT_ALIGN && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value & ~decoded_wr_biten[2:0]) | (decoded_wr_data[2:0] & decoded_wr_biten[2:0]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.we) begin // HW Write - we
+            next_c = hwif_in.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.next;
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.next = next_c;
+        field_combo.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value <= 3'h0;
+        end else if(field_combo.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.load_next) begin
+            field_storage.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value <= field_combo.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.next;
+        end
+    end
+    assign hwif_out.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value = field_storage.MLDSA_MSG_BIT_ALIGN.MSG_LAST_BITS.value;
+    for(genvar i0=0; i0<2; i0++) begin
+        // Field: mldsa_reg.MLDSA_STREAMING_MSG[].STREAMING_MSG
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLDSA_STREAMING_MSG[i0] && decoded_req_is_wr && hwif_in.msg_stream_ready) begin // SW write
+                next_c = (field_storage.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.we) begin // HW Write - we
+                next_c = hwif_in.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.next = next_c;
+            field_combo.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value <= 32'h0;
+            end else if(field_combo.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.load_next) begin
+                field_storage.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value <= field_combo.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.next;
+            end
+        end
+        assign hwif_out.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value = field_storage.MLDSA_STREAMING_MSG[i0].STREAMING_MSG.value;
+    end
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_MSG[].MSG
         always_comb begin
@@ -708,6 +891,62 @@ module mldsa_reg (
             end
         end
         assign hwif_out.MLDSA_MSG[i0].MSG.value = field_storage.MLDSA_MSG[i0].MSG.value;
+    end
+    // Field: mldsa_reg.MLDSA_CTX_CONFIG.CTX_SIZE
+    always_comb begin
+        automatic logic [7:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_CTX_CONFIG && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            next_c = (field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value & ~decoded_wr_biten[7:0]) | (decoded_wr_data[7:0] & decoded_wr_biten[7:0]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.we) begin // HW Write - we
+            next_c = hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.next;
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_CTX_CONFIG.CTX_SIZE.next = next_c;
+        field_combo.MLDSA_CTX_CONFIG.CTX_SIZE.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value <= 8'h0;
+        end else if(field_combo.MLDSA_CTX_CONFIG.CTX_SIZE.load_next) begin
+            field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value <= field_combo.MLDSA_CTX_CONFIG.CTX_SIZE.next;
+        end
+    end
+    assign hwif_out.MLDSA_CTX_CONFIG.CTX_SIZE.value = field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value;
+    for(genvar i0=0; i0<64; i0++) begin
+        // Field: mldsa_reg.MLDSA_CTX[].CTX
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLDSA_CTX[i0].CTX.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLDSA_CTX[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+                next_c = (field_storage.MLDSA_CTX[i0].CTX.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_CTX[i0].CTX.we) begin // HW Write - we
+                next_c = hwif_in.MLDSA_CTX[i0].CTX.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLDSA_CTX[i0].CTX.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLDSA_CTX[i0].CTX.next = next_c;
+            field_combo.MLDSA_CTX[i0].CTX.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLDSA_CTX[i0].CTX.value <= 32'h0;
+            end else if(field_combo.MLDSA_CTX[i0].CTX.load_next) begin
+                field_storage.MLDSA_CTX[i0].CTX.value <= field_combo.MLDSA_CTX[i0].CTX.next;
+            end
+        end
+        assign hwif_out.MLDSA_CTX[i0].CTX.value = field_storage.MLDSA_CTX[i0].CTX.value;
     end
     for(genvar i0=0; i0<16; i0++) begin
         // Field: mldsa_reg.MLDSA_VERIFY_RES[].VERIFY_RES
@@ -1299,7 +1538,8 @@ module mldsa_reg (
     end
     assign readback_array[4][0:0] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.READY.next : '0;
     assign readback_array[4][1:1] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.VALID.next : '0;
-    assign readback_array[4][31:2] = '0;
+    assign readback_array[4][2:2] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next : '0;
+    assign readback_array[4][31:3] = '0;
     for(genvar i0=0; i0<16; i0++) begin
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.MLDSA_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end
