@@ -15,6 +15,15 @@ targets:
       - $COMPILE_ROOT/rtl/mldsa_params_pkg.sv
       - $COMPILE_ROOT/rtl/mldsa_reg_pkg.sv
 ---
+provides: [mldsa_uvm_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/mldsa_reg_uvm.sv
+---
 provides: [mldsa_top]
 schema_version: 2.4.0
 requires:

@@ -240,10 +240,10 @@ class mldsa_predictor #(
           SEED[idx] = t.data[0][31:0];
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_MSG[0].get_address(p_mldsa_map) &&
-                 reg_addr <= p_mldsa_rm.MLDSA_MSG[$size(p_mldsa_rm.MLDSA_MSG)-1].get_address(p_mldsa_map)) begin
+                 reg_addr <= p_mldsa_rm.MLDSA_MSG[$size(p_mldsa_rm.MLDSA_MSG)-1].get_address(p_mldsa_map)) begin 
           base_addr = p_mldsa_rm.MLDSA_MSG[0].get_address(p_mldsa_map);
           idx = (reg_addr - base_addr) / 4;
-          MSG[idx] = t.data[0][31:0];
+          if (!lock_IP) MSG[idx] = t.data[0][31:0]; //hack to avoid writing over MSG
         end
         // Accessing data in MLDSA_PRIVKEY_IN
         else if (reg_addr >= privkey_in_base_addr && reg_addr < privkey_in_base_addr + privkey_in_size * 4) begin

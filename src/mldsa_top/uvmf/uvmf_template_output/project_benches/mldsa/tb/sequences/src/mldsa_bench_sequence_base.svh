@@ -56,6 +56,8 @@ rand mldsa_env_sequence_base_t mldsa_env_seq;
   bit [31:0] PK []; //2592 Bytes
   bit [31:0] MSG [0:15]; //64 Bytes
   bit [31:0] SIG []; //4628 Bytes
+  bit [7:0]  CTX_SIZE;
+  bit [31:0] CTX [0:63]; //256 Bytes
   // pragma uvmf custom class_item_additional end
 
   // ****************************************************************************

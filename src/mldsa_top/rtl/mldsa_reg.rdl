@@ -80,19 +80,20 @@ addrmap mldsa_reg {
                                 hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
         field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = mldsa_ready; hwclr;} PCR_SIGN = 1'b0;
         field {desc = "ExternalMu Mode"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU = 1'b0;
+        field {desc = "Enable streaming mode to get message for signing/verifying operation"; swwe = mldsa_ready; hwclr;} STREAM_MSG = 1'b0;
     
     } MLDSA_CTRL;
-
-
 
     /* ---- MLDSA Component Status ---- */
     reg {
         name = "MLDSA component status register type definition";
-        desc = "One 2-bit register including the following flags: 
-                bit #0: READY : ​Indicates if the core is ready to take
-                                a control command and process the inputs.  
-                bit #1: VALID : ​Indicates if the process is done and the
-                                result is valid. 
+        desc = "One 3-bit register including the following flags: 
+                [br]bit #0: READY : ​Indicates if the core is ready to take
+                [br]                a control command and process the inputs.  
+                [br]bit #1: VALID : ​Indicates if the process is done and the
+                [br]                result is valid. 
+                [br]bit #2: MSG_STREAM_READY: indicates if the core is ready 
+                [br]                          to recieve the message in streaming mode.
                 ";
 
         default sw = r;
@@ -100,6 +101,7 @@ addrmap mldsa_reg {
         default resetsignal = reset_b;
         field {desc = "Status ready bit";} READY = 1'b0;
         field {desc = "Status valid bit";} VALID = 1'b0;
+        field {desc = "The core is ready to recieve the message in streaming mode";} MSG_STREAM_READY = 1'b0;
     
     } MLDSA_STATUS;
 
@@ -158,10 +160,9 @@ addrmap mldsa_reg {
         default hw = rw;
         default we = true;
         default resetsignal = reset_b;
-        field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} MSG[32] = 32'b0;
+        field {desc = "Input message field"; swmod; swwe; hwclr;} MSG[32] = 32'b0;
     
     } MLDSA_MSG[16];
-
 
     /* ---- MLDSA Component Verify Result ---- */
     reg {
@@ -192,6 +193,45 @@ addrmap mldsa_reg {
     
     } MLDSA_EXTERNAL_MU[16];
     
+    /* ---- MLDSA Component Input MSG_STROBE ---- */
+    reg {
+        name = "MLDSA component msg strobe register type definition";
+        desc = "Byte enable strobe for last 64 bits of message. 
+                [br] Set to 1 for each valid byte in the last msg data.
+                [br] A 64 bit aligned msg must write this to 8'h00 and write to msg input.";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Input message strobe"; swwe; hwclr;} STROBE[4] = 4'hF;
+    
+    } MLDSA_MSG_STROBE;
+    
+        /* ---- MLDSA Component Input Context Config ---- */
+    reg {
+        name = "MLDSA component Input Context Config register type definition";
+        desc = "Registers defining the size of the context.
+                The context is an optional byte-string.";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Context Byte size field"; swwe = mldsa_ready; hwclr;} CTX_SIZE[8] = 8'b0;
+
+    } MLDSA_CTX_CONFIG;
+
+    /* ---- MLDSA Component Input Context ---- */
+    reg {
+        name = "MLDSA component context register type definition";
+        desc = "up tp 255 bytes registers storing the context in big-endian representation.";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Input context field"; swwe = mldsa_ready; hwclr;} CTX[32] = 32'b0;
+
+    } MLDSA_CTX[64];
+
     /* ---- MLDSA Component Public Key ---- */
     external mem {
         name = "MLDSA component public key register type definition";
