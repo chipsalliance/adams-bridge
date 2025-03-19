@@ -398,7 +398,8 @@ The following table shows the required memory instances for ML-DSA-87:
 | mldsa_top.mldsa_ram_inst0_bank1              | 832   | 96         |              |
 | mldsa_top.mldsa_ram_inst1                    | 576   | 96         |              |
 | mldsa_top.mldsa_ram_inst2                    | 1408  | 96         |              |
-| mldsa_top.mldsa_ram_inst3                    | 128   | 96         |              |
+| mldsa_top.mldsa_ram_inst3                    | 64    | 230        |              |
+| mldsa_top.mldsa_ram_inst4                    | 64    | 96         |              |
 | mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
 | mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
 
