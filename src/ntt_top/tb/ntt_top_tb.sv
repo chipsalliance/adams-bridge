@@ -471,6 +471,61 @@ task ntt_top_test();
         @(posedge clk_tb);
     $display("Received pwo_done\n");
 
+    $display("PWM operation 2 no acc\n");
+    operation = "PWM 2 no acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    masking_en_tb = 0;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
+
+    $display("PWM operation 3 with acc\n");
+    operation = "PWM 3 acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b1;
+    $readmemh("pwm_iter2.hex", ntt_mem_tb);
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
+
+    //-----------------------------------------
+
+    $display("PWM operation 2 no acc\n");
+    operation = "PWM 2 no acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    masking_en_tb = 0;
+    shuffling_en_tb = 0;
+    acc_tb = 1'b0;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
+
+    $display("PWM operation 3 with acc\n");
+    operation = "PWM 3 acc";
+    mode_tb = pwm;
+    enable_tb = 1;
+    acc_tb = 1'b1;
+    $readmemh("pwm_iter2.hex", ntt_mem_tb);
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+    $display("Waiting for pwo_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received pwo_done\n");
+
     // $readmemh("pwm_iter2.hex", ntt_mem_tb);
     // for (int i = 0; i < 64; i++) begin
     //     if (dut.pwm_mem_c.mem[i+0] != ntt_mem_tb[i])
@@ -554,7 +609,7 @@ task ntt_top_test();
     @(posedge clk_tb);
 */
     
-/*
+
     $display("PWM + sampler operation 1 no acc\n");
     operation = "PWM sampler";
     mode_tb = pwm;
@@ -622,10 +677,10 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received pwo_done\n");
-        end
-    join_any
+    //     end
+    // join_any
 
-    
+    /*
 
     $display("INTT operation\n");
     operation = "INTT";

@@ -124,7 +124,7 @@ module ntt_top
     //PWM mem IF
     pwo_uvwi_t pw_uvw_i; //Used for unmasked PWM, PWMA and masked PWM ops. Masked PWMA will use shares struct
     pwo_t pwo_uv_o;
-    logic pw_wren, pw_wren_reg;
+    logic pw_wren, pw_wren_reg, pw_wren_reg_d1;
     logic pw_rden, pw_rden_dest_mem, pw_share_mem_rden;
     logic sampler_valid_reg;
     logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
@@ -199,7 +199,7 @@ module ntt_top
                                         : pwm_wr_data_reg;
 
     //Share mem:
-    assign share_mem_wr_req.rd_wr_en = (pwm_mode & masking_en) ? (pw_wren_reg ? RW_WRITE : RW_IDLE) : RW_IDLE;
+    assign share_mem_wr_req.rd_wr_en = (pwm_mode & masking_en) ? ((accumulate ? pw_wren_reg_d1 : pw_wren_reg) ? RW_WRITE : RW_IDLE) : RW_IDLE;
     assign share_mem_wr_req.addr     = (pwm_mode & masking_en) ? accumulate ? pwm_wr_addr_c_reg_d2 : pwm_wr_addr_c_reg /*pw_mem_wr_addr_c*/ : 'h0; //TODO: why is d2 required for accumulate case?
     assign share_mem_rd_req.rd_wr_en = masking_en ? (pwm_mode & accumulate) ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) 
                                                                             : (gs_mode & masking_en_ctrl) ? (mem_rden ? RW_READ : RW_IDLE)
@@ -421,6 +421,7 @@ module ntt_top
             pwm_wr_addr_c_reg_d2 <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            pw_wren_reg_d1      <= 'b0;
             mem_wr_data_reg     <= 'h0;
             mem_wr_data_reg_d2  <= 'h0;
             sampler_valid_reg   <= 'h0;
@@ -466,6 +467,7 @@ module ntt_top
             pwm_wr_addr_c_reg_d2 <= 'h0;
 
             pw_wren_reg         <= 'b0;
+            pw_wren_reg_d1      <= 'b0;
             mem_wr_data_reg     <= 'h0;
             mem_wr_data_reg_d2  <= 'h0;
             sampler_valid_reg   <= 'h0;
@@ -511,6 +513,7 @@ module ntt_top
             pwm_wr_data_reg     <= {1'b0, pwo_uv_o.uv3, 1'b0, pwo_uv_o.uv2, 1'b0, pwo_uv_o.uv1, 1'b0, pwo_uv_o.uv0};
 
             pw_wren_reg         <= pw_wren;
+            pw_wren_reg_d1      <= pw_wren_reg;
             mem_wr_data_reg     <= mem_wr_data_int;
             mem_wr_data_reg_d2  <= mem_wr_data_reg;
             sampler_valid_reg   <= sampler_valid;
@@ -690,10 +693,10 @@ module ntt_top
                     pwm_shares_uvw_i.u2_i = pwm_rd_data_a_shares_reg_d1[2];
                     pwm_shares_uvw_i.u3_i = pwm_rd_data_a_shares_reg_d1[3];
 
-                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg_d1[0] : '0;
-                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg_d1[1] : '0;
-                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg_d1[2] : '0;
-                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg_d1[3] : '0;
+                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg/*_d1*/[0] : '0;
+                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg/*_d1*/[1] : '0;
+                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg/*_d1*/[2] : '0;
+                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg/*_d1*/[3] : '0;
                 end
                 else begin
                     pwm_shares_uvw_i.u0_i = pwm_rd_data_a_shares_reg[0]; 

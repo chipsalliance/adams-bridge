@@ -390,7 +390,7 @@ always_comb begin
     masked_shuffled_pw_mem_wr_addr_c_nxt_accumulate = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d2);
 
     shuffled_pw_mem_rd_addr_c_nxt_accumulate = pw_base_addr_c + ((4*chunk_count)+(PWO_READ_ADDR_STEP*mem_rd_index_ofst));
-    masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[0])) : 'h0; //TODO check timing
+    masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MASKED_PWM_ACC_LATENCY-MASKED_PWM_LATENCY])) : 'h0; //TODO check timing
 
     if (pwm_mode & accumulate) begin
         unique case({masking_en, shuffle_en})
