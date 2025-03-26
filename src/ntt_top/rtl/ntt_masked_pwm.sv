@@ -40,21 +40,30 @@ module ntt_masked_pwm
 );
 
     logic [1:0] mul_res [WIDTH-1:0];
-    logic [1:0] w_reg [WIDTH-1:0];
-    logic [1:0] w_unpacked [WIDTH-1:0];
+    logic [1:0][WIDTH-1:0] w_reg;
+    // logic [1:0] w_unpacked [WIDTH-1:0];
     logic [1:0][WIDTH-1:0] mul_res_packed, w_reg_packed;
     logic [1:0] res_unpacked [WIDTH-1:0];
 
-    always_comb begin
-        for (int i = 0; i < WIDTH; i++) begin
-            w_unpacked[i][0] = w[0][i];
-            w_unpacked[i][1] = w[1][i];
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            mul_res_packed <= '0;
+            w_reg <= '0;
+        end
+        else if (zeroize) begin
+            mul_res_packed <= '0;
+            w_reg <= '0;
+        end
+        else begin
+            for (int i = 0; i < WIDTH; i++) begin
+                // w_unpacked[i][0] = w[0][i];
+                // w_unpacked[i][1] = w[1][i];
 
-            w_reg_packed[0][i] = 'h0; //w_reg[i][0];
-            w_reg_packed[1][i] = 'h0; //w_reg[i][1]; //TODO: fix
+                mul_res_packed[0][i] <= mul_res[i][0];
+                mul_res_packed[1][i] <= mul_res[i][1];
+            end
 
-            mul_res_packed[0][i] = mul_res[i][0];
-            mul_res_packed[1][i] = mul_res[i][1];
+            w_reg <= w;
         end
     end
 
@@ -96,7 +105,7 @@ module ntt_masked_pwm
         .zeroize(zeroize),
         .sub(1'b0),
         .u(mul_res_packed),
-        .v(w_reg_packed),
+        .v(w), //(w_reg_packed),
         .rnd0(rnd[0]),
         .rnd1(rnd[1]),
         .rnd2(rnd[2]),
