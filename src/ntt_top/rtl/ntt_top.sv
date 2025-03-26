@@ -74,15 +74,15 @@ module ntt_top
     //Reuse between pwm c, ntt
     output mem_if_t mem_wr_req,
     output mem_if_t mem_rd_req,
-    output logic [MEM_DATA_WIDTH-1:0] mem_wr_data,
-    input  wire  [MEM_DATA_WIDTH-1:0] mem_rd_data,
+    output logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data,
+    input  wire  [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data,
 
     //Memory IF for PWM
     output mem_if_t pwm_a_rd_req,
     output mem_if_t pwm_b_rd_req,
-    input wire [MEM_DATA_WIDTH-1:0] pwm_a_rd_data,
+    input wire [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data,
     //Reuse between pwm mem data or sampler data (mux should be outside)
-    input wire [MEM_DATA_WIDTH-1:0] pwm_b_rd_data,
+    input wire [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data,
 
     output logic ntt_busy,
     output logic ntt_done
@@ -181,18 +181,19 @@ module ntt_top
     assign mem_wr_req.addr  = !pwo_mode ? mem_wr_addr_mux : pwm_wr_addr_c_reg;
     assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
-    assign mem_wr_data      = shuffle_en ? pwm_mode ? mem_wr_data_reg : (pwa_mode | pws_mode) ? mem_wr_data_reg : mem_wr_data_int
+    assign mem_wr_data[MLDSA_MEM_MASKED_DATA_WIDTH-1:MEM_DATA_WIDTH] = 0; //FIXME Ay 
+    assign mem_wr_data[MEM_DATA_WIDTH-1:0]      = shuffle_en ? pwm_mode ? mem_wr_data_reg : (pwa_mode | pws_mode) ? mem_wr_data_reg : mem_wr_data_int
                                         : mem_wr_data_int;
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
     assign mem_rd_req.rd_wr_en = (ct_mode | gs_mode | pwm_intt_mode) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
     assign mem_rd_req.addr     = (ct_mode | gs_mode | pwm_intt_mode) ? mem_rd_addr : pwm_mode ? pw_mem_rd_addr_c : 'h0;
-    assign pwm_rd_data_c       = (pwm_mode && accumulate) ? mem_rd_data : 'h0; //TODO: masked pwm (Ay) mode
+    assign pwm_rd_data_c       = (pwm_mode && accumulate) ? mem_rd_data[MEM_DATA_WIDTH-1:0] : 'h0; //TODO: masked pwm (Ay) mode
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
     assign pwm_a_rd_req.rd_wr_en = (pwo_mode | pwm_intt_mode) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
     assign pwm_a_rd_req.addr     = (pwo_mode | pwm_intt_mode) ? pw_mem_rd_addr_a : 'h0;
-    assign pwm_rd_data_a         = (pwo_mode | pwm_intt_mode) ? pwm_a_rd_data : 'h0; //TODO: clean up mux. Just connect input directly to logic
+    assign pwm_rd_data_a         = (pwo_mode | pwm_intt_mode) ? pwm_a_rd_data[MEM_DATA_WIDTH-1:0] : 'h0; //TODO: clean up mux. Just connect input directly to logic
 
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
     always_comb begin
@@ -204,7 +205,7 @@ module ntt_top
         else begin
             pwm_b_rd_req.rd_wr_en = sampler_valid & (pwo_mode | pwm_intt_mode) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
             pwm_b_rd_req.addr     = sampler_valid & (pwo_mode | pwm_intt_mode) ? pw_mem_rd_addr_b : 'h0;
-            pwm_rd_data_b         = pwm_b_rd_data;
+            pwm_rd_data_b         = pwm_b_rd_data[MEM_DATA_WIDTH-1:0];
         end
     end
 
@@ -395,7 +396,7 @@ module ntt_top
             pwm_b_rd_data_reg   <= 'h0;
         end
         else begin
-            mem_rd_data_reg     <= mem_rd_data;
+            mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
             bf_enable_reg       <= bf_enable;
             twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
@@ -416,12 +417,12 @@ module ntt_top
             mem_wr_data_reg     <= mem_wr_data_int;
             mem_wr_data_reg_d2  <= mem_wr_data_reg;
             sampler_valid_reg   <= sampler_valid;
-            pwm_b_rd_data_reg   <= pwm_b_rd_data;
+            pwm_b_rd_data_reg   <= pwm_b_rd_data[MEM_DATA_WIDTH-1:0];
         end
     end
 
     //Buffer (input or output side)
-    assign buf_data_i = ct_mode ? mem_rd_data : shuffle_en ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.u20_o}
+    assign buf_data_i = ct_mode ? mem_rd_data[MEM_DATA_WIDTH-1:0] : shuffle_en ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.u20_o}
                                                             : {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
 
     always_comb begin

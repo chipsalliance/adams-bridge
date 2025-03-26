@@ -1308,7 +1308,7 @@ always_comb kv_seed_data_present = '0;
   always_comb sampler_src_offset = {4'b0, msg_cnt};
 
   //passing a bit on the immediate field to mux between temp address locations
-  always_comb ntt_temp_address[0] = prim_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
+  always_comb ntt_temp_address[0] = prim_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
 
   //optimization - could be one interface here?
   always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
@@ -1619,7 +1619,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
     end
   end
   //passing a bit on the immediate field to mux between temp address locations
-  always_comb ntt_temp_address[1] = sec_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE;
+  always_comb ntt_temp_address[1] = sec_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
 
   //one interface here?
   always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
