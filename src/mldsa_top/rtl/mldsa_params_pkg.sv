@@ -39,6 +39,7 @@ package mldsa_params_pkg;
   parameter COEFF_PER_CLK = 4;
 
   parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled
+  parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
 
   
   //Memory interface

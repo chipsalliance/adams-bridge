@@ -97,7 +97,7 @@ module ntt_top
     //NTT mem signals
     //Masking internal - TODO: remove and merge with mem_wr/rd interface after testing
     mem_if_t share_mem_wr_req, share_mem_rd_req;
-    logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data;
+    logic [3:0][1:0][MLDSA_SHARE_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data;
 
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
@@ -133,7 +133,7 @@ module ntt_top
     logic pw_wren, pw_wren_reg, pw_wren_reg_d1;
     logic pw_rden, pw_rden_dest_mem, pw_share_mem_rden;
     logic sampler_valid_reg;
-    logic [/*MEM_DATA_WIDTH*/MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
+    logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
     //PWM+INTT IF - masking
     hybrid_bf_uvwi_t hybrid_pw_uvw_i;
 
@@ -152,7 +152,8 @@ module ntt_top
     logic ntt_done_int;
 
     //pwm mem data_out connections
-    logic /*[(4*REG_SIZE)-1:0]*/[MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_rd_data_a, pwm_rd_data_b, pwm_rd_data_c; 
+    logic [(4*REG_SIZE)-1:0] /*[MLDSA_MEM_MASKED_DATA_WIDTH-1:0]*/ pwm_rd_data_a, pwm_rd_data_b; 
+    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_rd_data_c; 
 
     //Flop pwm mem data_out before sending to BFU
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a_reg, pwm_rd_data_b_reg, pwm_rd_data_c_reg;
@@ -229,10 +230,11 @@ module ntt_top
         else if (zeroize)
             share_mem_wr_data <= '0;
         else if (masking_en & pwm_mode) begin
-            share_mem_wr_data[0] <= pwm_shares_uvo_reg.uv0;
-            share_mem_wr_data[1] <= pwm_shares_uvo_reg.uv1;
-            share_mem_wr_data[2] <= pwm_shares_uvo_reg.uv2;
-            share_mem_wr_data[3] <= pwm_shares_uvo_reg.uv3;
+            //Pad with 0s to match port width
+            share_mem_wr_data[0] <= {2'b0, pwm_shares_uvo_reg.uv0[1], 2'b0, pwm_shares_uvo_reg.uv0[0]};
+            share_mem_wr_data[1] <= {2'b0, pwm_shares_uvo_reg.uv1[1], 2'b0, pwm_shares_uvo_reg.uv1[0]};
+            share_mem_wr_data[2] <= {2'b0, pwm_shares_uvo_reg.uv2[1], 2'b0, pwm_shares_uvo_reg.uv2[0]};
+            share_mem_wr_data[3] <= {2'b0, pwm_shares_uvo_reg.uv3[1], 2'b0, pwm_shares_uvo_reg.uv3[0]};
         end
         else
             share_mem_wr_data <= '0;
@@ -240,10 +242,10 @@ module ntt_top
     end
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
-    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? (mem_rden ? RW_READ : RW_IDLE) : pwm_mode ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? mem_rd_addr : pwm_mode ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
+    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
     assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0; //TODO: masked pwm (Ay) mode
-    assign share_mem_rd_data   = MLDSA_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
+    assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : MLDSA_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
     assign pwm_a_rd_req.rd_wr_en = (pwo_mode /*| pwm_intt_mode*/) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
@@ -516,7 +518,7 @@ module ntt_top
             
             pwm_rd_data_a_reg   <= pwm_rd_data_a;
             pwm_rd_data_b_reg   <= pwm_rd_data_b;
-            pwm_rd_data_c_reg   <= pwm_rd_data_c;
+            pwm_rd_data_c_reg   <= pwm_rd_data_c[MEM_DATA_WIDTH-1:0]; //used in non-masking mode
             pwm_wr_data_reg     <= {1'b0, pwo_uv_o.uv3, 1'b0, pwo_uv_o.uv2, 1'b0, pwo_uv_o.uv1, 1'b0, pwo_uv_o.uv0};
 
             pw_wren_reg         <= pw_wren;
@@ -524,9 +526,25 @@ module ntt_top
             mem_wr_data_reg     <= mem_wr_data_int;
             mem_wr_data_reg_d2  <= mem_wr_data_reg;
             sampler_valid_reg   <= sampler_valid;
-            pwm_b_rd_data_reg   <= pwm_b_rd_data;
+            pwm_b_rd_data_reg   <= pwm_b_rd_data[MEM_DATA_WIDTH-1:0];
 
-            share_mem_rd_data_reg <= share_mem_rd_data;
+            //Re-organize mem rd data since incoming shares are 48-bits. Internally we need 46-bit shares
+            // share_mem_rd_data_reg <= {,share_mem_rd_data[285:240],share_mem_rd_data[237:192],share_mem_rd_data[189:144],share_mem_rd_data[141:96],share_mem_rd_data[((2*MLDSA_SHARE_WIDTH)-1)-2:MLDSA_SHARE_WIDTH],share_mem_rd_data[(MLDSA_SHARE_WIDTH-1)-2:0]};
+            for (int i = 0; i < 4; i++) begin
+                for (int j = 0; j < 2; j++) begin
+                    share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MLDSA_SHARE_WIDTH-1)-2:0];
+                end
+            end
+
+            // share_mem_rd_data_reg[1][0] <= share_mem_rd_data[((3*MLDSA_SHARE_WIDTH)-1)-2:(2*MLDSA_SHARE_WIDTH)];
+            // share_mem_rd_data_reg[1][1] <= share_mem_rd_data[((4*MLDSA_SHARE_WIDTH)-1)-2:(3*MLDSA_SHARE_WIDTH)];
+
+            // share_mem_rd_data_reg[2][0] <= share_mem_rd_data[((5*MLDSA_SHARE_WIDTH)-1)-2:(4*MLDSA_SHARE_WIDTH)];
+            // share_mem_rd_data_reg[2][1] <= share_mem_rd_data[((6*MLDSA_SHARE_WIDTH)-1)-2:(5*MLDSA_SHARE_WIDTH)];
+
+            // share_mem_rd_data_reg[3][0] <= share_mem_rd_data[((7*MLDSA_SHARE_WIDTH)-1)-2:(6*MLDSA_SHARE_WIDTH)];
+            // share_mem_rd_data_reg[3][1] <= share_mem_rd_data[((8*MLDSA_SHARE_WIDTH)-1)-2:(7*MLDSA_SHARE_WIDTH)];
+            
             share_mem_rd_data_reg_d1 <= share_mem_rd_data_reg;
 
             //PWM shares
@@ -592,28 +610,33 @@ module ntt_top
             uvw_i.v00_i      = 'h0;
             uvw_i.v01_i      = 'h0;
 
-            pw_uvw_i.u0_i    = pwm_rd_data_a_reg[REG_SIZE-2:0];
-            pw_uvw_i.u1_i    = pwm_rd_data_a_reg[(2*REG_SIZE)-2:REG_SIZE];
-            pw_uvw_i.u2_i    = pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-            pw_uvw_i.u3_i    = pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            if (~masking_en) begin
+                pw_uvw_i.u0_i    = pwm_rd_data_a_reg[REG_SIZE-2:0];
+                pw_uvw_i.u1_i    = pwm_rd_data_a_reg[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.u2_i    = pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.u3_i    = pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
 
-            if (shuffle_en) begin
-                pw_uvw_i.v0_i    = pwm_rd_data_b[REG_SIZE-2:0];
-                pw_uvw_i.v1_i    = pwm_rd_data_b[(2*REG_SIZE)-2:REG_SIZE];
-                pw_uvw_i.v2_i    = pwm_rd_data_b[(3*REG_SIZE)-2:(2*REG_SIZE)];
-                pw_uvw_i.v3_i    = pwm_rd_data_b[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                if (shuffle_en) begin
+                    pw_uvw_i.v0_i    = pwm_rd_data_b[REG_SIZE-2:0];
+                    pw_uvw_i.v1_i    = pwm_rd_data_b[(2*REG_SIZE)-2:REG_SIZE];
+                    pw_uvw_i.v2_i    = pwm_rd_data_b[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                    pw_uvw_i.v3_i    = pwm_rd_data_b[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                end
+                else begin
+                    pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
+                    pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
+                    pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                    pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                end
+
+                pw_uvw_i.w0_i    = pwm_rd_data_c_reg[REG_SIZE-2:0];
+                pw_uvw_i.w1_i    = pwm_rd_data_c_reg[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.w2_i    = pwm_rd_data_c_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.w3_i    = pwm_rd_data_c_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
             end
             else begin
-                pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
-                pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
-                pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-                pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                pw_uvw_i = '0;
             end
-
-            pw_uvw_i.w0_i    = pwm_rd_data_c_reg[REG_SIZE-2:0];
-            pw_uvw_i.w1_i    = pwm_rd_data_c_reg[(2*REG_SIZE)-2:REG_SIZE];
-            pw_uvw_i.w2_i    = pwm_rd_data_c_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-            pw_uvw_i.w3_i    = pwm_rd_data_c_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
         end
         pwa, pws: begin
             uvw_i.u00_i      = 'h0;
@@ -621,28 +644,27 @@ module ntt_top
             uvw_i.v00_i      = 'h0;
             uvw_i.v01_i      = 'h0;
 
-            pw_uvw_i.u0_i    = masking_en ? 'h0 : pwm_rd_data_a_reg[REG_SIZE-2:0];
-            pw_uvw_i.u1_i    = masking_en ? 'h0 : pwm_rd_data_a_reg[(2*REG_SIZE)-2:REG_SIZE];
-            pw_uvw_i.u2_i    = masking_en ? 'h0 : pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-            pw_uvw_i.u3_i    = masking_en ? 'h0 : pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+            if (~masking_en) begin
+                pw_uvw_i.u0_i    = pwm_rd_data_a_reg[REG_SIZE-2:0];
+                pw_uvw_i.u1_i    = pwm_rd_data_a_reg[(2*REG_SIZE)-2:REG_SIZE];
+                pw_uvw_i.u2_i    = pwm_rd_data_a_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                pw_uvw_i.u3_i    = pwm_rd_data_a_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
 
-            if (masking_en) begin
-                pw_uvw_i.v0_i    = 'h0;
-                pw_uvw_i.v1_i    = 'h0;
-                pw_uvw_i.v2_i    = 'h0;
-                pw_uvw_i.v3_i    = 'h0;
-            end
-            else if (shuffle_en) begin
-                pw_uvw_i.v0_i    = pwm_rd_data_b/*_reg*/[REG_SIZE-2:0];
-                pw_uvw_i.v1_i    = pwm_rd_data_b/*_reg*/[(2*REG_SIZE)-2:REG_SIZE];
-                pw_uvw_i.v2_i    = pwm_rd_data_b/*_reg*/[(3*REG_SIZE)-2:(2*REG_SIZE)];
-                pw_uvw_i.v3_i    = pwm_rd_data_b/*_reg*/[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                if (shuffle_en) begin
+                    pw_uvw_i.v0_i    = pwm_rd_data_b/*_reg*/[REG_SIZE-2:0];
+                    pw_uvw_i.v1_i    = pwm_rd_data_b/*_reg*/[(2*REG_SIZE)-2:REG_SIZE];
+                    pw_uvw_i.v2_i    = pwm_rd_data_b/*_reg*/[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                    pw_uvw_i.v3_i    = pwm_rd_data_b/*_reg*/[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                end
+                else begin
+                    pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
+                    pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
+                    pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
+                    pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                end
             end
             else begin
-                pw_uvw_i.v0_i    = pwm_rd_data_b_reg[REG_SIZE-2:0];
-                pw_uvw_i.v1_i    = pwm_rd_data_b_reg[(2*REG_SIZE)-2:REG_SIZE];
-                pw_uvw_i.v2_i    = pwm_rd_data_b_reg[(3*REG_SIZE)-2:(2*REG_SIZE)];
-                pw_uvw_i.v3_i    = pwm_rd_data_b_reg[(4*REG_SIZE)-2:(3*REG_SIZE)];
+                pw_uvw_i = '0;
             end
 
             pw_uvw_i.w0_i    = 'h0;
@@ -656,20 +678,7 @@ module ntt_top
             uvw_i.v00_i      = 'h0;
             uvw_i.v01_i      = 'h0;
 
-            pw_uvw_i.u0_i    = 'h0;
-            pw_uvw_i.u1_i    = 'h0;
-            pw_uvw_i.u2_i    = 'h0;
-            pw_uvw_i.u3_i    = 'h0;
-
-            pw_uvw_i.v0_i    = 'h0;
-            pw_uvw_i.v1_i    = 'h0;
-            pw_uvw_i.v2_i    = 'h0;
-            pw_uvw_i.v3_i    = 'h0;
-
-            pw_uvw_i.w0_i    = 'h0;
-            pw_uvw_i.w1_i    = 'h0;
-            pw_uvw_i.w2_i    = 'h0;
-            pw_uvw_i.w3_i    = 'h0;
+            pw_uvw_i = '0;
         end
         endcase
     end

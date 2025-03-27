@@ -383,8 +383,15 @@ always_comb begin
                                       : (pwa_mode | pws_mode) ? pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7])
                                       : pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]); //2
     
+    if (pwm_mode) begin
     shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-2])
                                                :  pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]);
+    end
+    else if (pwa_mode | pws_mode) begin
+        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7]);
+    end
+    else
+        shuffled_pw_mem_wr_addr_c_nxt = 0;
 
     masked_shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d2);
     masked_shuffled_pw_mem_wr_addr_c_nxt_accumulate = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d2);
@@ -644,13 +651,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_pwm_buf_rdptr_d2 <= '0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        buf_rdptr_reg <= {buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
+        buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready) & ~masking_en_ctrl)) begin
         buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if ((pwo_mode & ~masking_en) & (incr_pw_rd_addr | butterfly_ready)) begin
-        buf_rdptr_reg <= {mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
+        buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]}; //TODO: create new reg with apt name for PWO
     end
     // else if ((pwm_intt_mode)) begin
     //     buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
