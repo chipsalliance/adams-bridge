@@ -26,7 +26,7 @@
 package ntt_defines_pkg;
     import mldsa_params_pkg::*;
 
-`define MLDSA_MASKING
+// `define MLDSA_MASKING
 
 parameter NTT_REG_SIZE = REG_SIZE-1;
 parameter MASKED_WIDTH = 46;

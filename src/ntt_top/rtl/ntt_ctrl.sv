@@ -98,7 +98,7 @@ ntt_read_state_t read_fsm_state_ps, read_fsm_state_ns;
 ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
 
 //BF enable flags
-logic bf_enable_fsm, bf_enable_reg, bf_enable_reg_d2;
+logic bf_enable_fsm, bf_enable_reg, bf_enable_reg_d2, bf_enable_reg_d3;
 
 //Buffer signals
 logic buf_wr_rst_count_ntt, buf_rd_rst_count_ntt;
@@ -114,9 +114,10 @@ logic [1:0] buf_rdptr_f;
 // logic [UNMASKED_BF_LATENCY:0][1:0] buf_rdptr_reg;
 logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_rdptr_reg;
 logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
+logic [1:0] buf_wrptr_reg_d1;
 // logic [MASKED_BF_STAGE1_LATENCY:0][3:0] chunk_count_reg;
 logic [MASKED_INTT_WRBUF_LATENCY-3:0][3:0] chunk_count_reg; //buf latency not rqd
-logic [1:0] masked_pwm_buf_rdptr_d1, masked_pwm_buf_rdptr_d2; //TODO clean up
+logic [1:0] masked_pwm_buf_rdptr_d1, masked_pwm_buf_rdptr_d2, masked_pwm_buf_rdptr_d3; //TODO clean up
 
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
@@ -136,7 +137,7 @@ logic pwm_mode, pwa_mode, pws_mode;
 logic [MEM_ADDR_WIDTH-1:0] src_base_addr, interim_base_addr, dest_base_addr;
 logic [MEM_ADDR_WIDTH-1:0] pw_base_addr_a, pw_base_addr_b, pw_base_addr_c;
 logic [MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_a_nxt, pw_mem_rd_addr_b_nxt, pw_mem_rd_addr_c_nxt, pw_mem_wr_addr_c_nxt;
-logic incr_mem_rd_addr;
+logic incr_mem_rd_addr, incr_mem_rd_addr_reg;
 logic incr_mem_wr_addr;
 logic rst_rd_addr, rst_wr_addr; //TODO: need both?
 logic [MEM_ADDR_WIDTH:0] mem_rd_addr_nxt, mem_wr_addr_nxt; //One extra bit in addr to roll over addr, so we can wraparound in the addr range
@@ -144,6 +145,7 @@ logic [MEM_ADDR_WIDTH-1:0] mem_rd_base_addr, mem_wr_base_addr;
 logic [4:0] rd_addr_step, wr_addr_step;
 logic rd_addr_wraparound;
 logic wr_addr_wraparound;
+logic masking_en_ctrl_reg;
 
 //PWO wires
 logic incr_pw_rd_addr, incr_pw_wr_addr; //TODO: need both?
@@ -155,7 +157,7 @@ logic incr_pw_rd_addr_reg_d1;
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg, incr_twiddle_addr_reg_d2;
 logic twiddle_mode, rst_twiddle_addr;
 logic [6:0] twiddle_rand_offset;
-logic [6:0] twiddle_end_addr, twiddle_addr_reg, twiddle_addr_reg_d2, twiddle_addr_reg_d3, twiddle_addr_int, twiddle_offset;
+logic [6:0] twiddle_end_addr, twiddle_addr_reg, twiddle_addr_reg_d2, twiddle_addr_reg_d3, twiddle_addr_reg_d4, twiddle_addr_int, twiddle_offset;
 
 //FSM round signals
 logic [$clog2(NTT_NUM_ROUNDS):0] num_rounds;
@@ -249,7 +251,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if (masking_en) begin
         // if (pwm_intt_mode) begin //1st round
-        if (gs_mode & (rounds_count == 'h0)) begin
+        if (gs_mode & (rounds_count == 'h0) & (read_fsm_state_ps == RD_STAGE) & (write_fsm_state_ps == WR_STAGE)) begin //gate with fsm state to delay masking_en_ctrl to be more meaningful
             opcode <= gs;
             masking_en_ctrl <= 'b1;
         end
@@ -259,12 +261,30 @@ always_ff @(posedge clk or negedge reset_n) begin
         end
         else begin
             opcode <= ntt_mode; //all others
-            masking_en_ctrl <= 'b0; //only used in gs mode. In other modes, masking_en is used
+            // masking_en_ctrl <= 'b0; //only used in gs mode. In other modes, masking_en is used
         end
     end
     else begin
         opcode <= ntt_mode;
-        masking_en_ctrl <= 'b0;
+        // masking_en_ctrl <= 'b0;
+    end
+end
+
+always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+        masking_en_ctrl_reg <= '0;
+        incr_mem_rd_addr_reg <= '0;
+        buf_wrptr_reg_d1 <= '0;
+    end
+    else if (zeroize) begin
+        masking_en_ctrl_reg <= '0;
+        incr_mem_rd_addr_reg <= '0;
+        buf_wrptr_reg_d1 <= '0;
+    end
+    else begin
+        masking_en_ctrl_reg <= masking_en_ctrl;
+        incr_mem_rd_addr_reg <= incr_mem_rd_addr;
+        buf_wrptr_reg_d1 <= buf_wrptr_reg[0];
     end
 end
 
@@ -394,7 +414,7 @@ always_comb begin
         shuffled_pw_mem_wr_addr_c_nxt = 0;
 
     masked_shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d2);
-    masked_shuffled_pw_mem_wr_addr_c_nxt_accumulate = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d2);
+    masked_shuffled_pw_mem_wr_addr_c_nxt_accumulate = pw_base_addr_c + (4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY-3]) + (PWO_WRITE_ADDR_STEP*masked_pwm_buf_rdptr_d3); //-3 for chunk count because latency here is measured from mem read to incr_pw_wr_addr which is 264+3 cycles //no -1 and d2
 
     shuffled_pw_mem_rd_addr_c_nxt_accumulate = pw_base_addr_c + ((4*chunk_count)+(PWO_READ_ADDR_STEP*mem_rd_index_ofst));
     masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MASKED_PWM_ACC_LATENCY-MASKED_PWM_LATENCY])) : 'h0; //TODO check timing
@@ -643,12 +663,14 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_wrptr_reg <= 'h0;
         masked_pwm_buf_rdptr_d1 <= '0;
         masked_pwm_buf_rdptr_d2 <= '0;
+        masked_pwm_buf_rdptr_d3 <= '0;
     end
     else if (zeroize) begin
         buf_rdptr_reg <= 'h0;
         buf_wrptr_reg <= 'h0;
         masked_pwm_buf_rdptr_d1 <= '0;
         masked_pwm_buf_rdptr_d2 <= '0;
+        masked_pwm_buf_rdptr_d3 <= '0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
         buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
@@ -662,7 +684,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     // else if ((pwm_intt_mode)) begin
     //     buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
     // end
-    else if ((gs_mode & masking_en_ctrl)) begin
+    else if ((gs_mode & (incr_mem_rd_addr | masking_en_ctrl))) begin
         buf_wrptr_reg <= {mem_rd_index_ofst, buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1:1]};
     end
     else if ((pwm_mode & masking_en & masked_pwm_exec_in_progress) /*& (incr_pw_rd_addr | butterfly_ready)*/) begin
@@ -672,12 +694,14 @@ always_ff @(posedge clk or negedge reset_n) begin
             buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-MASKED_PWM_LATENCY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MASKED_PWM_LATENCY:1]}; //latency:1
         masked_pwm_buf_rdptr_d1 <= buf_rdptr_reg[0];
         masked_pwm_buf_rdptr_d2 <= masked_pwm_buf_rdptr_d1; //Delay buf_rdptr_reg[0] by 2 cycles to accommodate delay of incr_pw_wr_addr - this delay is needed to correctly calculate wr addr in masking scenario in pwm
+        masked_pwm_buf_rdptr_d3 <= masked_pwm_buf_rdptr_d2;
     end
     else begin
         buf_rdptr_reg <= 'h0;
         buf_wrptr_reg <= 'h0;
         masked_pwm_buf_rdptr_d1 <= '0;
         masked_pwm_buf_rdptr_d2 <= '0;
+        masked_pwm_buf_rdptr_d3 <= '0;
     end
 end
 
@@ -724,15 +748,23 @@ end
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         buf_wrptr <= 'h0;
+        // buf_wrptr_reg_d1 <= '0;
     end
     else if (zeroize) begin
         buf_wrptr <= 'h0;
+        // buf_wrptr_reg_d1 <= '0;
     end
     else if (buf_wren & (ct_mode | ~shuffle_en)) begin //ct mode - buf writes are in order for both shuffling and non-shuffling. gs mode, non-shuffling buf writes are in order
         buf_wrptr <= (buf_wrptr == 'h3) ? 'h0 : buf_wrptr + 'h1;
+        // buf_wrptr_reg_d1 <= '0;
     end
     else if (buf_wren_intt & (gs_mode /*| pwm_intt_mode*/) & shuffle_en) begin // gs mode
-        buf_wrptr <= buf_wrptr_reg[0];
+        // buf_wrptr_reg_d1 <= buf_wrptr_reg[0];
+        if (masking_en_ctrl)
+            buf_wrptr <= buf_wrptr_reg_d1;
+        else
+            buf_wrptr <= buf_wrptr_reg[0];
+
     end
 end
 
@@ -1036,10 +1068,10 @@ always_comb begin
     if (shuffle_en) begin
         buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt_reg;
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
-        bf_enable        = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? bf_enable_reg_d2 : bf_enable_reg; //bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
+        // bf_enable        = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? bf_enable_reg_d2 : bf_enable_reg; //bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
         mem_wr_en        = (gs_mode /*| pwm_intt_mode*/) ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? mem_rd_en_reg : mem_rd_en_fsm;
-        twiddle_addr     = (gs_mode /*| pwm_intt_mode*/) ? twiddle_addr_reg_d3 : twiddle_addr_int; //TODO check latency in pwm_intt mode
+        twiddle_addr     = (gs_mode /*| pwm_intt_mode*/) ? masking_en_ctrl ? shuffle_en ? twiddle_addr_reg_d4 : twiddle_addr_reg_d3/*d2*/ : twiddle_addr_reg_d3 : twiddle_addr_int; //TODO check latency in pwm_intt mode //TODO: check for gs masking without shuffling mode
         pw_rden          = pw_rden_reg; //masking_en ? (accumulate ? shuffled_pw_rden_fsm_reg : pw_rden_reg) : pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
         pw_wren          = /*pwm_mode ? pw_wren_reg :*/ pw_wren_reg;
@@ -1047,14 +1079,56 @@ always_comb begin
     else begin
         buf_wren = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt;
         buf_rden = pwo_mode ? 1'b0 : buf_rden_ntt | buf_rden_intt;
-        bf_enable = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? bf_enable_reg : bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
+        // bf_enable = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? bf_enable_reg : bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
         mem_wr_en = mem_wr_en_fsm;
         mem_rd_en = mem_rd_en_fsm;
-        twiddle_addr = twiddle_addr_int;
+        twiddle_addr = twiddle_addr_int; //TODO: check masking+no shuffling in gs mode
         pw_rden  = pw_rden_fsm; //masking_en ? (accumulate ? pw_rden_fsm_reg[0] : pw_rden_fsm) : pw_rden_fsm;
         pw_share_mem_rden = accumulate ? masking_en ? pw_rden_fsm_reg[0] : pw_rden_fsm : '0;
         pw_wren = (accumulate & masking_en) ? pw_wren_fsm_reg : pw_wren_fsm; //TODO: check other cases
     end
+
+    if(shuffle_en & ~masking_en) begin //only shuffling
+        case(ntt_mode)
+            ct: bf_enable = bf_enable_reg;
+            gs: bf_enable = bf_enable_reg_d2;
+            pwm:bf_enable = bf_enable_reg_d2;
+            pwa:bf_enable = bf_enable_reg_d2;
+            pws:bf_enable = bf_enable_reg_d2;
+            default: bf_enable = 0;
+        endcase
+    end
+    else if (shuffle_en & masking_en) begin //both
+        case(ntt_mode)
+            ct: bf_enable = 0;
+            gs: bf_enable = bf_enable_reg_d2;
+            pwm:bf_enable = bf_enable_reg_d3; //TODO: check
+            pwa:bf_enable = 0;
+            pws:bf_enable = 0;
+            default: bf_enable = 0;
+        endcase
+    end
+    else if (~shuffle_en & masking_en) begin //only masking
+        case(ntt_mode)
+            ct: bf_enable = 0;
+            gs: bf_enable = bf_enable_reg;
+            pwm:bf_enable = bf_enable_reg;
+            pwa:bf_enable = 0;
+            pws:bf_enable = 0;
+            default: bf_enable = 0;
+        endcase
+    end
+    else begin //none
+        case(ntt_mode)
+            ct: bf_enable = bf_enable_reg;
+            gs: bf_enable = bf_enable_reg;
+            pwm:bf_enable = bf_enable_reg;
+            pwa:bf_enable = bf_enable_reg;
+            pws:bf_enable = bf_enable_reg;
+            default: bf_enable = 0;
+        endcase
+    end
+
     buf_wr_rst_count = pwo_mode ? 1'b1 : buf_wr_rst_count_ntt | buf_wr_rst_count_intt;
     buf_rd_rst_count = pwo_mode ? 1'b1 : buf_rd_rst_count_ntt | buf_rd_rst_count_intt;
     
@@ -1089,10 +1163,12 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= 'b0;
         bf_enable_reg_d2 <= 'b0;
+        bf_enable_reg_d3 <= 'b0;
         mem_wr_en_reg <= 'b0;
         mem_rd_en_reg <= 'b0;
         twiddle_addr_reg_d2 <= 'h0;
         twiddle_addr_reg_d3 <= 'h0;
+        twiddle_addr_reg_d4 <= 'h0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
     end
@@ -1102,10 +1178,12 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= 'b0;
         bf_enable_reg_d2 <= 'b0;
+        bf_enable_reg_d3 <= 'b0;
         mem_wr_en_reg <= 'b0;
         mem_rd_en_reg <= 'b0;
         twiddle_addr_reg_d2 <= 'h0;
         twiddle_addr_reg_d3 <= 'h0;
+        twiddle_addr_reg_d4 <= 'h0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
     end
@@ -1115,10 +1193,12 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_rden_ntt_reg <= buf_rden_ntt;
         bf_enable_reg <= bf_enable_fsm;
         bf_enable_reg_d2 <= bf_enable_reg;
+        bf_enable_reg_d3 <= bf_enable_reg_d2;
         mem_wr_en_reg <= mem_wr_en_fsm;
         mem_rd_en_reg <= mem_rd_en_fsm;
         twiddle_addr_reg_d2 <= twiddle_addr_int;
         twiddle_addr_reg_d3 <= twiddle_addr_reg_d2;
+        twiddle_addr_reg_d4 <= twiddle_addr_reg_d3;
         pw_rden_reg <= pw_rden_fsm;
         pw_wren_reg <= pw_wren_fsm;
     end

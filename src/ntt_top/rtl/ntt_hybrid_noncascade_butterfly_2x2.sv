@@ -36,6 +36,7 @@ module ntt_hybrid_noncascade_butterfly_2x2
     input mode_t mode,
     input wire enable,
     input wire masking_en,
+    input wire shuffle_en,
     input bf_uvwi_t uvw_i,      //Inputs are original form
     input pwo_uvwi_t pw_uvw_i,  //PWO inputs are original form
     //input hybrid_bf_uvwi_t hybrid_pw_uvw_i, //PWM+INTT inputs. TODO: combine and mux with pwo inputs?
@@ -511,8 +512,12 @@ ntt_butterfly #(
                         masked_ready_reg <= {{(MASKED_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
                 end
                 pwm: begin
-                    if (masking_en)
-                        masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_LATENCY-1:1]};
+                    if (masking_en) begin
+                        if (shuffle_en)
+                            masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MASKED_PWM_LATENCY-2:1]};
+                        else
+                            masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MASKED_PWM_LATENCY-2:1]};
+                    end
                     else
                         masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
                 end
