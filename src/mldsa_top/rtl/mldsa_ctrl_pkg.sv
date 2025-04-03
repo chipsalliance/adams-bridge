@@ -207,7 +207,7 @@ package mldsa_ctrl_pkg;
     localparam mldsa_opcode_t MLDSA_UOP_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, shuffling_en:1'b1};
     localparam mldsa_opcode_t MLDSA_UOP_MASKED_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,          masking_en:1'b1, shuffling_en:1'b1};
     localparam mldsa_opcode_t MLDSA_UOP_MASKED_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,         masking_en:1'b1, shuffling_en:1'b1};
-    localparam mldsa_opcode_t MLDSA_UOP_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,          masking_en:1'b1, shuffling_en:1'b1};
+    localparam mldsa_opcode_t MLDSA_UOP_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,          masking_en:1'b1, shuffling_en:1'b1}; //TODO: if shuffling_en can be kept 1 always, we don't need sampler_mode input to ntt. Else, we need to distinguish between sampelr and non-sampler PWM with masking and no shuffling (since input delay balancing is diff for both these cases)
     localparam mldsa_opcode_t MLDSA_UOP_MASKED_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,          masking_en:1'b1, shuffling_en:1'b1};
     localparam mldsa_opcode_t MLDSA_UOP_MASKED_PWS       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,          masking_en:1'b1, shuffling_en:1'b1};
     //localparam mldsa_opcode_t MLDSA_UOP_MASKED_PWM_INTT  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_INTT,masking_en:1'b1, shuffling_en:1'b1};

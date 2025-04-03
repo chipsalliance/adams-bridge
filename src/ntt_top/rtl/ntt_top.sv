@@ -163,7 +163,7 @@ module ntt_top
     //PWM input shares
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg, pwm_rd_data_b_shares_reg;
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg_d1, pwm_rd_data_b_shares_reg_d1; //delayed by a cycle
-    logic [1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg; //only 2 required since only 1st stage of INTT is masked and needs this
+    logic [1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg, twiddle_factor_shares_reg_d1; //only 2 required since only 1st stage of INTT is masked and needs this
     //PWM output shares
     pwm_shares_uvo_t pwm_shares_uvo, pwm_shares_uvo_reg;
 
@@ -492,6 +492,7 @@ module ntt_top
 
             w10_reg <= '0;
             w11_reg <= '0;
+            twiddle_factor_shares_reg_d1 <= '0;
             
         end
         else if (zeroize) begin
@@ -549,6 +550,7 @@ module ntt_top
 
             w10_reg <= '0;
             w11_reg <= '0;
+            twiddle_factor_shares_reg_d1 <= '0;
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
@@ -637,6 +639,7 @@ module ntt_top
 
             w10_reg <= uvw_i.w10_i;
             w11_reg <= uvw_i.w11_i;
+            twiddle_factor_shares_reg_d1 <= twiddle_factor_shares_reg;
             
         end
     end
@@ -749,8 +752,8 @@ module ntt_top
                                  u01_i: share_mem_rd_data_reg_d1[2], 
                                  v00_i: share_mem_rd_data_reg_d1[1], 
                                  v01_i: share_mem_rd_data_reg_d1[3], 
-                                 w00_i: twiddle_factor_shares_reg[0], //twiddle shares TODO: shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Adjust sampler_dv upstream?
-                                 w01_i: twiddle_factor_shares_reg[1],
+                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0] : twiddle_factor_shares_reg_d1[0], //TODO: check shuffle mode //twiddle shares TODO: shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Adjust sampler_dv upstream?
+                                 w01_i: shuffle_en ? twiddle_factor_shares_reg[1] : twiddle_factor_shares_reg_d1[1],
                                  w10_i: /*uvw_i.w10_i*/w10_reg,
                                  w11_i: /*uvw_i.w11_i*/w11_reg};
         end
@@ -785,10 +788,10 @@ module ntt_top
                     pwm_shares_uvw_i.u2_i = pwm_rd_data_a_shares_reg_d1[2];
                     pwm_shares_uvw_i.u3_i = pwm_rd_data_a_shares_reg_d1[3];
 
-                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg[0] : '0;
-                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg[1] : '0;
-                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg[2] : '0;
-                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg[3] : '0;
+                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg_d1[0] : '0;
+                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg_d1[1] : '0;
+                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg_d1[2] : '0;
+                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg_d1[3] : '0;
 
                     pwm_shares_uvw_i.v0_i = pwm_rd_data_b_shares_reg_d1[0];
                     pwm_shares_uvw_i.v1_i = pwm_rd_data_b_shares_reg_d1[1]; 

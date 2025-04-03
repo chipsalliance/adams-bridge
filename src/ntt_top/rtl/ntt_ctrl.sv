@@ -1071,7 +1071,7 @@ always_comb begin
         // bf_enable        = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? bf_enable_reg_d2 : bf_enable_reg; //bf_enable_fsm; //In gs mode, memory is directly feeding bf2x2, so we need to enable it one cycle later
         mem_wr_en        = (gs_mode /*| pwm_intt_mode*/) ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = (gs_mode /*| pwm_intt_mode*/ | pwo_mode) ? mem_rd_en_reg : mem_rd_en_fsm;
-        twiddle_addr     = (gs_mode /*| pwm_intt_mode*/) ? masking_en_ctrl ? shuffle_en ? twiddle_addr_reg_d4 : twiddle_addr_reg_d3/*d2*/ : twiddle_addr_reg_d3 : twiddle_addr_int; //TODO check latency in pwm_intt mode //TODO: check for gs masking without shuffling mode
+        twiddle_addr     = (gs_mode /*| pwm_intt_mode*/) ? masking_en_ctrl ? shuffle_en ? twiddle_addr_reg_d3 : twiddle_addr_reg_d3/*d2*/ : twiddle_addr_reg_d3 : twiddle_addr_int; //TODO check latency in pwm_intt mode //TODO: check for gs masking without shuffling mode
         pw_rden          = pw_rden_reg; //masking_en ? (accumulate ? shuffled_pw_rden_fsm_reg : pw_rden_reg) : pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
         pw_wren          = /*pwm_mode ? pw_wren_reg :*/ pw_wren_reg;
@@ -1087,6 +1087,8 @@ always_comb begin
         pw_share_mem_rden = accumulate ? masking_en ? pw_rden_fsm_reg[0] : pw_rden_fsm : '0;
         pw_wren = (accumulate & masking_en) ? pw_wren_fsm_reg : pw_wren_fsm; //TODO: check other cases
     end
+end
+always_comb begin
 
     if(shuffle_en & ~masking_en) begin //only shuffling
         case(ntt_mode)
@@ -1120,7 +1122,7 @@ always_comb begin
     end
     else begin //none
         case(ntt_mode)
-            ct: bf_enable = bf_enable_reg;
+            ct: bf_enable = bf_enable_fsm; //reg;
             gs: bf_enable = bf_enable_reg;
             pwm:bf_enable = bf_enable_reg;
             pwa:bf_enable = bf_enable_reg;
