@@ -70,7 +70,7 @@ module ntt_masked_butterfly1x2
         .opw_i(w00),
         .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
         .u_o(u10_int),
-        .v_o(v10_int) //TODO: swap outputs here or inputs to 2nd stage?
+        .v_o(v10_int)
     );
 
     ntt_masked_gs_butterfly #(
@@ -84,7 +84,7 @@ module ntt_masked_butterfly1x2
         .opw_i(w01),
         .rnd_i({rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1]}),
         .u_o(u11_int),
-        .v_o(v11_int) //TODO: swap outputs here or inputs to 2nd stage?
+        .v_o(v11_int)
     );
 
     always_comb begin
@@ -146,8 +146,8 @@ module ntt_masked_butterfly1x2
         end
         else begin
             uv_o.u20_o <= u10_div2;
-            uv_o.u21_o <= v10_div2; //u11_div2;
-            uv_o.v20_o <= u11_div2; //v10_div2;
+            uv_o.u21_o <= v10_div2;
+            uv_o.v20_o <= u11_div2;
             uv_o.v21_o <= v11_div2;
         end
     end

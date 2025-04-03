@@ -66,7 +66,7 @@ module ntt_top
     input wire sampler_valid,
 
     input wire shuffle_en,
-    input wire masking_en, //add assertion masking_en = 1 only for pwm, pwma, intt TODO
+    input wire masking_en,
     input wire [5:0] random,
     input wire [4:0][WIDTH-1:0] rnd_i,
 
@@ -74,12 +74,6 @@ module ntt_top
     //Reuse between pwm c, ntt
     output mem_if_t mem_wr_req,
     output mem_if_t mem_rd_req,
-    // output mem_if_t share_mem_wr_req,
-    // output mem_if_t share_mem_rd_req,
-    // output logic [MEM_DATA_WIDTH-1:0] mem_wr_data,
-    // input  wire  [MEM_DATA_WIDTH-1:0] mem_rd_data,
-    // input  wire  [3:0][1:0][MASKED_WIDTH-1:0] share_mem_rd_data, //Used in masked pwm accumulate and masked intt modes
-    // output logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_wr_data,
     output logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data,
     input  wire  [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data,
 
@@ -112,7 +106,8 @@ module ntt_top
     //Butterfly IF signals
     bf_uvwi_t uvw_i;
     bf_uvo_t  uv_o, uv_o_reg;
-    logic bf_enable, bf_enable_reg, bf_enable_reg_d2, bf_enable_reg_d3, bf_enable_mux;
+    logic bf_enable, /*bf_enable_reg, bf_enable_reg_d2, bf_enable_reg_d3,*/ bf_enable_mux;
+    logic [2:0] bf_enable_reg;
     logic bf_ready;
     logic buf0_valid;
 
@@ -132,7 +127,7 @@ module ntt_top
     pwo_uvwi_t pw_uvw_i; //Used for unmasked PWM, PWMA and masked PWM ops. Masked PWMA will use shares struct
     pwo_t pwo_uv_o;
     logic pw_wren, pw_wren_reg, pw_wren_reg_d1;
-    logic pw_rden, pw_rden_dest_mem, pw_share_mem_rden, pw_rden_reg;
+    logic pw_rden, pw_rden_dest_mem, pw_rden_reg;
     logic sampler_valid_reg;
     logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
     //PWM+INTT IF - masking
@@ -154,7 +149,7 @@ module ntt_top
     logic ntt_done_int;
 
     //pwm mem data_out connections
-    logic [(4*REG_SIZE)-1:0] /*[MLDSA_MEM_MASKED_DATA_WIDTH-1:0]*/ pwm_rd_data_a, pwm_rd_data_b; 
+    logic [(4*REG_SIZE)-1:0] pwm_rd_data_a, pwm_rd_data_b; 
     logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_rd_data_c; 
 
     //Flop pwm mem data_out before sending to BFU
@@ -172,7 +167,6 @@ module ntt_top
     logic gs_mode;
     logic pwo_mode;
     logic pwm_mode, pwa_mode, pws_mode;
-    // logic pwm_intt_mode;
     mode_t opcode;
     logic masking_en_ctrl;
 
@@ -184,7 +178,6 @@ module ntt_top
             pwm_mode <= 0;
             pwa_mode <= 0;
             pws_mode <= 0;
-            // pwm_intt_mode <= 0;
         end
         else if (zeroize) begin
             ct_mode <= 0;
@@ -201,16 +194,15 @@ module ntt_top
             pwm_mode <= (mode == pwm);
             pwa_mode <= (mode == pwa);
             pws_mode <= (mode == pws);
-            // pwm_intt_mode <= (mode == pwm_intt);
         end
     end
 
-    assign pw_rden_dest_mem = pw_share_mem_rden; //accumulate ? pw_rden : 1'b0; //TODO: clean up
+    // assign pw_rden_dest_mem = pw_share_mem_rden; //accumulate ? pw_rden : 1'b0; //TODO: clean up
 
     //Mem IF assignments:
     //mem wr - NTT/INTT mode, write ntt data. PWO mode, write pwm/a/s data
     assign mem_wr_req.rd_wr_en = !pwo_mode ? (mem_wren_mux ? RW_WRITE : RW_IDLE) //TODO convert mem_wren_mux to rw enum
-                                    : (pwm_mode & masking_en & ~shuffle_en & accumulate) ? (pw_wren ? RW_WRITE : RW_IDLE) : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
+                                    : (pwm_mode & masking_en & ~shuffle_en & accumulate) ? (pw_wren_reg ? RW_WRITE : RW_IDLE) : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
     assign mem_wr_req.addr  = !pwo_mode ? mem_wr_addr_mux : pwm_wr_addr_c_reg;
     assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
@@ -231,7 +223,7 @@ module ntt_top
                                                      : (pwa_mode | pws_mode) ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg) : MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int)
                                           : MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int);
         else
-            mem_wr_data      = gs_mode ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int) : pwm_mode ? shuffle_en ? share_mem_wr_data : share_mem_wr_data_comb : '0; //TODO: check timing in shuffle_en //In masking, only gs_mode will have mem wr data. PWM mode will write only shares
+            mem_wr_data      = gs_mode ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int) : pwm_mode ? shuffle_en ? share_mem_wr_data : share_mem_wr_data_comb : '0; //In masking, only gs_mode will have mem wr data. PWM mode will write only shares
     end
     
     always_ff @(posedge clk or negedge reset_n) begin
@@ -267,26 +259,26 @@ module ntt_top
     end
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
-    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.rd_wr_en : share_mem_rd_req/*_reg*/.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl) /*| pwm_intt_mode*/) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.addr : share_mem_rd_req/*_reg*/.addr : pw_mem_rd_addr_c : 'h0;
-    assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0; //TODO: masked pwm (Ay) mode
+    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.rd_wr_en : share_mem_rd_req/*_reg*/.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.addr : share_mem_rd_req/*_reg*/.addr : pw_mem_rd_addr_c : 'h0;
+    assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0;
     assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : MLDSA_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
-    assign pwm_a_rd_req.rd_wr_en = (pwo_mode /*| pwm_intt_mode*/) ? (masking_en & ~shuffle_en) ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign pwm_a_rd_req.addr     = (pwo_mode /*| pwm_intt_mode*/) ? (masking_en & ~shuffle_en) ? pw_mem_rd_addr_a_reg : pw_mem_rd_addr_a : 'h0;
-    assign pwm_rd_data_a         = (pwo_mode /*| pwm_intt_mode*/) ? pwm_a_rd_data[MEM_DATA_WIDTH-1:0] : 'h0; //TODO: clean up mux. Just connect input directly to logic
+    assign pwm_a_rd_req.rd_wr_en = pwo_mode ? (masking_en & ~shuffle_en) ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign pwm_a_rd_req.addr     = pwo_mode ? (masking_en & ~shuffle_en) ? pw_mem_rd_addr_a_reg : pw_mem_rd_addr_a : 'h0;
+    assign pwm_rd_data_a         = pwo_mode ? pwm_a_rd_data[MEM_DATA_WIDTH-1:0] : 'h0;
 
     //pwm rd b - PWO mode - read b operand from mem. Or operand b can also be connected directly to sampler, so in that case, addr/rden are not used
     always_comb begin
         if (shuffle_en) begin
-            pwm_b_rd_req.rd_wr_en = sampler_valid_reg & (pwo_mode /*| pwm_intt_mode*/) ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE; //pw_rden is delayed a clk due to shuffling, so use delayed sampler_valid to line it up
-            pwm_b_rd_req.addr     = sampler_valid_reg & (pwo_mode /*| pwm_intt_mode*/) ? pw_mem_rd_addr_b : 'h0;
+            pwm_b_rd_req.rd_wr_en = sampler_valid_reg & pwo_mode ? (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE; //pw_rden is delayed a clk due to shuffling, so use delayed sampler_valid to line it up
+            pwm_b_rd_req.addr     = sampler_valid_reg & pwo_mode ? pw_mem_rd_addr_b : 'h0;
             pwm_rd_data_b         = pwm_b_rd_data_reg;
         end
         else begin
-            pwm_b_rd_req.rd_wr_en = sampler_valid & (pwo_mode /*| pwm_intt_mode*/) ? masking_en ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
-            pwm_b_rd_req.addr     = sampler_valid & (pwo_mode /*| pwm_intt_mode*/) ? masking_en ? pw_mem_rd_addr_b_reg : pw_mem_rd_addr_b : 'h0;
+            pwm_b_rd_req.rd_wr_en = sampler_valid & pwo_mode ? masking_en ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
+            pwm_b_rd_req.addr     = sampler_valid & pwo_mode ? masking_en ? pw_mem_rd_addr_b_reg : pw_mem_rd_addr_b : 'h0;
             pwm_rd_data_b         = (pwm_mode & masking_en & ~shuffle_en) ? pwm_b_rd_data_reg : pwm_b_rd_data[MEM_DATA_WIDTH-1:0];
         end
     end
@@ -333,7 +325,7 @@ module ntt_top
         .pw_mem_rd_addr_c(pw_mem_rd_addr_c),
         .pw_mem_wr_addr_c(pw_mem_wr_addr_c),
         .pw_rden(pw_rden),
-        .pw_share_mem_rden(pw_share_mem_rden),
+        .pw_share_mem_rden(pw_rden_dest_mem),
         .pw_wren(pw_wren),
         .busy(ntt_busy),
         .done(ntt_done_int)
@@ -366,7 +358,7 @@ module ntt_top
                 uvw_i.w10_i = twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
                 uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
             end
-            gs/*, pwm_intt*/: begin
+            gs: begin
                 if (shuffle_en) begin
                     uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
                     uvw_i.w10_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
@@ -424,7 +416,6 @@ module ntt_top
         .shuffle_en(shuffle_en),
         .uvw_i(uvw_i),
         .pw_uvw_i(pw_uvw_i),
-        // .hybrid_pw_uvw_i(hybrid_pw_uvw_i),
         .pwm_shares_uvw_i(pwm_shares_uvw_i),
         .rnd_i(rnd_i),
         .accumulate(accumulate),
@@ -439,8 +430,8 @@ module ntt_top
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            bf_enable_reg_d2    <= 'b0;
-            bf_enable_reg_d3    <= 'b0;
+            // bf_enable_reg_d2    <= 'b0;
+            // bf_enable_reg_d3    <= 'b0;
             twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
@@ -498,8 +489,8 @@ module ntt_top
         else if (zeroize) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            bf_enable_reg_d2    <= 'b0;
-            bf_enable_reg_d3    <= 'b0;
+            // bf_enable_reg_d2    <= 'b0;
+            // bf_enable_reg_d3    <= 'b0;
             twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
@@ -554,9 +545,9 @@ module ntt_top
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
-            bf_enable_reg       <= bf_enable;
-            bf_enable_reg_d2    <= bf_enable_reg;
-            bf_enable_reg_d3    <= bf_enable_reg_d2;
+            bf_enable_reg       <= {bf_enable_reg[1:0], bf_enable};
+            // bf_enable_reg_d2    <= bf_enable_reg;
+            // bf_enable_reg_d3    <= bf_enable_reg_d2;
             twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
@@ -581,21 +572,11 @@ module ntt_top
             pwm_b_rd_data_reg   <= pwm_b_rd_data[MEM_DATA_WIDTH-1:0];
 
             //Re-organize mem rd data since incoming shares are 48-bits. Internally we need 46-bit shares
-            // share_mem_rd_data_reg <= {,share_mem_rd_data[285:240],share_mem_rd_data[237:192],share_mem_rd_data[189:144],share_mem_rd_data[141:96],share_mem_rd_data[((2*MLDSA_SHARE_WIDTH)-1)-2:MLDSA_SHARE_WIDTH],share_mem_rd_data[(MLDSA_SHARE_WIDTH-1)-2:0]};
             for (int i = 0; i < 4; i++) begin
                 for (int j = 0; j < 2; j++) begin
                     share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MLDSA_SHARE_WIDTH-1)-2:0];
                 end
             end
-
-            // share_mem_rd_data_reg[1][0] <= share_mem_rd_data[((3*MLDSA_SHARE_WIDTH)-1)-2:(2*MLDSA_SHARE_WIDTH)];
-            // share_mem_rd_data_reg[1][1] <= share_mem_rd_data[((4*MLDSA_SHARE_WIDTH)-1)-2:(3*MLDSA_SHARE_WIDTH)];
-
-            // share_mem_rd_data_reg[2][0] <= share_mem_rd_data[((5*MLDSA_SHARE_WIDTH)-1)-2:(4*MLDSA_SHARE_WIDTH)];
-            // share_mem_rd_data_reg[2][1] <= share_mem_rd_data[((6*MLDSA_SHARE_WIDTH)-1)-2:(5*MLDSA_SHARE_WIDTH)];
-
-            // share_mem_rd_data_reg[3][0] <= share_mem_rd_data[((7*MLDSA_SHARE_WIDTH)-1)-2:(6*MLDSA_SHARE_WIDTH)];
-            // share_mem_rd_data_reg[3][1] <= share_mem_rd_data[((8*MLDSA_SHARE_WIDTH)-1)-2:(7*MLDSA_SHARE_WIDTH)];
             
             share_mem_rd_data_reg_d1 <= share_mem_rd_data_reg;
 
@@ -666,7 +647,7 @@ module ntt_top
 
             pw_uvw_i         = 'h0;
         end
-        pwm/*, pwm_intt*/: begin
+        pwm: begin
             uvw_i.u00_i      = 'h0;
             uvw_i.u01_i      = 'h0;
             uvw_i.v00_i      = 'h0;
@@ -748,14 +729,14 @@ module ntt_top
     always_comb begin
         //Assign masked INTT input shares coming from share mem
         if (gs_mode & masking_en_ctrl) begin
-            bf_shares_uvw_i  = '{u00_i: share_mem_rd_data_reg_d1[0], //check connections TODO
+            bf_shares_uvw_i  = '{u00_i: share_mem_rd_data_reg_d1[0],
                                  u01_i: share_mem_rd_data_reg_d1[2], 
                                  v00_i: share_mem_rd_data_reg_d1[1], 
                                  v01_i: share_mem_rd_data_reg_d1[3], 
-                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0] : twiddle_factor_shares_reg_d1[0], //TODO: check shuffle mode //twiddle shares TODO: shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Adjust sampler_dv upstream?
+                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0] : twiddle_factor_shares_reg_d1[0], // shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
                                  w01_i: shuffle_en ? twiddle_factor_shares_reg[1] : twiddle_factor_shares_reg_d1[1],
-                                 w10_i: /*uvw_i.w10_i*/w10_reg,
-                                 w11_i: /*uvw_i.w11_i*/w11_reg};
+                                 w10_i: w10_reg,
+                                 w11_i: w11_reg};
         end
         else begin
             bf_shares_uvw_i  = '{u00_i: '0, u01_i: '0, v00_i: '0, v01_i: '0, w00_i: '0, w01_i: '0, w10_i: '0, w11_i: '0};
@@ -771,12 +752,12 @@ module ntt_top
                     pwm_shares_uvw_i.u2_i = pwm_rd_data_a_shares_reg_d1[2];
                     pwm_shares_uvw_i.u3_i = pwm_rd_data_a_shares_reg_d1[3];
 
-                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg/*_d1*/[0] : '0;
-                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg/*_d1*/[1] : '0;
-                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg/*_d1*/[2] : '0;
-                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg/*_d1*/[3] : '0;
+                    pwm_shares_uvw_i.w0_i = accumulate ? share_mem_rd_data_reg[0] : '0;
+                    pwm_shares_uvw_i.w1_i = accumulate ? share_mem_rd_data_reg[1] : '0;
+                    pwm_shares_uvw_i.w2_i = accumulate ? share_mem_rd_data_reg[2] : '0;
+                    pwm_shares_uvw_i.w3_i = accumulate ? share_mem_rd_data_reg[3] : '0;
 
-                    //TODO: in shuffle mode, the b input needs to be 1 cycle earlier. But here, non_shuffle mode is also delayed due to splitting. Adjust the sampler_dv upstream?
+                    //In shuffle mode, the b input needs to be 1 cycle earlier. But here, non_shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
                     pwm_shares_uvw_i.v0_i = pwm_rd_data_b_shares_reg[0];
                     pwm_shares_uvw_i.v1_i = pwm_rd_data_b_shares_reg[1]; 
                     pwm_shares_uvw_i.v2_i = pwm_rd_data_b_shares_reg[2]; 
@@ -809,8 +790,8 @@ module ntt_top
     always_comb hybrid_pw_uvw_i = {pw_uvw_i, uvw_i.w00_i, uvw_i.w01_i, uvw_i.w10_i, uvw_i.w11_i};
 
     assign bf_enable_mux    = ct_mode ? bf_enable       
-                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg_d2 : bf_enable_reg) 
-                                                :  (pwm_mode & masking_en & ~shuffle_en) ? bf_enable_reg_d3 : bf_enable_reg;
+                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg[1] : bf_enable_reg[0]) 
+                                                :  (pwm_mode & masking_en & ~shuffle_en) ? bf_enable_reg[2] : bf_enable_reg[0];
     assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
     assign mem_wr_addr_mux  = ~shuffle_en & ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 
