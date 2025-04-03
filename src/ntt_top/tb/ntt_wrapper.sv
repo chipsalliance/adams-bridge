@@ -27,7 +27,7 @@ module ntt_wrapper
     parameter RADIX = 23,
     parameter MLDSA_Q = 23'd8380417,
     parameter MLDSA_N = 256,
-    parameter MEM_ADDR_WIDTH = 9, //14, //only for TB purpose to reduce mem size for smaller waves
+    parameter MEM_ADDR_WIDTH = 14,
     parameter MEM_DATA_WIDTH = 96
 )
 (
@@ -77,12 +77,6 @@ module ntt_wrapper
     logic [MEM_DATA_WIDTH-1:0] ntt_mem_wr_data;
     logic [MEM_DATA_WIDTH-1:0] ntt_mem_rd_data;
 
-    //Share mem
-    // mem_if_t share_mem_wr_req, share_mem_rd_req;
-    // logic share_mem_wren, share_mem_rden;
-    // logic [MEM_ADDR_WIDTH-1:0] share_mem_wr_addr, share_mem_rd_addr;
-    // logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_wr_data, share_mem_rd_data;
-
     logic pwm_mem_a_rden, pwm_mem_b_rden;
 
     //Modes
@@ -101,38 +95,10 @@ module ntt_wrapper
     //NTT mem
     assign ntt_mem_wren = (mem_wr_req.rd_wr_en == RW_WRITE);
     assign ntt_mem_rden = (mem_rd_req.rd_wr_en == RW_READ);
-    // assign ntt_mem_wr_addr = (ct_mode | gs_mode) ? mem_wr_req.addr : pwm_mem_c_wr_addr;
-    // assign ntt_mem_rd_addr = (ct_mode | gs_mode) ? mem_rd_req.addr : pwm_mem_c_rd_addr;
-    // assign ntt_mem_wr_data = (ct_mode | gs_mode) ? mem_wr_data : pwm_mem_c_wr_data;
     
     //PWM mem
     assign pwm_mem_a_rden = (pwm_a_rd_req.rd_wr_en == RW_READ);
     assign pwm_mem_b_rden = (pwm_b_rd_req.rd_wr_en == RW_READ);
-
-    // //Share mem
-    // assign share_mem_wren = (share_mem_wr_req.rd_wr_en == RW_WRITE);
-    // assign share_mem_rden = (share_mem_rd_req.rd_wr_en == RW_READ);
-
-    // ntt_ram_tdp_file #(
-    //     .ADDR_WIDTH(MEM_ADDR_WIDTH),
-    //     .DATA_WIDTH(4*2*MASKED_WIDTH)
-    // ) share_mem (
-    //     .clk(clk),
-    //     .reset_n(reset_n),
-    //     .zeroize(zeroize),
-    //     .ena(share_mem_wren),
-    //     .wea(share_mem_wren),
-    //     .addra(share_mem_wr_req.addr),
-    //     .dina(share_mem_wr_data),
-    //     .douta(), //Need only one read port, so this can be 0
-    //     .enb(share_mem_rden),
-    //     .web(1'b0), //Need only one write port so this can be 0
-    //     .addrb(share_mem_rd_req.addr),
-    //     .dinb(),
-    //     .doutb(share_mem_rd_data),
-    //     .load_tb_values(),
-    //     .load_tb_addr()
-    // );
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
@@ -220,12 +186,8 @@ module ntt_wrapper
         //NTT mem IF
         .mem_wr_req(mem_wr_req),
         .mem_rd_req(mem_rd_req),
-        // .share_mem_wr_req(share_mem_wr_req),
-        // .share_mem_rd_req(share_mem_rd_req),
         .mem_wr_data(mem_wr_data),
         .mem_rd_data(mem_rd_data),
-        // .share_mem_rd_data(share_mem_rd_data),
-        // .share_mem_wr_data(share_mem_wr_data),
         //PWM mem IF
         .pwm_a_rd_req(pwm_a_rd_req),
         .pwm_b_rd_req(pwm_b_rd_req),

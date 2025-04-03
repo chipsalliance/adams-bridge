@@ -106,7 +106,7 @@ module ntt_top
     //Butterfly IF signals
     bf_uvwi_t uvw_i;
     bf_uvo_t  uv_o, uv_o_reg;
-    logic bf_enable, /*bf_enable_reg, bf_enable_reg_d2, bf_enable_reg_d3,*/ bf_enable_mux;
+    logic bf_enable, bf_enable_mux;
     logic [2:0] bf_enable_reg;
     logic bf_ready;
     logic buf0_valid;
@@ -430,8 +430,6 @@ module ntt_top
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            // bf_enable_reg_d2    <= 'b0;
-            // bf_enable_reg_d3    <= 'b0;
             twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
@@ -489,8 +487,6 @@ module ntt_top
         else if (zeroize) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            // bf_enable_reg_d2    <= 'b0;
-            // bf_enable_reg_d3    <= 'b0;
             twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
@@ -546,8 +542,6 @@ module ntt_top
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
             bf_enable_reg       <= {bf_enable_reg[1:0], bf_enable};
-            // bf_enable_reg_d2    <= bf_enable_reg;
-            // bf_enable_reg_d3    <= bf_enable_reg_d2;
             twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
