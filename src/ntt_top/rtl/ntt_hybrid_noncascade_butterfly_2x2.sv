@@ -503,7 +503,7 @@ ntt_butterfly #(
 //----------------------------------------------------
 //ready_o logic
 
-// `ifdef MLDSA_NTT_MASKING //TODO: confirm this is ok to do at synthesis time
+// `ifdef MLDSA_NTT_MASKING //TODO: optimize shift reg size based on masking en/dis
     logic [MASKED_INTT_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
 
     always_ff @(posedge clk or negedge reset_n) begin
