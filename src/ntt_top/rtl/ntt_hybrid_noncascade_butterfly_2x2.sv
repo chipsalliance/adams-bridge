@@ -70,7 +70,7 @@ logic gs_mode;
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] w10_reg, w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 // logic [MASKED_PWM_LATENCY-1:0][HALF_WIDTH-1:0] masked_w00_reg, masked_w01_reg;
 logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
-logic pwo_mode; //, pwm_intt_mode;
+logic pwo_mode, masked_pwm_mode; //, pwm_intt_mode;
 // logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 // logic [MASKED_PWM_INTT_LATENCY-1:0] masked_ready_reg;
 
@@ -81,6 +81,7 @@ logic [1:0][WIDTH-1:0] uv00_share, uv01_share, uv10_share, uv11_share;
 logic [1:0][WIDTH-1:0] uv00_share_reg, uv01_share_reg, uv10_share_reg, uv11_share_reg;
 logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share;
 bf_uvo_t masked_gs_stage1_uvo;
+pwm_shares_uvo_t bf_pwm_shares_uvo;
 
 //w delay flops
 //Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
@@ -118,6 +119,7 @@ end
 assign masked_w11_reg = masked_w10_reg; //used only in masked INTT, both are equal, so can opt num of flops
 
 assign pwo_mode = (mode inside {pwm, pwa, pws});
+assign masked_pwm_mode = (mode == pwm) & masking_en;
 assign gs_mode = (mode == gs);
 // assign pwm_intt_mode = (mode == pwm_intt) & masking_en;
 
@@ -332,33 +334,38 @@ ntt_masked_pwm #(
     .res(pwm_shares_uvo.uv1) //(uv01_share)
 );
 
-ntt_masked_pwm #(
-    .WIDTH(WIDTH)
-) pwm_inst10 (
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .accumulate(accumulate),
-    .u(u10_share),
-    .v(v10_share),
-    .w(w10_share),
-    .rnd({rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2]}),
-    .res(pwm_shares_uvo.uv2)//(uv10_share)
-);
+always_comb begin //TODO: optimize
+    pwm_shares_uvo.uv2 = bf_pwm_shares_uvo.uv2;
+    pwm_shares_uvo.uv3 = bf_pwm_shares_uvo.uv3;
+end
 
-ntt_masked_pwm #(
-    .WIDTH(WIDTH)
-) pwm_inst11 (
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .accumulate(accumulate),
-    .u(u11_share),
-    .v(v11_share),
-    .w(w11_share),
-    .rnd({rnd_i[2], rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3]}),
-    .res(pwm_shares_uvo.uv3)//(uv11_share)
-);
+// ntt_masked_pwm #(
+//     .WIDTH(WIDTH)
+// ) pwm_inst10 (
+//     .clk(clk),
+//     .reset_n(reset_n),
+//     .zeroize(zeroize),
+//     .accumulate(accumulate),
+//     .u(u10_share),
+//     .v(v10_share),
+//     .w(w10_share),
+//     .rnd({rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2]}),
+//     .res(pwm_shares_uvo.uv2)//(uv10_share)
+// );
+
+// ntt_masked_pwm #(
+//     .WIDTH(WIDTH)
+// ) pwm_inst11 (
+//     .clk(clk),
+//     .reset_n(reset_n),
+//     .zeroize(zeroize),
+//     .accumulate(accumulate),
+//     .u(u11_share),
+//     .v(v11_share),
+//     .w(w11_share),
+//     .rnd({rnd_i[2], rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3]}),
+//     .res(pwm_shares_uvo.uv3)//(uv11_share)
+// );
 
 //---------------------------
 //Refresh randomness
@@ -413,9 +420,12 @@ ntt_masked_butterfly1x2 #(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
-    .uvw_i({uv00_share_reg, uv10_share_reg, uv01_share_reg, uv11_share_reg, twiddle_w00_share, twiddle_w01_share}),
-    .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
-    .uv_o(masked_gs_stage1_uvo)
+    .uvw_i(masked_pwm_mode ? {u10_share, u11_share, v10_share, v11_share, w10_share, w11_share} /*TODO: check connections*/ : {uv00_share_reg, uv10_share_reg, uv01_share_reg, uv11_share_reg, twiddle_w00_share, twiddle_w01_share}),
+    .rnd_i({rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2]}),
+    .mode(mode),
+    .accumulate(accumulate),
+    .uv_o(masked_gs_stage1_uvo),
+    .bf_pwm_uv_o(bf_pwm_shares_uvo)
 );
 
 //----------------------------------------------------
@@ -493,7 +503,7 @@ ntt_butterfly #(
 //----------------------------------------------------
 //ready_o logic
 
-`ifdef MLDSA_NTT_MASKING //TODO: confirm this is ok to do at synthesis time
+// `ifdef MLDSA_NTT_MASKING //TODO: confirm this is ok to do at synthesis time
     logic [MASKED_INTT_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -531,31 +541,31 @@ ntt_butterfly #(
 
     assign ready_o = masked_ready_reg[0];
 
-`else
-    logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
+// `else
+//     logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            masked_ready_reg <= 'b0;
-        else if (zeroize)
-            masked_ready_reg <= 'b0;
-        else begin
-            unique case(mode) //9:0 delay flop for enable
-                //Add masking_en mux for gs, pwm modes
-                ct:  masked_ready_reg <= {enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-                gs:  masked_ready_reg <= {enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-                pwm: masked_ready_reg <= accumulate ? {{(UNMASKED_BF_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
-                // pwm_intt: masked_ready_reg <= accumulate ? {enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-1:1]} : {1'b0, enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-2:1]}; //TODO revisit
-                pwa: masked_ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
-                pws: masked_ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
-                default: masked_ready_reg <= 'h0;
-            endcase
-        end
-    end
+//     always_ff @(posedge clk or negedge reset_n) begin
+//         if (!reset_n)
+//             masked_ready_reg <= 'b0;
+//         else if (zeroize)
+//             masked_ready_reg <= 'b0;
+//         else begin
+//             unique case(mode) //9:0 delay flop for enable
+//                 //Add masking_en mux for gs, pwm modes
+//                 ct:  masked_ready_reg <= {enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+//                 gs:  masked_ready_reg <= {enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
+//                 pwm: masked_ready_reg <= accumulate ? {{(UNMASKED_BF_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
+//                 // pwm_intt: masked_ready_reg <= accumulate ? {enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-1:1]} : {1'b0, enable, masked_ready_reg[MASKED_PWM_INTT_LATENCY-2:1]}; //TODO revisit
+//                 pwa: masked_ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
+//                 pws: masked_ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
+//                 default: masked_ready_reg <= 'h0;
+//             endcase
+//         end
+//     end
 
-    assign ready_o = masked_ready_reg[0];
+//     assign ready_o = masked_ready_reg[0];
 
-`endif
+// `endif
 
 
     

@@ -34,8 +34,11 @@ module ntt_masked_butterfly1x2
         // input wire enable,
         input masked_bf_uvwi_t uvw_i,
         input [4:0][WIDTH-1:0] rnd_i,
+        input mode_t mode,
+        input accumulate,
         
-        output bf_uvo_t uv_o
+        output bf_uvo_t uv_o,
+        output pwm_shares_uvo_t bf_pwm_uv_o
     );
 
     logic [1:0][WIDTH-1:0] u00, v00, w00;
@@ -44,9 +47,10 @@ module ntt_masked_butterfly1x2
     logic [1:0] v10_int [WIDTH-1:0];
     logic [1:0] u11_int [WIDTH-1:0];
     logic [1:0] v11_int [WIDTH-1:0];
-    logic [1:0][WIDTH-1:0] u10_packed, v10_packed, u11_packed, v11_packed;
+    logic [1:0][WIDTH-1:0] u10_packed, v10_packed, u11_packed, v11_packed, u10_packed_reg, u11_packed_reg;
     logic [HALF_WIDTH-1:0] u10_combined, v10_combined, u11_combined, v11_combined;
     logic [HALF_WIDTH-1:0] u10_div2, v10_div2, u11_div2, v11_div2;
+    logic pwm_mode;
 
     always_comb begin
         u00 = uvw_i.u00_i;
@@ -56,6 +60,8 @@ module ntt_masked_butterfly1x2
         u01 = uvw_i.u01_i;
         v01 = uvw_i.v01_i;
         w01 = uvw_i.w01_i;
+
+        pwm_mode = (mode == pwm);
     end
 
     //264
@@ -69,6 +75,8 @@ module ntt_masked_butterfly1x2
         .opv_i(v00),
         .opw_i(w00),
         .rnd_i({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
+        .mode(mode),
+        .accumulate(accumulate),
         .u_o(u10_int),
         .v_o(v10_int)
     );
@@ -83,6 +91,8 @@ module ntt_masked_butterfly1x2
         .opv_i(v01),
         .opw_i(w01),
         .rnd_i({rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1]}),
+        .mode(mode),
+        .accumulate(accumulate),
         .u_o(u11_int),
         .v_o(v11_int)
     );
@@ -98,10 +108,10 @@ module ntt_masked_butterfly1x2
             v11_packed[0][i] = v11_int[i][0];
             v11_packed[1][i] = v11_int[i][1];
         end
-        u10_combined = HALF_WIDTH'(u10_packed[0] + u10_packed[1]);
-        v10_combined = HALF_WIDTH'(v10_packed[0] + v10_packed[1]);
-        u11_combined = HALF_WIDTH'(u11_packed[0] + u11_packed[1]);
-        v11_combined = HALF_WIDTH'(v11_packed[0] + v11_packed[1]);
+        u10_combined = pwm_mode ? '0 : HALF_WIDTH'(u10_packed[0] + u10_packed[1]);
+        v10_combined = pwm_mode ? '0 : HALF_WIDTH'(v10_packed[0] + v10_packed[1]);
+        u11_combined = pwm_mode ? '0 : HALF_WIDTH'(u11_packed[0] + u11_packed[1]);
+        v11_combined = pwm_mode ? '0 : HALF_WIDTH'(v11_packed[0] + v11_packed[1]);
     end
 
     //Perform div2 on combined outputs
@@ -140,16 +150,29 @@ module ntt_masked_butterfly1x2
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             uv_o <= 'h0;
+            u10_packed_reg <= '0;
+            u11_packed_reg <= '0;
         end
         else if (zeroize) begin
             uv_o <= 'h0;
+            u10_packed_reg <= '0;
+            u11_packed_reg <= '0;
         end
         else begin
             uv_o.u20_o <= u10_div2;
             uv_o.u21_o <= v10_div2;
             uv_o.v20_o <= u11_div2;
             uv_o.v21_o <= v11_div2;
+            u10_packed_reg <= u10_packed;
+            u11_packed_reg <= u11_packed;
         end
+    end
+
+    always_comb begin
+        bf_pwm_uv_o.uv0 = 0; //TODO: optimize
+        bf_pwm_uv_o.uv1 = 0;
+        bf_pwm_uv_o.uv2 = accumulate ? u10_packed/*_reg*/ : u10_packed; //TODO: check timing
+        bf_pwm_uv_o.uv3 = accumulate ? u11_packed/*_reg*/ : u11_packed;
     end
 
 
