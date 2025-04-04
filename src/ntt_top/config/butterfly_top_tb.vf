@@ -52,4 +52,4 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_BFU_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_gs_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_butterfly1x2.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_noncascade_butterfly_2x2.sv
