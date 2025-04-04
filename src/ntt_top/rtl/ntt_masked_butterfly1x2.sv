@@ -171,8 +171,8 @@ module ntt_masked_butterfly1x2
     always_comb begin
         bf_pwm_uv_o.uv0 = 0; //TODO: optimize
         bf_pwm_uv_o.uv1 = 0;
-        bf_pwm_uv_o.uv2 = accumulate ? u10_packed/*_reg*/ : u10_packed; //TODO: check timing
-        bf_pwm_uv_o.uv3 = accumulate ? u11_packed/*_reg*/ : u11_packed;
+        bf_pwm_uv_o.uv2 = u10_packed;
+        bf_pwm_uv_o.uv3 = u11_packed;
     end
 
 

@@ -197,8 +197,6 @@ module ntt_top
         end
     end
 
-    // assign pw_rden_dest_mem = pw_share_mem_rden; //accumulate ? pw_rden : 1'b0; //TODO: clean up
-
     //Mem IF assignments:
     //mem wr - NTT/INTT mode, write ntt data. PWO mode, write pwm/a/s data
     assign mem_wr_req.rd_wr_en = !pwo_mode ? (mem_wren_mux ? RW_WRITE : RW_IDLE) //TODO convert mem_wren_mux to rw enum

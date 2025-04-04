@@ -65,7 +65,7 @@ module ntt_masked_gs_butterfly
         .zeroize(zeroize),
         .sub(1'b0),
         .u((pwm_mode & accumulate) ? {mul_res1_reg, mul_res0_reg} : opu_i),
-        .v((pwm_mode & accumulate) ? opw_i : opv_i), //TODO: check opw_i latency in pwm mode
+        .v((pwm_mode & accumulate) ? opw_i : opv_i),
         .rnd0(rnd_i[0]),
         .rnd1(rnd_i[1]),
         .rnd2(rnd_i[2]),

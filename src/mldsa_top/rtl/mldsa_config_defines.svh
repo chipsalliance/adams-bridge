@@ -18,8 +18,7 @@
    `include "abr_sva.svh"
    // `define RV_FPGA_OPTIMIZE
    // `define RV_FPGA_SCA
-   // `define MLDSA_MASKING
-   `define MLDSA_NTT_MASKING
+   `define MLDSA_MASKING
 
   `define ABR_ICG           abr_clk_gate
 
