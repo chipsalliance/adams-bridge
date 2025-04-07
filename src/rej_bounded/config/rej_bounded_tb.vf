@@ -1,7 +1,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
-+incdir+${ADAMSBRIDGE_ROOT}/src/rej_bounded/tb
 +incdir+${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/rej_bounded/tb
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
@@ -26,12 +26,12 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Boolean_sub.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_full_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_A2B_conv.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Boolean_adder.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Arith_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_B2A_conv.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
-${ADAMSBRIDGE_ROOT}/src/rej_bounded/tb/rej_bounded_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Arith_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded2.sv
+${ADAMSBRIDGE_ROOT}/src/rej_bounded/tb/rej_bounded_tb.sv
