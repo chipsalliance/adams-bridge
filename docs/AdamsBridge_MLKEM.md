@@ -14,7 +14,7 @@ ML-KEM (Module-Lattice-Based Key-Encapsulation Mechanism) is a quantum-resistant
 
 Adam’s Bridge MK-KEM accelerator has all the necessary components to execute a pure hardware PQC operation. The main operations that involve more computational complexity, such as NTT, hashing, and sampling units, are explained as follows.
 
- ![ML-KEM diagram](./images/media/MLKEM_image.png)
+ ![ML-KEM diagram](./images/MLKEM/AdamsBridge_MLKEM.png)
 
 The security level of ML-KEM defined by NIST are as follows:
 
@@ -640,7 +640,7 @@ To preserve correctness of memory layout, we propose a method to further swap th
 
 Figure below shows the 2x2 architecture indicating data swapping and 7-layer computation in ML-KEM.
 
-![][./images/MLKEM/image1.png]
+![](./images/MLKEM/image1.png)
 
 Passthrough control signal is asserted when performing the last stage 7 in ML-KEM NTT and will disable the second set of butterfly cores leading to a passthrough of inputs to outputs. Since the inputs of the second stage are swapped, the correct order of coefficients is written to memory.
 
@@ -721,13 +721,13 @@ In INTT, the coefficients are read and executed in order, i.e., in cycle 0, the 
 3. **INTT memory access resolution for ML-KEM**
 
 In ML-KEM, since even and odd coefficients need to be grouped together, the first stage of butterfly operations is bypassed. The inputs are passed onto the second stage after swapping them, which results in correct arithmetic results in ML-KEM INTT operation. The following architecture indicates the passthrough mode for INTT:  
-![][./images/MLKEM/image2.png]
+![](./images/MLKEM/image2.png)
 
 Remaining layers of INTT are similar to ML-KEM NTT where even and odd operations alternate for 16, 4 and 1 clock cycles and both butterfly stages are engaged. Twiddle factors are shared between even and odd operations and in the proposed method, the twiddle factors will be appropriately driven to maintain arithmetic correctness.
 
 The final NTT/INTT architecture is shown in the following figure:
 
-![][./images/MLKEM/image3.png]
+![](./images/MLKEM/image3.png)
 
 The butterfly operation is determined by a mode input that indicates whether current operation is NTT or INTT. The ntt\_passthrough flag is asserted in NTT mode during the last round of operation. The intt\_passthrough flag is asserted in INTT mode during the first round of operation. Once asserted, the appropriate butterfly stage is skipped and the inputs are swapped and directly passed onto outputs.
 
@@ -756,7 +756,7 @@ Since the input value for reduction is presented in 24 bits, k is set to 24\. In
 
 The figure below illustrates the architecture of this reduction technique, which requires two multiplications, along with a shifter and subtractor.
 
-![][./images/MLKEM/image4.png]
+![](./images/MLKEM/image4.png)
 
 The modular multiplication is implemented with a 2-stage pipeline architecture. At the first pipeline stage, z=a·b is calculated. At the second pipeline stage, the reduction is executed to obtain the result and the result is output.
 
@@ -830,15 +830,15 @@ This optimization significantly enhances the efficiency of the ML-KEM NTT implem
 
 The hardware architecture of this proposal is shown below while all operations are modular:
 
-![][./images/MLKEM/image5.png]
+![](./images/MLKEM/image5.png)
 
 The proposed Karatsuba-based optimization is well aligned with our memory architecture, which stores four polynomial coefficients per address. Our memory architecture is shown below:
 
-![][./images/MLKEM/image6.png]
+![](./images/MLKEM/image6.png)
 
 This structure allows efficient loading and processing of coefficient pairs, reducing the number of memory accesses required during multiplication. Since Karatsuba’s method naturally decomposes polynomial multiplication into smaller subproblems involving coefficient pairs, it maps well onto our memory organization, enabling parallel processing of multiple coefficient pairs in a single memory fetch. 
 
-![][./images/MLKEM/image7.png]
+![](./images/MLKEM/image7.png)
 
 # Rejection Sampler
 
@@ -864,7 +864,7 @@ We propose an architecture to remove the cost of memory access from Keccak to re
 
 High-level architecture is illustrated as follows:
 
-![][./images/MLKEM/image8.png]
+![](./images/MLKEM/image8.png)
 
 Keccak is used in SHAKE-128 configuration for rejection sampling operation. Hence, it will take the input data and generates 1344-bit output after each round. We propose implementing of Keccak while each round takes 12 cycles. The format of input data is as follows:
 
@@ -908,7 +908,7 @@ The failure probability for different N as shown below:
 
 To balance the hardware resource utilization while improving the performance, we chose to have 8 input samples. Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
-![][./images/MLKEM/image9.png]
+![](./images/MLKEM/image9.png)
 
 There are 8 rejection sampler circuits corresponding to each 12-bit input. The controller checks if each of these coefficients should be rejected or not. The valid input coefficients can be stored into the FIFO. While maximum 8 coefficients can be fed into FIFO, there are three more entries for the remaining coefficients from the previous cycle. There are several scenarios for the proposed balanced throughput architecture:
 
@@ -929,7 +929,7 @@ There are 8 rejection sampler circuits corresponding to each 12-bit input. The c
 4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 14 cycles. This would match with Keccak throughput that generates 112 coefficients per 12 cycles.  
 5) The maximum number of FULL conditions is when there are no rejected coefficients for all 112 inputs. In this case, after every cycle with 8 coefficients, there is one FULL condition. It takes 28 cycles to process all PISO contents. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, the Keccak output will be stored into PISO when all PISO contents are processed by rejection sampler.
 
-![][./images/MLKEM/image10.png]
+![](./images/MLKEM/image10.png)
 
 # CBD sampler
 
@@ -943,11 +943,11 @@ which turns uniformly distributed samples into binomial distribution.
 
 To have a configurable Hamming weight computation, the CBD sampler extracts 8η random bits per coefficient from a pseudorandom bit stream. Then it computes the Hamming weight difference between the first and second halves of these bits to derive the binomially distributed coefficient. A control unit dynamically adjusts the sampling logic based on the selected η value, allowing seamless reconfiguration.
 
-![][./images/MLKEM/image11.png]
+![](./images/MLKEM/image11.png)
 
 Our proposed data flow ensures that 4 coefficients are computed per cycle, significantly improving throughput compared to conventional serial samplers. A parallel-input serial-output (PISO) buffer is employed to manage input bitstreams efficiently, ensuring a steady supply of random bits.
 
-![][./images/MLKEM/image12.png]
+![](./images/MLKEM/image12.png)
 
 The binomial sampler operates concurrently with Keccak, reducing overall latency. By leveraging a pipelined structure, the design ensures that binomial sampling does not become a performance bottleneck for polynomial arithmetic operations. A PISO buffer stores intermediate values, reducing redundant computations and improving resource utilization. The architecture supports dynamic switching between η values based on control signals, making it adaptable for different security levels.
 
@@ -959,7 +959,7 @@ The configurable design reduces hardware redundancy by allowing a single samplin
 
 The compression stage in ML-KEM takes full 12-bit polynomial coefficients and reduces them to a smaller representation of d bits, where d varies depending on the compression level. For ML-KEM, at least three different d values must be supported. This compression is a lossy operation that approximates a division by q \= 3329, mapping each coefficient in Zq to a smaller domain suitable for compact ciphertext encoding. In hardware, this typically requires multiplication by a scaling factor, followed by division and rounding operations that are expensive in terms of logic and latency.
 
-![A black and white textAI-generated content may be incorrect.][./images/MLKEM/image13]
+![](./images/MLKEM/image13.png)
 
 To optimize this process, we propose a hardware-efficient compression architecture that processes four 12-bit coefficients per clock cycle. Each coefficient undergoes configurable shifts and additions to approximate the division operation. 
 
@@ -971,21 +971,21 @@ where data is a 12-bit coefficient and d is the target compressed bit-width. The
 
 The following figure shows the compression map where d=1:
 
-![][./images/MLKEM/image14.png]
+![](./images/MLKEM/image14.png)
 
 Rather than implementing a general-purpose division unit, which would significantly increase area, we leverage a dual-purpose Barrett reduction module, originally included for use in the Number-Theoretic Transform (NTT) and inverse NTT stages. This is a key novelty of our design: by reusing the Barrett logic for both modular reduction and compression scaling, we eliminate the need for redundant arithmetic units and improve overall resource utilization.
 
 Barrett reduction is a well-established technique used in lattice-based cryptographic schemes to reduce coefficients modulo a fixed constant, such as q \= 3329, in a way that avoids full-width division. With careful parameter selection, the Barrett algorithm can be optimized to require only a single level of conditional subtraction, making it highly suitable for high-speed and low-area hardware implementations. 
 
-![][./images/MLKEM/image15.png]
+![](./images/MLKEM/image15.png)
 
 In our architecture, the same logic is reused for the division required during compression, allowing efficient rounding without the overhead of full-precision arithmetic.
 
-![][./images/MLKEM/image16.png]
+![](./images/MLKEM/image16.png)
 
 Following compression, decompression performs the inverse operation by expanding d-bit coefficients back to 12-bit values in Zq ​based on the following formula. 
 
-![A group of black letters and numbersAI-generated content may be incorrect.][./images/MLKEM/image17.png]
+![](./images/MLKEM/image17.png)
 
 Our architecture handles four such compressed coefficients per clock cycle using four parallel multipliers. Each compressed coefficient is scaled and shifted based on its original encoding formula to recover the approximate 12-bit representation. The decompression path supports multiple d values via a configurable datapath, enabling seamless integration into systems supporting different compression profiles for ML-KEM using the following equation. 
 
@@ -993,7 +993,7 @@ datad-1:0\* q+ 2d-1≫ d
 
 The addition of  2d-1 serves the same rounding purpose as q2​ in the compression path. Since right shifts truncate in hardware, adding  2d-1 ensures the result is rounded to the nearest integer instead of being consistently biased downward. As with compression, the technique is hardware-friendly and avoids complex division or floating-point logic, while delivering improved accuracy through a simple constant addition and shift. The proposed architecture for decompression is shown as follows:
 
-![][./images/MLKEM/image18.png]
+![](./images/MLKEM/image18.png)
 
 To maximize efficiency, the decompression and compression stages share arithmetic resources wherever possible. Multipliers, shift-add networks, and routing logic are multiplexed between the two operations, enabling compact hardware without sacrificing throughput. The shared Barrett reduction module is a central feature of this architecture, serving both traditional modular reduction in the NTT/INTT flow and the scaled division in compression.
 
