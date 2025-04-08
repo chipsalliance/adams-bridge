@@ -8,7 +8,7 @@
 
 # ML-KEM Overview
 
-ML-KEM (Module-Lattice-Based Key-Encapsulation Mechanism) is a quantum-resistant Key exchange scheme defined in FIPS 203 \[2\].
+ML-KEM (Module-Lattice-Based Key-Encapsulation Mechanism) is a quantum-resistant Key exchange scheme defined in FIPS 203 \[1\].
 
 # High-Level Overview
 
@@ -1002,4 +1002,4 @@ This approach not only improves area efficiency but also simplifies integration 
 
 # References:
 
-[2] NIST, "FIPS 203 Module-Lattice-Based Key-Encapsulation Mechanism Standard," August 13, 2024.
+[1] NIST, "FIPS 203 Module-Lattice-Based Key-Encapsulation Mechanism Standard," August 13, 2024.
