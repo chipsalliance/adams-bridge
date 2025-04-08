@@ -340,73 +340,73 @@ In ML-KEM, for n=256 coefficients, (log n)-1 layers of NTT/INTT operations must 
 
 Consider the following memory layout as an example output of stage 1&2 of NTT:
 
-| 1&2 |  |  |  |
-| ----- | ----- | ----- | ----- |
-|  |  |  |  |
-| 0 | 64 | 128 | 192 |
-| 1 | 65 | 129 | 193 |
-| 2 | 66 | 130 | 194 |
-| 3 | 67 | 131 | 195 |
-| 4 | 68 | 132 | 196 |
-| 5 | 69 | 133 | 197 |
-| 6 | 70 | 134 | 198 |
-| 7 | 71 | 135 | 199 |
-| 8 | 72 | 136 | 200 |
-| 9 | 73 | 137 | 201 |
-| 10 | 74 | 138 | 202 |
-| 11 | 75 | 139 | 203 |
-| 12 | 76 | 140 | 204 |
-| 13 | 77 | 141 | 205 |
-| 14 | 78 | 142 | 206 |
-| 15 | 79 | 143 | 207 |
-| 16 | 80 | 144 | 208 |
-| 17 | 81 | 145 | 209 |
-| 18 | 82 | 146 | 210 |
-| 19 | 83 | 147 | 211 |
-| 20 | 84 | 148 | 212 |
-| 21 | 85 | 149 | 213 |
-| 22 | 86 | 150 | 214 |
-| 23 | 87 | 151 | 215 |
-| 24 | 88 | 152 | 216 |
-| 25 | 89 | 153 | 217 |
-| 26 | 90 | 154 | 218 |
-| 27 | 91 | 155 | 219 |
-| 28 | 92 | 156 | 220 |
-| 29 | 93 | 157 | 221 |
-| 30 | 94 | 158 | 222 |
-| 31 | 95 | 159 | 223 |
-| 32 | 96 | 160 | 224 |
-| 33 | 97 | 161 | 225 |
-| 34 | 98 | 162 | 226 |
-| 35 | 99 | 163 | 227 |
-| 36 | 100 | 164 | 228 |
-| 37 | 101 | 165 | 229 |
-| 38 | 102 | 166 | 230 |
-| 39 | 103 | 167 | 231 |
-| 40 | 104 | 168 | 232 |
-| 41 | 105 | 169 | 233 |
-| 42 | 106 | 170 | 234 |
-| 43 | 107 | 171 | 235 |
-| 44 | 108 | 172 | 236 |
-| 45 | 109 | 173 | 237 |
-| 46 | 110 | 174 | 238 |
-| 47 | 111 | 175 | 239 |
-| 48 | 112 | 176 | 240 |
-| 49 | 113 | 177 | 241 |
-| 50 | 114 | 178 | 242 |
-| 51 | 115 | 179 | 243 |
-| 52 | 116 | 180 | 244 |
-| 53 | 117 | 181 | 245 |
-| 54 | 118 | 182 | 246 |
-| 55 | 119 | 183 | 247 |
-| 56 | 120 | 184 | 248 |
-| 57 | 121 | 185 | 249 |
-| 58 | 122 | 186 | 250 |
-| 59 | 123 | 187 | 251 |
-| 60 | 124 | 188 | 252 |
-| 61 | 125 | 189 | 253 |
-| 62 | 126 | 190 | 254 |
-| 63 | 127 | 191 | 255 |
+| 1&2 |     |     |     |
+| --- | --- | --- | --- |
+|     |     |     |     |
+| 0   | 64  | 128 | 192 |
+| 1   | 65  | 129 | 193 |
+| 2   | 66  | 130 | 194 |
+| 3   | 67  | 131 | 195 |
+| 4   | 68  | 132 | 196 |
+| 5   | 69  | 133 | 197 |
+| 6   | 70  | 134 | 198 |
+| 7   | 71  | 135 | 199 |
+| 8   | 72  | 136 | 200 |
+| 9   | 73  | 137 | 201 |
+| 10  | 74  | 138 | 202 |
+| 11  | 75  | 139 | 203 |
+| 12  | 76  | 140 | 204 |
+| 13  | 77  | 141 | 205 |
+| 14  | 78  | 142 | 206 |
+| 15  | 79  | 143 | 207 |
+| 16  | 80  | 144 | 208 |
+| 17  | 81  | 145 | 209 |
+| 18  | 82  | 146 | 210 |
+| 19  | 83  | 147 | 211 |
+| 20  | 84  | 148 | 212 |
+| 21  | 85  | 149 | 213 |
+| 22  | 86  | 150 | 214 |
+| 23  | 87  | 151 | 215 |
+| 24  | 88  | 152 | 216 |
+| 25  | 89  | 153 | 217 |
+| 26  | 90  | 154 | 218 |
+| 27  | 91  | 155 | 219 |
+| 28  | 92  | 156 | 220 |
+| 29  | 93  | 157 | 221 |
+| 30  | 94  | 158 | 222 |
+| 31  | 95  | 159 | 223 |
+| 32  | 96  | 160 | 224 |
+| 33  | 97  | 161 | 225 |
+| 34  | 98  | 162 | 226 |
+| 35  | 99  | 163 | 227 |
+| 36  | 100 | 164 | 228 |
+| 37  | 101 | 165 | 229 |
+| 38  | 102 | 166 | 230 |
+| 39  | 103 | 167 | 231 |
+| 40  | 104 | 168 | 232 |
+| 41  | 105 | 169 | 233 |
+| 42  | 106 | 170 | 234 |
+| 43  | 107 | 171 | 235 |
+| 44  | 108 | 172 | 236 |
+| 45  | 109 | 173 | 237 |
+| 46  | 110 | 174 | 238 |
+| 47  | 111 | 175 | 239 |
+| 48  | 112 | 176 | 240 |
+| 49  | 113 | 177 | 241 |
+| 50  | 114 | 178 | 242 |
+| 51  | 115 | 179 | 243 |
+| 52  | 116 | 180 | 244 |
+| 53  | 117 | 181 | 245 |
+| 54  | 118 | 182 | 246 |
+| 55  | 119 | 183 | 247 |
+| 56  | 120 | 184 | 248 |
+| 57  | 121 | 185 | 249 |
+| 58  | 122 | 186 | 250 |
+| 59  | 123 | 187 | 251 |
+| 60  | 124 | 188 | 252 |
+| 61  | 125 | 189 | 253 |
+| 62  | 126 | 190 | 254 |
+| 63  | 127 | 191 | 255 |
 
 The following coefficient groups are executed by the 2x2 butterfly architecture:
 
@@ -422,71 +422,71 @@ Every cycle, the coefficients toggle between even and odd. By managing twiddle f
 
 Following memory layout shows output of stage 3&4:
 
-| 3&4 |  |  |  |
-| ----- | ----- | ----- | ----- |
-|  |  |  |  |
-| 0 | 16 | 32 | 48 |
-| 64 | 80 | 96 | 112 |
+| 3&4 |     |     |     |
+| --- | --- | --- | --- |
+|     |     |     |     |
+| 0   | 16  | 32  | 48  |
+| 64  | 80  | 96  | 112 |
 | 128 | 144 | 160 | 176 |
 | 192 | 208 | 224 | 240 |
-| 1 | 17 | 33 | 49 |
-| 65 | 81 | 97 | 113 |
+| 1   | 17  | 33  | 49  |
+| 65  | 81  | 97  | 113 |
 | 129 | 145 | 161 | 177 |
 | 193 | 209 | 225 | 241 |
-| 2 | 18 | 34 | 50 |
-| 66 | 82 | 98 | 114 |
+| 2   | 18  | 34  | 50  |
+| 66  | 82  | 98  | 114 |
 | 130 | 146 | 162 | 178 |
 | 194 | 210 | 226 | 242 |
-| 3 | 19 | 35 | 51 |
-| 67 | 83 | 99 | 115 |
+| 3   | 19  | 35  | 51  |
+| 67  | 83  | 99  | 115 |
 | 131 | 147 | 163 | 179 |
 | 195 | 211 | 227 | 243 |
-| 4 | 20 | 36 | 52 |
-| 68 | 84 | 100 | 116 |
+| 4   | 20  | 36  | 52  |
+| 68  | 84  | 100 | 116 |
 | 132 | 148 | 164 | 180 |
 | 196 | 212 | 228 | 244 |
-| 5 | 21 | 37 | 53 |
-| 69 | 85 | 101 | 117 |
+| 5   | 21  | 37  | 53  |
+| 69  | 85  | 101 | 117 |
 | 133 | 149 | 165 | 181 |
 | 197 | 213 | 229 | 245 |
-| 6 | 22 | 38 | 54 |
-| 70 | 86 | 102 | 118 |
+| 6   | 22  | 38  | 54  |
+| 70  | 86  | 102 | 118 |
 | 134 | 150 | 166 | 182 |
 | 198 | 214 | 230 | 246 |
-| 7 | 23 | 39 | 55 |
-| 71 | 87 | 103 | 119 |
+| 7   | 23  | 39  | 55  |
+| 71  | 87  | 103 | 119 |
 | 135 | 151 | 167 | 183 |
 | 199 | 215 | 231 | 247 |
-| 8 | 24 | 40 | 56 |
-| 72 | 88 | 104 | 120 |
+| 8   | 24  | 40  | 56  |
+| 72  | 88  | 104 | 120 |
 | 136 | 152 | 168 | 184 |
 | 200 | 216 | 232 | 248 |
-| 9 | 25 | 41 | 57 |
-| 73 | 89 | 105 | 121 |
+| 9   | 25  | 41  | 57  |
+| 73  | 89  | 105 | 121 |
 | 137 | 153 | 169 | 185 |
 | 201 | 217 | 233 | 249 |
-| 10 | 26 | 42 | 58 |
-| 74 | 90 | 106 | 122 |
+| 10  | 26  | 42  | 58  |
+| 74  | 90  | 106 | 122 |
 | 138 | 154 | 170 | 186 |
 | 202 | 218 | 234 | 250 |
-| 11 | 27 | 43 | 59 |
-| 75 | 91 | 107 | 123 |
+| 11  | 27  | 43  | 59  |
+| 75  | 91  | 107 | 123 |
 | 139 | 155 | 171 | 187 |
 | 203 | 219 | 235 | 251 |
-| 12 | 28 | 44 | 60 |
-| 76 | 92 | 108 | 124 |
+| 12  | 28  | 44  | 60  |
+| 76  | 92  | 108 | 124 |
 | 140 | 156 | 172 | 188 |
 | 204 | 220 | 236 | 252 |
-| 13 | 29 | 45 | 61 |
-| 77 | 93 | 109 | 125 |
+| 13  | 29  | 45  | 61  |
+| 77  | 93  | 109 | 125 |
 | 141 | 157 | 173 | 189 |
 | 205 | 221 | 237 | 253 |
-| 14 | 30 | 46 | 62 |
-| 78 | 94 | 110 | 126 |
+| 14  | 30  | 46  | 62  |
+| 78  | 94  | 110 | 126 |
 | 142 | 158 | 174 | 190 |
 | 206 | 222 | 238 | 254 |
-| 15 | 31 | 47 | 63 |
-| 79 | 95 | 111 | 127 |
+| 15  | 31  | 47  | 63  |
+| 79  | 95  | 111 | 127 |
 | 143 | 159 | 175 | 191 |
 | 207 | 223 | 239 | 255 |
 
@@ -494,16 +494,16 @@ As shown, in merged stages 3&4, even operations occur for 4 consecutive cycles a
 
 In stage 5&6, the memory output is as follows:
 
-| 5&6 |  |  |  |
-| ----- | ----- | ----- | ----- |
-|  |  |  |  |
-| 0 | 4 | 8 | 12 |
-| 16 | 20 | 24 | 28 |
-| 32 | 36 | 40 | 44 |
-| 48 | 52 | 56 | 60 |
-| 64 | 68 | 72 | 76 |
-| 80 | 84 | 88 | 92 |
-| 96 | 100 | 104 | 108 |
+| 5&6 |     |     |     |
+| --- | --- | --- | --- |
+|     |     |     |     |
+| 0   | 4   | 8   | 12  |
+| 16  | 20  | 24  | 28  |
+| 32  | 36  | 40  | 44  |
+| 48  | 52  | 56  | 60  |
+| 64  | 68  | 72  | 76  |
+| 80  | 84  | 88  | 92  |
+| 96  | 100 | 104 | 108 |
 | 112 | 116 | 120 | 124 |
 | 128 | 132 | 136 | 140 |
 | 144 | 148 | 152 | 156 |
@@ -513,13 +513,13 @@ In stage 5&6, the memory output is as follows:
 | 208 | 212 | 216 | 220 |
 | 224 | 228 | 232 | 236 |
 | 240 | 244 | 248 | 252 |
-| 1 | 5 | 9 | 13 |
-| 17 | 21 | 25 | 29 |
-| 33 | 37 | 41 | 45 |
-| 49 | 53 | 57 | 61 |
-| 65 | 69 | 73 | 77 |
-| 81 | 85 | 89 | 93 |
-| 97 | 101 | 105 | 109 |
+| 1   | 5   | 9   | 13  |
+| 17  | 21  | 25  | 29  |
+| 33  | 37  | 41  | 45  |
+| 49  | 53  | 57  | 61  |
+| 65  | 69  | 73  | 77  |
+| 81  | 85  | 89  | 93  |
+| 97  | 101 | 105 | 109 |
 | 113 | 117 | 121 | 125 |
 | 129 | 133 | 137 | 141 |
 | 145 | 149 | 153 | 157 |
@@ -529,13 +529,13 @@ In stage 5&6, the memory output is as follows:
 | 209 | 213 | 217 | 221 |
 | 225 | 229 | 233 | 237 |
 | 241 | 245 | 249 | 253 |
-| 2 | 6 | 10 | 14 |
-| 18 | 22 | 26 | 30 |
-| 34 | 38 | 42 | 46 |
-| 50 | 54 | 58 | 62 |
-| 66 | 70 | 74 | 78 |
-| 82 | 86 | 90 | 94 |
-| 98 | 102 | 106 | 110 |
+| 2   | 6   | 10  | 14  |
+| 18  | 22  | 26  | 30  |
+| 34  | 38  | 42  | 46  |
+| 50  | 54  | 58  | 62  |
+| 66  | 70  | 74  | 78  |
+| 82  | 86  | 90  | 94  |
+| 98  | 102 | 106 | 110 |
 | 114 | 118 | 122 | 126 |
 | 130 | 134 | 138 | 142 |
 | 146 | 150 | 154 | 158 |
@@ -545,13 +545,13 @@ In stage 5&6, the memory output is as follows:
 | 210 | 214 | 218 | 222 |
 | 226 | 230 | 234 | 238 |
 | 242 | 246 | 250 | 254 |
-| 3 | 7 | 11 | 15 |
-| 19 | 23 | 27 | 31 |
-| 35 | 39 | 43 | 47 |
-| 51 | 55 | 59 | 63 |
-| 67 | 71 | 75 | 79 |
-| 83 | 87 | 91 | 95 |
-| 99 | 103 | 107 | 111 |
+| 3   | 7   | 11  | 15  |
+| 19  | 23  | 27  | 31  |
+| 35  | 39  | 43  | 47  |
+| 51  | 55  | 59  | 63  |
+| 67  | 71  | 75  | 79  |
+| 83  | 87  | 91  | 95  |
+| 99  | 103 | 107 | 111 |
 | 115 | 119 | 123 | 127 |
 | 131 | 135 | 139 | 143 |
 | 147 | 151 | 155 | 159 |
@@ -566,34 +566,34 @@ Here 16 even operations occur for 16 consecutive clock cycles followed by 16 odd
 
 In the last round, the output of memory is as follows:
 
-| 7&8 |  |  |  |
-| ----- | ----- | ----- | ----- |
-|  |  |  |  |
-| 0 | 1 | 2 | 3 |
-| 4 | 5 | 6 | 7 |
-| 8 | 9 | 10 | 11 |
-| 12 | 13 | 14 | 15 |
-| 16 | 17 | 18 | 19 |
-| 20 | 21 | 22 | 23 |
-| 24 | 25 | 26 | 27 |
-| 28 | 29 | 30 | 31 |
-| 32 | 33 | 34 | 35 |
-| 36 | 37 | 38 | 39 |
-| 40 | 41 | 42 | 43 |
-| 44 | 45 | 46 | 47 |
-| 48 | 49 | 50 | 51 |
-| 52 | 53 | 54 | 55 |
-| 56 | 57 | 58 | 59 |
-| 60 | 61 | 62 | 63 |
-| 64 | 65 | 66 | 67 |
-| 68 | 69 | 70 | 71 |
-| 72 | 73 | 74 | 75 |
-| 76 | 77 | 78 | 79 |
-| 80 | 81 | 82 | 83 |
-| 84 | 85 | 86 | 87 |
-| 88 | 89 | 90 | 91 |
-| 92 | 93 | 94 | 95 |
-| 96 | 97 | 98 | 99 |
+| 7&8 |     |     |     |
+| --- | --- | --- | --- |
+|     |     |     |     |
+| 0   | 1   | 2   | 3   |
+| 4   | 5   | 6   | 7   |
+| 8   | 9   | 10  | 11  |
+| 12  | 13  | 14  | 15  |
+| 16  | 17  | 18  | 19  |
+| 20  | 21  | 22  | 23  |
+| 24  | 25  | 26  | 27  |
+| 28  | 29  | 30  | 31  |
+| 32  | 33  | 34  | 35  |
+| 36  | 37  | 38  | 39  |
+| 40  | 41  | 42  | 43  |
+| 44  | 45  | 46  | 47  |
+| 48  | 49  | 50  | 51  |
+| 52  | 53  | 54  | 55  |
+| 56  | 57  | 58  | 59  |
+| 60  | 61  | 62  | 63  |
+| 64  | 65  | 66  | 67  |
+| 68  | 69  | 70  | 71  |
+| 72  | 73  | 74  | 75  |
+| 76  | 77  | 78  | 79  |
+| 80  | 81  | 82  | 83  |
+| 84  | 85  | 86  | 87  |
+| 88  | 89  | 90  | 91  |
+| 92  | 93  | 94  | 95  |
+| 96  | 97  | 98  | 99  |
 | 100 | 101 | 102 | 103 |
 | 104 | 105 | 106 | 107 |
 | 108 | 109 | 110 | 111 |
@@ -648,73 +648,73 @@ Passthrough control signal is asserted when performing the last stage 7 in ML-KE
 
 The following figure shows example memory contents for an INTT operation in Dilithium:
 
-| Address |  | 1&2 |  |  |  |
-| ----- | ----- | ----- | ----- | ----- | ----- |
-|  |  |  |  |  |  |
-| 0 |  | 0 | 1 | 2 | 3 |
-| 1 |  | 4 | 5 | 6 | 7 |
-| 2 |  | 8 | 9 | 10 | 11 |
-| 3 |  | 12 | 13 | 14 | 15 |
-| 4 |  | 16 | 17 | 18 | 19 |
-| 5 |  | 20 | 21 | 22 | 23 |
-| 6 |  | 24 | 25 | 26 | 27 |
-| 7 |  | 28 | 29 | 30 | 31 |
-| 8 |  | 32 | 33 | 34 | 35 |
-| 9 |  | 36 | 37 | 38 | 39 |
-| 10 |  | 40 | 41 | 42 | 43 |
-| 11 |  | 44 | 45 | 46 | 47 |
-| 12 |  | 48 | 49 | 50 | 51 |
-| 13 |  | 52 | 53 | 54 | 55 |
-| 14 |  | 56 | 57 | 58 | 59 |
-| 15 |  | 60 | 61 | 62 | 63 |
-| 16 |  | 64 | 65 | 66 | 67 |
-| 17 |  | 68 | 69 | 70 | 71 |
-| 18 |  | 72 | 73 | 74 | 75 |
-| 19 |  | 76 | 77 | 78 | 79 |
-| 20 |  | 80 | 81 | 82 | 83 |
-| 21 |  | 84 | 85 | 86 | 87 |
-| 22 |  | 88 | 89 | 90 | 91 |
-| 23 |  | 92 | 93 | 94 | 95 |
-| 24 |  | 96 | 97 | 98 | 99 |
-| 25 |  | 100 | 101 | 102 | 103 |
-| 26 |  | 104 | 105 | 106 | 107 |
-| 27 |  | 108 | 109 | 110 | 111 |
-| 28 |  | 112 | 113 | 114 | 115 |
-| 29 |  | 116 | 117 | 118 | 119 |
-| 30 |  | 120 | 121 | 122 | 123 |
-| 31 |  | 124 | 125 | 126 | 127 |
-| 32 |  | 128 | 129 | 130 | 131 |
-| 33 |  | 132 | 133 | 134 | 135 |
-| 34 |  | 136 | 137 | 138 | 139 |
-| 35 |  | 140 | 141 | 142 | 143 |
-| 36 |  | 144 | 145 | 146 | 147 |
-| 37 |  | 148 | 149 | 150 | 151 |
-| 38 |  | 152 | 153 | 154 | 155 |
-| 39 |  | 156 | 157 | 158 | 159 |
-| 40 |  | 160 | 161 | 162 | 163 |
-| 41 |  | 164 | 165 | 166 | 167 |
-| 42 |  | 168 | 169 | 170 | 171 |
-| 43 |  | 172 | 173 | 174 | 175 |
-| 44 |  | 176 | 177 | 178 | 179 |
-| 45 |  | 180 | 181 | 182 | 183 |
-| 46 |  | 184 | 185 | 186 | 187 |
-| 47 |  | 188 | 189 | 190 | 191 |
-| 48 |  | 192 | 193 | 194 | 195 |
-| 49 |  | 196 | 197 | 198 | 199 |
-| 50 |  | 200 | 201 | 202 | 203 |
-| 51 |  | 204 | 205 | 206 | 207 |
-| 52 |  | 208 | 209 | 210 | 211 |
-| 53 |  | 212 | 213 | 214 | 215 |
-| 54 |  | 216 | 217 | 218 | 219 |
-| 55 |  | 220 | 221 | 222 | 223 |
-| 56 |  | 224 | 225 | 226 | 227 |
-| 57 |  | 228 | 229 | 230 | 231 |
-| 58 |  | 232 | 233 | 234 | 235 |
-| 59 |  | 236 | 237 | 238 | 239 |
-| 60 |  | 240 | 241 | 242 | 243 |
-| 61 |  | 244 | 245 | 246 | 247 |
-| 62 |  | 248 | 249 | 250 | 251 |
-| 63 |  | 252 | 253 | 254 | 255 |
+| Address |     | 1&2 |     |     |     |
+| ------- | --- | --- | --- | --- | --- |
+|         |     |     |     |     |     |
+| 0       |     | 0   | 1   | 2   | 3   |
+| 1       |     | 4   | 5   | 6   | 7   |
+| 2       |     | 8   | 9   | 10  | 11  |
+| 3       |     | 12  | 13  | 14  | 15  |
+| 4       |     | 16  | 17  | 18  | 19  |
+| 5       |     | 20  | 21  | 22  | 23  |
+| 6       |     | 24  | 25  | 26  | 27  |
+| 7       |     | 28  | 29  | 30  | 31  |
+| 8       |     | 32  | 33  | 34  | 35  |
+| 9       |     | 36  | 37  | 38  | 39  |
+| 10      |     | 40  | 41  | 42  | 43  |
+| 11      |     | 44  | 45  | 46  | 47  |
+| 12      |     | 48  | 49  | 50  | 51  |
+| 13      |     | 52  | 53  | 54  | 55  |
+| 14      |     | 56  | 57  | 58  | 59  |
+| 15      |     | 60  | 61  | 62  | 63  |
+| 16      |     | 64  | 65  | 66  | 67  |
+| 17      |     | 68  | 69  | 70  | 71  |
+| 18      |     | 72  | 73  | 74  | 75  |
+| 19      |     | 76  | 77  | 78  | 79  |
+| 20      |     | 80  | 81  | 82  | 83  |
+| 21      |     | 84  | 85  | 86  | 87  |
+| 22      |     | 88  | 89  | 90  | 91  |
+| 23      |     | 92  | 93  | 94  | 95  |
+| 24      |     | 96  | 97  | 98  | 99  |
+| 25      |     | 100 | 101 | 102 | 103 |
+| 26      |     | 104 | 105 | 106 | 107 |
+| 27      |     | 108 | 109 | 110 | 111 |
+| 28      |     | 112 | 113 | 114 | 115 |
+| 29      |     | 116 | 117 | 118 | 119 |
+| 30      |     | 120 | 121 | 122 | 123 |
+| 31      |     | 124 | 125 | 126 | 127 |
+| 32      |     | 128 | 129 | 130 | 131 |
+| 33      |     | 132 | 133 | 134 | 135 |
+| 34      |     | 136 | 137 | 138 | 139 |
+| 35      |     | 140 | 141 | 142 | 143 |
+| 36      |     | 144 | 145 | 146 | 147 |
+| 37      |     | 148 | 149 | 150 | 151 |
+| 38      |     | 152 | 153 | 154 | 155 |
+| 39      |     | 156 | 157 | 158 | 159 |
+| 40      |     | 160 | 161 | 162 | 163 |
+| 41      |     | 164 | 165 | 166 | 167 |
+| 42      |     | 168 | 169 | 170 | 171 |
+| 43      |     | 172 | 173 | 174 | 175 |
+| 44      |     | 176 | 177 | 178 | 179 |
+| 45      |     | 180 | 181 | 182 | 183 |
+| 46      |     | 184 | 185 | 186 | 187 |
+| 47      |     | 188 | 189 | 190 | 191 |
+| 48      |     | 192 | 193 | 194 | 195 |
+| 49      |     | 196 | 197 | 198 | 199 |
+| 50      |     | 200 | 201 | 202 | 203 |
+| 51      |     | 204 | 205 | 206 | 207 |
+| 52      |     | 208 | 209 | 210 | 211 |
+| 53      |     | 212 | 213 | 214 | 215 |
+| 54      |     | 216 | 217 | 218 | 219 |
+| 55      |     | 220 | 221 | 222 | 223 |
+| 56      |     | 224 | 225 | 226 | 227 |
+| 57      |     | 228 | 229 | 230 | 231 |
+| 58      |     | 232 | 233 | 234 | 235 |
+| 59      |     | 236 | 237 | 238 | 239 |
+| 60      |     | 240 | 241 | 242 | 243 |
+| 61      |     | 244 | 245 | 246 | 247 |
+| 62      |     | 248 | 249 | 250 | 251 |
+| 63      |     | 252 | 253 | 254 | 255 |
 
 In INTT, the coefficients are read and executed in order, i.e., in cycle 0, the coefficients executed are {0, 1, 2, 3}, etc. 
 
@@ -850,11 +850,11 @@ A=A0,0  A0,k-1  ⋱  Ak-1,0  Ak-1,k-1 k×k
 
 The value of k is determined based on the security level of the system defined by NIST as follows:
 
-| Algorithm Name | Security Level | k |
-| :---- | :---- | :---- |
-| ML-KEM-512 | Level-1 | 2 |
-| ML-KEM-768 | Level-3 | 3 |
-| ML-KEM-1024 | Level-5 | 4 |
+| Algorithm Name | Security Level | k   |
+| :------------- | :------------- | :-- |
+| ML-KEM-512     | Level-1        | 2   |
+| ML-KEM-768     | Level-3        | 3   |
+| ML-KEM-1024    | Level-5        | 4   |
 
 To enhance polynomial multiplication efficiency, the sampled polynomials undergo pointwise multiplication, reducing computational overhead by eliminating unnecessary memory accesses as follows:
 
@@ -897,14 +897,14 @@ PX=k=N k pk1-pN-k
 The failure probability for different N as shown below:
 
 | Number of Inputs (N) | Failure Probability |
-| :---- | :---- |
-| 4 | 0.56 |
-| 5 | 0.23 |
-| 6 | 0.08 |
-| 7 | 0.02 |
-| 8 | 0.007 |
-| 9 | 0.002 |
-| 10 | 0.0005 |
+| :------------------- | :------------------ |
+| 4                    | 0.56                |
+| 5                    | 0.23                |
+| 6                    | 0.08                |
+| 7                    | 0.02                |
+| 8                    | 0.007               |
+| 9                    | 0.002               |
+| 10                   | 0.0005              |
 
 To balance the hardware resource utilization while improving the performance, we chose to have 8 input samples. Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
@@ -917,14 +917,14 @@ There are 8 rejection sampler circuits corresponding to each 12-bit input. The c
 3) The maximum depth of FIFO is 11 entries. If at least 4 FIFO entries are full, the rejection sampling unit can provide the required output for the next cycles too. Hence, it does not accept a new input from Keccak core by raising FULL flag.
 
 | Cycle count | Input from PISO | FIFO valid entries from previous cycle | Total valid samples | output | FIFO remaining for the next cycle |
-| :---- | :---- | :---- | :---- | :---- | :---- |
-| 0 | 8 | 0 | 8 | 4 | 4 (FULL) |
-| 1 | 0 | 4 | 4 | 4 | 0 |
-| 2 | 8 | 0 | 7 | 4 | 3 |
-| 3 | 8 | 3 | 11 | 4 | 7 (FULL) |
-| 4 | 0 | 7 | 7 | 4 | 3 |
-| 5 | 8 | 3 | 5 | 4 | 1 |
-| 6 | 8 | 1 | 6 | 4 | 2 |
+| :---------- | :-------------- | :------------------------------------- | :------------------ | :----- | :-------------------------------- |
+| 0           | 8               | 0                                      | 8                   | 4      | 4 (FULL)                          |
+| 1           | 0               | 4                                      | 4                   | 4      | 0                                 |
+| 2           | 8               | 0                                      | 7                   | 4      | 3                                 |
+| 3           | 8               | 3                                      | 11                  | 4      | 7 (FULL)                          |
+| 4           | 0               | 7                                      | 7                   | 4      | 3                                 |
+| 5           | 8               | 3                                      | 5                   | 4      | 1                                 |
+| 6           | 8               | 1                                      | 6                   | 4      | 2                                 |
 
 4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 14 cycles. This would match with Keccak throughput that generates 112 coefficients per 12 cycles.  
 5) The maximum number of FULL conditions is when there are no rejected coefficients for all 112 inputs. In this case, after every cycle with 8 coefficients, there is one FULL condition. It takes 28 cycles to process all PISO contents. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, the Keccak output will be stored into PISO when all PISO contents are processed by rejection sampler.
@@ -998,6 +998,63 @@ The addition of  2d-1 serves the same rounding purpose as q2​ in the compress
 To maximize efficiency, the decompression and compression stages share arithmetic resources wherever possible. Multipliers, shift-add networks, and routing logic are multiplexed between the two operations, enabling compact hardware without sacrificing throughput. The shared Barrett reduction module is a central feature of this architecture, serving both traditional modular reduction in the NTT/INTT flow and the scaled division in compression.
 
 This approach not only improves area efficiency but also simplifies integration and control logic. By avoiding dedicated division circuits and leveraging existing reduction infrastructure, our architecture delivers high-performance, low-area compression and decompression tailored for the demands of post-quantum cryptography.
+
+# High-Level architecture
+
+In our proposed architecture, we define specific instructions for various submodules, including SHAKE256, SHAKE128, SHA3-512, SHA3-256, NTT, INTT, etc. Each instruction is associated with an opcode and operands. By customizing these instructions, we can tailor the engine's behavior to different security levels.
+
+To execute the required instructions, a high-level controller acts as a sequencer, orchestrating a precise sequence of operations. Within the architecture, several memory blocks are accessible to submodules. However, it's the sequencer's responsibility to provide the necessary memory addresses for each operation. Additionally, the sequencer handles instruction fetching, decoding, operand retrieval, and overall data flow management.
+
+The high-level architecture of Adams Bridge controller is illustrated as follows:
+
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image3.png)
+
+## Sequencer
+
+High-Level controller works as a sequencer to perform a specific sequence of operations. There are several blocks of memory in the architecture that can be accessed by sub-modules. However, the sequencer would be responsible for passing the required addresses for each operation. 
+
+As an example, an NTT operation needs to take three base addresses as follows:
+
+NTT(initialvalue\_base\_address, interMLDAStevalue\_base\_address, result\_base\_address)
+
+So, for performing a=NTT(b), the sequencer needs to be:
+
+NTT(a\_base\_address, temp\_base\_address, b\_base\_address)
+
+The following table lists different operations used in the high-level controller.
+
+**Keccak and samplers Opcodes:**
+
+| Instruction             | Description                                                                |
+| :---------------------- | :------------------------------------------------------------------------- |
+| RST\_Keccak             | Reset the Keccak SIPO buffer                                               |
+| EN\_Keccak              | Enable the Keccak                                                          |
+| LDKeccak\_MEM src, len  | Load Keccak SIPO buffer at memory address src in len \-width               |
+| LDKeccak\_REG src, len  | Load Keccak SIPO buffer at register ID src in len \-width                  |
+| RDKeccak\_MEM dest, len | Read Keccak PISO buffer and store it at memory address dest in len \-width |
+| RDKeccak\_REG dest, len | Read Keccak PISO buffer and store it at register ID dest in len \-width    |
+| REJ\_SMPL               | Start Keccak and rejection sampler (results is used by PWM)                |
+| CBD\_SMPL               | Start Keccak and CBD sampler                                               |
+
+**NTT/INTT/PWO Opcodes:**
+
+| Instruction                | Description                                                                                                                                       |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| NTT src, temp, dest        | Perform NTT on data at memory address src and store the results at address dest                                                                   |
+| INTT src, temp, dest       | Perform INTT on data at memory address src and store the results at address dest                                                                  |
+| PWM src0, src1, dest       | Perform PWM on data at memory address src0 and src1 and store the results at address dest (dest \= src0\*src1)                                    |
+| PWM\_SMPL src, dest        | Perform PWM on data from sampler and at memory address src and store the results at address dest (dest \= smpl\*src)                              |
+| PWM\_ACCU src0, src1, dest | Perform PWM in accumulation mode on data at memory address src0 and src1 and store the results at address dest (dest \= src0\*src1+dest)          |
+| PWM\_ACCU\_SMPL src, dest  | Perform PWM in accumulation mode on data from sampler and at memory address src and store the results at address dest (dest \= smpl\*src \+ dest) |
+| PWA src0, src1, dest       | Perform PWA on data at memory address src0 and src1 and store the results at address dest (dest \= src0+src1)                                     |
+| PWS src0, src1, dest       | Perform PWS on data at memory src0 and src1 and store the results at address dest (dest \= src0-src1)                                             |
+
+**Other Opcodes:**
+
+| Instruction                | Description                                                                                                    |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| COMPRESS src, mode, dest   | Perform compress on data at memory address src with mode configuration and store the results at address dest   |
+| DECOMPRESS src, mode, dest | Perform decompress on data at memory address src with mode configuration and store the results at address dest |
 
 
 # References:
