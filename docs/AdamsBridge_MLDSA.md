@@ -14,7 +14,7 @@ ML-DSA (Module-Lattice-Based Digital Signature Algorithm) is a quantum-resistant
 
 Adam’s Bridge ML-DSA accelerator has all the necessary components to execute a pure hardware PQC operation. The main operations that involve more computational complexity, such as NTT, hashing, and sampling units, are explained as follows.
 
- ![A diagram of a programDescription automatically generated](./images/media/image2.png)
+ ![A diagram of a programDescription automatically generated](./images/MLDAS/image2.png)
 
 The security level of ML-DSA defined by NIST are as follows:
 
@@ -131,7 +131,7 @@ Enable ExternalMu Mode.
 
 Entropy is required for SCA countermeasures to randomize the inputs with no change in the outputs. The entropy can be any 512-bit value in \[0 : 2^512-1\]. 
 
-The ML-DSA-87 countermeasure requires several random vectors to randomize the intermediate values. An internal mechanism is considered to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
+The ML-DSA-87 countermeasure requires several random vectors to randomize the interMLDASte values. An internal mechanism is considered to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
 
 ## seed
 
@@ -410,7 +410,7 @@ To execute the required instructions, a high-level controller acts as a sequence
 
 The high-level architecture of Adams Bridge controller is illustrated as follows:
 
-![A diagram of a diagramDescription automatically generated](./images/media/image3.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image3.png)
 
 ## Keccak architecture
 
@@ -460,7 +460,7 @@ We propose an architecture to remove the cost of memory access since NTT needs i
 
 High-level architecture is illustrated as follows:
 
-![A diagram of a systemDescription automatically generated](./images/media/image4.png)
+![A diagram of a systemDescription automatically generated](./images/MLDAS/image4.png)
 
 ### Keccak interface to Expand Mask
 
@@ -488,11 +488,11 @@ Our proposed NTT unit takes four coefficients per cycle from one memory address.
 
 There are 4 rejection sampler circuits corresponding to each 20-bit input. The total coefficient after each round of Keccak is 1088/20 \= 54.4 coefficients. We keep expand mask unit working in all cycles and generating 4 coefficients per cycle without any interrupt. That means 12\*4=48 coefficients can be processed during each Keccak round. 
 
-![](./images/media/image5.png)
+![](./images/MLDAS/image5.png)
 
 After 12 cycles, 48 coefficients are processed by the expand mask unit, and there are still 128-bit inside PISO. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 4 coefficients or more (the required inputs for expand mask unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, expand mask unit takes 13 cycles to process 52 coefficients, and the last 48-bit will be combined with the next Keccak round to be processed.
 
-![A diagram of a computer componentDescription automatically generated](./images/media/image6.png)
+![A diagram of a computer componentDescription automatically generated](./images/MLDAS/image6.png)
 
 ### Performance of Expand Mask
 
@@ -510,17 +510,17 @@ An NTT operation can be regarded as an iterative operation by applying a sequenc
 
 Cooley-Tukey (CT) and Gentleman-Sande (GS) butterfly configurations can be used to facilitate NTT/INTT computation. The bit-reverse function reverses the bits of the coefficient index. However, the bit-reverse permutation can be skipped by using CT butterfly for NTT and GS for INTT.
 
-![A diagram of a butterflyDescription automatically generated](./images/media/image7.png)
+![A diagram of a butterflyDescription automatically generated](./images/MLDAS/image7.png)
 
 We propose a merged NTT architecture using dual radix-4 design by employing four pipelined stages with two parallel cores at each stage level. 
 
 The following presents the high-level architecture of our proposed NTT to take advantage of Merged architectural design:
 
-![](./images/media/image8.png)
+![](./images/MLDAS/image8.png)
 
 The following figure illustrates a 16-point NTT data flow based on our proposed architecture:
 
-![A diagram of a diagramDescription automatically generated](./images/media/image9.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image9.png)
 
 A merged-layer NTT technique uses two pipelined stages with two parallel cores in each stage level, making 4 butterfly cores in total. The parallel pipelined butterfly cores enable us to perform Radix-4 NTT/INTT operation with 4 parallel coefficients. 
 
@@ -879,11 +879,11 @@ At the end of NTT operation, results must be located in the section with the des
 
 The modular addition/subtraction in hardware platform can be implemented by one additional subtraction/addition operations, as follows:
 
-![](./images/media/image10.png)
+![](./images/MLDAS/image10.png)
 
 However, modular multiplication can be implemented using different techniques. The commonly used Barrett reduction and Montgomery reduction require additional multiplications and are more suitable for the non-specific modulus. Furthermore, Montgomery reduction needs two more steps to convert all inputs from normal domain to Montgomery domain and then convert back the results into normal domain. This conversation increases the latency of NTT operations and does not lead to the best performance. Hence, Barrett reduction and Montgomery reduction are expensive in time and hardware resources.
 
-![A diagram of a circle with arrowsDescription automatically generated](./images/media/image11.png)
+![A diagram of a circle with arrowsDescription automatically generated](./images/MLDAS/image11.png)
 
 For Dilithium hardware accelerator, we can customize the reduction architecture based on the prime value of the scheme with q= 8,380,417 to design a hardware-friendly architecture that increase the efficiency of computation. The value of q can be presented by: 
 
@@ -931,11 +931,11 @@ g23:0=213d+z12:0=d10:0||z\[12:0\]
 
 Since the result has more than 23 bits, we perform a modular addition to keep it less than q. For that, the regular modular addition will be replaced by the following architecture while c0=g23, r0=g\[22:0\]. In other words, c0=d10, r0\[22:0\]=d9:0||z\[12:0\]
 
-![A diagram of a circle with arrowsDescription automatically generated](./images/media/image12.png)
+![A diagram of a circle with arrowsDescription automatically generated](./images/MLDAS/image12.png)
 
 The following figure shows the architecture of this reduction technique. As one can see, these functions do not need any multiplications in hardware and can be achieved by shifter and adder.
 
-![A diagram of a computerDescription automatically generated](./images/media/image13.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image13.png)
 
 The modular multiplication is implemented with a 3-stage pipeline architecture. At the first pipeline stage, z=a·b is calculated. At the second pipeline stage, f+z\[45:23\] and 213d+z12:0 are calculated in parallel. At the third pipeline stage, a modular subtraction is executed to obtain the result and the result is output.
 
@@ -1062,7 +1062,7 @@ For the next chunk, buffer pointer switches to the top half. While the bottom ha
 | 871  | 860  | 853  | 842  |
 | 231  | 220  | 213  | 202  |
 
-![A diagram of a computer programDescription automatically generated](./images/media/image14.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image14.png)
 
 Above figure shows the flow of a shuffled NTT/INTT operation. The shuffler part of the controller is responsible for calculating the correct memory addresses and feed the correct inputs to the BFs.
 
@@ -1084,7 +1084,7 @@ E.g. if selected chunk is 5, and rand\_index is 2
 
 Figure below shows the additional control logic required to maintain the shuffling mechanism.
 
-![A diagram of a computerDescription automatically generated](./images/media/image15.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image15.png)
 
 The index and chunk are obtained from a random number source. Chunk refers to starting chunk number and index refers to start address within the selected chunk. To account for BF latency, the index and chunk must be delayed appropriately (for our design, this latency is 10 cycles) for use in the controller shuffler logic. 
 
@@ -1164,7 +1164,7 @@ We propose an architecture to remove the cost of memory access from Keccak to re
 
 High-level architecture is illustrated as follows:
 
-![A diagram of a computer hardware systemDescription automatically generated](./images/media/image16.png)
+![A diagram of a computer hardware systemDescription automatically generated](./images/MLDAS/image16.png)
 
 ### Keccak interface to Rejection Sampler
 
@@ -1208,7 +1208,7 @@ $$
 
 Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
-![A diagram of a machineDescription automatically generated](./images/media/image17.png)
+![A diagram of a machineDescription automatically generated](./images/MLDAS/image17.png)
 
 There are 5 rejection sampler circuits corresponding to each 24-bit input. The controller checks if each of these coefficients should be rejected or not. The valid input coefficients can be stored into the FIFO. While maximum 5 coefficients can be fed into FIFO, there are four more entries for the remaining coefficients from the previous cycle. There are several scenarios for the proposed balanced throughput architecture:
 
@@ -1232,7 +1232,7 @@ There are 5 rejection sampler circuits corresponding to each 24-bit input. The c
 4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 12 cycles, including 11 cycles with 5 coefficients and 1 cycle for the 56th coefficient. This would be match with Keccak throughput that generates 56 coefficients per 12 cycles.  
 5) The maximum number of FULL conditions is when there are no rejected coefficients for all 56 inputs. In this case, after 5 cycles with 5 coefficients, there is one FULL condition. After 12 cycles, 50 coefficients are processed by rejection sampling unit, and there are still 6 coefficients inside PISO. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 5 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, rejection sampling unit takes 13 cycles to process 55 coefficients, and the last coefficients will be combined with the next Keccak round to be processed.
 
-![A diagram of a diagramDescription automatically generated](./images/media/image18.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image18.png)
 
 ### Performance of SampleRejq
 
@@ -1342,7 +1342,7 @@ Reading Addr: 0, 1, 2, 3, 4, …, 62, 63
 
 The input goes to the butterfly architecture. The input values contain the required coefficients for our butterfly units in the next stage, i.e., (0, 1\) and (2, 3). Since we merged the first and second layers of INTT stages, the output of the first parallel butterfly units need to exchange one coefficient and then the required input for the second parallel set of butterfly units is ready, i.e., (0, 2\) and (1, 3).
 
-![A diagram of a computer systemDescription automatically generated](./images/media/image21.png)
+![A diagram of a computer systemDescription automatically generated](./images/MLDAS/image21.png)
 
 To prepare the results for the next stages, the output needs to be stored into the customized buffer architecture as follows:
 
@@ -1709,7 +1709,7 @@ Polynomial in NTT domain can be performed using point-wise multiplication (PWM).
 
 There are 2 memories containing polynomial f and g, with 4 coefficients per each memory address. The parallel butterfly cores enable us to perform 4 point-wise multiplication operations with 4 parallel coefficients as follows:
 
-![A diagram of a computerDescription automatically generated](./images/media/image22.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image22.png)
 
 The proposed NTT method preserves the memory contents in sequence without needing to shuffle and reorder them, so the point-wise multiplication can be sped up by using consistent reading/writing addresses from both memories.
 
@@ -1782,7 +1782,7 @@ The following is the probability of failure for a high-throughput design that ha
 
 Adding a FIFO to RejBounded sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
-![A diagram of a machineDescription automatically generated](./images/media/image23.png)
+![A diagram of a machineDescription automatically generated](./images/MLDAS/image23.png)
 
 There are 8 rejection sampler circuits corresponding to each 4-bit input. The controller checks if each of these coefficients should be rejected or not. The valid input coefficients will be processes and a result between \[-η, η\] ( is 2 for ML-DSA-87) will be stored into the FIFO. While maximum 8 coefficients can be fed into FIFO, there are four more entries for the remaining coefficients from the previous cycle. There are several scenarios for the proposed balanced throughput architecture:
 
@@ -1811,7 +1811,7 @@ There are 8 rejection sampler circuits corresponding to each 4-bit input. The co
 5) The maximum number of FULL conditions is when there are no rejected coefficients for all inputs. In this case, after 2 cycles with 16 coefficients, there is one FULL condition. After 64 cycles, all 256 required coefficients are processed by RejBouned sampling unit.  
 6) To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for RejBounded sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle.
 
-![A diagram of a computer componentDescription automatically generated](./images/media/image24.png)
+![A diagram of a computer componentDescription automatically generated](./images/MLDAS/image24.png)
 
 ## SampleInBall architecture
 
@@ -1821,7 +1821,7 @@ We propose an architecture to remove the cost of memory access from Keccak to Sa
 
 High-level architecture is illustrated as follows:
 
-![A diagram of a sign-building processDescription automatically generated](./images/media/image25.png)
+![A diagram of a sign-building processDescription automatically generated](./images/MLDAS/image25.png)
 
 ### Keccak interface to SampleInBall
 
@@ -1841,7 +1841,7 @@ In our optimized architecture, this unit works in parallel with the Keccak core.
 
 The NTT unit needs to take four coefficients per cycle. This implies that the output contains four samples per each address as follows:
 
-![A screenshot of a gameDescription automatically generated](./images/media/image26.png)
+![A screenshot of a gameDescription automatically generated](./images/MLDAS/image26.png)
 
 SampleInBall algorithm is as follows:
 ```cpp
@@ -1863,7 +1863,7 @@ To recall, for ML-DSA-87 with τ \= 60, 60 valid samples are required.
 
 Validity check on the input sample depends on the iteration number i while a sample greater than i will be rejected. Hence, the probability of failure for each round would be:
 
-![A graph with a lineDescription automatically generated](./images/media/image27.png)
+![A graph with a lineDescription automatically generated](./images/MLDAS/image27.png)
 
 *Rejection rate for each round of SampleInBall operation*
 
@@ -1877,7 +1877,7 @@ $(0.23046)^4=0.00282$
 
 The unused coefficients will be processed in the next cycle when i increments. The architecture is as follows:
 
-![A diagram of a computer programDescription automatically generated](./images/media/image28.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image28.png)
 
 *Sampling phase of SampleInBall architecture*
 
@@ -1889,7 +1889,7 @@ When a valid coefficient is found, valid flag will be set and the chosen sample 
 
 The architecture of shuffling unit is as follows:
 
-![A diagram of a computerDescription automatically generated](./images/media/image29.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image29.png)
 
 *Shuffling phase of SampleInBall architecture*
 
@@ -1905,7 +1905,7 @@ When i and j have the same address, both ports try to write to the same location
 
 Decompose unit is used in signing operation of Dilithium. It decomposes r into (r1,r0) such that r ≡ r1(2γ2)+r0 mod q. The output of decompose has two parts. While r0 will be stored into memory, r1 will be encoded and then be stored into Keccak SIPO input buffer to run SHAKE256. 
 
-![A diagram of a processDescription automatically generated](./images/media/image19.png)
+![A diagram of a processDescription automatically generated](./images/MLDAS/image19.png)
 
 There are k polynomials (k=8 for ML-DSA-87) that needs to be decomposed as follows:
 
@@ -1920,7 +1920,7 @@ $$
 
 Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
 
-![A diagram of a computer programDescription automatically generated](./images/media/image20.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image20.png)
 
 
 Decompose algorithm plays a crucial role by breaking down the coefficients of a polynomial into smaller parts. Decompose calculates high and low bits r1 and r0 such that:
@@ -1944,11 +1944,11 @@ except for the border case when r \- r0=q – 1. In the border case, the high bi
 
 High-level architecture is illustrated as follows:
 
-![A diagram of a block diagramDescription automatically generated](./images/media/image30.png)
+![A diagram of a block diagramDescription automatically generated](./images/MLDAS/image30.png)
 
 The modular reduction architecture is as follows:
 
- ![](./images/media/image31.png)
+ ![](./images/MLDAS/image31.png)
 
 | r0 mod 22 down limit | r0 mod 22 Up limit |            r0             |
 | :------------------: | :----------------: | :-----------------------: |
@@ -1957,7 +1957,7 @@ The modular reduction architecture is as follows:
 
 Our suggested design calculates two shares of r0 and r1 at the same time. We use a lookup table with 16 parallel comparisons to find the value of r1 from r based on the following graph:
 
-![](./images/media/image32.png)
+![](./images/MLDAS/image32.png)
 
 *r1 value based on the given r*
 
@@ -1985,7 +1985,7 @@ To compute r0 mod± 2γ2, at the same time with r1 computation, a modular reduct
 
 The expected r0 for different values of r is illustrated as follows:
 
-![A graph with lines and numbersDescription automatically generated](./images/media/image33.png)
+![A graph with lines and numbersDescription automatically generated](./images/MLDAS/image33.png)
 
 *r0 value based on the given r (without considering boarder case)*
 
@@ -1993,7 +1993,7 @@ Using this technique, we could achieve r0 and r1 for all cases expect the border
 
 r0=r0-1=r-q+1-1=r-q≡r mod q
 
-![A graph with a line graphDescription automatically generated](./images/media/image34.png)
+![A graph with a line graphDescription automatically generated](./images/MLDAS/image34.png)
 
 *r0 value based on the given r considering boarder case*
 
@@ -2013,25 +2013,25 @@ The process of implementing the decompose function is notably resource-intensive
 
 The following architecture shows Dilithium algorithm to compute h=MakeHint(−ct0, w − cs2 \+ ct0). There are several decompose operations embedded into HighBits, LowBits, and MakeHint functions, shown by red.
 
-![A diagram of a block diagramDescription automatically generated](./images/media/image35.png)
+![A diagram of a block diagramDescription automatically generated](./images/MLDAS/image35.png)
 
 As an alternative and more efficient way, we can use a method to realize where hint needs to be generated as follows:
 
 To compute h=MakeHint(−ct0, w − cs2 \+ ct0), first note is that instead of computing (r1, r0) \= Decomposeq (w−cs2, α) and checking whether ‖r0‖\<2 \- β and r1 \= w1, it is equivalent to just check that ‖w0-cs2‖\<2\-β, where w0 is the low part of w. If this check passes, w0 − cs2 is the low part of w − cs2. Next, recall that by the definition of the MakeHint function, a coefficient of a polynomial in h as computed is non-zero precisely if the high parts of the corresponding coefficients of w − cs2 and w − cs2 \+ ct0 differ. Now, we have already computed the full decomposition w \= αw1 \+ w0 of w, and we know that αw1 \+ (w0 −cs2) is the correct decomposition of w−cs2. But then, αw1 \+ (w0 −cs2 \+ct0) is the correct decomposition of w − cs2 \+ ct0 (i.e. the high part is w1) if and only if each coefficient of w0 − cs2 \+ ct0 lies in the interval (−γ2, γ2\], or, when some coefficient is −γ2 and the corresponding coefficient of w1 is zero. The last condition is due to the border case in the Decompose function. On the other hand, if these conditions are not true, then the high parts must differ, and it then follows that for computing the hint vector h it suffices to just check these conditions on the coefficients of w0 − cs2 \+ ct0. This algorithm is shown as follows:
 
-![A diagram of a block diagramDescription automatically generated](./images/media/image36.png)
+![A diagram of a block diagramDescription automatically generated](./images/MLDAS/image36.png)
 
 The alternative algorithm reduces the decompose cost by modifying the MakeHint to enhance the efficiency of the architecture. We propose efficient architecture for performing the alternative MakeHint operation on hardware platform and accelerate this operation using a pipeline architecture. 
 
 High-level architecture is illustrated as follows:
 
-![A diagram of a computer programDescription automatically generated](./images/media/image37.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image37.png)
 
 ### Hint Sum and Hint BitPack
 
 In Dilithium signing algorithm, the output of Makehint (hint output) is further processed to generate the encoded ‘h’ component of the signature. Additionally, one of the validity checks in signing algorithm uses hint sum to determine validity of the generated signature. These post-processing steps can be embedded into the Makehint architecture to avoid latency overhead while maintaining low complexity. The following figure shows the embedded logic into Makehint to generate the required outputs.
 
-![A diagram of a machineDescription automatically generated](./images/media/image38.png)
+![A diagram of a machineDescription automatically generated](./images/MLDAS/image38.png)
 
 Hint Sum:
 
@@ -2092,11 +2092,11 @@ $$
 
 Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for decompose and encode units to match the throughout between these modules.
 
-![A diagram of a computer programDescription automatically generated](./images/media/image39.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image39.png)
 
 To optimize the performance and remove the cost of memory, we use a pipeline architecture for encode that processes the input values and feed them into Keccak buffer. The following figure shows the optimized architecture for W1Encoder.
 
-![A diagram of a computer programDescription automatically generated](./images/media/image40.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image40.png)
 
 In the suggested design, every cycle, 4 coefficients for w1 are calculated from the decompose unit and then sent to the encode unit. Each coefficient is represented by 4 bits, making a total of 16 bits. However, the Keccak buffer only accepts input in 64-bit chunks. Therefore, a shift register is used to store the coefficients and pass a 64-bit chunk every 4 cycles to the Keccak SIPO buffer. An internal counter is used to control when the Keccak SIPO buffer takes this 64-bit chunk every 4 cycles.
 
@@ -2106,7 +2106,7 @@ The very first iteration of Keccak contains a 512-bit value shown by , which the
 
 The following figure shows the counter architecture. The first two bits is used to enable SIPO buffer, while the remaining bits of \[6:2\] is used to enable Keccak process. 
 
-![A diagram of a numberDescription automatically generated](./images/media/image41.png)
+![A diagram of a numberDescription automatically generated](./images/MLDAS/image41.png)
 
 The following table reports the SIPO input for different Keccak rounds.
 
@@ -2136,7 +2136,7 @@ When the whole polynomials are done in the first 8 rounds of Keccak and Keccak d
 
 The figure provided illustrates the finite field range for polynomial coefficients. It indicates that each coefficient is an integer ranging from 0 to q-1:
 
-![A circle with numbers and equationsDescription automatically generated](./images/media/image42.png)
+![A circle with numbers and equationsDescription automatically generated](./images/MLDAS/image42.png)
 
 The infinity norm is defined as follows:
 
@@ -2144,7 +2144,7 @@ For an element w ∈ Z , $∥w∥∞ = |w|$, the absolute value of w. For an ele
 
 In the context of norm definition within a finite field, when a value for the bound is provided, the norm check determines whether the coefficient falls below the bound or exceeds the q-bound, which is highlighted in red in the following figure. 
 
-![A circle with a red triangle in centerDescription automatically generated](./images/media/image43.png)
+![A circle with a red triangle in centerDescription automatically generated](./images/MLDAS/image43.png)
 
 There are three different validity checks with different bounds during signing operations as follows:
 
@@ -2156,7 +2156,7 @@ Vector z contains l polynomials  (l=7 for ML-DSA-87) and r0 and ct0 contains k p
 
 Due to our memory configuration that stores 4 coefficients per address, we need 4 parallel cores for norm check unit to match the throughput between these modules. To optimize the performance and remove the cost of memory, we use a pipeline architecture for norm check that processes the input values. 
 
-![](./images/media/image44.png)
+![](./images/MLDAS/image44.png)
 
 In the proposed design, during each cycle, 4 norm check coefficients are computed from stored data. This provides a performance improvement since this block only needs to read from memory and does not perform any writes to memory. Every coefficient is expressed using 24 bits, culminating in a combined total of 96 bits. A norm check is executed on each of these coefficients to produce a invalid output. The invalid outputs for all coefficients across all polynomials must be collectively ORed to yield the ultimate INVALID signal. This INVALID signal is asserted when any coefficient fails to meet the predetermined norm check criteria within the specified bound. 
 
@@ -2192,17 +2192,17 @@ The skDecode architecture reads 8 values from the register API, based on the mem
 
 The high-level architecture for skDecode is as follows:
 
-![](./images/media/image45.png)
+![](./images/MLDAS/image45.png)
 
 For s1 and s2 unpacking, the decode architecture is as follows:
 
-![A diagram of a diagramDescription automatically generated](./images/media/image46.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image46.png)
 
 In case a\[2:0\] is greater than ‘h4, the sk is considered out of range. skDecode block triggers an error interrupt to the RV core and the algorithm is aborted.
 
 For t0 unpacking, the decode architecture is shown below:
 
-![](./images/media/image47.png)
+![](./images/MLDAS/image47.png)
 
 Since key sizes are large, a key memory is used to interface with FW and skDecode module to avoid routing and timing issues. Assuming a memory interface of two 32-bit RW ports, s1s2 unpacking can be done with 8 parallel cores. This requires 24-bits per cycle to be processed which can be accommodated with a single key memory read per cycle (32-bits) and accumulating remaining bits in a sample buffer. Once next read occurs, bits are appended to the previous ones and the values are fed from buffer to the unpack module.
 
@@ -2234,13 +2234,13 @@ Encoded z \= γ1 – z
 
 The high-level architecture processes each coefficient of z in this way:
 
-![A diagram of a diagramDescription automatically generated](./images/media/image48.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image48.png)
 
 The modular and non-modular value are equal when the z is in the interval \[0, γ1\]. The first branch in this architecture shows this. But for the negative range, we need to remove q from the difference results. In this case, we get γ1 – (z mod q) \= γ1 – (q \+ z) \= γ1 – z – q. So, the second branch adds q to the result to finish the encoding.
 
 Using two parallel read ports, 8 encoding units read 8 coefficients from the memory and write the encoded values to the register API as follows:
 
-![A diagram of a machineDescription automatically generated](./images/media/image49.png)
+![A diagram of a machineDescription automatically generated](./images/MLDAS/image49.png)
 
 ## Power2Round Architecture
 
@@ -2259,7 +2259,7 @@ $-2^(d-1)<r_0≤2^(d-1)$
 
 The power2round process yields two outputs, t0 and t1. The value of t0 must be processed using skEncode and then placed in the API register. Meanwhile, t1 is to be processed with pkEncode and then fed into the register API. This is depicted in the high-level architecture diagram.
 
-![A diagram of a computer codeDescription automatically generated with medium confidence](./images/media/image50.png)
+![A diagram of a computer codeDescription automatically generated with medium confidence](./images/MLDAS/image50.png)
 
 The goal is to create a pipeline architecture for skEncode and pkEncode that minimizes memory overhead costs. Therefore, these operations will be executed simultaneously with power2round, and the outcomes will be directly stored into the API.
 
@@ -2267,13 +2267,13 @@ Power2Round reads 2 addresses of memory containing 8 coefficients.
 
 The expected r1 and r0 for different values of given r is illustrated as follows:
 
-![](./images/media/image51.png)
+![](./images/MLDAS/image51.png)
 
-![](./images/media/image52.png)
+![](./images/MLDAS/image52.png)
 
 The diagram illustrates the structure of the power2round mechanism integrated with the skEncode arrangement. However, pkEncode is the process of saving the t1 values into the register API.
 
-![A diagram of a computerDescription automatically generated](./images/media/image53.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image53.png)
 
 ## skEncode Architecture
 
@@ -2283,7 +2283,7 @@ data\[η\_size-1:0\] \= η – coefficient
 
 For ML-DSA-87 with η=2, there are only 5 possible values for the s1 and s2 coefficients, and the following architecture converts their modular presentation into the packed format:
 
-![A diagram of a computer programDescription automatically generated](./images/media/image54.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image54.png)
 
 ## pkDecode Architecture
 
@@ -2291,7 +2291,7 @@ During the verification process, the provided pk must be decoded. The initial 25
 
 The architecture is as follows:
 
-![A diagram of a computer codeDescription automatically generated](./images/media/image55.png)
+![A diagram of a computer codeDescription automatically generated](./images/MLDAS/image55.png)
 
 ## sigDecode\_z Architecture
 
@@ -2305,7 +2305,7 @@ However, because the decoded value falls within \[-γ1+1, γ1\], we must convert
 
 The high-level architecture is as follows:
 
-![A diagram of a machineDescription automatically generated](./images/media/image56.png)
+![A diagram of a machineDescription automatically generated](./images/MLDAS/image56.png)
 
 ## sigDecode\_h Architecture
 
@@ -2319,7 +2319,7 @@ To keep the throughput as storing 4 coefficients per cycle into internal memory,
 
 Since a non-zero hint can occur in any position of the 256-bit vector, it takes 64 cycles (4 coeffs/cycle) to write all 256 coefficients to memory irrespective of the value of the coefficient. For example, if the last 1 recorded is in index 35, the decode module continues to write the rest of the coefficients (36, 37, etc) to memory.
 
-![A diagram of a computer programDescription automatically generated](./images/media/image57.png)
+![A diagram of a computer programDescription automatically generated](./images/MLDAS/image57.png)
 
 Example hint processing:
 
@@ -2365,11 +2365,11 @@ The procedure is similar to the Decompose and W1Encode steps in the signing proc
 
 The Decompose and W1Encode stages of the signing procedure are depicted below (with the gray components being inactive):
 
-![A diagram of a networkDescription automatically generated](./images/media/image58.png)
+![A diagram of a networkDescription automatically generated](./images/MLDAS/image58.png)
 
 The UseHint operation in the verifying operation is as follows (with the gray components being inactive):
 
-![A diagram of a computerDescription automatically generated](./images/media/image59.png)
+![A diagram of a computerDescription automatically generated](./images/MLDAS/image59.png)
 
 For w0 condition we have:
 
@@ -2384,7 +2384,7 @@ To execute the required instructions, a high-level controller acts as a sequence
 
 The high-level architecture of Adams Bridge controller is illustrated as follows:
 
-![A diagram of a diagramDescription automatically generated](./images/media/image3.png)
+![A diagram of a diagramDescription automatically generated](./images/MLDAS/image3.png)
 
 ## Sequencer
 
@@ -2392,7 +2392,7 @@ High-Level controller works as a sequencer to perform a specific sequence of ope
 
 As an example, an NTT operation needs to take three base addresses as follows:
 
-NTT(initialvalue\_base\_address, intermediatevalue\_base\_address, result\_base\_address)
+NTT(initialvalue\_base\_address, interMLDAStevalue\_base\_address, result\_base\_address)
 
 So, for performing a=NTT(b), the sequencer needs to be:
 
@@ -2446,7 +2446,7 @@ The following table lists different operations used in the high-level controller
 
 The algorithm for keygen is presented below. We will explain the specifics of each operation in the following subsections.
 
-![A screenshot of a computer programDescription automatically generated](./images/media/image60.png)
+![A screenshot of a computer programDescription automatically generated](./images/MLDAS/image60.png)
 
 ### (p,p',K)= H(ξ||K||L ,1024)
 
@@ -2593,7 +2593,7 @@ We need to call skEncode for s1 and s2 coefficients and the results are stored i
 
 Signing operation is the most challenging operation for ML-DSA. From a high-level perspective, the required operation for performing a signing operation can be shown as follows:
 
-![](./images/media/image61.png)
+![](./images/MLDAS/image61.png)
 
 The are some initial processes to decode private key. The loop between challenge generation and validity check should be continued until validity check passed the results and then, the signature will be generated and published. 
 
@@ -2601,7 +2601,7 @@ In our optimized design, the next challenge is generated in advance, so that it 
 
 The algorithm for signing is presented below. We will explain the specifics of each operation in the following subsections.
 
-![](./images/media/image62.png)
+![](./images/MLDAS/image62.png)
 
 The following table shows the operations for each sequencer:
 
@@ -2981,7 +2981,7 @@ High-level controller increases the value of κ by l.
 
 The algorithm for verifying is presented below. We will explain the specifics of each operation in the following subsections.
 
-![A screenshot of a computer programDescription automatically generated](./images/media/image63.png)
+![A screenshot of a computer programDescription automatically generated](./images/MLDAS/image63.png)
 
 ### (ρ,t1)←pkDecode(*pk*)
 
