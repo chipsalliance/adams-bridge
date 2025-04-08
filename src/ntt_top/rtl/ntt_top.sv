@@ -379,29 +379,8 @@ module ntt_top
         endcase
     end
 
-    /*
-    //Butterfly 2x2
-    ntt_butterfly2x2 #(
-        .REG_SIZE(NTT_REG_SIZE),
-        .MLDSA_Q(MLDSA_Q)
-    )
-    bf2x2 (
-        .clk(clk),
-        .reset_n(reset_n),
-        .zeroize(zeroize),
-        .mode(mode),
-        .enable(bf_enable_mux),
-        .uvw_i(uvw_i),
-        .uv_o(uv_o),
-        .pw_uvw_i(pw_uvw_i),
-        .accumulate(accumulate),
-        .pwo_uv_o(pwo_uv_o),
-        .ready_o(bf_ready)
-    );
-    */
-
     //ntt_hybrid_butterfly_2x2 #(
-    ntt_hybrid_noncascade_butterfly_2x2 #(
+    ntt_hybrid_butterfly_2x2 #(
         .WIDTH(WIDTH)
     )
     hybrid_bf2x2 (
@@ -787,23 +766,6 @@ module ntt_top
     assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
     assign mem_wr_addr_mux  = ~shuffle_en & ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 
-    /*
-    ntt_buffer #(
-        .REG_SIZE(REG_SIZE)
-    ) buffer_inst0 (
-        .clk(clk),
-        .reset_n(reset_n),
-        .zeroize(zeroize),
-        .wren(buf_wren), //TODO: review for high-perf mode
-        .rden(buf_rden),
-        .wr_rst_count(buf_wr_rst_count),
-        .rd_rst_count(buf_rd_rst_count),
-        .mode(mode),
-        .data_i(buf_data_i),
-        .buf0_valid(buf0_valid),
-        .data_o(buf_data_o)
-    );
-    */
 
     ntt_shuffle_buffer #(
         .REG_SIZE(REG_SIZE)
