@@ -482,7 +482,7 @@ end
 assign sampler_ntt_dv[1] = 0; //no sampler interface to secondary ntt
 
 generate
-  for (genvar g_inst = 0; g_inst < 2; g_inst++) begin : ntt_gen
+  for (genvar g_inst = 0; g_inst < MLDSA_NUM_NTT; g_inst++) begin : ntt_gen
     //NTT
     //gasket here, create common interfaces?
     always_comb begin
@@ -550,7 +550,7 @@ generate
     .MLDSA_N(MLDSA_N),
     .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
   )
-  ntt_top_inst0 (
+  ntt_top_inst (
     .clk(clk),
     .reset_n(rst_b),
     .zeroize(zeroize_reg),
@@ -991,15 +991,15 @@ end
 
 //Write Data Muxes
 always_comb begin
-  for (int i = 1; i < 3; i++) begin
+  for (int i = 1; i < MLDSA_MEM_MASKED_INST; i++) begin
     mldsa_mem_wdata[i] = ({MLDSA_MEM_DATA_WIDTH{sampler_mem_we[i]}}     & sampler_mem_data) |
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[0][i]}}      & ntt_mem_wr_data[0][MLDSA_MEM_DATA_WIDTH-1:0]) |
                          ({MLDSA_MEM_DATA_WIDTH{ntt_mem_we[1][i]}}      & ntt_mem_wr_data[1][MLDSA_MEM_DATA_WIDTH-1:0]) |
                          ({MLDSA_MEM_DATA_WIDTH{decomp_mem_we[i]}}      & decomp_mem_wr_data) |
                          ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_data);
   end
-  mldsa_mem_masked_wdata[3] = ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[0][3]}} & ntt_mem_wr_data[0]) |
-                              ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[1][3]}} & ntt_mem_wr_data[1]);
+  mldsa_mem_masked_wdata[MLDSA_MEM_MASKED_INST] = ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[0][3]}} & ntt_mem_wr_data[0]) |
+                                                  ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[1][3]}} & ntt_mem_wr_data[1]);
 end
 //Read Muxes
 always_comb begin
@@ -1122,23 +1122,23 @@ always_comb begin
   decomp_mem_rd_data = 0;
   normcheck_mem_rd_data = 0;
 
-  for (int i = 0; i < 3; i++) begin
+  for (int i = 0; i < MLDSA_MEM_MASKED_INST; i++) begin
     if (i == 0) begin
       for (int bank = 0; bank < 2; bank++) begin
-        for (int j = 0; j < 2; j++) begin
-          ntt_mem_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
-          pwm_a_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
-          pwm_b_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re0_bank_f[j][bank]}} & mldsa_mem_rdata0_bank[bank]);
+        for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+          ntt_mem_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re0_bank_f[ntt][bank]}} & mldsa_mem_rdata0_bank[bank]);
+          pwm_a_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re0_bank_f[ntt][bank]}} & mldsa_mem_rdata0_bank[bank]);
+          pwm_b_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re0_bank_f[ntt][bank]}} & mldsa_mem_rdata0_bank[bank]);
         end
         decomp_mem_rd_data[0] |= ({MLDSA_MEM_DATA_WIDTH{decomp_mem_re0_bank_f[0][bank]}} & mldsa_mem_rdata0_bank[bank]);
         decomp_mem_rd_data[1] |= ({MLDSA_MEM_DATA_WIDTH{decomp_mem_re0_bank_f[1][bank]}} & mldsa_mem_rdata0_bank[bank]);
         normcheck_mem_rd_data |= ({MLDSA_MEM_DATA_WIDTH{normcheck_mem_re0_bank_f[bank]}} & mldsa_mem_rdata0_bank[bank]);
       end
     end else begin
-      for (int j = 0; j < 2; j++) begin
-        ntt_mem_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
-        pwm_a_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
-        pwm_b_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re_f[j][i]}} & mldsa_mem_rdata[i]);
+      for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+        ntt_mem_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{ntt_mem_re_f[ntt][i]}} & mldsa_mem_rdata[i]);
+        pwm_a_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_a_mem_re_f[ntt][i]}} & mldsa_mem_rdata[i]);
+        pwm_b_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{pwo_b_mem_re_f[ntt][i]}} & mldsa_mem_rdata[i]);
       end
       decomp_mem_rd_data[0] |= ({MLDSA_MEM_DATA_WIDTH{decomp_mem_re_f[0][i]}} & mldsa_mem_rdata[i]);
       decomp_mem_rd_data[1] |= ({MLDSA_MEM_DATA_WIDTH{decomp_mem_re_f[1][i]}} & mldsa_mem_rdata[i]);
@@ -1146,13 +1146,13 @@ always_comb begin
     end
   end
   //Masked memory uses full width
-  for (int j = 0; j < 2; j++) begin
-    ntt_mem_rd_data[j] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_re_f[j][3]}} & mldsa_mem_masked_rdata[3]);
-    pwm_a_rd_data[j] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{pwo_a_mem_re_f[j][3]}} & mldsa_mem_masked_rdata[3]);
-    pwm_b_rd_data[j] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{pwo_b_mem_re_f[j][3]}} & mldsa_mem_masked_rdata[3]);
+  for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+    ntt_mem_rd_data[ntt] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_re_f[ntt][3]}} & mldsa_mem_masked_rdata[3]);
+    pwm_a_rd_data[ntt] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{pwo_a_mem_re_f[ntt][3]}} & mldsa_mem_masked_rdata[3]);
+    pwm_b_rd_data[ntt] |= ({MLDSA_MEM_MASKED_DATA_WIDTH{pwo_b_mem_re_f[ntt][3]}} & mldsa_mem_masked_rdata[3]);
   end
-  for (int j = 0; j < 2; j++) begin
-    ntt_mem_rd_data[j][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{sib_mem_re_f[j]}} & sib_mem_rd_data);
+  for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+    ntt_mem_rd_data[ntt][MLDSA_MEM_DATA_WIDTH-1:0] |= ({MLDSA_MEM_DATA_WIDTH{sib_mem_re_f[ntt]}} & sib_mem_rd_data);
   end
 end
 

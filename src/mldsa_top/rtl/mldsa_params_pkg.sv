@@ -41,12 +41,15 @@ package mldsa_params_pkg;
   parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled
   parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
 
+  parameter MLDSA_NUM_NTT = 2;
   
   //Memory interface
   parameter MLDSA_MEM_MAX_DEPTH = 1408;
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
   parameter MLDSA_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
   parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
+
+  parameter MLDSA_MEM_MASKED_INST = 3;
 
   //parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
   //parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);

@@ -21,7 +21,7 @@
 // masked branch is taken for computing 1st stage outputs. In case of unmasked operation, 
 // both branches are enabled but unmasked outputs are passed to next stage. Final outputs are 23-bit values
 
-module ntt_hybrid_noncascade_butterfly_2x2
+module ntt_hybrid_butterfly_2x2
     import mldsa_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
