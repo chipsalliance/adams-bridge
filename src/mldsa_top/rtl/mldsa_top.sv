@@ -998,8 +998,8 @@ always_comb begin
                          ({MLDSA_MEM_DATA_WIDTH{decomp_mem_we[i]}}      & decomp_mem_wr_data) |
                          ({MLDSA_MEM_DATA_WIDTH{sigdecode_h_mem_we[i]}} & sigdecode_h_mem_wr_data);
   end
-  mldsa_mem_masked_wdata[MLDSA_MEM_MASKED_INST] = ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[0][3]}} & ntt_mem_wr_data[0]) |
-                                                  ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[1][3]}} & ntt_mem_wr_data[1]);
+  mldsa_mem_masked_wdata[MLDSA_MEM_MASKED_INST] = ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[0][MLDSA_MEM_MASKED_INST]}} & ntt_mem_wr_data[0]) |
+                                                  ({MLDSA_MEM_MASKED_DATA_WIDTH{ntt_mem_we[1][MLDSA_MEM_MASKED_INST]}} & ntt_mem_wr_data[1]);
 end
 //Read Muxes
 always_comb begin
