@@ -458,7 +458,7 @@ class mldsa_predictor #(
           void'($fgets(line, fd)); // Read a line from the file
           void'($sscanf(line, "%08x\n", value));
           read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-          SIG[1157] = SIG[1157] >> 8;
+          SIG[1156] = SIG[1156] >> 8;
           $fclose(fd);
         end
         3'b011: begin
@@ -475,8 +475,8 @@ class mldsa_predictor #(
             $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
             //$fwrite(fd, "00001253\n"); // Signature lenght
             // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
-            //write_file_without_newline(fd, 1157, SIG);
-            write_file(fd, 1157, SIG);
+            write_file_without_newline(fd, 1157, SIG);
+            $fwrite(fd, "%02X%02X%02X", SIG[1156][7:0],SIG[1156][15:8],SIG[1156][23:16]);
             write_file(fd, 16, MSG); // Write 64-byte message to the file
             write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
             $fclose(fd);
@@ -583,7 +583,7 @@ class mldsa_predictor #(
           void'($fgets(line, fd)); // Read a line from the file
           void'($sscanf(line, "%08x\n", value));
           read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-          SIG[0] = SIG[0] >> 8;
+          SIG[1156] = SIG[1156] >> 8;
           $fclose(fd);
 
         end
