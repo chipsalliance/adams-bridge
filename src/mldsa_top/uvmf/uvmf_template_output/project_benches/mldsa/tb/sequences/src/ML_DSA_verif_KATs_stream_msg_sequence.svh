@@ -154,7 +154,7 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
       // Writing MLDSA_MSG register
       // Hack to stream normal message in through streaming interface
       foreach (MSG[j]) begin
-        reg_model.MLDSA_MSG[0].write(status, kat_MSG[16-1-j], UVM_FRONTDOOR, reg_model.default_map, this);
+        reg_model.MLDSA_MSG[0].write(status, kat_MSG[j], UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
           `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG[0]"));
         end else begin

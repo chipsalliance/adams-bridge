@@ -458,7 +458,7 @@ class mldsa_predictor #(
           void'($fgets(line, fd)); // Read a line from the file
           void'($sscanf(line, "%08x\n", value));
           read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-          SIG[0] = SIG[0] >> 8;
+          SIG[1157] = SIG[1157] >> 8;
           $fclose(fd);
         end
         3'b011: begin
@@ -475,8 +475,8 @@ class mldsa_predictor #(
             $fwrite(fd, "%02X\n", op_code-1); // Verification cmd
             //$fwrite(fd, "00001253\n"); // Signature lenght
             // write_file(fd, 1157, SIG); // Write 4864-byte Signature to the file
-            write_file_without_newline(fd, 1157, SIG);
-            $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
+            //write_file_without_newline(fd, 1157, SIG);
+            write_file(fd, 1157, SIG);
             write_file(fd, 16, MSG); // Write 64-byte message to the file
             write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
             $fclose(fd);
@@ -677,7 +677,7 @@ class mldsa_predictor #(
       void'($fgets(line, fd)); // Read a line from the file
       while ($sscanf(line, "%08x", word) == 1) begin
         reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
-        array[(bit_length_words-1)-words_read] = reversed_word;
+        array[words_read] = reversed_word;
         words_read++;
         // Remove the parsed part from the line
         line = line.substr(8);
@@ -692,8 +692,8 @@ class mldsa_predictor #(
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
     $fwrite(fd, "\n");
 
@@ -706,8 +706,8 @@ class mldsa_predictor #(
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write-1; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
 
   endfunction

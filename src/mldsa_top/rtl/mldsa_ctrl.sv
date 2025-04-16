@@ -301,7 +301,8 @@ always_comb kv_seed_data_present = '0;
   logic stream_msg_last;
   logic stream_msg_done;
   logic stream_msg_ip;
-  
+
+  logic stream_msg_buffer_full;
   logic [31:0] stream_msg_data;
   logic [63:0] stream_msg_buffer_data;
   logic        stream_msg_buffer_valid;
@@ -420,12 +421,12 @@ always_comb kv_seed_data_present = '0;
   always_comb begin // mldsa reg writing 
 
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
-      entropy_reg[dword] = mldsa_reg_hwif_out.MLDSA_ENTROPY[ENTROPY_NUM_DWORDS-1-dword].ENTROPY.value;
+      entropy_reg[dword] = mldsa_reg_hwif_out.MLDSA_ENTROPY[dword].ENTROPY.value;
       mldsa_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
-      seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value;
+      seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
       mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == dword))) & ~zeroize;
@@ -442,7 +443,7 @@ always_comb kv_seed_data_present = '0;
     end
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++) begin
-      msg_reg[dword] = external_mu_mode? '0 : mldsa_reg_hwif_out.MLDSA_MSG[MSG_NUM_DWORDS-1-dword].MSG.value;
+      msg_reg[dword] = external_mu_mode? '0 : mldsa_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
       `ifdef CALIPTRA
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
       mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[dword];
@@ -456,20 +457,20 @@ always_comb kv_seed_data_present = '0;
     end
 
     for (int dword=0; dword < MU_NUM_DWORDS; dword++) begin
-      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value;
+      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.value;
       mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we = internal_mu_we & !external_mu & !zeroize;
-      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[MU_NUM_DWORDS-1-dword];
+      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[dword];
       mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++) begin
-      sign_rnd_reg[dword] = mldsa_reg_hwif_out.MLDSA_SIGN_RND[SIGN_RND_NUM_DWORDS-1-dword].SIGN_RND.value;
+      sign_rnd_reg[dword] = mldsa_reg_hwif_out.MLDSA_SIGN_RND[dword].SIGN_RND.value;
       mldsa_reg_hwif_in.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr = zeroize;
     end
   
     for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[VERIFY_RES_NUM_DWORDS-1-dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
+      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
       mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
   
@@ -478,7 +479,7 @@ always_comb kv_seed_data_present = '0;
     end
 
     for (int dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
-      ctx_reg[dword] = mldsa_reg_hwif_out.MLDSA_CTX[CTX_NUM_DWORDS-1-dword].CTX.value;
+      ctx_reg[dword] = mldsa_reg_hwif_out.MLDSA_CTX[dword].CTX.value;
       mldsa_reg_hwif_in.MLDSA_CTX[dword].CTX.hwclr = zeroize;
     end
 
@@ -541,8 +542,8 @@ always_comb kv_seed_data_present = '0;
   always_comb api_keymem_rd_vld = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
                                   mldsa_valid_reg & ~mldsa_privkey_lock ;
 
-  always_comb api_sk_waddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
-  always_comb api_sk_raddr = PRIVKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
+  always_comb api_sk_waddr = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
+  always_comb api_sk_raddr = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
   always_comb api_sk_reg_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
   always_comb api_keymem_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
@@ -724,7 +725,7 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb api_sig_addr = SIGNATURE_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
+  always_comb api_sig_addr = mldsa_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
 
   always_comb api_sig_c_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
   always_comb api_sig_z_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
@@ -858,7 +859,7 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb api_pubkey_addr = PUBKEY_NUM_DWORDS-1-mldsa_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
+  always_comb api_pubkey_addr = mldsa_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
 
   always_comb api_pubkey_rho_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
   always_comb api_pubkey_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
@@ -1420,7 +1421,7 @@ always_comb begin
     end
     MLDSA_MSG_CTX: begin
       //Drive context
-      ctx_cnt_nxt = ctx_cnt + 1;
+      ctx_cnt_nxt = stream_msg_buffer_full ? ctx_cnt : ctx_cnt + 1;
       stream_msg_last = ctx_cnt >= ctx_size[CTX_SIZE_W-1:$clog2(STREAM_MSG_STROBE_W)];
       stream_msg_strobe = stream_msg_last ? ~(STREAM_MSG_STROBE_W'('1) << ctx_size[$clog2(STREAM_MSG_STROBE_W)-1:0]) : '1;
       stream_msg_data = ctx_reg[ctx_cnt];
@@ -1475,9 +1476,10 @@ abr_msg_buffer #(
   //input data
   .data_valid_i(stream_msg_strobe),
   .data_i(stream_msg_data),
-  .buffer_full_o(),
+  .buffer_full_o(stream_msg_buffer_full),
   //output data
   .data_valid_o(stream_msg_buffer_strobe),
+  .data_hold_i(msg_hold),
   .data_o(stream_msg_buffer_data)
 );
 
@@ -1996,6 +1998,7 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
   //Assumption that stream message is never fast enough to get stalled
-  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, stream_msg_ip & msg_valid_o & msg_hold, clk, !rst_b)
+  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, (stream_msg_fsm_ps inside {MLDSA_MSG_RDY,MLDSA_MSG_FLUSH,MLDSA_MSG_DONE}) & 
+                                             stream_msg_buffer_full, clk, !rst_b)
 
 endmodule

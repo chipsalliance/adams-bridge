@@ -184,7 +184,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
 
     // Parse the hexadecimal string into the array
     for (int i = 0; i < bit_length_words; i++) begin
-      chunk = hex_data.substr((hex_len - 8 * (i + 1)), (hex_len - 8 * i - 1));
+      chunk = hex_data.substr(8*i, 8*(i + 1)-1);
       void'($sscanf(chunk, "%08x", word));
       reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
       // Reverse the order of the words as well as their bytes

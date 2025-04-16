@@ -37,6 +37,7 @@ module abr_msg_buffer
   output logic                                 buffer_full_o,
   //output data
   output logic [NUM_RD-1:0]                    data_valid_o,
+  input  logic                                 data_hold_i,
   output logic [NUM_RD-1:0][BUFFER_DATA_W-1:0] data_o
 
   );
@@ -57,12 +58,13 @@ module abr_msg_buffer
   //Buffer is full when it can't take a full write cycle
   //Check for at least N entries available, where N is the difference between WR/RD bandwidth
   generate
-    if (NUM_WR <= NUM_RD) always_comb buffer_full_o = '0;
-    else                  always_comb buffer_full_o = buffer_valid[(BUFFER_DEPTH-(NUM_WR-NUM_RD))];
+    if (NUM_WR <= NUM_RD) always_comb buffer_full_o = buffer_valid[BUFFER_DEPTH-NUM_WR] & ~buffer_rd;
+    else                  always_comb buffer_full_o = buffer_rd ? buffer_valid[(BUFFER_DEPTH-(NUM_WR-NUM_RD))] :
+                                                      buffer_valid[BUFFER_DEPTH-NUM_WR];
   endgenerate
   //Read when we have NUM_RD worth of valid data
   //Flush will pop any remaining entries
-  always_comb buffer_rd = buffer_valid[NUM_RD-1] | (flush & buffer_valid[0]); 
+  always_comb buffer_rd = ~data_hold_i & (buffer_valid[NUM_RD-1] | (flush & buffer_valid[0])); 
   //Write as long as we have 1 valid sample and not full
   always_comb buffer_wr = (|data_valid_i) & ~buffer_full_o;
   //update buffer for any read or write
