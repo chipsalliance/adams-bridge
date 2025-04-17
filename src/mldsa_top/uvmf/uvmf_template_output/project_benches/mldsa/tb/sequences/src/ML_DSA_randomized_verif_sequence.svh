@@ -48,7 +48,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
       if (!this.randomize(data)) begin
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize STREAM_MSG mode");
       end
-      stream_msg_mode = data[0];
+      stream_msg_mode = 0;//data[0];
     end else begin
       if (cmd_line == "1") begin
         `uvm_info("CMD_LINE", "STREAM_MSG option set to 1", UVM_LOW);

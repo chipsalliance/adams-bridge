@@ -9,3 +9,4 @@ ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_top.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/tb/norm_check_tb.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv

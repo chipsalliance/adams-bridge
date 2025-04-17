@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_uvm.sv
