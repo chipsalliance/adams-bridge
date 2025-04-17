@@ -302,7 +302,6 @@ always_comb kv_seed_data_present = '0;
   logic stream_msg_done;
   logic stream_msg_ip;
 
-  logic stream_msg_buffer_full;
   logic [31:0] stream_msg_data;
   logic [63:0] stream_msg_buffer_data;
   logic        stream_msg_buffer_valid;
@@ -1425,7 +1424,7 @@ always_comb begin
     end
     MLDSA_MSG_CTX: begin
       //Drive context
-      ctx_cnt_nxt = stream_msg_buffer_full ? ctx_cnt : ctx_cnt + 1;
+      ctx_cnt_nxt = ctx_cnt + 1;
       stream_msg_last = ctx_cnt >= ctx_cnt_required;
       stream_msg_strobe = stream_msg_last ? ~(STREAM_MSG_STROBE_W'('1) << ctx_cnt_offset) : '1;
       stream_msg_data = ctx_reg[ctx_cnt];
@@ -1480,10 +1479,10 @@ abr_msg_buffer #(
   //input data
   .data_valid_i(stream_msg_strobe),
   .data_i(stream_msg_data),
-  .buffer_full_o(stream_msg_buffer_full),
+  .buffer_full_o(),
   //output data
   .data_valid_o(stream_msg_buffer_strobe),
-  .data_hold_i(msg_hold),
+  .data_hold_i('0),
   .data_o(stream_msg_buffer_data)
 );
 
@@ -1495,7 +1494,7 @@ always_comb stream_msg_buffer_valid = (&stream_msg_buffer_strobe) | stream_msg_b
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << prim_instr.length[$clog2(MsgStrbW)-1:0]);
  
-always_comb msg_hold = ~msg_rdy_i;
+always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Last cycle when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
@@ -2002,7 +2001,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
   //Assumption that stream message is never fast enough to get stalled
-  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, (stream_msg_fsm_ps inside {MLDSA_MSG_RDY,MLDSA_MSG_FLUSH,MLDSA_MSG_DONE}) & 
-                                             stream_msg_buffer_full, clk, !rst_b)
+  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, (stream_msg_fsm_ps & msg_hold, clk, !rst_b)
 
 endmodule
