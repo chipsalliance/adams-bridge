@@ -158,7 +158,7 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
         if (status != UVM_IS_OK) begin
           `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG[0]"));
         end else begin
-          `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG[0] written with %0h", kat_MSG[16-1-j]), UVM_LOW);
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG[0] written with %0h", kat_MSG[j]), UVM_LOW);
         end
       end
       //write 0 to strobe since it's aligned to trigger end
