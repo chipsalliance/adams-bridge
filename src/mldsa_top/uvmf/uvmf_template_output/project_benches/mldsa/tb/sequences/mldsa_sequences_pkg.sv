@@ -43,6 +43,7 @@ package mldsa_sequences_pkg;
   `include "src/ML_DSA_randomized_sign_gen_sequence.svh"
   `include "src/ML_DSA_randomized_verif_sequence.svh"
   `include "src/ML_DSA_randomized_verif_fail_sequence.svh"
+  `include "src/ML_DSA_randomized_two_verif_on_fail_sequence.svh"
   `include "src/ML_DSA_randomized_h_decode_fail_sequence.svh"
   `include "src/ML_DSA_randomized_reset_sequence.svh"
   `include "src/ML_DSA_randomized_all_sequence.svh"

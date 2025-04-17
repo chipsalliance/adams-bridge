@@ -17,3 +17,4 @@ contents:
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_fail_test   : { weight 40 }
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_zeroize_test   : { weight 5 }
         $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_h_decode_fail_test   : { weight 40 }
+        $ADAMSBRIDGE_ROOT/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_two_verif_on_fail_test   : { weight 40 }
