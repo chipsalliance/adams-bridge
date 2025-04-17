@@ -42,6 +42,9 @@ requires:
   - pkdecode
   - power2round
 targets:
+  rtl_lint:
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/adamsbridge_top/config/design_lint/sglint_waivers
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:

@@ -310,10 +310,12 @@ always_comb kv_seed_data_present = '0;
   logic        stream_msg_buffer_flush;
 
   logic [CTX_NUM_DWORDS-1:0][DATA_WIDTH-1:0] ctx_reg;
-  logic [7:0] ctx_size;
+  logic [CTX_SIZE_W-1:0] ctx_size;
+  logic [CTX_SIZE_W-$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt_required;
+  logic [$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt_offset;
 
   mldsa_stream_msg_fsm_state_e stream_msg_fsm_ps, stream_msg_fsm_ns;
-  logic [7:0] ctx_cnt,ctx_cnt_nxt;
+  logic [CTX_SIZE_W-$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt,ctx_cnt_nxt;
 
   logic prim_seq_en;
   logic sec_seq_en;
@@ -1400,6 +1402,8 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end 
 
+always_comb {ctx_cnt_required,ctx_cnt_offset} = ctx_size;
+
 always_comb begin
   stream_msg_fsm_ns = stream_msg_fsm_ps;
   stream_msg_buffer_flush = 0;
@@ -1422,10 +1426,10 @@ always_comb begin
     MLDSA_MSG_CTX: begin
       //Drive context
       ctx_cnt_nxt = stream_msg_buffer_full ? ctx_cnt : ctx_cnt + 1;
-      stream_msg_last = ctx_cnt >= ctx_size[CTX_SIZE_W-1:$clog2(STREAM_MSG_STROBE_W)];
-      stream_msg_strobe = stream_msg_last ? ~(STREAM_MSG_STROBE_W'('1) << ctx_size[$clog2(STREAM_MSG_STROBE_W)-1:0]) : '1;
+      stream_msg_last = ctx_cnt >= ctx_cnt_required;
+      stream_msg_strobe = stream_msg_last ? ~(STREAM_MSG_STROBE_W'('1) << ctx_cnt_offset) : '1;
       stream_msg_data = ctx_reg[ctx_cnt];
-      if (ctx_cnt >= ctx_size[CTX_SIZE_W-1:$clog2(STREAM_MSG_STROBE_W)]) begin
+      if (ctx_cnt >= ctx_cnt_required) begin
         stream_msg_fsm_ns = MLDSA_MSG_RDY;
         ctx_cnt_nxt = 0;
       end
