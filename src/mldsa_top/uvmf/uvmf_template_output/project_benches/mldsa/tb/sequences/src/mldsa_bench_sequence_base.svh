@@ -157,6 +157,26 @@ mldsa_env_seq.start(top_configuration.vsqr);
 
   endfunction
 
+  function void write_strm_msg_file(int fd, int bit_length_words, bit [31:0] array [], padding);
+    int i;
+    int words_to_write;
+
+    // Write the data from the array to the file
+    words_to_write = bit_length_words;
+    for (i = 0; i < words_to_write; i++) begin
+      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
+                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+    end
+    if (padding == 1)
+      $fwrite(fd, "%02X", 8'hAB);
+    else if (padding == 2)
+      $fwrite(fd, "%04X", 24'hABCD);
+    else if (padding == 3)
+      $fwrite(fd, "%06X", 32'hABCDEF);
+    $fwrite(fd, "\n");
+
+  endfunction
+
   function void write_file_without_newline(int fd, int bit_length_words, bit [31:0] array []);
     int i;
     int words_to_write;

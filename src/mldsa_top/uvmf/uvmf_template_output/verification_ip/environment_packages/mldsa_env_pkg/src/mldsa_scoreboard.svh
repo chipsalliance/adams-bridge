@@ -84,6 +84,7 @@ class mldsa_scoreboard #(
 
   // pragma uvmf custom class_item_additional end
   bit expect_verif_failure = 0;
+  bit disable_scrboard_from_test = 0;
   bit expect_verif_pass_after_failure = 0;
   int transaction_count = 0;
   int verif_transaction_count = 0;
@@ -116,8 +117,13 @@ class mldsa_scoreboard #(
       expect_verif_pass_after_failure = '0; // default value
     end
 
+    if (!uvm_config_db#(bit)::get(this, "", "disable_scrboard_from_test", disable_scrboard_from_test)) begin
+      disable_scrboard_from_test = '0; // default value
+    end
+
     `uvm_info("SCOREBOARD", $sformatf("expect_verif_failure to be used: %d", expect_verif_failure), UVM_LOW)
     `uvm_info("SCOREBOARD", $sformatf("expect_verif_pass_after_failure to be used: %d", expect_verif_pass_after_failure), UVM_LOW)
+    `uvm_info("SCOREBOARD", $sformatf("disable_scrboard_from_test to be used: %d", disable_scrboard_from_test), UVM_LOW)
     // Instantiate the register model
     // scbr_mldsa_rm = mldsa_reg_model_top::type_id::create("scbr_mldsa_rm", this);
     scbr_mldsa_rm = configuration.mldsa_rm;
@@ -143,7 +149,7 @@ class mldsa_scoreboard #(
     // `uvm_info("SCBD_AHB", "Transaction Received through actual_ahb_analysis_export", UVM_MEDIUM)
     // `uvm_info("SCBD_AHB",{"            Data: ",t.convert2string()}, UVM_HIGH)
 
-    if (t.RnW == 1'b0) begin
+    if (t.RnW == 1'b0 && !disable_scrboard_from_test) begin
       // `uvm_info("SCBD_AHB", "Transaction is a read", UVM_MEDIUM)
       // Check if the transaction address matches any of the registers to be skipped
       if ((t.address >= scbr_mldsa_rm.MLDSA_NAME[0].get_address(scbr_mldsa_map) &&
@@ -243,7 +249,7 @@ class mldsa_scoreboard #(
     end
     // `uvm_info("SCBD_AHB", "Transaction Received through expected_ahb_analysis_export", UVM_MEDIUM)
     // `uvm_info("SCBD_AHB",{"            Data: ",t.convert2string()}, UVM_HIGH)
-    if (t.RnW == 1'b0) begin
+    if (t.RnW == 1'b0 && !disable_scrboard_from_test) begin
       // `uvm_info("SCBD_AHB", "Transaction is a read", UVM_MEDIUM)
       // Check if the transaction address matches any of the registers to be skipped
       if ((t.address >= scbr_mldsa_rm.MLDSA_NAME[0].get_address(scbr_mldsa_map) &&

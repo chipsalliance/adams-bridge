@@ -68,6 +68,7 @@ class mldsa_predictor #(
   // pragma uvmf custom class_item_additional begin
   string dilithium_command;
   bit expect_predictor_verif_failure;
+  bit disable_pred_from_test;
   // pragma uvmf custom class_item_additional end
 
   uvm_analysis_port #(mvc_sequence_item_base) mldsa_ahb_reg_ap;
@@ -122,7 +123,11 @@ class mldsa_predictor #(
     if (!uvm_config_db#(bit)::get(this, "", "expect_predictor_verif_failure", expect_predictor_verif_failure)) begin
       expect_predictor_verif_failure = 0; // default value
     end
+    if (!uvm_config_db#(bit)::get(this, "", "disable_pred_from_test", disable_pred_from_test)) begin
+      disable_pred_from_test = 0; // default value
+    end
     `uvm_info("PREDICTOR", $sformatf("expect_predictor_verif_failure to be used: %d", expect_predictor_verif_failure), UVM_LOW)
+    `uvm_info("PREDICTOR", $sformatf("disable_pred_from_test to be used: %d", disable_pred_from_test), UVM_LOW)
   // pragma uvmf custom build_phase end
   endfunction
 
@@ -226,7 +231,7 @@ class mldsa_predictor #(
                      (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4);
 
 //===========================================================================================
-    if (t.RnW == 1'b1) begin // write
+    if (t.RnW == 1'b1 && !disable_pred_from_test) begin // write
       if (reg_obj == null && !MEM_range_true) begin
         `uvm_error("PRED_AHB", $sformatf("AHB transaction to address: 0x%x decodes to null from AHB_map", t.address))
       end
@@ -276,7 +281,7 @@ class mldsa_predictor #(
         end
       end
     end
-    else if (t.RnW == 1'b0) begin // read
+    else if (t.RnW == 1'b0 && !disable_pred_from_test) begin // read
       if (reg_obj == null && !MEM_range_true) begin
         `uvm_error("PRED_AHB", $sformatf("AHB transaction to address: 0x%x decodes to null from AHB_map", t.address))
       end
