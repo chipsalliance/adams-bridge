@@ -178,7 +178,7 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
     end
     $fwrite(fd, "%02X\n", 2); // Signature generation cmd
     write_file_without_newline(fd, 1157, SIG);
-    $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
+    $fwrite(fd, "%02X%02X%02X", SIG[1156][7:0],SIG[1156][15:8],SIG[1156][23:16]);
     write_file(fd, 16, MSG); // Write 64-byte message to the file
     write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
     $fclose(fd);

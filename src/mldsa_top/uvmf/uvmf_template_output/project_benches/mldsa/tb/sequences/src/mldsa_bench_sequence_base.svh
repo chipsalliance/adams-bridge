@@ -122,6 +122,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // pragma uvmf custom body end
   endtask
 
+
   function void read_line(int fd, int bit_length_words, ref bit [31:0] array []);
     string line;
     int words_read;
@@ -135,7 +136,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
       void'($fgets(line, fd)); // Read a line from the file
       while ($sscanf(line, "%08x", word) == 1) begin
         reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
-        array[(bit_length_words-1)-words_read] = reversed_word;
+        array[words_read] = reversed_word;
         words_read++;
         // Remove the parsed part from the line
         line = line.substr(8);
@@ -150,8 +151,8 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
     $fwrite(fd, "\n");
 
@@ -164,8 +165,8 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write-1; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
 
   endfunction

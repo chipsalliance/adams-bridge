@@ -135,7 +135,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
         if (status != UVM_IS_OK) begin
             `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
         end else begin
-            `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, SK[i]), UVM_LOW);
+            `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PK[i]), UVM_LOW);
         end
     end
 
