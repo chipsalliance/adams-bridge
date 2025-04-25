@@ -165,7 +165,7 @@ class ML_DSA_randomized_h_decode_fail_sequence extends mldsa_bench_sequence_base
     void'($fgets(line, fd)); // Read a line from the file
     void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-    SIG[0] = SIG[0] >> 8;
+    SIG[1156] = SIG[1156] >> 8;
     $fclose(fd);
 
     // This is a new file writes with the correct input sets for the predictor
