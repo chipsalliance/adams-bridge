@@ -109,7 +109,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input ENTROPY ---- */
     reg {
         name = "MLDSA component entropy register type definition";
-        desc = "16 32-bit registers storing the 512-bit entropy  in big-endian representation
+        desc = "16 32-bit registers storing the 512-bit entropy  
                 required for SCA countermeasures with no change on the outputs. 
                 The entropy can be any 512-bit value in [0 : 2^512-1].";
 
@@ -123,7 +123,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input SEED ---- */
     reg {
         name = "MLDSA component seed register type definition";
-        desc = "8 32-bit registers storing the 256-bit seed for keygen in big-endian representation.
+        desc = "8 32-bit registers storing the 256-bit seed for keygen.
                 The seed can be any 256-bit value in [0 : 2^256-1].";
 
         default sw = w;
@@ -138,7 +138,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input sign_rnd ---- */
     reg {
         name = "MLDSA component sign_rnd register type definition";
-        desc = "8 32-bit registers storing the 256-bit sign_rnd for signing in big-endian representation.
+        desc = "8 32-bit registers storing the 256-bit sign_rnd for signing.
                 The sign_rnd can be any 256-bit value in [0 : 2^256-1].
                 sign_rnd should be all zero for deterministic variant.";
 
@@ -153,7 +153,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input Message ---- */
     reg {
         name = "MLDSA component message register type definition";
-        desc = "16 32-bit registers storing the message in big-endian representation.
+        desc = "16 32-bit registers storing the message.
                 The message can be a fixed size of 512-bit value in [0 : 2^512-1].";
 
         default sw = w;
@@ -167,7 +167,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Verify Result ---- */
     reg {
         name = "MLDSA component verify result register type definition";
-        desc = "16 32-bit registers storing the result of verifying operation in big-endian representation.
+        desc = "16 32-bit registers storing the result of verifying operation.
                 If this register is equal to the first part of the given signature, i.e. c~,
                 the signature is verified.";
 
@@ -182,7 +182,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input EXTERNAL_MU ---- */
     reg {
         name = "MLDSA component external_mu register type definition";
-        desc = "16 32-bit registers storing the external_mu in big-endian representation.
+        desc = "16 32-bit registers storing the external_mu.
                 The external_mu can be any 512-bit value in [0 : 2^512-1].";
 
         default sw = w;
@@ -224,7 +224,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input Context ---- */
     reg {
         name = "MLDSA component context register type definition";
-        desc = "up tp 255 bytes registers storing the context in big-endian representation.";
+        desc = "up tp 255 bytes registers storing the context.";
 
         default sw = w;
         default hw = r;
@@ -236,7 +236,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Public Key ---- */
     external mem {
         name = "MLDSA component public key register type definition";
-        desc = "648 32-bit registers storing the public key in big-endian representation. 
+        desc = "648 32-bit registers storing the public key. 
                 These registers are read by MLDSA user after keygen operation, 
                 or set before verifying operation.";
 
@@ -248,7 +248,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Signature ---- */
     external mem {
         name = "MLDSA component signature register type definition";
-        desc = "1157 32-bit registers storing the signature of the message in big-endian representation. 
+        desc = "1157 32-bit registers storing the signature of the message. 
                 These registers are read by MLDSA user after signing operation, 
                 or set before verifying operation.";
 
@@ -260,7 +260,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Private Key OUT---- */
     external mem {
         name = "MLDSA component private key output register type definition";
-        desc = "1224 32-bit registers storing the private key for keygen in big-endian representation.
+        desc = "1224 32-bit registers storing the private key for keygen.
                 These registers are read by MLDSA user after keygen operation.";
 
         sw = r;
@@ -271,7 +271,7 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Private Key IN---- */
     external mem {
         name = "MLDSA component private key input register type definition";
-        desc = "1224 32-bit entries storing the private key for signing in big-endian representation. 
+        desc = "1224 32-bit entries storing the private key for signing. 
                 These entries must be set before signing operation.";
 
         sw = w;

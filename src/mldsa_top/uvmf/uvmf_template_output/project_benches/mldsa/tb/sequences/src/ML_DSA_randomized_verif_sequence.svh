@@ -135,7 +135,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
         if (status != UVM_IS_OK) begin
             `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
         end else begin
-            `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, SK[i]), UVM_LOW);
+            `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PK[i]), UVM_LOW);
         end
     end
 
@@ -188,7 +188,7 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
     void'($fgets(line, fd)); // Read a line from the file
     void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-    SIG[0] = SIG[0] >> 8;
+    SIG[1156] = SIG[1156] >> 8;
     $fclose(fd);
 
     // Writing MLDSA_MSG register
