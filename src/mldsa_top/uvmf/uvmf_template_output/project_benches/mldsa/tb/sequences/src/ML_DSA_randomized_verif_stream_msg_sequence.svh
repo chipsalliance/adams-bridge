@@ -15,9 +15,9 @@
 //----------------------------------------------------------------------
 //
 
-class ML_DSA_randomized_KeySign_stream_msg_sequence extends mldsa_bench_sequence_base;
+class ML_DSA_randomized_verif_stream_msg_sequence extends mldsa_bench_sequence_base;
 
-  `uvm_object_utils(ML_DSA_randomized_KeySign_stream_msg_sequence);
+  `uvm_object_utils(ML_DSA_randomized_verif_stream_msg_sequence);
 
 
   bit [31:0] STREAM_MSG [0:16383];
@@ -150,9 +150,45 @@ class ML_DSA_randomized_KeySign_stream_msg_sequence extends mldsa_bench_sequence
     void'($fgets(line, fd)); // Read a line from the file
     void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+    $fclose(fd);
+
+    output_file = "./verif_input_for_test.hex";
+    input_file = "./verif_output_for_test.hex";
+    // Open the file for writing
+    fd = $fopen(output_file, "w");
+    if (fd == 0) begin
+        $display("ERROR: Failed to open file: %s", output_file);
+        return;
+    end
+    $fwrite(fd, "%02X\n", 2); // Verif command
+    $fwrite(fd, "%08X\n", 16'h1213); // Signature Size
+    write_file_without_newline(fd, 1156, SIG); 
+    $fwrite(fd, "%02X%02X%02X\n", SIG[1156][7:0],SIG[1156][15:8],SIG[1156][23:16]);
+    $fwrite(fd, "%08X\n", (msg_length*4)+last_msg_padding); // MEssage size
+    write_strm_msg_file(fd, msg_length, STREAM_MSG, last_msg_padding, last_msg_data); 
+    write_file(fd, 648, PK); 
+    $fclose(fd);
     SIG[1156] = SIG[1156] >> 8;
+    data = 0;
+
+
+    $system("./test_dilithium5_strm_msg verif_input_for_test.hex verif_output_for_test.hex");
+    // Open the generated file for reading
+    fd = $fopen(input_file, "r");
+    if (fd == 0) begin
+        `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+        return;
+    end
+    // Skip the first line
+    void'($fgets(line, fd)); // Read a line from the file
+    void'($sscanf(line, "%02x\n", data));
+    // Skip the second line
+    void'($fgets(line, fd)); // Read a line from the file
+    void'($sscanf(line, "%02x\n", data));
+    read_line(fd, 16, VERIF);// Read 16 dword verify result from the file
     $fclose(fd);
     data = 0;
+
 
     // ---------------------------------------------------------
     //                    KEYGEN + SIGNING TEST
@@ -167,30 +203,28 @@ class ML_DSA_randomized_KeySign_stream_msg_sequence extends mldsa_bench_sequence
       ready = data[0];
     end
 
-    // Writing MLDSA_SEED register
-    foreach (reg_model.MLDSA_SEED[i]) begin
-      reg_model.MLDSA_SEED[i].write(status, SEED[i], UVM_FRONTDOOR, reg_model.default_map, this);
-      
+    // Writing the PK into the MLDSA_PUBKEY register array
+    for (int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PUBKEY.m_mem.write(status, i, PK[i], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SEED[%0d]", i));
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", i));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_SEED[%0d] written with %0h", i, SEED[i]), UVM_LOW);
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_PUBKEY[%0d] written with %0h", i, PK[i]), UVM_LOW);
+      end
+    end
+
+    // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
+    for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.write(status, i, SIG[i], UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGNATURE[%0d]", i));
+      end else begin
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGNATURE[%0d] written with %0h", i, SIG[i]), UVM_LOW);
       end
     end
 
 
-    // Writing MLDSA_SIGN_RND register
-    foreach (reg_model.MLDSA_SIGN_RND[i]) begin
-      data = 'h0000_0000; // example data
-      reg_model.MLDSA_SIGN_RND[i].write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_SIGN_RND[%0d]", i));
-      end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_SIGN_RND[%0d] written with %0h", i, data), UVM_LOW);
-      end
-    end
-
-    data = 'h0000_0044; // Perform signing operation
+    data = 'h0000_0043; // Perform verification operation
     reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_CTRL"));
@@ -308,31 +342,20 @@ class ML_DSA_randomized_KeySign_stream_msg_sequence extends mldsa_bench_sequence
       valid = data[1];
     end
 
-    // Reading MLDSA_PUBKEY register
-    for(int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
-      reg_model.MLDSA_PUBKEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    // Reading MLDSA_VERIFY_RES register
+    foreach (reg_model.MLDSA_VERIFY_RES[i]) begin
+      reg_model.MLDSA_VERIFY_RES[i].read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_VERIFY_RES[%0d]", i));
       end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_PUBKEY[%0d]: %0h", i, data), UVM_LOW);
-        if (PK[i] != data)
-        `uvm_error("REG_READ", $sformatf("MLDSA_PUBKEY[%0d] mismatch: actual=0x%08h, expected=0x%08h",
-                  i, data, PK[i]));
+        `uvm_info("REG_READ", $sformatf("MLDSA_VERIFY_RES[%0d]: %0h", i, data), UVM_LOW);
+        if (VERIF[i] != data)
+        `uvm_error("REG_READ", $sformatf("MLDSA_VERIFY_RES[%0d] mismatch: actual=0x%08h, expected=0x%08h",
+                  i, data, VERIF[i]));
       end
     end
 
-    // Reading MLDSA_SIGNATURE register
-    for(int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
-      reg_model.MLDSA_SIGNATURE.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
-      if (status != UVM_IS_OK) begin
-        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_SIGNATURE[%0d]", i));
-      end else begin
-        `uvm_info("REG_READ", $sformatf("MLDSA_SIGNATURE[%0d]: %0h", i, data), UVM_LOW);
-        if (SIG[i] != data)
-        `uvm_error("REG_READ", $sformatf("MLDSA_SIG[%0d] mismatch: actual=0x%08h, expected=0x%08h",
-                  i, data, SIG[i]));
-      end
-    end
+   
 
     // ---------------------------------------------------------
     //              KEYGEN TEST IS DONE
