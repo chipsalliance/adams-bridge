@@ -145,7 +145,7 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
       return;
     end
     $fwrite(fd, "%02X\n", 1); // Signature generation cmd
-    // Generate a random SEED array
+    // Generate a random MSG array
     foreach (MSG[i]) begin
       if (!this.randomize(data)) begin
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize MSG data");
@@ -171,7 +171,7 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
     void'($fgets(line, fd)); // Read a line from the file
     void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
-    SIG[0] = SIG[0] >> 8;
+    SIG[1156] = SIG[1156] >> 8;
     $fclose(fd);
 
     // This is a new file writes with the correct input sets for the predictor
@@ -184,7 +184,7 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
     end
     $fwrite(fd, "%02X\n", 2); // Signature generation cmd
     write_file_without_newline(fd, 1157, SIG);
-    $fwrite(fd, "%02X%02X%02X", SIG[0][7:0],SIG[0][15:8],SIG[0][23:16]);
+    $fwrite(fd, "%02X%02X%02X", SIG[1156][7:0],SIG[1156][15:8],SIG[1156][23:16]);
     write_file(fd, 16, MSG); // Write 64-byte message to the file
     write_file(fd, 648, PK); // Write 2592-byte Public Key to the file
     $fclose(fd);

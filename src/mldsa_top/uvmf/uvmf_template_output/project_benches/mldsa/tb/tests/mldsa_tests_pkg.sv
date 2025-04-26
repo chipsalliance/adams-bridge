@@ -49,6 +49,7 @@ package mldsa_tests_pkg;
    `include "src/ML_DSA_keygen_KATs_test.svh"
    `include "src/ML_DSA_keygen_signing_KATs_test.svh"
    `include "src/ML_DSA_verif_KATs_test.svh"
+   `include "src/ML_DSA_verif_KATs_stream_msg_test.svh"
    `include "src/ML_DSA_randomized_verif_test.svh"
    `include "src/ML_DSA_randomized_verif_fail_test.svh"
    `include "src/ML_DSA_randomized_two_verif_on_fail_test.svh"

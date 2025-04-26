@@ -4,6 +4,7 @@ schema_version: 2.4.0
 requires:
   - mldsa_uvmf_lib
   - mldsa_top
+  - mldsa_uvm_pkg
   - mldsa_coverage
 targets:
   tb:
@@ -16,7 +17,6 @@ targets:
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/tests
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/testbench
     files:
-      - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_uvm.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_model_top_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/mldsa_env_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/parameters/mldsa_parameters_pkg.sv

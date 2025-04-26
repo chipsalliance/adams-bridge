@@ -74,11 +74,13 @@ package mldsa_reg_uvm;
         mldsa_reg__MLDSA_CTRL_bit_cg ZEROIZE_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_bit_cg PCR_SIGN_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_bit_cg EXTERNAL_MU_bit_cg[1];
+        mldsa_reg__MLDSA_CTRL_bit_cg STREAM_MSG_bit_cg[1];
         mldsa_reg__MLDSA_CTRL_fld_cg fld_cg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
         rand uvm_reg_field PCR_SIGN;
         rand uvm_reg_field EXTERNAL_MU;
+        rand uvm_reg_field STREAM_MSG;
 
         function new(string name = "mldsa_reg__MLDSA_CTRL");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -98,11 +100,14 @@ package mldsa_reg_uvm;
             this.PCR_SIGN.configure(this, 1, 4, "WO", 1, 'h0, 1, 1, 0);
             this.EXTERNAL_MU = new("EXTERNAL_MU");
             this.EXTERNAL_MU.configure(this, 1, 5, "WO", 1, 'h0, 1, 1, 0);
+            this.STREAM_MSG = new("STREAM_MSG");
+            this.STREAM_MSG.configure(this, 1, 6, "WO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(CTRL_bit_cg[bt]) CTRL_bit_cg[bt] = new();
                 foreach(ZEROIZE_bit_cg[bt]) ZEROIZE_bit_cg[bt] = new();
                 foreach(PCR_SIGN_bit_cg[bt]) PCR_SIGN_bit_cg[bt] = new();
                 foreach(EXTERNAL_MU_bit_cg[bt]) EXTERNAL_MU_bit_cg[bt] = new();
+                foreach(STREAM_MSG_bit_cg[bt]) STREAM_MSG_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();
@@ -117,9 +122,11 @@ package mldsa_reg_uvm;
 
         mldsa_reg__MLDSA_STATUS_bit_cg READY_bit_cg[1];
         mldsa_reg__MLDSA_STATUS_bit_cg VALID_bit_cg[1];
+        mldsa_reg__MLDSA_STATUS_bit_cg MSG_STREAM_READY_bit_cg[1];
         mldsa_reg__MLDSA_STATUS_fld_cg fld_cg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
+        rand uvm_reg_field MSG_STREAM_READY;
 
         function new(string name = "mldsa_reg__MLDSA_STATUS");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -135,9 +142,12 @@ package mldsa_reg_uvm;
             this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
             this.VALID = new("VALID");
             this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            this.MSG_STREAM_READY = new("MSG_STREAM_READY");
+            this.MSG_STREAM_READY.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
                 foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
+                foreach(MSG_STREAM_READY_bit_cg[bt]) MSG_STREAM_READY_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();
@@ -323,6 +333,96 @@ package mldsa_reg_uvm;
                 fld_cg = new();
         endfunction : build
     endclass : mldsa_reg__MLDSA_EXTERNAL_MU
+
+    // Reg - mldsa_reg::MLDSA_MSG_STROBE
+    class mldsa_reg__MLDSA_MSG_STROBE extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        mldsa_reg__MLDSA_MSG_STROBE_bit_cg STROBE_bit_cg[4];
+        mldsa_reg__MLDSA_MSG_STROBE_fld_cg fld_cg;
+        rand uvm_reg_field STROBE;
+
+        function new(string name = "mldsa_reg__MLDSA_MSG_STROBE");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.STROBE = new("STROBE");
+            this.STROBE.configure(this, 4, 0, "WO", 1, 'hf, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(STROBE_bit_cg[bt]) STROBE_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : mldsa_reg__MLDSA_MSG_STROBE
+
+    // Reg - mldsa_reg::MLDSA_CTX_CONFIG
+    class mldsa_reg__MLDSA_CTX_CONFIG extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        mldsa_reg__MLDSA_CTX_CONFIG_bit_cg CTX_SIZE_bit_cg[8];
+        mldsa_reg__MLDSA_CTX_CONFIG_fld_cg fld_cg;
+        rand uvm_reg_field CTX_SIZE;
+
+        function new(string name = "mldsa_reg__MLDSA_CTX_CONFIG");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.CTX_SIZE = new("CTX_SIZE");
+            this.CTX_SIZE.configure(this, 8, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(CTX_SIZE_bit_cg[bt]) CTX_SIZE_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : mldsa_reg__MLDSA_CTX_CONFIG
+
+    // Reg - mldsa_reg::MLDSA_CTX
+    class mldsa_reg__MLDSA_CTX extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        mldsa_reg__MLDSA_CTX_bit_cg CTX_bit_cg[32];
+        mldsa_reg__MLDSA_CTX_fld_cg fld_cg;
+        rand uvm_reg_field CTX;
+
+        function new(string name = "mldsa_reg__MLDSA_CTX");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.CTX = new("CTX");
+            this.CTX.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(CTX_bit_cg[bt]) CTX_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : mldsa_reg__MLDSA_CTX
 
     // Mem - mldsa_reg::MLDSA_PUBKEY
     class mldsa_reg__MLDSA_PUBKEY extends uvm_reg_block;
@@ -970,6 +1070,9 @@ package mldsa_reg_uvm;
         rand mldsa_reg__MLDSA_MSG MLDSA_MSG[16];
         rand mldsa_reg__MLDSA_VERIFY_RES MLDSA_VERIFY_RES[16];
         rand mldsa_reg__MLDSA_EXTERNAL_MU MLDSA_EXTERNAL_MU[16];
+        rand mldsa_reg__MLDSA_MSG_STROBE MLDSA_MSG_STROBE;
+        rand mldsa_reg__MLDSA_CTX_CONFIG MLDSA_CTX_CONFIG;
+        rand mldsa_reg__MLDSA_CTX MLDSA_CTX[64];
         rand mldsa_reg__MLDSA_PUBKEY MLDSA_PUBKEY;
         rand mldsa_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand mldsa_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
@@ -1049,6 +1152,23 @@ package mldsa_reg_uvm;
                 
                 this.MLDSA_EXTERNAL_MU[i0].build();
                 this.default_map.add_reg(this.MLDSA_EXTERNAL_MU[i0], 'h118 + i0*'h4);
+            end
+            this.MLDSA_MSG_STROBE = new("MLDSA_MSG_STROBE");
+            this.MLDSA_MSG_STROBE.configure(this);
+
+            this.MLDSA_MSG_STROBE.build();
+            this.default_map.add_reg(this.MLDSA_MSG_STROBE, 'h158);
+            this.MLDSA_CTX_CONFIG = new("MLDSA_CTX_CONFIG");
+            this.MLDSA_CTX_CONFIG.configure(this);
+
+            this.MLDSA_CTX_CONFIG.build();
+            this.default_map.add_reg(this.MLDSA_CTX_CONFIG, 'h15c);
+            foreach(this.MLDSA_CTX[i0]) begin
+                this.MLDSA_CTX[i0] = new($sformatf("MLDSA_CTX[%0d]", i0));
+                this.MLDSA_CTX[i0].configure(this);
+                
+                this.MLDSA_CTX[i0].build();
+                this.default_map.add_reg(this.MLDSA_CTX[i0], 'h160 + i0*'h4);
             end
             this.MLDSA_PUBKEY = new("MLDSA_PUBKEY");
             this.MLDSA_PUBKEY.configure(this);

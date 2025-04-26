@@ -59,6 +59,9 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 | message                     | Input           | Sign/Verify     | 64            |
 | verification result         | Output          | Verify          | 64            |
 | External_Mu                 | Input           | Sign/Verify     | 64            |
+| message strobe              | Input           | Sign/Verify     | 1             |
+| ctx size                    | Input           | Sign/Verify     | 1             |
+| ctx                         | Input           | Sign/Verify     | 255 (+1)      |
 | pk                          | Input/Output    | Keygen/Verify   | 2592          |
 | signature                   | Input/Output    | Sign/Verify     | 4627 (+1)     |
 | sk\_out (software only)     | Output          | Keygen          | 4896          |
@@ -81,7 +84,8 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 
 | Bits     | Identifier  | Access | Reset | Decoded | Name |
 | :------- | :---------- | :----- | :---- | :------ | :--- |
-| \[31:6\] | \-          | \-     | \-    |         | \-   |
+| \[31:7\] | \-          | \-     | \-    |         | \-   |
+| \[6\]    | STREAM_MSG  | w      | 0x0   |         | \-   |
 | \[5\]    | EXTERNAL_MU | w      | 0x0   |         | \-   |
 | \[4\]    | PCR_SIGN    | w      | 0x0   |         | \-   |
 | \[3\]    | ZEROIZE     | w      | 0x0   |         | \-   |
@@ -122,8 +126,16 @@ Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
 
 ### EXTERNAL_MU 
 
-Enable ExternalMu Mode.
-(this mode is hard turned off for now.)
+Enable External_Mu Mode. (this mode is hard turned off for now.)
+The External_mu variant of ML-DSA modifies the standard signing and verifying process by allowing the precomputed mu to be externally provided instead of being internally derived from the message and public key. In this variant, the signing procedure accepts mu as an explicit input, making it suitable for environments where mu is generated offline for efficiency. While the core signing and verifying algorithm remains unchanged, the message input register is ignored in this mode.
+
+### STREAM_MSG 
+
+Enable streaming message mode.
+In this mode, the controller will wait when reaching the point that it requires the message data, and asserts the MSG_STREAM_READY bit in the status register.
+Once MSG_STREAM_READY is asserted, the user can stream the message, one dword at a time, by writing to dword 0 of the message register.
+For the last dword, the user must set the MSG_STROBE register to appropriately indicate the valid bytes. 
+If a message is dword aligned, a value of 0x0 must be written to the MSG_STROBE register to indicate the last dword. 
 
 ## status 
 
@@ -131,9 +143,10 @@ Enable ExternalMu Mode.
 
 | Bits     | Identifier | Access | Reset | Decoded | Name |
 | :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:2\] | \-         | \-     | \-    |         | \-   |
-| \[1\]    | VALID      | r      | 0x0   |         | \-   |
-| \[0\]    | READY      | r      | 0x0   |         | \-   |
+| \[31:3\] | \-                | \-     | \-    |         | \-   |
+| \[2\]    | MSG_STREAM_READY  | r      | 0x0   |         | \-   |
+| \[1\]    | VALID             | r      | 0x0   |         | \-   |
+| \[0\]    | READY             | r      | 0x0   |         | \-   |
 
 ### READY 
 
@@ -142,6 +155,10 @@ Enable ExternalMu Mode.
 ### ​VALID 
 
 ​Indicates if the process is computed and the output is valid. 
+
+### MSG_STREAM_READY
+
+​Indicates if the core is ready to process the message.
 
 ## entropy
 
@@ -162,12 +179,26 @@ This register is used to support both deterministic and hedge variants of ML-DSA
 
 ## message
 
-This architecture supports PureML-DSA defined by NIST with an empty ctx.
-However, the current architecture only supports the message size of 512 bits. This restrection will be removed
+When not in streaming message mode, this architecture supports PureML-DSA defined by NIST with an empty ctx.
+When streaming message mode is enabled, this field is ignored except for dword 0 which is used to stream in the message.
 
 ## verification result
 
 To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a certain segment of signature (segment c\~), and if they are equal the signature is valid.
+
+## msg strobe
+
+A 4-bit indication of enabled bytes in the next dword of the streamed message.
+Resets to a value of 0xF indicating all bytes are valid. Any non 0xF value will be treated as the last dword of the message.
+Dword aligned messages should have a write of 0x0 to msg strobe to indicate the message is done being streamed.
+
+## ctx size
+
+A 8-bit indication of the size in bytes of the ctx to be used.
+
+## ctx
+
+This register stores the ctx field. It is applied only during streaming message mode.
 
 ## sk\_out
 

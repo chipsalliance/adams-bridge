@@ -16,7 +16,7 @@
 //
 
 
-class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
+class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
 
   typedef struct {
     string MSG;         // Input MSG
@@ -24,8 +24,8 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
     string PK;         // Input PK
     string expected_RES;  // Expected Signature
   } verif_kat_t;
-  
-  `uvm_object_utils(ML_DSA_verif_KATs_sequence);
+
+  `uvm_object_utils(ML_DSA_verif_KATs_stream_msg_sequence);
 
     
     // KAT arrays
@@ -37,7 +37,7 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
   bit ready;
   bit valid;
   int value;
-  
+  bit stream_msg_rdy;
 
   function new(string name = "");
     super.new(name);
@@ -49,6 +49,7 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
   endfunction
 
   virtual task body();
+
     reg_model.reset();
     #400;
 
@@ -87,6 +88,9 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
 
       // Wait for ready flag in MLDSA_STATUS
       ready = 0;
+      stream_msg_rdy = 0;
+      valid = 0;
+
       while (!ready) begin
         reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
@@ -128,15 +132,50 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
         end
       end
       
-      data = 'h0000_0003; // Perform verification operation
+      data = 'h0000_0043;// verify signature
       reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_CTRL"));
       end else begin
         `uvm_info("REG_WRITE", $sformatf("MLDSA_CTRL written with %0h", data), UVM_LOW);
       end
+  
+      //poll for stream msg rdy
+      while(!stream_msg_rdy) begin
+        reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+        if (status != UVM_IS_OK) begin
+          `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_STATUS"));
+        end else begin
+          `uvm_info("REG_READ", $sformatf("MLDSA_STATUS: %0h", data), UVM_HIGH);
+        end
+        stream_msg_rdy = data[2];
+      end
 
-      valid = 0;
+      // Writing MLDSA_MSG register
+      // Hack to stream normal message in through streaming interface
+      foreach (MSG[j]) begin
+        reg_model.MLDSA_MSG[0].write(status, kat_MSG[j], UVM_FRONTDOOR, reg_model.default_map, this);
+        if (status != UVM_IS_OK) begin
+          `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG[0]"));
+        end else begin
+          `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG[0] written with %0h", kat_MSG[j]), UVM_LOW);
+        end
+      end
+      //write 0 to strobe since it's aligned to trigger end
+      reg_model.MLDSA_MSG_STROBE.write(status, 0, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG_STROBE"));
+      end else begin
+        `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG_STROBE written with %0h", 0), UVM_LOW);
+      end
+      //write junk to msg to trigger end
+      reg_model.MLDSA_MSG[0].write(status, kat_MSG[6], UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG[0]"));
+      end else begin
+        `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG[0] written with %0h", kat_MSG[6]), UVM_LOW);
+      end
+
       while(!valid) begin
         reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin

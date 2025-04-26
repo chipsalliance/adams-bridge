@@ -1,10 +1,5 @@
-+incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
-${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_A2B_conv_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_Boolean_adder_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_B2A_conv_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_mult_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_mult_two_share_tb.sv
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_AND.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_delay_masked_shares.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_add_sub_mod_Boolean.sv
@@ -16,3 +11,8 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_Boolean_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_B2A_conv.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_A2B_conv_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_Boolean_adder_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_B2A_conv_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_mult_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/tb/abr_masked_N_bit_mult_two_share_tb.sv
