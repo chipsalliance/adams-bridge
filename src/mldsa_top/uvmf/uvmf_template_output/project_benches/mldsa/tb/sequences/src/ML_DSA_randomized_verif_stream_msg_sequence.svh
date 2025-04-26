@@ -150,6 +150,7 @@ class ML_DSA_randomized_verif_stream_msg_sequence extends mldsa_bench_sequence_b
     void'($fgets(line, fd)); // Read a line from the file
     void'($sscanf(line, "%08x\n", value));
     read_line(fd, 1157, SIG);// Read 4864-byte Signature to the file
+    SIG[1156] = SIG[1156] >> 8;
     $fclose(fd);
 
     output_file = "./verif_input_for_test.hex";
@@ -162,21 +163,22 @@ class ML_DSA_randomized_verif_stream_msg_sequence extends mldsa_bench_sequence_b
     end
     $fwrite(fd, "%02X\n", 2); // Verif command
     $fwrite(fd, "%08X\n", 16'h1213); // Signature Size
-    write_file_without_newline(fd, 1156, SIG); 
+    write_file_without_newline(fd, 1157, SIG); 
     $fwrite(fd, "%02X%02X%02X\n", SIG[1156][7:0],SIG[1156][15:8],SIG[1156][23:16]);
     $fwrite(fd, "%08X\n", (msg_length*4)+last_msg_padding); // MEssage size
     write_strm_msg_file(fd, msg_length, STREAM_MSG, last_msg_padding, last_msg_data); 
     write_file(fd, 648, PK); 
     $fclose(fd);
-    SIG[1156] = SIG[1156] >> 8;
     data = 0;
 
 
     $system("./test_dilithium5_strm_msg verif_input_for_test.hex verif_output_for_test.hex");
+
+    `uvm_info("VSEQ", $sformatf("Ran the verif flow with the ref model"), UVM_LOW);
     // Open the generated file for reading
     fd = $fopen(input_file, "r");
     if (fd == 0) begin
-        `uvm_error("PRED", $sformatf("Failed to open input_file: %s", input_file));
+        `uvm_error("ERROR", $sformatf("Failed to open input_file: %s", input_file));
         return;
     end
     // Skip the first line
