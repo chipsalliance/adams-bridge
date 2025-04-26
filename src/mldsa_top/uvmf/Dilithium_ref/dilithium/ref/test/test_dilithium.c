@@ -10,6 +10,7 @@
 // #define MLEN 64
 #define MLEN 65536
 #define M_PRIME 1
+#define VARYING_MSG 1
 // #define RND_SIGN 1
 
 #ifndef PREHASH
@@ -219,7 +220,19 @@ int main(int argc, char *argv[]) {
 
         case 1: // signing
             {
-#if M_PRIME == 1
+#if VARYING_MSG == 1
+                uint8_t mlen_array[4] = {0};
+                readFile(input_file, mlen_array, 4);
+                mlen = byteArrayToSizeT(mlen_array);
+                printf("message lenght is %04X+2=%04X\n", (unsigned int)mlen, (unsigned int)mlen+2);
+                m[0] = 0x0;
+                m[1] = 0x0;
+                readFile(input_file, m+2, mlen);
+                char m_hex[2*(65536)];
+                // byteArrayToHexString(m+2, mlen, m_hex);
+                // printf("m_hex is %s\n", m_hex);
+                mlen = mlen +2;
+#elif M_PRIME == 1
                 uint8_t PHM[PHM_SIZE]; // This should contain the SHA-512 hash of the message
                 readFile(input_file, PHM, PHM_SIZE);
                 create_message_prime(PHM, m);
@@ -237,6 +250,9 @@ int main(int argc, char *argv[]) {
                 printf("m_hex is %s\n", m_hex);
 #endif
                 readFile(input_file, sk, CRYPTO_SECRETKEYBYTES);
+                char sk_hex[2 * (CRYPTO_SECRETKEYBYTES) + 1];
+                byteArrayToHexString(sk, CRYPTO_SECRETKEYBYTES, sk_hex);
+                printf("secret key is %s\n", sk_hex);
 #ifdef RND_SIGN
                 readFile(input_file, rnd, SEEDBYTES);
                 char rnd_hex[2 * SEEDBYTES + 1];
@@ -247,22 +263,56 @@ int main(int argc, char *argv[]) {
                 crypto_sign(sm, &smlen, m, rnd, mlen, sk);
 
                 writeFile(output_file, &cmd, 1);
-                fprintf(output_file, "%08X\n", (unsigned int)smlen);
+                fprintf(output_file, "%08X\n", (unsigned int)(smlen-mlen));
                 writeFile(output_file, sm, (smlen-mlen));
+                fprintf(output_file, "%08X\n", (unsigned int)(mlen-2));
+                writeFile(output_file, sm+(CRYPTO_BYTES+SEEDBYTES)+2, mlen-2);
 
                 char command_hex[2+1];
                 byteToHexString(cmd, command_hex);
                 printf("comand is %s\n", command_hex);
-                printf("signature lenght is %X\n", (unsigned int)smlen);
+                printf("signature lenght is %X\n", (unsigned int)(smlen-mlen));
                 char sm_hex[2*(CRYPTO_BYTES+SEEDBYTES)];
                 byteArrayToHexString(sm, (smlen-mlen), sm_hex);
                 printf("signature is %s\n", sm_hex);
+                byteArrayToHexString(sm+(CRYPTO_BYTES+SEEDBYTES)+2, (mlen-2), m_hex);
+                printf("message is %s\n", m_hex);
             }
             break;
 
         case 2: // verification
             {
-#if M_PRIME == 1
+#if VARYING_MSG == 1
+                uint8_t smlen_array[4];
+                uint8_t mlen_array[4];
+                readFile(input_file, smlen_array, 4);
+                smlen = byteArrayToSizeT(smlen_array);
+                printf("signature lenght is %04X\n", (unsigned int)smlen);                
+                readFile(input_file, sm, smlen);
+
+                readFile(input_file, mlen_array, 4);
+                mlen = byteArrayToSizeT(mlen_array);
+                printf("message lenght is %04X\n", (unsigned int)mlen);                
+                readFile(input_file, m+2, mlen);
+                m[0] = 0x0;
+                m[1] = 0x0;
+                mlen = mlen +2;
+                smlen = smlen + mlen;
+                memcpy(sm+(CRYPTO_BYTES+SEEDBYTES), m, mlen);
+                
+                readFile(input_file, pk, CRYPTO_PUBLICKEYBYTES);
+
+                char m_hex[2*(65536)];
+                char sm_hex[2*(CRYPTO_BYTES+SEEDBYTES)];
+                char pk_hex[2 * CRYPTO_PUBLICKEYBYTES + 1];
+                byteArrayToHexString(sm, (smlen-mlen), sm_hex);
+                printf("signature is %s\n", sm_hex);
+                byteArrayToHexString(sm+(CRYPTO_BYTES+SEEDBYTES)+2, (mlen-2), m_hex);
+                printf("message is %s\n", m_hex);
+                byteArrayToHexString(pk, CRYPTO_PUBLICKEYBYTES, pk_hex);
+                printf("public key is %s\n", pk_hex);
+
+#elif M_PRIME == 1
                 smlen = SEEDBYTES + CRYPTO_BYTES + M_SIZE;
                 printf("signature lenght is %04X\n", (unsigned int)smlen);
 

@@ -58,6 +58,7 @@ rand mldsa_env_sequence_base_t mldsa_env_seq;
   bit [31:0] SIG []; //4628 Bytes
   bit [7:0]  CTX_SIZE;
   bit [31:0] CTX [0:63]; //256 Bytes
+  bit [31:0] VERIF []; //64 Bytes
   // pragma uvmf custom class_item_additional end
 
   // ****************************************************************************
@@ -89,6 +90,7 @@ rand mldsa_env_sequence_base_t mldsa_env_seq;
     SK = new[1224];
     PK = new[648];
     SIG = new[1157];
+    VERIF = new[16];
     // pragma uvmf custom new end
 
   endfunction
@@ -154,6 +156,26 @@ mldsa_env_seq.start(top_configuration.vsqr);
       $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
                                       array[i][23:16],array[i][31:24]);
     end
+    $fwrite(fd, "\n");
+
+  endfunction
+
+  function void write_strm_msg_file(int fd, int bit_length_words, bit [31:0] array [], bit [1:0] padding, bit [31:0] data);
+    int i;
+    int words_to_write;
+
+    // Write the data from the array to the file
+    words_to_write = bit_length_words;
+    for (i = 0; i < words_to_write; i++) begin
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
+    end
+    if (padding == 1)
+      $fwrite(fd, "%02X", (data & 8'hFF));
+    else if (padding == 2)
+      $fwrite(fd, "%04X", (data & 16'hFFFF));
+    else if (padding == 3)
+      $fwrite(fd, "%06X", (data & 24'hFFFFFF));
     $fwrite(fd, "\n");
 
   endfunction
