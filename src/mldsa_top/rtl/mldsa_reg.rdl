@@ -196,10 +196,11 @@ addrmap mldsa_reg {
     /* ---- MLDSA Component Input MSG_STROBE ---- */
     reg {
         name = "MLDSA component msg strobe register type definition";
-        desc = "Byte enable strobe for last 64 bits of message. 
+        desc = "Byte enable strobe for each 32 bits of message.
+                [br] Must be set to 4'b1111 before streaming message, after observing stream_msg_rdy.
                 [br] Set to 1 for each valid byte in the last msg data, starting from LSB.
                 [br] Valid values are 4'b0000, 4'b0001, 4'b0011, 4'b0111, and 4'b1111
-                [br] A 64 bit aligned msg must write this to 8'h00 and write to msg input.";
+                [br] A 32 bit aligned msg must write this to 4'h0 and write to msg input once.";
 
         default sw = w;
         default hw = r;
