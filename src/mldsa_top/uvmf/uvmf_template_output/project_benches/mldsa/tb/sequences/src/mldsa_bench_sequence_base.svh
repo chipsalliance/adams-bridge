@@ -56,6 +56,9 @@ rand mldsa_env_sequence_base_t mldsa_env_seq;
   bit [31:0] PK []; //2592 Bytes
   bit [31:0] MSG [0:15]; //64 Bytes
   bit [31:0] SIG []; //4628 Bytes
+  bit [7:0]  CTX_SIZE;
+  bit [31:0] CTX [0:63]; //256 Bytes
+  bit [31:0] VERIF []; //64 Bytes
   // pragma uvmf custom class_item_additional end
 
   // ****************************************************************************
@@ -87,6 +90,7 @@ rand mldsa_env_sequence_base_t mldsa_env_seq;
     SK = new[1224];
     PK = new[648];
     SIG = new[1157];
+    VERIF = new[16];
     // pragma uvmf custom new end
 
   endfunction
@@ -120,6 +124,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // pragma uvmf custom body end
   endtask
 
+
   function void read_line(int fd, int bit_length_words, ref bit [31:0] array []);
     string line;
     int words_read;
@@ -133,7 +138,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
       void'($fgets(line, fd)); // Read a line from the file
       while ($sscanf(line, "%08x", word) == 1) begin
         reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
-        array[(bit_length_words-1)-words_read] = reversed_word;
+        array[words_read] = reversed_word;
         words_read++;
         // Remove the parsed part from the line
         line = line.substr(8);
@@ -148,9 +153,29 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
+    $fwrite(fd, "\n");
+
+  endfunction
+
+  function void write_strm_msg_file(int fd, int bit_length_words, bit [31:0] array [], bit [1:0] padding, bit [31:0] data);
+    int i;
+    int words_to_write;
+
+    // Write the data from the array to the file
+    words_to_write = bit_length_words;
+    for (i = 0; i < words_to_write; i++) begin
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
+    end
+    if (padding == 1)
+      $fwrite(fd, "%02X", (data & 8'hFF));
+    else if (padding == 2)
+      $fwrite(fd, "%04X", (data & 16'hFFFF));
+    else if (padding == 3)
+      $fwrite(fd, "%06X", (data & 24'hFFFFFF));
     $fwrite(fd, "\n");
 
   endfunction
@@ -162,8 +187,8 @@ mldsa_env_seq.start(top_configuration.vsqr);
     // Write the data from the array to the file
     words_to_write = bit_length_words;
     for (i = 0; i < words_to_write-1; i++) begin
-      $fwrite(fd, "%02X%02X%02X%02X", array[(words_to_write-1)-i][7:0],  array[(words_to_write-1)-i][15:8],
-                                      array[(words_to_write-1)-i][23:16],array[(words_to_write-1)-i][31:24]);
+      $fwrite(fd, "%02X%02X%02X%02X", array[i][7:0],  array[i][15:8],
+                                      array[i][23:16],array[i][31:24]);
     end
 
   endfunction
@@ -182,7 +207,7 @@ mldsa_env_seq.start(top_configuration.vsqr);
 
     // Parse the hexadecimal string into the array
     for (int i = 0; i < bit_length_words; i++) begin
-      chunk = hex_data.substr((hex_len - 8 * (i + 1)), (hex_len - 8 * i - 1));
+      chunk = hex_data.substr(8*i, 8*(i + 1)-1);
       void'($sscanf(chunk, "%08x", word));
       reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
       // Reverse the order of the words as well as their bytes

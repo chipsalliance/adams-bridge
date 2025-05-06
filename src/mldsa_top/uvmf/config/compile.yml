@@ -4,6 +4,7 @@ schema_version: 2.4.0
 requires:
   - mldsa_uvmf_lib
   - mldsa_top
+  - mldsa_uvm_pkg
   - mldsa_coverage
 targets:
   tb:
@@ -16,7 +17,6 @@ targets:
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/tests
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/testbench
     files:
-      - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_uvm.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_model_top_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/mldsa_env_pkg.sv
       - ${COMPILE_ROOT}/uvmf_template_output/project_benches/mldsa/tb/parameters/mldsa_parameters_pkg.sv
@@ -28,7 +28,10 @@ targets:
       - hdl_top
       - hvl_top
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying C executable vector generator to $PWD" && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 . && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_debug .'
+    pre_exec: 'echo "[PRE-EXEC] Copying C executable vector generator to $PWD"
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .'
 global:
   tool:
     vcs:

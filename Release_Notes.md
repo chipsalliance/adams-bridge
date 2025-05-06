@@ -14,11 +14,21 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2025/03/05*_
+_*Last Update: 2025/04/29*_
 
 ### Rev 1p0 ###
 
-#### Rev 1p0 release date: 2025/03/05 ####
+#### Rev 1p0 release date: 2025/04/29 ####
+- AdamsBridge Hardware Specification: see docs/ folder
+- AdamsBridge SCA Specification: see docs/ folder
+- AdamsBridge testplan: see docs/ folder
+- Variable message signing and data swizzling
+
+## Previous Releases ##
+
+### Rev 1p0-rc1 ###
+
+#### Rev 1p0-rc1 release date: 2025/03/05 ####
 - AdamsBridge Hardware Specification: see docs/ folder
 - AdamsBridge SCA Specification: see docs/ folder
 - AdamsBridge testplan: see docs/ folder

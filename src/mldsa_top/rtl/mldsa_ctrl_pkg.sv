@@ -50,6 +50,10 @@ package mldsa_ctrl_pkg;
     localparam SIGNATURE_REG_NUM_DWORDS = SIGNATURE_H_NUM_DWORDS + SIGNATURE_C_NUM_DWORDS;
     localparam VERIFY_RES_NUM_DWORDS = 16;
     localparam ENTROPY_NUM_DWORDS = 16;
+    localparam CTX_NUM_DWORDS = 64;
+    localparam CTX_SIZE_W = $clog2(CTX_NUM_DWORDS*4);
+    localparam STREAM_MSG_W = 32;
+    localparam STREAM_MSG_STROBE_W = STREAM_MSG_W/8;
 
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
@@ -120,6 +124,16 @@ package mldsa_ctrl_pkg;
         mldsa_pubkey_t enc;
         logic [7:0][31:0] raw;
     } mldsa_pubkey_u;
+
+    //FSM Controller for streaming msg
+    typedef enum logic [2:0] {
+        MLDSA_MSG_IDLE,
+        MLDSA_MSG_CTX_SIZE,
+        MLDSA_MSG_CTX,
+        MLDSA_MSG_RDY,
+        MLDSA_MSG_FLUSH,
+        MLDSA_MSG_DONE
+    } mldsa_stream_msg_fsm_state_e;
 
     //FSM Controller for driving sampler 
     typedef enum logic [2:0] {

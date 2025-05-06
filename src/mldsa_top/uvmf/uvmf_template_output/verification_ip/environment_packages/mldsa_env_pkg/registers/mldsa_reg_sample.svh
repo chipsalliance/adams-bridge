@@ -76,9 +76,12 @@
         if (get_coverage(UVM_CVR_REG_BITS)) begin
             foreach(CTRL_bit_cg[bt]) this.CTRL_bit_cg[bt].sample(data[0 + bt]);
             foreach(ZEROIZE_bit_cg[bt]) this.ZEROIZE_bit_cg[bt].sample(data[3 + bt]);
+            foreach(PCR_SIGN_bit_cg[bt]) this.PCR_SIGN_bit_cg[bt].sample(data[4 + bt]);
+            foreach(EXTERNAL_MU_bit_cg[bt]) this.EXTERNAL_MU_bit_cg[bt].sample(data[5 + bt]);
+            foreach(STREAM_MSG_bit_cg[bt]) this.STREAM_MSG_bit_cg[bt].sample(data[6 + bt]);
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( data[2:0]/*CTRL*/  ,  data[3:3]/*ZEROIZE*/   );
+            this.fld_cg.sample( data[2:0]/*CTRL*/  ,  data[3:3]/*ZEROIZE*/  ,  data[4:4]/*PCR_SIGN*/  ,  data[5:5]/*EXTERNAL_MU*/  ,  data[6:6]/*STREAM_MSG*/   );
         end
     endfunction
 
@@ -86,9 +89,12 @@
         if (get_coverage(UVM_CVR_REG_BITS)) begin
             foreach(CTRL_bit_cg[bt]) this.CTRL_bit_cg[bt].sample(CTRL.get_mirrored_value() >> bt);
             foreach(ZEROIZE_bit_cg[bt]) this.ZEROIZE_bit_cg[bt].sample(ZEROIZE.get_mirrored_value() >> bt);
+            foreach(PCR_SIGN_bit_cg[bt]) this.PCR_SIGN_bit_cg[bt].sample(PCR_SIGN.get_mirrored_value() >> bt);
+            foreach(EXTERNAL_MU_bit_cg[bt]) this.EXTERNAL_MU_bit_cg[bt].sample(EXTERNAL_MU.get_mirrored_value() >> bt);
+            foreach(STREAM_MSG_bit_cg[bt]) this.STREAM_MSG_bit_cg[bt].sample(STREAM_MSG.get_mirrored_value() >> bt);
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( CTRL.get_mirrored_value()  ,  ZEROIZE.get_mirrored_value()   );
+            this.fld_cg.sample( CTRL.get_mirrored_value()  ,  ZEROIZE.get_mirrored_value()  ,  PCR_SIGN.get_mirrored_value()  ,  EXTERNAL_MU.get_mirrored_value()  ,  STREAM_MSG.get_mirrored_value()   );
         end
     endfunction
 
@@ -103,9 +109,10 @@
         if (get_coverage(UVM_CVR_REG_BITS)) begin
             foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(data[0 + bt]);
             foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(data[1 + bt]);
+            foreach(MSG_STREAM_READY_bit_cg[bt]) this.MSG_STREAM_READY_bit_cg[bt].sample(data[2 + bt]);
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( data[0:0]/*READY*/  ,  data[1:1]/*VALID*/   );
+            this.fld_cg.sample( data[0:0]/*READY*/  ,  data[1:1]/*VALID*/  ,  data[2:2]/*MSG_STREAM_READY*/   );
         end
     endfunction
 
@@ -113,9 +120,10 @@
         if (get_coverage(UVM_CVR_REG_BITS)) begin
             foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(READY.get_mirrored_value() >> bt);
             foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(VALID.get_mirrored_value() >> bt);
+            foreach(MSG_STREAM_READY_bit_cg[bt]) this.MSG_STREAM_READY_bit_cg[bt].sample(MSG_STREAM_READY.get_mirrored_value() >> bt);
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( READY.get_mirrored_value()  ,  VALID.get_mirrored_value()   );
+            this.fld_cg.sample( READY.get_mirrored_value()  ,  VALID.get_mirrored_value()  ,  MSG_STREAM_READY.get_mirrored_value()   );
         end
     endfunction
 
@@ -241,6 +249,166 @@
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
             this.fld_cg.sample( VERIFY_RES.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- MLDSA_REG__MLDSA_EXTERNAL_MU SAMPLE FUNCTIONS -----------------------*/
+    function void mldsa_reg__MLDSA_EXTERNAL_MU::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(EXTERNAL_MU_bit_cg[bt]) this.EXTERNAL_MU_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*EXTERNAL_MU*/   );
+        end
+    endfunction
+
+    function void mldsa_reg__MLDSA_EXTERNAL_MU::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(EXTERNAL_MU_bit_cg[bt]) this.EXTERNAL_MU_bit_cg[bt].sample(EXTERNAL_MU.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( EXTERNAL_MU.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- MLDSA_REG__MLDSA_MSG_STROBE SAMPLE FUNCTIONS -----------------------*/
+    function void mldsa_reg__MLDSA_MSG_STROBE::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(STROBE_bit_cg[bt]) this.STROBE_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[3:0]/*STROBE*/   );
+        end
+    endfunction
+
+    function void mldsa_reg__MLDSA_MSG_STROBE::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(STROBE_bit_cg[bt]) this.STROBE_bit_cg[bt].sample(STROBE.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( STROBE.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- MLDSA_REG__MLDSA_CTX_CONFIG SAMPLE FUNCTIONS -----------------------*/
+    function void mldsa_reg__MLDSA_CTX_CONFIG::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTX_SIZE_bit_cg[bt]) this.CTX_SIZE_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[7:0]/*CTX_SIZE*/   );
+        end
+    endfunction
+
+    function void mldsa_reg__MLDSA_CTX_CONFIG::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTX_SIZE_bit_cg[bt]) this.CTX_SIZE_bit_cg[bt].sample(CTX_SIZE.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( CTX_SIZE.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- MLDSA_REG__MLDSA_CTX SAMPLE FUNCTIONS -----------------------*/
+    function void mldsa_reg__MLDSA_CTX::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTX_bit_cg[bt]) this.CTX_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*CTX*/   );
+        end
+    endfunction
+
+    function void mldsa_reg__MLDSA_CTX::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTX_bit_cg[bt]) this.CTX_bit_cg[bt].sample(CTX.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( CTX.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- KV_READ_CTRL_REG SAMPLE FUNCTIONS -----------------------*/
+    function void kv_read_ctrl_reg::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(read_en_bit_cg[bt]) this.read_en_bit_cg[bt].sample(data[0 + bt]);
+            foreach(read_entry_bit_cg[bt]) this.read_entry_bit_cg[bt].sample(data[1 + bt]);
+            foreach(pcr_hash_extend_bit_cg[bt]) this.pcr_hash_extend_bit_cg[bt].sample(data[6 + bt]);
+            foreach(rsvd_bit_cg[bt]) this.rsvd_bit_cg[bt].sample(data[7 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[0:0]/*read_en*/  ,  data[5:1]/*read_entry*/  ,  data[6:6]/*pcr_hash_extend*/  ,  data[31:7]/*rsvd*/   );
+        end
+    endfunction
+
+    function void kv_read_ctrl_reg::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(read_en_bit_cg[bt]) this.read_en_bit_cg[bt].sample(read_en.get_mirrored_value() >> bt);
+            foreach(read_entry_bit_cg[bt]) this.read_entry_bit_cg[bt].sample(read_entry.get_mirrored_value() >> bt);
+            foreach(pcr_hash_extend_bit_cg[bt]) this.pcr_hash_extend_bit_cg[bt].sample(pcr_hash_extend.get_mirrored_value() >> bt);
+            foreach(rsvd_bit_cg[bt]) this.rsvd_bit_cg[bt].sample(rsvd.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( read_en.get_mirrored_value()  ,  read_entry.get_mirrored_value()  ,  pcr_hash_extend.get_mirrored_value()  ,  rsvd.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- KV_STATUS_REG SAMPLE FUNCTIONS -----------------------*/
+    function void kv_status_reg::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(data[0 + bt]);
+            foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(data[1 + bt]);
+            foreach(ERROR_bit_cg[bt]) this.ERROR_bit_cg[bt].sample(data[2 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[0:0]/*READY*/  ,  data[1:1]/*VALID*/  ,  data[9:2]/*ERROR*/   );
+        end
+    endfunction
+
+    function void kv_status_reg::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(READY.get_mirrored_value() >> bt);
+            foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(VALID.get_mirrored_value() >> bt);
+            foreach(ERROR_bit_cg[bt]) this.ERROR_bit_cg[bt].sample(ERROR.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( READY.get_mirrored_value()  ,  VALID.get_mirrored_value()  ,  ERROR.get_mirrored_value()   );
         end
     endfunction
 

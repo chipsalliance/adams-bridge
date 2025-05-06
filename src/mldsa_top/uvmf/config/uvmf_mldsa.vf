@@ -60,6 +60,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_2ff_sync.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso_4.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sample_buffer.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_msg_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_slv_sif.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_AND.sv
@@ -238,9 +239,9 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/qvip_ahb_lite
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/hdl_qvip_ahb_lite_slave.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_clk_gen.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv
+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_uvm.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/coverage/mldsa_top_cov_if.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/coverage/mldsa_top_cov_bind.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_uvm.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/registers/mldsa_reg_model_top_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/mldsa_env_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/mldsa_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/parameters/mldsa_parameters_pkg.sv

@@ -69,11 +69,17 @@
     endgroup
     covergroup mldsa_reg__MLDSA_CTRL_fld_cg with function sample(
     input bit [3-1:0] CTRL,
-    input bit [1-1:0] ZEROIZE
+    input bit [1-1:0] ZEROIZE,
+    input bit [1-1:0] PCR_SIGN,
+    input bit [1-1:0] EXTERNAL_MU,
+    input bit [1-1:0] STREAM_MSG
     );
         option.per_instance = 1;
         CTRL_cp : coverpoint CTRL;
         ZEROIZE_cp : coverpoint ZEROIZE;
+        PCR_SIGN_cp : coverpoint PCR_SIGN;
+        EXTERNAL_MU_cp : coverpoint EXTERNAL_MU;
+        STREAM_MSG_cp : coverpoint STREAM_MSG;
 
     endgroup
 
@@ -91,11 +97,13 @@
     endgroup
     covergroup mldsa_reg__MLDSA_STATUS_fld_cg with function sample(
     input bit [1-1:0] READY,
-    input bit [1-1:0] VALID
+    input bit [1-1:0] VALID,
+    input bit [1-1:0] MSG_STREAM_READY
     );
         option.per_instance = 1;
         READY_cp : coverpoint READY;
         VALID_cp : coverpoint VALID;
+        MSG_STREAM_READY_cp : coverpoint MSG_STREAM_READY;
 
     endgroup
 
@@ -196,6 +204,136 @@
     );
         option.per_instance = 1;
         VERIFY_RES_cp : coverpoint VERIFY_RES;
+
+    endgroup
+
+    /*----------------------- MLDSA_REG__MLDSA_EXTERNAL_MU COVERGROUPS -----------------------*/
+    covergroup mldsa_reg__MLDSA_EXTERNAL_MU_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup mldsa_reg__MLDSA_EXTERNAL_MU_fld_cg with function sample(
+    input bit [32-1:0] EXTERNAL_MU
+    );
+        option.per_instance = 1;
+        EXTERNAL_MU_cp : coverpoint EXTERNAL_MU;
+
+    endgroup
+
+    /*----------------------- MLDSA_REG__MLDSA_MSG_STROBE COVERGROUPS -----------------------*/
+    covergroup mldsa_reg__MLDSA_MSG_STROBE_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup mldsa_reg__MLDSA_MSG_STROBE_fld_cg with function sample(
+    input bit [4-1:0] STROBE
+    );
+        option.per_instance = 1;
+        STROBE_cp : coverpoint STROBE;
+
+    endgroup
+
+    /*----------------------- MLDSA_REG__MLDSA_CTX_CONFIG COVERGROUPS -----------------------*/
+    covergroup mldsa_reg__MLDSA_CTX_CONFIG_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup mldsa_reg__MLDSA_CTX_CONFIG_fld_cg with function sample(
+    input bit [8-1:0] CTX_SIZE
+    );
+        option.per_instance = 1;
+        CTX_SIZE_cp : coverpoint CTX_SIZE;
+
+    endgroup
+
+    /*----------------------- MLDSA_REG__MLDSA_CTX COVERGROUPS -----------------------*/
+    covergroup mldsa_reg__MLDSA_CTX_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup mldsa_reg__MLDSA_CTX_fld_cg with function sample(
+    input bit [32-1:0] CTX
+    );
+        option.per_instance = 1;
+        CTX_cp : coverpoint CTX;
+
+    endgroup
+
+    /*----------------------- KV_READ_CTRL_REG COVERGROUPS -----------------------*/
+    covergroup kv_read_ctrl_reg_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup kv_read_ctrl_reg_fld_cg with function sample(
+    input bit [1-1:0] read_en,
+    input bit [5-1:0] read_entry,
+    input bit [1-1:0] pcr_hash_extend,
+    input bit [25-1:0] rsvd
+    );
+        option.per_instance = 1;
+        read_en_cp : coverpoint read_en;
+        read_entry_cp : coverpoint read_entry;
+        pcr_hash_extend_cp : coverpoint pcr_hash_extend;
+        rsvd_cp : coverpoint rsvd;
+
+    endgroup
+
+    /*----------------------- KV_STATUS_REG COVERGROUPS -----------------------*/
+    covergroup kv_status_reg_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup kv_status_reg_fld_cg with function sample(
+    input bit [1-1:0] READY,
+    input bit [1-1:0] VALID,
+    input bit [8-1:0] ERROR
+    );
+        option.per_instance = 1;
+        READY_cp : coverpoint READY;
+        VALID_cp : coverpoint VALID;
+        ERROR_cp : coverpoint ERROR;
 
     endgroup
 

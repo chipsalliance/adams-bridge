@@ -15,15 +15,16 @@
 //----------------------------------------------------------------------
 //
 
-typedef struct {
-  string MSG;         // Input MSG
-  string SIG;         // Input SIG
-  string PK;         // Input PK
-  string expected_RES;  // Expected Signature
-} verif_kat_t;
 
 class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
 
+  typedef struct {
+    string MSG;         // Input MSG
+    string SIG;         // Input SIG
+    string PK;         // Input PK
+    string expected_RES;  // Expected Signature
+  } verif_kat_t;
+  
   `uvm_object_utils(ML_DSA_verif_KATs_sequence);
 
     

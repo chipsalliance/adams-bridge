@@ -35,9 +35,14 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTRL__STREAM_MSG__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__in_t CTRL;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__in_t PCR_SIGN;
         mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__in_t EXTERNAL_MU;
+        mldsa_reg__MLDSA_CTRL__STREAM_MSG__in_t STREAM_MSG;
     } mldsa_reg__MLDSA_CTRL__in_t;
 
     typedef struct packed{
@@ -49,8 +54,13 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_STATUS__VALID__in_t;
 
     typedef struct packed{
+        logic next;
+    } mldsa_reg__MLDSA_STATUS__MSG_STREAM_READY__in_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_STATUS__READY__in_t READY;
         mldsa_reg__MLDSA_STATUS__VALID__in_t VALID;
+        mldsa_reg__MLDSA_STATUS__MSG_STREAM_READY__in_t MSG_STREAM_READY;
     } mldsa_reg__MLDSA_STATUS__in_t;
 
     typedef struct packed{
@@ -83,6 +93,7 @@ package mldsa_reg_pkg;
     typedef struct packed{
         logic [31:0] next;
         logic we;
+        logic swwe;
         logic hwclr;
     } mldsa_reg__MLDSA_MSG__MSG__in_t;
 
@@ -109,6 +120,31 @@ package mldsa_reg_pkg;
     typedef struct packed{
         mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__in_t EXTERNAL_MU;
     } mldsa_reg__MLDSA_EXTERNAL_MU__in_t;
+
+    typedef struct packed{
+        logic swwe;
+        logic hwclr;
+    } mldsa_reg__MLDSA_MSG_STROBE__STROBE__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_STROBE__STROBE__in_t STROBE;
+    } mldsa_reg__MLDSA_MSG_STROBE__in_t;
+
+    typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__in_t CTX_SIZE;
+    } mldsa_reg__MLDSA_CTX_CONFIG__in_t;
+
+    typedef struct packed{
+        logic hwclr;
+    } mldsa_reg__MLDSA_CTX__CTX__in_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX__CTX__in_t CTX;
+    } mldsa_reg__MLDSA_CTX__in_t;
 
     typedef struct packed{
         logic rd_ack;
@@ -196,6 +232,9 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_MSG__in_t [16-1:0]MLDSA_MSG;
         mldsa_reg__MLDSA_VERIFY_RES__in_t [16-1:0]MLDSA_VERIFY_RES;
         mldsa_reg__MLDSA_EXTERNAL_MU__in_t [16-1:0]MLDSA_EXTERNAL_MU;
+        mldsa_reg__MLDSA_MSG_STROBE__in_t MLDSA_MSG_STROBE;
+        mldsa_reg__MLDSA_CTX_CONFIG__in_t MLDSA_CTX_CONFIG;
+        mldsa_reg__MLDSA_CTX__in_t [64-1:0]MLDSA_CTX;
         mldsa_reg__MLDSA_PUBKEY__external__in_t MLDSA_PUBKEY;
         mldsa_reg__MLDSA_SIGNATURE__external__in_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__in_t MLDSA_PRIVKEY_OUT;
@@ -222,10 +261,15 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t;
 
     typedef struct packed{
+        logic value;
+    } mldsa_reg__MLDSA_CTRL__STREAM_MSG__out_t;
+
+    typedef struct packed{
         mldsa_reg__MLDSA_CTRL__CTRL__out_t CTRL;
         mldsa_reg__MLDSA_CTRL__ZEROIZE__out_t ZEROIZE;
         mldsa_reg__MLDSA_CTRL__PCR_SIGN__out_t PCR_SIGN;
         mldsa_reg__MLDSA_CTRL__EXTERNAL_MU__out_t EXTERNAL_MU;
+        mldsa_reg__MLDSA_CTRL__STREAM_MSG__out_t STREAM_MSG;
     } mldsa_reg__MLDSA_CTRL__out_t;
 
     typedef struct packed{
@@ -254,6 +298,7 @@ package mldsa_reg_pkg;
 
     typedef struct packed{
         logic [31:0] value;
+        logic swmod;
     } mldsa_reg__MLDSA_MSG__MSG__out_t;
 
     typedef struct packed{
@@ -275,6 +320,30 @@ package mldsa_reg_pkg;
     typedef struct packed{
         mldsa_reg__MLDSA_EXTERNAL_MU__EXTERNAL_MU__out_t EXTERNAL_MU;
     } mldsa_reg__MLDSA_EXTERNAL_MU__out_t;
+
+    typedef struct packed{
+        logic [3:0] value;
+    } mldsa_reg__MLDSA_MSG_STROBE__STROBE__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_MSG_STROBE__STROBE__out_t STROBE;
+    } mldsa_reg__MLDSA_MSG_STROBE__out_t;
+
+    typedef struct packed{
+        logic [7:0] value;
+    } mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX_CONFIG__CTX_SIZE__out_t CTX_SIZE;
+    } mldsa_reg__MLDSA_CTX_CONFIG__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } mldsa_reg__MLDSA_CTX__CTX__out_t;
+
+    typedef struct packed{
+        mldsa_reg__MLDSA_CTX__CTX__out_t CTX;
+    } mldsa_reg__MLDSA_CTX__out_t;
 
     typedef struct packed{
         logic req;
@@ -362,6 +431,9 @@ package mldsa_reg_pkg;
         mldsa_reg__MLDSA_MSG__out_t [16-1:0]MLDSA_MSG;
         mldsa_reg__MLDSA_VERIFY_RES__out_t [16-1:0]MLDSA_VERIFY_RES;
         mldsa_reg__MLDSA_EXTERNAL_MU__out_t [16-1:0]MLDSA_EXTERNAL_MU;
+        mldsa_reg__MLDSA_MSG_STROBE__out_t MLDSA_MSG_STROBE;
+        mldsa_reg__MLDSA_CTX_CONFIG__out_t MLDSA_CTX_CONFIG;
+        mldsa_reg__MLDSA_CTX__out_t [64-1:0]MLDSA_CTX;
         mldsa_reg__MLDSA_PUBKEY__external__out_t MLDSA_PUBKEY;
         mldsa_reg__MLDSA_SIGNATURE__external__out_t MLDSA_SIGNATURE;
         mldsa_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
