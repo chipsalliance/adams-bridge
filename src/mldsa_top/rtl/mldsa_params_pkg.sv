@@ -46,7 +46,6 @@ package mldsa_params_pkg;
   //Memory interface
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
   parameter MLDSA_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
-  parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
 
   parameter MLDSA_MEM_MASKED_INST = 3;
 
@@ -69,7 +68,8 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_W1_DATA_W = 4;
   
   parameter MLDSA_MEM_MAX_DEPTH = MLDSA_MEM_INST2_DEPTH;
-
+  parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
+  
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;
   parameter MLDSA_VERIFY      = 3'b011;
