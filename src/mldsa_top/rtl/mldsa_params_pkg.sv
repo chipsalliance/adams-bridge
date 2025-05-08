@@ -41,7 +41,8 @@ package mldsa_params_pkg;
   parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled
   parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
 
-  parameter MLDSA_NUM_NTT = 2;
+  //Can be 1 or 2 only
+  parameter MLDSA_NUM_NTT = 1;
   
   //Memory interface
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96

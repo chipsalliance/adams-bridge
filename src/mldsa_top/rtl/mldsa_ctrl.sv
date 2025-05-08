@@ -63,13 +63,13 @@ module mldsa_ctrl
   output logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
 
   //ntt interfaces
-  output logic [1:0]                        ntt_enable_o,
-  output mldsa_ntt_mode_e [1:0]             ntt_mode_o,
-  output ntt_mem_addr_t [1:0]               ntt_mem_base_addr_o,
-  output pwo_mem_addr_t [1:0]               pwo_mem_base_addr_o,
-  output logic [1:0]                        ntt_masking_en_o,
-  output logic [1:0]                        ntt_shuffling_en_o,
-  input logic [1:0]                         ntt_busy_i,
+  output logic [MLDSA_NUM_NTT-1:0]            ntt_enable_o,
+  output mldsa_ntt_mode_e [MLDSA_NUM_NTT-1:0] ntt_mode_o,
+  output ntt_mem_addr_t [MLDSA_NUM_NTT-1:0]   ntt_mem_base_addr_o,
+  output pwo_mem_addr_t [MLDSA_NUM_NTT-1:0]   pwo_mem_base_addr_o,
+  output logic [MLDSA_NUM_NTT-1:0]            ntt_masking_en_o,
+  output logic [MLDSA_NUM_NTT-1:0]            ntt_shuffling_en_o,
+  input logic [MLDSA_NUM_NTT-1:0]             ntt_busy_i,
 
   //aux interfaces
   output logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
@@ -334,11 +334,11 @@ always_comb kv_seed_data_present = '0;
   logic error_flag_reg;
   logic error_flag_edge;
   logic subcomponent_busy;
-  logic sign_subcomponent_busy;
+  logic sec_subcomponent_busy;
 
-  mldsa_ctrl_fsm_state_e ctrl_fsm_ps, ctrl_fsm_ns;
+  mldsa_ctrl_fsm_state_e prim_ctrl_fsm_ps, prim_ctrl_fsm_ns;
   logic msg_valid;
-  mldsa_ctrl_fsm_state_e sign_ctrl_fsm_ps, sign_ctrl_fsm_ns;
+  mldsa_ctrl_fsm_state_e sec_ctrl_fsm_ps, sec_ctrl_fsm_ns;
 
   mldsa_privkey_u privatekey_reg;
   mldsa_signature_u signature_reg;
@@ -356,7 +356,12 @@ always_comb kv_seed_data_present = '0;
   //shared aux functions
   logic [1:0] normcheck_enable;
   
-  logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
+  //per controller enable/busy for ntt
+  logic [1:0] ntt_en; //This is the pulse we drive to NTT to start it
+  logic [1:0] ntt_active; //This is the mux select for 1 NTT mode
+  logic [1:0] ntt_busy;
+
+  logic [MLDSA_NUM_NTT-1:0][MLDSA_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
   logic mldsa_status_done_d, mldsa_status_done_p;
@@ -1117,9 +1122,8 @@ always_comb kv_seed_data_present = '0;
                                    (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
 //Primary sequencer for keygen, signing, and verify
-  always_comb subcomponent_busy = !(ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
-                                  sampler_busy_i |
-                                  ntt_busy_i[0];
+  always_comb subcomponent_busy = !(prim_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
+                                  sampler_busy_i | ntt_busy[0];
 `ifdef CALIPTRA
   always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
   always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid;
@@ -1340,30 +1344,7 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb begin
-    ntt_mode_o[0] = MLDSA_NTT_NONE;
-    ntt_masking_en_o[0] = 0;
-    ntt_shuffling_en_o[0] = 0;
-    if (prim_instr.opcode.ntt_en) begin
-      ntt_mode_o[0] = prim_instr.opcode.mode.ntt_mode;
-      ntt_masking_en_o[0] = prim_instr.opcode.masking_en;
-      ntt_shuffling_en_o[0] = prim_instr.opcode.shuffling_en;
-    end
-  end
-
   always_comb sampler_src_offset = {4'b0, msg_cnt};
-
-  //passing a bit on the immediate field to mux between temp address locations
-  always_comb ntt_temp_address[0] = prim_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
-
-  //optimization - could be one interface here?
-  always_comb ntt_mem_base_addr_o[0] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:ntt_temp_address[0],
-                                         dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
-
-  always_comb pwo_mem_base_addr_o[0] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
-                                         pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
-                                         pw_base_addr_c:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb dest_base_addr_o = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
   always_comb aux_src0_base_addr_o[0] = prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
@@ -1386,7 +1367,7 @@ always_ff @(posedge clk or negedge rst_b) begin
 end 
 
 //set stream message ip when given instruction to load MSG
-always_comb stream_msg_ip = stream_msg_mode & (ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) & (sampler_src == MLDSA_MSG_ID);
+always_comb stream_msg_ip = stream_msg_mode & (prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) & (sampler_src == MLDSA_MSG_ID);
 
 //count how many dwords of ctx sent
 always_ff @(posedge clk or negedge rst_b) begin
@@ -1531,39 +1512,40 @@ always_comb decompose_mode_o = prim_instr.opcode.aux_en & (prim_instr.opcode.mod
 
 //State logic
 always_comb begin : primary_ctrl_fsm_out_combo
-    ctrl_fsm_ns = ctrl_fsm_ps;
-    sha3_start_o = 0;
-    msg_start_o = 0;
-    msg_valid = 0;
-    sampler_start_o = 0;
-    sampler_src = 0;
-    sampler_imm = 0;
-    ntt_enable_o[0] = 0;
-    power2round_enable_o = 0;
-    decompose_enable_o = 0;
-    skencode_enable_o = 0;
-    pkdecode_enable_o = 0;
-    sigdecode_h_enable_o = 0;
-    sigdecode_z_enable_o = 0;
-    normcheck_enable[0] = 0;
-    lfsr_enable_o = 0;
+    prim_ctrl_fsm_ns = prim_ctrl_fsm_ps;
+    sha3_start_o = '0;
+    msg_start_o = '0;
+    msg_valid = '0;
+    sampler_start_o = '0;
+    sampler_src = '0;
+    sampler_imm = '0;
+    ntt_en[0] = '0;
+    ntt_active[0] = '0;
+    power2round_enable_o = '0;
+    decompose_enable_o = '0;
+    skencode_enable_o = '0;
+    pkdecode_enable_o = '0;
+    sigdecode_h_enable_o = '0;
+    sigdecode_z_enable_o = '0;
+    normcheck_enable[0] = '0;
+    lfsr_enable_o = '0;
 
-    unique case (ctrl_fsm_ps)
+    unique case (prim_ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
         //load keccak data to SIPO
         if (prim_instr.opcode.keccak_en)
-          ctrl_fsm_ns = MLDSA_CTRL_SHA3_START;
+          prim_ctrl_fsm_ns = MLDSA_CTRL_SHA3_START;
         //start sampler flow, data already driven to SIPO
-        else if (prim_instr.opcode.sampler_en | prim_instr.opcode.ntt_en | prim_instr.opcode.aux_en)
-          ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
+          prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_SHA3_START: begin
-        ctrl_fsm_ns = MLDSA_CTRL_MSG_START;
+        prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_START;
         //drive start
         sha3_start_o = 1;
       end
       MLDSA_CTRL_MSG_START: begin
-        ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
         msg_start_o = 1;
       end
       MLDSA_CTRL_MSG_LOAD: begin
@@ -1572,21 +1554,24 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_imm = prim_instr.imm;
         if (msg_done & ~msg_hold) begin
           msg_valid = 0;
-          if (prim_instr.opcode.sampler_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
-          else ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
+          if (prim_instr.opcode.sampler_en & ~ntt_busy[0]) prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          else prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
         end
       end
       MLDSA_CTRL_MSG_WAIT: begin
         //load another message
-        if (prim_instr.opcode.keccak_en) ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        if (prim_instr.opcode.keccak_en) prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
         //kick off the sampler
-        else if (prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
-        else ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
+          prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+        else 
+          prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
       end
       MLDSA_CTRL_FUNC_START: begin
-        ctrl_fsm_ns = MLDSA_CTRL_DONE;
+        prim_ctrl_fsm_ns = MLDSA_CTRL_DONE;
         sampler_start_o = prim_instr.opcode.sampler_en;
-        ntt_enable_o[0] = prim_instr.opcode.ntt_en;
+        ntt_en[0] = prim_instr.opcode.ntt_en;
+        ntt_active[0] = prim_instr.opcode.ntt_en;
         if (prim_instr.opcode.aux_en) begin
           power2round_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
           decompose_enable_o = (prim_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT});
@@ -1599,7 +1584,8 @@ always_comb begin : primary_ctrl_fsm_out_combo
         end
       end
       MLDSA_CTRL_DONE: begin
-        if ((~sampler_busy_i & ~ntt_busy_i[0] & ~prim_instr.opcode.aux_en) |
+        ntt_active[0] = prim_instr.opcode.ntt_en;
+        if ((~sampler_busy_i & ~ntt_busy[0] & ~prim_instr.opcode.aux_en) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT}) & decompose_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_PWR2RND) & power2round_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SKENCODE) & skencode_done_i) |
@@ -1609,7 +1595,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
           
-              ctrl_fsm_ns = MLDSA_CTRL_IDLE;
+          prim_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
 
         end
       end
@@ -1621,13 +1607,13 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : primary_ctrl_fsm_flops
   if (!rst_b) begin
-      ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      prim_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
   end
   else if (zeroize) begin
-      ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      prim_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
   end
   else begin
-      ctrl_fsm_ps <= ctrl_fsm_ns;
+      prim_ctrl_fsm_ps <= prim_ctrl_fsm_ns;
   end
 end  
 
@@ -1641,8 +1627,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
 );
 
   //Second sequencer for simultaneous signing operations
-  always_comb sign_subcomponent_busy = !(sign_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE}) |
-                                        ntt_busy_i[1];
+  always_comb sec_subcomponent_busy = !(sec_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE}) | ntt_busy[1];
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
@@ -1767,7 +1752,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
           sec_prog_cntr_nxt = sec_prog_cntr;
       end
       default : begin
-        if (sign_subcomponent_busy) begin //Stalled until sub-component is done
+        if (sec_subcomponent_busy) begin //Stalled until sub-component is done
           sec_prog_cntr_nxt = sec_prog_cntr;
         end
         else begin
@@ -1776,29 +1761,6 @@ mldsa_seq_prim mldsa_seq_prim_inst
       end
     endcase
   end
-
-  //instruciton decode - drives secondary ntt
-  always_comb begin
-    ntt_mode_o[1] = MLDSA_NTT_NONE;
-    ntt_masking_en_o[1] = 0;
-    ntt_shuffling_en_o[1] = 0;
-    if (sec_instr.opcode.ntt_en) begin
-      ntt_mode_o[1] = sec_instr.opcode.mode.ntt_mode;
-      ntt_masking_en_o[1] = sec_instr.opcode.masking_en;
-      ntt_shuffling_en_o[1] = sec_instr.opcode.shuffling_en;
-    end
-  end
-  //passing a bit on the immediate field to mux between temp address locations
-  always_comb ntt_temp_address[1] = sec_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
-
-  //one interface here?
-  always_comb ntt_mem_base_addr_o[1] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
-                                         interim_base_addr:ntt_temp_address[1],
-                                         dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
-
-  always_comb pwo_mem_base_addr_o[1] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
-                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
-                                         pw_base_addr_c:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
 
   always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
   always_comb aux_src1_base_addr_o[1] = sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
@@ -1811,25 +1773,27 @@ mldsa_seq_prim mldsa_seq_prim_inst
   always_comb normcheck_enable_o = |normcheck_enable;
 
 //State logic
-always_comb begin : secpondary_ctrl_fsm_out_combo
-    sign_ctrl_fsm_ns = sign_ctrl_fsm_ps;
-    ntt_enable_o[1] = 0;
-    skdecode_enable_o = 0;
-    makehint_enable_o = 0;
-    normcheck_enable[1] = 0;
-    sigencode_enable_o = 0;
+always_comb begin : secondary_ctrl_fsm_out_combo
+    sec_ctrl_fsm_ns = sec_ctrl_fsm_ps;
+    ntt_en[1] = '0;
+    ntt_active[1] = '0;
+    skdecode_enable_o = '0;
+    makehint_enable_o = '0;
+    normcheck_enable[1] = '0;
+    sigencode_enable_o = '0;
 
-    unique case (sign_ctrl_fsm_ps)
+    unique case (sec_ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
         //Start function
         if (sec_instr.opcode.sampler_en)
-          sign_ctrl_fsm_ns = MLDSA_CTRL_ERROR;
-        if (sec_instr.opcode.ntt_en | sec_instr.opcode.aux_en)
-          sign_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          sec_ctrl_fsm_ns = MLDSA_CTRL_ERROR;
+        if ((sec_instr.opcode.aux_en | sec_instr.opcode.ntt_en) & ~ntt_busy[1])
+          sec_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_FUNC_START: begin
-        sign_ctrl_fsm_ns = MLDSA_CTRL_DONE;
-        ntt_enable_o[1] = sec_instr.opcode.ntt_en;
+        sec_ctrl_fsm_ns = MLDSA_CTRL_DONE;
+        ntt_en[1] = sec_instr.opcode.ntt_en;
+        ntt_active[1] = sec_instr.opcode.ntt_en;
         if (sec_instr.opcode.aux_en) begin
           skdecode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE);
           makehint_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT);
@@ -1838,12 +1802,13 @@ always_comb begin : secpondary_ctrl_fsm_out_combo
         end
       end
       MLDSA_CTRL_DONE: begin
-        if ((sec_instr.opcode.ntt_en & ~ntt_busy_i[1]) |
+        ntt_active[1] = sec_instr.opcode.ntt_en;
+        if ((sec_instr.opcode.ntt_en & ~ntt_busy[1]) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) ) begin
-          sign_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
+          sec_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
         end
       end
       default: begin
@@ -1854,13 +1819,13 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : secondary_ctrl_fsm_flops
   if (!rst_b) begin
-      sign_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      sec_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
   end
   else if (zeroize) begin
-      sign_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      sec_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
   end
   else begin
-      sign_ctrl_fsm_ps <= sign_ctrl_fsm_ns;
+      sec_ctrl_fsm_ps <= sec_ctrl_fsm_ns;
   end
 end  
 
@@ -1873,6 +1838,61 @@ mldsa_seq_sec mldsa_seq_sec_inst
   .data_o(sec_instr_o)
 );
 
+//NTT gasket
+//If we have 2 NTT, connect to 0/1
+//If we have 1 NTT, connect both to 0
+localparam PRIM_SEQ_NTT = 0;
+localparam SEC_SEQ_NTT = MLDSA_NUM_NTT-1;
+
+//Check if ntt is being enabled in this clock also
+always_comb ntt_busy[0] = prim_instr.opcode.ntt_en & (ntt_busy_i[PRIM_SEQ_NTT] | ntt_enable_o[PRIM_SEQ_NTT]);
+always_comb ntt_busy[1] = sec_instr.opcode.ntt_en & (ntt_busy_i[SEC_SEQ_NTT] | ntt_enable_o[SEC_SEQ_NTT]);
+
+always_comb begin
+  for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+    ntt_enable_o[ntt] = '0;
+    ntt_mode_o[ntt] = MLDSA_NTT_NONE;
+    ntt_masking_en_o[ntt] = '0;
+    ntt_shuffling_en_o[ntt] = '0;
+    ntt_temp_address[ntt] = '0;
+    ntt_mem_base_addr_o[ntt] = '0;
+    pwo_mem_base_addr_o[ntt] = '0;
+  end
+  if (ntt_active[0]) begin
+    ntt_enable_o[PRIM_SEQ_NTT] = ntt_en[0]; //this comes from prim sequencer
+    ntt_mode_o[PRIM_SEQ_NTT] = prim_instr.opcode.mode.ntt_mode;
+    ntt_masking_en_o[PRIM_SEQ_NTT] = prim_instr.opcode.masking_en;
+    ntt_shuffling_en_o[PRIM_SEQ_NTT] = prim_instr.opcode.shuffling_en;
+    //passing a bit on the immediate field to mux between temp address locations
+    ntt_temp_address[PRIM_SEQ_NTT] = prim_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
+    //optimization - could be one interface here?
+    ntt_mem_base_addr_o[PRIM_SEQ_NTT] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                          interim_base_addr:ntt_temp_address[PRIM_SEQ_NTT],
+                                          dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+    pwo_mem_base_addr_o[PRIM_SEQ_NTT] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
+                                          pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
+                                          pw_base_addr_c:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};                                   
+  end
+  if (ntt_active[1]) begin
+    ntt_enable_o[SEC_SEQ_NTT] = ntt_en[1]; //this comes from sec seq
+    ntt_mode_o[SEC_SEQ_NTT] = sec_instr.opcode.mode.ntt_mode;
+    ntt_masking_en_o[SEC_SEQ_NTT] = sec_instr.opcode.masking_en;
+    ntt_shuffling_en_o[SEC_SEQ_NTT] = sec_instr.opcode.shuffling_en;
+    //passing a bit on the immediate field to mux between temp address locations
+    ntt_temp_address[SEC_SEQ_NTT] = sec_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
+
+    //one interface here?
+    ntt_mem_base_addr_o[SEC_SEQ_NTT] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+                                         interim_base_addr:ntt_temp_address[SEC_SEQ_NTT],
+                                         dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+
+    pwo_mem_base_addr_o[SEC_SEQ_NTT] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
+                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
+                                         pw_base_addr_c:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+  end
+end
+
+//Zeroizer
 always_comb prim_instr = ((prim_prog_cntr == MLDSA_ZEROIZE) | (prim_prog_cntr == MLDSA_RESET))? '0 : prim_instr_o;
 always_comb sec_instr = ((sec_prog_cntr == MLDSA_ZEROIZE) | (sec_prog_cntr == MLDSA_RESET))? '0 : sec_instr_o;
 
@@ -1994,8 +2014,8 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
     end
 `endif
 
-  `ABR_ASSERT_KNOWN(ERR_CTRL_FSM_X, {ctrl_fsm_ps}, clk, !rst_b)
-  `ABR_ASSERT_KNOWN(ERR_SIGN_CTRL_FSM_X, {sign_ctrl_fsm_ps}, clk, !rst_b)
+  `ABR_ASSERT_KNOWN(ERR_PRIM_CTRL_FSM_X, {prim_ctrl_fsm_ps}, clk, !rst_b)
+  `ABR_ASSERT_KNOWN(ERR_SEC_CTRL_FSM_X, {sec_ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
