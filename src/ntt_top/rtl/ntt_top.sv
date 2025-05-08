@@ -200,7 +200,7 @@ module ntt_top
     //Mem IF assignments:
     //mem wr - NTT/INTT mode, write ntt data. PWO mode, write pwm/a/s data
     assign mem_wr_req.rd_wr_en = !pwo_mode ? (mem_wren_mux ? RW_WRITE : RW_IDLE) //TODO convert mem_wren_mux to rw enum
-                                    : (pwm_mode & masking_en & ~shuffle_en & accumulate) ? (pw_wren_reg ? RW_WRITE : RW_IDLE) : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
+                                           : (pw_wren_reg ? RW_WRITE : RW_IDLE); 
     assign mem_wr_req.addr  = !pwo_mode ? mem_wr_addr_mux : pwm_wr_addr_c_reg;
     assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
@@ -257,8 +257,8 @@ module ntt_top
     end
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
-    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.rd_wr_en : share_mem_rd_req/*_reg*/.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? shuffle_en ? share_mem_rd_req.addr : share_mem_rd_req/*_reg*/.addr : pw_mem_rd_addr_c : 'h0;
+    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
     assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0;
     assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : MLDSA_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
