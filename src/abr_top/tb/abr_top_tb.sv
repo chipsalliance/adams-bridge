@@ -14,7 +14,7 @@
 //
 //======================================================================
 //
-// mldsa_top_tb.sv
+// abr_top_tb.sv
 // --------
 //
 //======================================================================
@@ -23,7 +23,7 @@ import "DPI-C" function string getenv(input string env_name);
 
 `include "mldsa_config_defines.svh"
 
-module mldsa_top_tb
+module abr_top_tb
   import mldsa_params_pkg::*;
   import abr_prim_alert_pkg::*;
 (
@@ -108,7 +108,7 @@ module mldsa_top_tb
   
   assign hready_i_tb = hreadyout_o_tb;
 
-  mldsa_top 
+  abr_top 
   dut (
   .clk(clk_i),
   .rst_b(rst_b),

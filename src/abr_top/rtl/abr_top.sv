@@ -16,7 +16,7 @@
 `include "mldsa_config_defines.svh"
 `include "abr_prim_assert.sv"
 
-module mldsa_top
+module abr_top
   import abr_prim_alert_pkg::*;
   import mldsa_reg_pkg::*;
   import mldsa_params_pkg::*;

@@ -112,7 +112,7 @@ import kv_defines_pkg::*;
   );
 
   // DUT
-  mldsa_top #(
+  abr_top #(
     .AHB_ADDR_WIDTH(18),
     .AHB_DATA_WIDTH(ahb_lite_slave_0_params::AHB_WDATA_WIDTH),
     .CLIENT_DATA_WIDTH(32)

@@ -24,7 +24,7 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/mldsa_reg_uvm.sv
 ---
-provides: [mldsa_top]
+provides: [abr_top]
 schema_version: 2.4.0
 requires:
   - mldsa_defines
@@ -54,19 +54,19 @@ targets:
       - $COMPILE_ROOT/rtl/mldsa_seq_prim.sv
       - $COMPILE_ROOT/rtl/mldsa_seq_sec.sv
       - $COMPILE_ROOT/rtl/mldsa_ctrl.sv
-      - $COMPILE_ROOT/rtl/mldsa_top.sv
+      - $COMPILE_ROOT/rtl/abr_top.sv
       - $COMPILE_ROOT/rtl/mldsa_reg.sv
-    tops: [mldsa_top]
+    tops: [abr_top]
 global:
   tool:
     vcs:
       default:
         - '-assert svaext'
 ---
-provides: [mldsa_top_tb]
+provides: [abr_top_tb]
 schema_version: 2.4.0
 requires:
-  - mldsa_top
+  - abr_top
   - mldsa_defines
   - abr_libs
   - abr_sampler_top
@@ -74,8 +74,8 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/tb]
     files:
-      - $COMPILE_ROOT/tb/mldsa_top_tb.sv
-    tops: [mldsa_top_tb]
+      - $COMPILE_ROOT/tb/abr_top_tb.sv
+    tops: [abr_top_tb]
 global:
   tool:
     vcs:
@@ -87,14 +87,14 @@ global:
 provides: [mldsa_coverage]  
 schema_version: 2.4.0
 requires: 
-  - mldsa_top
+  - abr_top
 targets:
   tb:
     directories: 
       - $COMPILE_ROOT/coverage
     files:
-      - $COMPILE_ROOT/coverage/mldsa_top_cov_if.sv
-      - $COMPILE_ROOT/coverage/mldsa_top_cov_bind.sv
+      - $COMPILE_ROOT/coverage/abr_top_cov_if.sv
+      - $COMPILE_ROOT/coverage/abr_top_cov_bind.sv
 global:
   tool:
     vcs:

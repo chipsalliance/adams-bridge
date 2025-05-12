@@ -14,7 +14,7 @@
 
 `ifndef VERILATOR
 
-interface mldsa_top_cov_if     
+interface abr_top_cov_if     
     (
     input logic           clk,
     input logic           rst_b,
@@ -46,41 +46,41 @@ interface mldsa_top_cov_if
     logic invalid_hint;
 
    
-    assign mldsa_cmd = mldsa_top.mldsa_ctrl_inst.cmd_reg;
-    assign pcr_sign_mode = mldsa_top.mldsa_ctrl_inst.pcr_sign_mode;
-    assign zeroize = mldsa_top.mldsa_ctrl_inst.zeroize;
-    assign ready = mldsa_top.mldsa_ctrl_inst.mldsa_ready;
-    assign valid = mldsa_top.mldsa_ctrl_inst.mldsa_valid_reg;
+    assign mldsa_cmd = abr_top.mldsa_ctrl_inst.cmd_reg;
+    assign pcr_sign_mode = abr_top.mldsa_ctrl_inst.pcr_sign_mode;
+    assign zeroize = abr_top.mldsa_ctrl_inst.zeroize;
+    assign ready = abr_top.mldsa_ctrl_inst.mldsa_ready;
+    assign valid = abr_top.mldsa_ctrl_inst.mldsa_valid_reg;
 
     always_ff @(posedge clk) begin
         if (!rst_b) begin
             mldsa_sw_cmd <= '0;
         end
-        else if (mldsa_top.mldsa_reg_inst.decoded_reg_strb.MLDSA_CTRL && mldsa_top.mldsa_reg_inst.decoded_req_is_wr) begin // SW write
-            mldsa_sw_cmd <= (mldsa_top.mldsa_reg_inst.field_storage.MLDSA_CTRL.CTRL.value & ~mldsa_top.mldsa_reg_inst.decoded_wr_biten[2:0]) | (mldsa_top.mldsa_reg_inst.decoded_wr_data[2:0] & mldsa_top.mldsa_reg_inst.decoded_wr_biten[2:0]);
+        else if (abr_top.mldsa_reg_inst.decoded_reg_strb.MLDSA_CTRL && abr_top.mldsa_reg_inst.decoded_req_is_wr) begin // SW write
+            mldsa_sw_cmd <= (abr_top.mldsa_reg_inst.field_storage.MLDSA_CTRL.CTRL.value & ~abr_top.mldsa_reg_inst.decoded_wr_biten[2:0]) | (abr_top.mldsa_reg_inst.decoded_wr_data[2:0] & abr_top.mldsa_reg_inst.decoded_wr_biten[2:0]);
         end
     end
 
-    assign mldsa_privkey_lock = mldsa_top.mldsa_ctrl_inst.mldsa_privkey_lock;
+    assign mldsa_privkey_lock = abr_top.mldsa_ctrl_inst.mldsa_privkey_lock;
 
-    assign error_flag = mldsa_top.mldsa_ctrl_inst.error_flag;
-    assign pcr_sign_input_invalid = mldsa_top.mldsa_ctrl_inst.pcr_sign_input_invalid;
-    assign skdecode_error = mldsa_top.mldsa_ctrl_inst.skdecode_error_i;
+    assign error_flag = abr_top.mldsa_ctrl_inst.error_flag;
+    assign pcr_sign_input_invalid = abr_top.mldsa_ctrl_inst.pcr_sign_input_invalid;
+    assign skdecode_error = abr_top.mldsa_ctrl_inst.skdecode_error_i;
 
-    assign keygen_process = mldsa_top.mldsa_ctrl_inst.keygen_process;
-    assign signing_process = mldsa_top.mldsa_ctrl_inst.signing_process;
-    assign verifying_process = mldsa_top.mldsa_ctrl_inst.verifying_process;
-    assign keygen_signing_process = mldsa_top.mldsa_ctrl_inst.keygen_signing_process;
+    assign keygen_process = abr_top.mldsa_ctrl_inst.keygen_process;
+    assign signing_process = abr_top.mldsa_ctrl_inst.signing_process;
+    assign verifying_process = abr_top.mldsa_ctrl_inst.verifying_process;
+    assign keygen_signing_process = abr_top.mldsa_ctrl_inst.keygen_signing_process;
 
-    assign verify_failure = mldsa_top.mldsa_ctrl_inst.clear_verify_valid;
-    assign normcheck_failure = mldsa_top.mldsa_ctrl_inst.normcheck_done_i & mldsa_top.mldsa_ctrl_inst.normcheck_invalid_i;
-    assign normcheck_mode_failure[0] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b00);
-    assign normcheck_mode_failure[1] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b01);
-    assign normcheck_mode_failure[2] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b10);
-    assign makehint_failure = mldsa_top.mldsa_ctrl_inst.makehint_done_i & mldsa_top.mldsa_ctrl_inst.makehint_invalid_i;
-    assign invalid_hint = mldsa_top.mldsa_ctrl_inst.sigdecode_h_invalid_i;
+    assign verify_failure = abr_top.mldsa_ctrl_inst.clear_verify_valid;
+    assign normcheck_failure = abr_top.mldsa_ctrl_inst.normcheck_done_i & abr_top.mldsa_ctrl_inst.normcheck_invalid_i;
+    assign normcheck_mode_failure[0] = normcheck_failure & (abr_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b00);
+    assign normcheck_mode_failure[1] = normcheck_failure & (abr_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b01);
+    assign normcheck_mode_failure[2] = normcheck_failure & (abr_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b10);
+    assign makehint_failure = abr_top.mldsa_ctrl_inst.makehint_done_i & abr_top.mldsa_ctrl_inst.makehint_invalid_i;
+    assign invalid_hint = abr_top.mldsa_ctrl_inst.sigdecode_h_invalid_i;
 
-    covergroup mldsa_top_cov_grp @(posedge clk);
+    covergroup abr_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
         debugUnlock_or_scan_mode_switch_cp: coverpoint debugUnlock_or_scan_mode_switch;
 
@@ -149,21 +149,21 @@ interface mldsa_top_cov_if
     generate
         for(sig_enc_i = 0; sig_enc_i < NUM_ENC; sig_enc_i++) begin : enc_loop
         // For the upper instance
-        assign eq_flags[sig_enc_i*2]   = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i == MLDSA_GAMMA1_RANGE);
-        assign less_flags[sig_enc_i*2] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i <  MLDSA_GAMMA1_RANGE);
-        assign greater_flags[sig_enc_i*2] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i > MLDSA_GAMMA1_RANGE);
+        assign eq_flags[sig_enc_i*2]   = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i == MLDSA_GAMMA1_RANGE);
+        assign less_flags[sig_enc_i*2] = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i <  MLDSA_GAMMA1_RANGE);
+        assign greater_flags[sig_enc_i*2] = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].upper_encode.data_i > MLDSA_GAMMA1_RANGE);
         
         // For the lower instance
-        assign eq_flags[sig_enc_i*2+1]   = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i == MLDSA_GAMMA1_RANGE);
-        assign less_flags[sig_enc_i*2+1] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i <  MLDSA_GAMMA1_RANGE);
-        assign greater_flags[sig_enc_i*2+1] = (mldsa_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i > MLDSA_GAMMA1_RANGE);
+        assign eq_flags[sig_enc_i*2+1]   = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i == MLDSA_GAMMA1_RANGE);
+        assign less_flags[sig_enc_i*2+1] = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i <  MLDSA_GAMMA1_RANGE);
+        assign greater_flags[sig_enc_i*2+1] = (abr_top.sigencode_z_inst.enc_unit[sig_enc_i].lower_encode.data_i > MLDSA_GAMMA1_RANGE);
         end
     endgenerate
 
     // OR-reduce the flags: if any instance meets the condition, the corresponding signal is 1.
-    assign enc_unit_equal   = (|eq_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
-    assign enc_unit_less    = (|less_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
-    assign enc_unit_greater = (|greater_flags) & (mldsa_top.sigencode_z_inst.state != mldsa_top.sigencode_z_inst.IDLE);
+    assign enc_unit_equal   = (|eq_flags) & (abr_top.sigencode_z_inst.state != abr_top.sigencode_z_inst.IDLE);
+    assign enc_unit_less    = (|less_flags) & (abr_top.sigencode_z_inst.state != abr_top.sigencode_z_inst.IDLE);
+    assign enc_unit_greater = (|greater_flags) & (abr_top.sigencode_z_inst.state != abr_top.sigencode_z_inst.IDLE);
     // Sign_z to cover the aggregated conditions
     covergroup sign_z_enc_agg_cg @(posedge clk);
         coverpoint enc_unit_equal {
@@ -189,27 +189,27 @@ interface mldsa_top_cov_if
     generate
     for (sk_enc_i = 0; sk_enc_i < NUM_ENC; sk_enc_i++) begin : sk_enc_loop
         // For mem_a_rd_data element
-        assign skenc_state0_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h0);
-        assign skenc_state1_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h1);
-        assign skenc_state2_flags[sk_enc_i*2]    = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h2);
-        assign skenc_state_mq1_flags[sk_enc_i*2] = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 1);
-        assign skenc_state_mq2_flags[sk_enc_i*2] = (mldsa_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 2);
+        assign skenc_state0_flags[sk_enc_i*2]    = (abr_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h0);
+        assign skenc_state1_flags[sk_enc_i*2]    = (abr_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h1);
+        assign skenc_state2_flags[sk_enc_i*2]    = (abr_top.skencode_inst.mem_a_rd_data[sk_enc_i] == 'h2);
+        assign skenc_state_mq1_flags[sk_enc_i*2] = (abr_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 1);
+        assign skenc_state_mq2_flags[sk_enc_i*2] = (abr_top.skencode_inst.mem_a_rd_data[sk_enc_i] == MLDSA_Q - 2);
         // For mem_b_rd_data element
-        assign skenc_state0_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h0);
-        assign skenc_state1_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h1);
-        assign skenc_state2_flags[sk_enc_i*2+1]    = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h2);
-        assign skenc_state_mq1_flags[sk_enc_i*2+1] = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 1);
-        assign skenc_state_mq2_flags[sk_enc_i*2+1] = (mldsa_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 2);
+        assign skenc_state0_flags[sk_enc_i*2+1]    = (abr_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h0);
+        assign skenc_state1_flags[sk_enc_i*2+1]    = (abr_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h1);
+        assign skenc_state2_flags[sk_enc_i*2+1]    = (abr_top.skencode_inst.mem_b_rd_data[sk_enc_i] == 'h2);
+        assign skenc_state_mq1_flags[sk_enc_i*2+1] = (abr_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 1);
+        assign skenc_state_mq2_flags[sk_enc_i*2+1] = (abr_top.skencode_inst.mem_b_rd_data[sk_enc_i] == MLDSA_Q - 2);
     end
     endgenerate
 
     // OR-reduce each set of flags and ensure the FSM is not in IDLE.
-    // (Assuming mldsa_top.skencode_inst.state and its IDLE constant are accessible.)
-    assign skenc_state0_agg    = (|skenc_state0_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
-    assign skenc_state1_agg    = (|skenc_state1_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
-    assign skenc_state2_agg    = (|skenc_state2_flags)    & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
-    assign skenc_state_mq1_agg = (|skenc_state_mq1_flags) & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
-    assign skenc_state_mq2_agg = (|skenc_state_mq2_flags) & (mldsa_top.skencode_inst.main_state != mldsa_top.skencode_inst.IDLE);
+    // (Assuming abr_top.skencode_inst.state and its IDLE constant are accessible.)
+    assign skenc_state0_agg    = (|skenc_state0_flags)    & (abr_top.skencode_inst.main_state != abr_top.skencode_inst.IDLE);
+    assign skenc_state1_agg    = (|skenc_state1_flags)    & (abr_top.skencode_inst.main_state != abr_top.skencode_inst.IDLE);
+    assign skenc_state2_agg    = (|skenc_state2_flags)    & (abr_top.skencode_inst.main_state != abr_top.skencode_inst.IDLE);
+    assign skenc_state_mq1_agg = (|skenc_state_mq1_flags) & (abr_top.skencode_inst.main_state != abr_top.skencode_inst.IDLE);
+    assign skenc_state_mq2_agg = (|skenc_state_mq2_flags) & (abr_top.skencode_inst.main_state != abr_top.skencode_inst.IDLE);
 
     // Now create a covergroup that samples these aggregated flags.
     covergroup skencode_agg_cg @(posedge clk);
@@ -224,7 +224,7 @@ interface mldsa_top_cov_if
     skencode_agg_cg skencode_agg_cov = new();
     sign_z_enc_agg_cg sign_z_enc_agg_cov_grp1 = new();
 
-    mldsa_top_cov_grp mldsa_top_cov_grp1 = new();
+    abr_top_cov_grp abr_top_cov_grp1 = new();
 
 endinterface
 

@@ -13,8 +13,8 @@
 // limitations under the License.
 
 
-module mldsa_top_cov_bind;
+module abr_top_cov_bind;
     `ifdef FCOV
-    bind mldsa_top mldsa_top_cov_if i_mldsa_top_cov_if(.*);
+    bind abr_top abr_top_cov_if i_abr_top_cov_if(.*);
     `endif
 endmodule

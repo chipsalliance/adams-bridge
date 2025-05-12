@@ -3,7 +3,7 @@ provides: [uvmf_mldsa]
 schema_version: 2.4.0
 requires:
   - mldsa_uvmf_lib
-  - mldsa_top
+  - abr_top
   - mldsa_uvm_pkg
   - mldsa_coverage
 targets:
