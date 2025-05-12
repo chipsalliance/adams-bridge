@@ -29,13 +29,18 @@ package mldsa_params_pkg;
   // Internal constant and parameter definitions.
   //----------------------------------------------------------------
   parameter MLDSA_Q = 23'd8380417;
-  parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1;
+  parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1; //24
   parameter REG_SIZE = 24;
   parameter MLDSA_N = 256;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
   parameter MLDSA_K = 8;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
   
+  parameter MLKEM_Q = 12'd3329;
+  parameter MLKEM_Q_WIDTH = $clog2(MLKEM_Q); //12
+  parameter MLKEM_N = 256;
+  parameter MLKEM_K = 4;
+
   parameter COEFF_PER_CLK = 4;
 
   parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled

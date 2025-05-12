@@ -27,14 +27,14 @@ module abr_sha3
   input logic                      msg_valid_i,
   input logic       [MsgWidth-1:0] msg_data_i [Share],
   input logic       [MsgStrbW-1:0] msg_strb_i,         // one strobe for shares
-  output logic                msg_ready_o,
+  output logic                     msg_ready_o,
 
   // Entropy interface
   input logic                    rand_valid_i,
   input logic                    rand_early_i,
   input logic     [StateW/2-1:0] rand_data_i,
   input logic                    rand_aux_i,
-  output logic              rand_consumed_o,
+  output logic                   rand_consumed_o,
 
   // N, S: Used in cSHAKE mode only
   input logic [NSRegisterSize*8-1:0] ns_data_i, // See abr_sha3_pkg for details
@@ -51,10 +51,10 @@ module abr_sha3
   // It is used to run additional keccak_f after sponge absorbing is completed.
   // See `keccak_run` signal
   input logic                       run_i,
-  input abr_prim_mubi_pkg::mubi4_t done_i,    // see abr_sha3pad for details
+  input abr_prim_mubi_pkg::mubi4_t  done_i,    // see abr_sha3pad for details
 
   output abr_prim_mubi_pkg::mubi4_t absorbed_o,
-  output logic                  squeezing_o,
+  output logic                      squeezing_o,
 
   // Indicate of one block processed. KMAC main state tracks the progression
   // based on this signal.

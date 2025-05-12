@@ -36,9 +36,15 @@ package mldsa_sampler_pkg;
   parameter Sha3Share = (Sha3EnMasking) ? 2 : 1;
 
 //Sampler Configurations
-//Rej Sampler
-  parameter REJS_NUM_SAMPLERS     = 5;
-  parameter REJS_SAMPLE_W         = 24;
+//MLDSA Rej Sampler
+  parameter MLDSA_REJS_NUM_SAMPLERS     = 5;
+  parameter MLDSA_REJS_SAMPLE_W         = 24;
+
+//MLKEM Rej Sampler
+  parameter MLKEM_REJS_NUM_SAMPLERS     = 10;
+  parameter MLKEM_REJS_SAMPLE_W         = 12;
+
+  //Rej Sampler common params
   parameter REJS_VLD_SAMPLES      = COEFF_PER_CLK;
   parameter REJS_PISO_BUFFER_W    = 1440;
   parameter REJS_PISO_INPUT_RATE  = 1344;
@@ -82,7 +88,8 @@ package mldsa_sampler_pkg;
     MLDSA_REJ_SAMPLER,
     MLDSA_EXP_MASK,
     MLDSA_REJ_BOUNDED,
-    MLDSA_SAMPLE_IN_BALL
+    MLDSA_SAMPLE_IN_BALL,
+    MLKEM_REJ_SAMPLER
   } mldsa_sampler_mode_e;
 
 endpackage
