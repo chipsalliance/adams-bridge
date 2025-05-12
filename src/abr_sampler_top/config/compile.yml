@@ -1,5 +1,5 @@
 ---
-provides: [mldsa_sampler_pkg]
+provides: [abr_sampler_pkg]
 schema_version: 2.4.0
 requires:
   - mldsa_defines
@@ -7,16 +7,16 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/mldsa_sampler_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_sampler_pkg.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/mldsa_sampler_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_sampler_pkg.sv
 ---
-provides: [mldsa_sampler_top]
+provides: [abr_sampler_top]
 schema_version: 2.4.0
 requires:
-  - mldsa_sampler_pkg
+  - abr_sampler_pkg
   - mldsa_defines
   - abr_libs
   - rej_bounded
@@ -28,5 +28,5 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/mldsa_sampler_top.sv
-    tops: [mldsa_sampler_top]
+      - $COMPILE_ROOT/rtl/abr_sampler_top.sv
+    tops: [abr_sampler_top]

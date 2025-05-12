@@ -14,19 +14,19 @@
 //
 //======================================================================
 //
-// mldsa_sampler_pkg.sv
+// abr_sampler_pkg.sv
 // --------
 // required parameters for sampler top
 //
 //======================================================================
 
-`ifndef MLDSA_SAMPLER_PKG
-`define MLDSA_SAMPLER_PKG
+`ifndef ABR_SAMPLER_PKG
+`define ABR_SAMPLER_PKG
 
-package mldsa_sampler_pkg;
+package abr_sampler_pkg;
   import mldsa_params_pkg::*;
 
-  parameter MLDSA_COEFF_CNT = 256;
+  parameter ABR_COEFF_CNT = 256;
 
 //SHA3 Configuration
 // Keccak Rounds per clock
@@ -80,17 +80,17 @@ package mldsa_sampler_pkg;
 
   //common structures
   typedef enum logic [3:0] {
-    MLDSA_SAMPLER_NONE,
+    ABR_SAMPLER_NONE,
     //SHA/SHAKE only modes
-    MLDSA_SHAKE256,
-    MLDSA_SHAKE128,
+    ABR_SHAKE256,
+    ABR_SHAKE128,
     //SAMPLER MODES
     MLDSA_REJ_SAMPLER,
-    MLDSA_EXP_MASK,
-    MLDSA_REJ_BOUNDED,
-    MLDSA_SAMPLE_IN_BALL,
+    ABR_EXP_MASK,
+    ABR_REJ_BOUNDED,
+    ABR_SAMPLE_IN_BALL
     MLKEM_REJ_SAMPLER
-  } mldsa_sampler_mode_e;
+  } abr_sampler_mode_e;
 
 endpackage
 

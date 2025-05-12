@@ -22,7 +22,7 @@
 module mldsa_ctrl
   import mldsa_reg_pkg::*;
   import abr_sha3_pkg::*;
-  import mldsa_sampler_pkg::*;
+  import abr_sampler_pkg::*;
   import mldsa_ctrl_pkg::*;
   import mldsa_params_pkg::*;
   import ntt_defines_pkg::*;
@@ -47,7 +47,7 @@ module mldsa_ctrl
   input  mldsa_reg__out_t mldsa_reg_hwif_out_i,
 
   //sampler interface
-  output mldsa_sampler_mode_e        sampler_mode_o,
+  output abr_sampler_mode_e          sampler_mode_o,
   output logic                       sha3_start_o,
   output logic                       msg_start_o,
   output logic                       msg_valid_o,
@@ -1328,10 +1328,10 @@ always_comb kv_seed_data_present = '0;
 
 //Controller prim_instr decode - drives sampler and primary ntt
   always_comb begin
-    sampler_mode_o = MLDSA_SAMPLER_NONE;
+    sampler_mode_o = ABR_SAMPLER_NONE;
     if (prim_instr.opcode.sampler_en) begin
       if (prim_instr.opcode.ntt_en & prim_instr.opcode.mode.ntt_mode inside {MLDSA_PWM_SMPL, MLDSA_PWM_ACCUM_SMPL}) begin
-        sampler_mode_o = MLDSA_REJ_SAMPLER;
+        sampler_mode_o = ABR_REJ_SAMPLER;
       end else begin
         sampler_mode_o = prim_instr.opcode.mode.sampler_mode;
       end
@@ -1339,7 +1339,7 @@ always_comb kv_seed_data_present = '0;
       sampler_mode_o = prim_instr.opcode.mode.sampler_mode;
     end else if (prim_instr.opcode.aux_en) begin
       if (prim_instr.opcode.mode.aux_mode == MLDSA_DECOMP) begin
-        sampler_mode_o = MLDSA_SHAKE256;
+        sampler_mode_o = ABR_SHAKE256;
       end
     end
   end

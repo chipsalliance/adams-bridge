@@ -29,7 +29,7 @@ schema_version: 2.4.0
 requires:
   - mldsa_defines
   - abr_libs
-  - mldsa_sampler_top
+  - abr_sampler_top
   - ntt_top
   - decompose
   - skencode
@@ -69,7 +69,7 @@ requires:
   - mldsa_top
   - mldsa_defines
   - abr_libs
-  - mldsa_sampler_top
+  - abr_sampler_top
 targets:
   tb:
     directories: [$COMPILE_ROOT/tb]

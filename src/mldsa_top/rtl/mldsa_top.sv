@@ -21,7 +21,7 @@ module mldsa_top
   import mldsa_reg_pkg::*;
   import mldsa_params_pkg::*;
   import mldsa_ctrl_pkg::*;
-  import mldsa_sampler_pkg::*;
+  import abr_sampler_pkg::*;
   import abr_sha3_pkg::*;
   import ntt_defines_pkg::*;
   import decompose_defines_pkg::*;
@@ -85,7 +85,7 @@ module mldsa_top
 //Signal Declarations
   logic zeroize_reg;
 
-  mldsa_sampler_mode_e       sampler_mode;
+  abr_sampler_mode_e         sampler_mode;
   logic                      sha3_start;
   logic                      msg_start;
   logic                      msg_valid;
@@ -439,7 +439,7 @@ always_comb zeroize_mem_addr = zeroize_mem.addr;
 logic [MsgWidth-1:0] msg_data_i[Sha3Share];
 assign msg_data_i = decomp_msg_valid ? decomp_msg_data : msg_data;
 
-mldsa_sampler_top sampler_top_inst
+abr_sampler_top sampler_top_inst
 (
   .clk(clk),
   .rst_b(rst_b),
