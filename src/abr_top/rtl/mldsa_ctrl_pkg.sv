@@ -289,7 +289,7 @@ package mldsa_ctrl_pkg;
     //COEFF DEPTH is 256/4
     localparam MLDSA_COEFF_DEPTH = MLDSA_N/COEFF_PER_CLK;
     //MEMORY INST 0
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST0_BASE = 0 << (MLDSA_MEM_ADDR_WIDTH-3);
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST0_BASE = 0 << (ABR_MEM_ADDR_WIDTH-3);
     //S1 / NTT(S1)
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_S1_0_BASE = MLDSA_INST0_BASE;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_S1_1_BASE = MLDSA_S1_0_BASE + MLDSA_COEFF_DEPTH;
@@ -346,7 +346,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_TEMP0_BASE = MLDSA_CS2_BASE + MLDSA_COEFF_DEPTH;
 
     //MEMORY INST 1
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST1_BASE = 1 << (MLDSA_MEM_ADDR_WIDTH-3);
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST1_BASE = 1 << (ABR_MEM_ADDR_WIDTH-3);
     // NTT(C)
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_C_NTT_BASE = MLDSA_INST1_BASE;
     // NTT(s1) for KEYGEN
@@ -377,7 +377,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_HINT_R_7_BASE = MLDSA_HINT_R_6_BASE + MLDSA_COEFF_DEPTH;
 
     //MEMORY INST 2
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST2_BASE = 2 << (MLDSA_MEM_ADDR_WIDTH-3);
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-3);
     //Y
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_Y_0_BASE = MLDSA_INST2_BASE;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_Y_1_BASE = MLDSA_Y_0_BASE + MLDSA_COEFF_DEPTH;
@@ -407,7 +407,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_TEMP2_BASE = MLDSA_W0_7_BASE + MLDSA_COEFF_DEPTH;
 
     //MEMORY INST 3 - masked storage
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST3_BASE = 3 << (MLDSA_MEM_ADDR_WIDTH-3);
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST3_BASE = 3 << (ABR_MEM_ADDR_WIDTH-3);
 
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_AS0_BASE = MLDSA_INST3_BASE;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_AS0_INTT_BASE = MLDSA_AS0_BASE;
@@ -417,7 +417,7 @@ package mldsa_ctrl_pkg;
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_CT_NTT_BASE = MLDSA_INST3_BASE;
     
     //SIB MEMORY
-    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST4_BASE = 4 << (MLDSA_MEM_ADDR_WIDTH-3);
+    localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_INST4_BASE = 4 << (ABR_MEM_ADDR_WIDTH-3);
     //C
     localparam [MLDSA_OPR_WIDTH-1 : 0] MLDSA_C_BASE = MLDSA_INST4_BASE;
 

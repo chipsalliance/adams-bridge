@@ -30,7 +30,7 @@ module sigencode_z_top
     import mldsa_params_pkg::*;
     import sigencode_z_defines_pkg::*;
     #(
-        parameter MEM_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH,
+        parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
         parameter REG_SIZE = 24,
         parameter GAMMA1 = 19
     )

@@ -19,7 +19,7 @@
 import mldsa_params_pkg::*;
 import mldsa_ctrl_pkg::*;
 
-`define MLDSA_MEM_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\
+`define ABR_MEM_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\
 logic ``_signal_prefix``_we_i;\
 logic [``_PARAM_PREFIX``_ADDR_W-1:0] ``_signal_prefix``_waddr_i;\
 logic [``_PARAM_PREFIX``_DATA_W-1:0] ``_signal_prefix``_wdata_i;\
@@ -27,7 +27,7 @@ logic ``_signal_prefix``_re_i;\
 logic [``_PARAM_PREFIX``_ADDR_W-1:0] ``_signal_prefix``_raddr_i;\
 logic [``_PARAM_PREFIX``_DATA_W-1:0] ``_signal_prefix``_rdata_o;
 
-`define MLDSA_MEM_BE_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\
+`define ABR_MEM_BE_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\
 logic ``_signal_prefix``_we_i;\
 logic [``_PARAM_PREFIX``_ADDR_W-1:0] ``_signal_prefix``_waddr_i;\
 logic [``_PARAM_PREFIX``_DATA_W-1:0] ``_signal_prefix``_wdata_i;\
@@ -36,64 +36,64 @@ logic ``_signal_prefix``_re_i;\
 logic [``_PARAM_PREFIX``_ADDR_W-1:0] ``_signal_prefix``_raddr_i;\
 logic [``_PARAM_PREFIX``_DATA_W-1:0] ``_signal_prefix``_rdata_o;
 
-`define MLDSA_MEM_IF_REQ_PORTS(_signal_prefix)\
+`define ABR_MEM_IF_REQ_PORTS(_signal_prefix)\
   output ``_signal_prefix``_we_i, ``_signal_prefix``_waddr_i, ``_signal_prefix``_wdata_i, ``_signal_prefix``_re_i, ``_signal_prefix``_raddr_i,\
   input ``_signal_prefix``_rdata_o
 
-`define MLDSA_MEM_BE_IF_REQ_PORTS(_signal_prefix)\
+`define ABR_MEM_BE_IF_REQ_PORTS(_signal_prefix)\
   output ``_signal_prefix``_we_i, ``_signal_prefix``_waddr_i, ``_signal_prefix``_wdata_i, ``_signal_prefix``_wstrobe_i, ``_signal_prefix``_re_i, ``_signal_prefix``_raddr_i,\
   input ``_signal_prefix``_rdata_o
 
-`define MLDSA_MEM_IF_RESP_PORTS(_signal_prefix)\
+`define ABR_MEM_IF_RESP_PORTS(_signal_prefix)\
   input ``_signal_prefix``_we_i, ``_signal_prefix``_waddr_i, ``_signal_prefix``_wdata_i, ``_signal_prefix``_re_i, ``_signal_prefix``_raddr_i,\
   output ``_signal_prefix``_rdata_o
 
-`define MLDSA_MEM_BE_IF_RESP_PORTS(_signal_prefix)\
+`define ABR_MEM_BE_IF_RESP_PORTS(_signal_prefix)\
   input ``_signal_prefix``_we_i, ``_signal_prefix``_waddr_i, ``_signal_prefix``_wdata_i, ``_signal_prefix``_wstrobe_i, ``_signal_prefix``_re_i, ``_signal_prefix``_raddr_i,\
   output ``_signal_prefix``_rdata_o
 
-interface mldsa_mem_if;
+interface abr_mem_if;
 
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_W1, w1_mem)
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_INST0, mem_inst0_bank0)
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_INST0, mem_inst0_bank1)
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_INST1, mem_inst1)
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_INST2, mem_inst2)
-  `MLDSA_MEM_IF_SIGNALS(MLDSA_MEM_INST3, mem_inst3)
-  `MLDSA_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank0)
-  `MLDSA_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank1)
-  `MLDSA_MEM_BE_IF_SIGNALS(SIG_Z_MEM, sig_z_mem)
-  `MLDSA_MEM_BE_IF_SIGNALS(PK_MEM, pk_mem)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_W1, w1_mem)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST0, mem_inst0_bank0)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST0, mem_inst0_bank1)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST1, mem_inst1)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST2, mem_inst2)
+  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST3, mem_inst3)
+  `ABR_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank0)
+  `ABR_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank1)
+  `ABR_MEM_BE_IF_SIGNALS(SIG_Z_MEM, sig_z_mem)
+  `ABR_MEM_BE_IF_SIGNALS(PK_MEM, pk_mem)
 
   modport req (
-    `MLDSA_MEM_IF_REQ_PORTS(w1_mem),
-    `MLDSA_MEM_IF_REQ_PORTS(mem_inst0_bank0),
-    `MLDSA_MEM_IF_REQ_PORTS(mem_inst0_bank1),
-    `MLDSA_MEM_IF_REQ_PORTS(mem_inst1),
-    `MLDSA_MEM_IF_REQ_PORTS(mem_inst2),
-    `MLDSA_MEM_IF_REQ_PORTS(mem_inst3),
-    `MLDSA_MEM_IF_REQ_PORTS(sk_mem_bank0),
-    `MLDSA_MEM_IF_REQ_PORTS(sk_mem_bank1),
-    `MLDSA_MEM_BE_IF_REQ_PORTS(sig_z_mem),
-    `MLDSA_MEM_BE_IF_REQ_PORTS(pk_mem)
+    `ABR_MEM_IF_REQ_PORTS(w1_mem),
+    `ABR_MEM_IF_REQ_PORTS(mem_inst0_bank0),
+    `ABR_MEM_IF_REQ_PORTS(mem_inst0_bank1),
+    `ABR_MEM_IF_REQ_PORTS(mem_inst1),
+    `ABR_MEM_IF_REQ_PORTS(mem_inst2),
+    `ABR_MEM_IF_REQ_PORTS(mem_inst3),
+    `ABR_MEM_IF_REQ_PORTS(sk_mem_bank0),
+    `ABR_MEM_IF_REQ_PORTS(sk_mem_bank1),
+    `ABR_MEM_BE_IF_REQ_PORTS(sig_z_mem),
+    `ABR_MEM_BE_IF_REQ_PORTS(pk_mem)
   );
 
   modport resp (
-    `MLDSA_MEM_IF_RESP_PORTS(w1_mem),
-    `MLDSA_MEM_IF_RESP_PORTS(mem_inst0_bank0),
-    `MLDSA_MEM_IF_RESP_PORTS(mem_inst0_bank1),
-    `MLDSA_MEM_IF_RESP_PORTS(mem_inst1),
-    `MLDSA_MEM_IF_RESP_PORTS(mem_inst2),
-    `MLDSA_MEM_IF_RESP_PORTS(mem_inst3),
-    `MLDSA_MEM_IF_RESP_PORTS(sk_mem_bank0),
-    `MLDSA_MEM_IF_RESP_PORTS(sk_mem_bank1),
-    `MLDSA_MEM_BE_IF_RESP_PORTS(sig_z_mem),
-    `MLDSA_MEM_BE_IF_RESP_PORTS(pk_mem)
+    `ABR_MEM_IF_RESP_PORTS(w1_mem),
+    `ABR_MEM_IF_RESP_PORTS(mem_inst0_bank0),
+    `ABR_MEM_IF_RESP_PORTS(mem_inst0_bank1),
+    `ABR_MEM_IF_RESP_PORTS(mem_inst1),
+    `ABR_MEM_IF_RESP_PORTS(mem_inst2),
+    `ABR_MEM_IF_RESP_PORTS(mem_inst3),
+    `ABR_MEM_IF_RESP_PORTS(sk_mem_bank0),
+    `ABR_MEM_IF_RESP_PORTS(sk_mem_bank1),
+    `ABR_MEM_BE_IF_RESP_PORTS(sig_z_mem),
+    `ABR_MEM_BE_IF_RESP_PORTS(pk_mem)
   );
 
 endinterface
 
-interface mldsa_sram_if #(parameter integer ADDR_W = 16, parameter integer DATA_W = 32);
+interface abr_sram_if #(parameter integer ADDR_W = 16, parameter integer DATA_W = 32);
 
 logic we_i;
 logic [ADDR_W-1:0] waddr_i;
@@ -114,7 +114,7 @@ logic [DATA_W-1:0] rdata_o;
 
 endinterface
 
-interface mldsa_sram_be_if #(parameter integer ADDR_W = 16, parameter integer DATA_W = 32);
+interface abr_sram_be_if #(parameter integer ADDR_W = 16, parameter integer DATA_W = 32);
 
   logic we_i;
   logic [ADDR_W-1:0] waddr_i;

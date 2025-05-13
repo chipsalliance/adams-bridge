@@ -17,8 +17,6 @@
 //  Keygen
 //  Signing
 
-`include "mldsa_config_defines.svh"
-
 module mldsa_ctrl
   import abr_reg_pkg::*;
   import abr_sha3_pkg::*;
@@ -60,7 +58,7 @@ module mldsa_ctrl
   input logic                        sampler_state_dv_i,
   input logic [abr_sha3_pkg::StateW-1:0] sampler_state_data_i [Sha3Share],
 
-  output logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
 
   //ntt interfaces
   output logic [MLDSA_NUM_NTT-1:0]            ntt_enable_o,
@@ -72,9 +70,9 @@ module mldsa_ctrl
   input logic [MLDSA_NUM_NTT-1:0]             ntt_busy_i,
 
   //aux interfaces
-  output logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
-  output logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
-  output logic [1:0][MLDSA_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
+  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
+  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
+  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
 
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
@@ -104,11 +102,11 @@ module mldsa_ctrl
   input logic makehint_done_i,
   input logic makehint_reg_wren_i,
   input logic [3:0][7:0] makehint_reg_wrdata_i,
-  input logic [MLDSA_MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr_i,
+  input logic [ABR_MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr_i,
 
   output logic normcheck_enable_o,
   output logic [1:0] normcheck_mode_o,
-  output logic [MLDSA_MEM_ADDR_WIDTH-1:0] normcheck_src_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] normcheck_src_addr_o,
   input logic normcheck_invalid_i,
   input logic normcheck_done_i,
 
@@ -137,10 +135,10 @@ module mldsa_ctrl
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
 
   //Memory interface export
-  mldsa_sram_if.req sk_bank0_mem_if,
-  mldsa_sram_if.req sk_bank1_mem_if,
-  mldsa_sram_be_if.req sig_z_mem_if,
-  mldsa_sram_be_if.req pk_mem_if,
+  abr_sram_if.req sk_bank0_mem_if,
+  abr_sram_if.req sk_bank1_mem_if,
+  abr_sram_be_if.req sig_z_mem_if,
+  abr_sram_be_if.req pk_mem_if,
 
   output mem_if_t zeroize_mem_o,
 
@@ -361,7 +359,7 @@ always_comb kv_seed_data_present = '0;
   logic [1:0] ntt_active; //This is the mux select for 1 NTT mode
   logic [1:0] ntt_busy;
 
-  logic [MLDSA_NUM_NTT-1:0][MLDSA_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
+  logic [MLDSA_NUM_NTT-1:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
   logic mldsa_status_done_d, mldsa_status_done_p;
@@ -371,7 +369,7 @@ always_comb kv_seed_data_present = '0;
   logic [MsgWidth-1:0] counter_reg;
 
   logic zeroize_mem_we;
-  logic [MLDSA_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
   logic zeroize_mem_done;
   
   assign abr_reg_hwif_in_o = abr_reg_hwif_in;
@@ -1346,10 +1344,10 @@ always_comb kv_seed_data_present = '0;
 
   always_comb sampler_src_offset = {4'b0, msg_cnt};
 
-  always_comb dest_base_addr_o = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src0_base_addr_o[0] = prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[0] = prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[0] = prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb dest_base_addr_o = prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[0] = prim_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[0] = prim_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_dest_base_addr_o[0] = prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
 //Message streaming mode
 
@@ -1762,9 +1760,9 @@ mldsa_seq_prim mldsa_seq_prim_inst
     endcase
   end
 
-  always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[1] = sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[1] = sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o[1] = sec_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_dest_base_addr_o[1] = sec_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
   always_comb normcheck_mode_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? prim_instr.imm[1:0] :
                                  (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? sec_instr.imm[1:0] : '0;
@@ -1866,12 +1864,12 @@ always_comb begin
     //passing a bit on the immediate field to mux between temp address locations
     ntt_temp_address[PRIM_SEQ_NTT] = prim_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
     //optimization - could be one interface here?
-    ntt_mem_base_addr_o[PRIM_SEQ_NTT] = '{src_base_addr:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+    ntt_mem_base_addr_o[PRIM_SEQ_NTT] = '{src_base_addr:prim_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
                                           interim_base_addr:ntt_temp_address[PRIM_SEQ_NTT],
-                                          dest_base_addr:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
-    pwo_mem_base_addr_o[PRIM_SEQ_NTT] = '{pw_base_addr_b:prim_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
-                                          pw_base_addr_a:prim_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
-                                          pw_base_addr_c:prim_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};                                   
+                                          dest_base_addr:prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
+    pwo_mem_base_addr_o[PRIM_SEQ_NTT] = '{pw_base_addr_b:prim_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0], //PWO src
+                                          pw_base_addr_a:prim_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
+                                          pw_base_addr_c:prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
   end
   if (ntt_active[1]) begin
     ntt_enable_o[SEC_SEQ_NTT] = ntt_en[1]; //this comes from sec seq
@@ -1882,13 +1880,13 @@ always_comb begin
     ntt_temp_address[SEC_SEQ_NTT] = sec_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
 
     //one interface here?
-    ntt_mem_base_addr_o[SEC_SEQ_NTT] = '{src_base_addr:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0],
+    ntt_mem_base_addr_o[SEC_SEQ_NTT] = '{src_base_addr:sec_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
                                          interim_base_addr:ntt_temp_address[SEC_SEQ_NTT],
-                                         dest_base_addr:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+                                         dest_base_addr:sec_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
 
-    pwo_mem_base_addr_o[SEC_SEQ_NTT] = '{pw_base_addr_b:sec_instr.operand1[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src
-                                         pw_base_addr_a:sec_instr.operand2[MLDSA_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
-                                         pw_base_addr_c:sec_instr.operand3[MLDSA_MEM_ADDR_WIDTH-1:0]};
+    pwo_mem_base_addr_o[SEC_SEQ_NTT] = '{pw_base_addr_b:sec_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0], //PWO src
+                                         pw_base_addr_a:sec_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
+                                         pw_base_addr_c:sec_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
   end
 end
 
@@ -1906,7 +1904,7 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_done <= 0;
   end
   else if (prim_prog_cntr == MLDSA_ZEROIZE) begin
-    if (zeroize_mem_addr == MLDSA_MEM_MAX_DEPTH) begin
+    if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
     end else begin

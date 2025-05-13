@@ -101,14 +101,14 @@ import kv_defines_pkg::*;
   assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.default_clk_gen_CLK     = clk;
   assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.default_reset_gen_RESET = rst;
 
-  mldsa_mem_if mldsa_memory_export();
+  abr_mem_if abr_memory_export();
 
   // SRAM module
-  mldsa_mem_top
-  mldsa_mem_top_inst
+  abr_mem_top
+  abr_mem_top_inst
   (
     .clk_i(clk),
-    .mldsa_memory_export
+    .abr_memory_export
   );
 
   // DUT
@@ -132,7 +132,7 @@ import kv_defines_pkg::*;
       .hresp_o    (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRESP      ),
       .hreadyout_o(uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HREADY     ),
       .hrdata_o   (uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HRDATA     ),
-      .mldsa_memory_export,
+      .abr_memory_export,
 `ifdef CALIPTRA
       .kv_read(),
       .kv_rd_resp(kv_rd_resp),

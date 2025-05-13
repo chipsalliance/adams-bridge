@@ -50,8 +50,8 @@ module makehint
         input wire makehint_enable,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
 
         output logic invalid_h,
         output mem_if_t mem_rd_req,
@@ -59,7 +59,7 @@ module makehint
         output logic makehint_done,
         output logic reg_wren,
         output logic [3:0][7:0] reg_wrdata,
-        output logic [MLDSA_MEM_ADDR_WIDTH-1:0] reg_wr_addr
+        output logic [ABR_MEM_ADDR_WIDTH-1:0] reg_wr_addr
     );
 
     //Internal wires
@@ -90,7 +90,7 @@ module makehint
     logic poly_last, poly_last_reg;
 
     //Read addr counter
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt, z_rd_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, reg_wr_addr_nxt, z_rd_addr;
     logic incr_mem_rd_addr;
     logic rst_rd_addr;
     logic last_addr_read;
@@ -274,7 +274,7 @@ module makehint
         end
     end
 
-    assign last_addr_read = (mem_rd_addr == mem_base_addr + MLDSA_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
+    assign last_addr_read = (mem_rd_addr == mem_base_addr + ABR_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
 
     //----------------------------
     //Read fsm

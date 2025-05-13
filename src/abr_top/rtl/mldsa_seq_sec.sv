@@ -18,8 +18,6 @@
 //  Signing validity checks
 //  Signing signature generation
 
-`include "mldsa_config_defines.svh"
-
 module mldsa_seq_sec
   import mldsa_ctrl_pkg::*;
   (

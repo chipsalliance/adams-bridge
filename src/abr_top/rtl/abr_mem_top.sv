@@ -13,21 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-`include "mldsa_config_defines.svh"
-module mldsa_mem_top
+`include "abr_config_defines.svh"
+module abr_mem_top
   import mldsa_params_pkg::*;
   import mldsa_ctrl_pkg::*;
 (
   input logic clk_i,
-  mldsa_mem_if.resp mldsa_memory_export
+  abr_mem_if.resp abr_memory_export
 );
 
-`ABR_MEM(MLDSA_MEM_W1_DEPTH,MLDSA_MEM_W1_DATA_W,w1_mem)
-`ABR_MEM(MLDSA_MEM_INST0_DEPTH,MLDSA_MEM_DATA_WIDTH,mem_inst0_bank0)
-`ABR_MEM(MLDSA_MEM_INST0_DEPTH,MLDSA_MEM_DATA_WIDTH,mem_inst0_bank1)
-`ABR_MEM(MLDSA_MEM_INST1_DEPTH,MLDSA_MEM_DATA_WIDTH,mem_inst1)
-`ABR_MEM(MLDSA_MEM_INST2_DEPTH,MLDSA_MEM_DATA_WIDTH,mem_inst2)
-`ABR_MEM(MLDSA_MEM_INST3_DEPTH,MLDSA_MEM_MASKED_DATA_WIDTH,mem_inst3)
+`ABR_MEM(ABR_MEM_W1_DEPTH,ABR_MEM_W1_DATA_W,w1_mem)
+`ABR_MEM(ABR_MEM_INST0_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst0_bank0)
+`ABR_MEM(ABR_MEM_INST0_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst0_bank1)
+`ABR_MEM(ABR_MEM_INST1_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst1)
+`ABR_MEM(ABR_MEM_INST2_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst2)
+`ABR_MEM(ABR_MEM_INST3_DEPTH,ABR_MEM_MASKED_DATA_WIDTH,mem_inst3)
 `ABR_MEM(SK_MEM_BANK_DEPTH,SK_MEM_BANK_DATA_W,sk_mem_bank0)
 `ABR_MEM(SK_MEM_BANK_DEPTH,SK_MEM_BANK_DATA_W,sk_mem_bank1)
 `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W,sig_z_mem)

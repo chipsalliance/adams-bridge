@@ -29,12 +29,12 @@
    mldsa_``_mem_name``_inst\
    (\
       .clk_i(clk_i),\
-      .we_i(mldsa_memory_export.``_mem_name``_we_i),\
-      .waddr_i(mldsa_memory_export.``_mem_name``_waddr_i),\
-      .wdata_i(mldsa_memory_export.``_mem_name``_wdata_i),\
-      .re_i(mldsa_memory_export.``_mem_name``_re_i),\
-      .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
-      .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
+      .we_i(abr_memory_export.``_mem_name``_we_i),\
+      .waddr_i(abr_memory_export.``_mem_name``_waddr_i),\
+      .wdata_i(abr_memory_export.``_mem_name``_wdata_i),\
+      .re_i(abr_memory_export.``_mem_name``_re_i),\
+      .raddr_i(abr_memory_export.``_mem_name``_raddr_i),\
+      .rdata_o(abr_memory_export.``_mem_name``_rdata_o)\
    );
 
   `define ABR_MEM_BE(_depth, _width, _mem_name) \
@@ -44,13 +44,13 @@
      mldsa_``_mem_name``_inst\
      (\
         .clk_i(clk_i),\
-        .we_i(mldsa_memory_export.``_mem_name``_we_i),\
-        .waddr_i(mldsa_memory_export.``_mem_name``_waddr_i),\
-        .wdata_i(mldsa_memory_export.``_mem_name``_wdata_i),\
-        .wstrobe_i(mldsa_memory_export.``_mem_name``_wstrobe_i),\
-        .re_i(mldsa_memory_export.``_mem_name``_re_i),\
-        .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
-        .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
+        .we_i(abr_memory_export.``_mem_name``_we_i),\
+        .waddr_i(abr_memory_export.``_mem_name``_waddr_i),\
+        .wdata_i(abr_memory_export.``_mem_name``_wdata_i),\
+        .wstrobe_i(abr_memory_export.``_mem_name``_wstrobe_i),\
+        .re_i(abr_memory_export.``_mem_name``_re_i),\
+        .raddr_i(abr_memory_export.``_mem_name``_raddr_i),\
+        .rdata_o(abr_memory_export.``_mem_name``_rdata_o)\
      );
   
 `endif

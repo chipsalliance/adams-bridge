@@ -45,8 +45,8 @@ module skdecode_top
         input wire zeroize,
         
         input wire skdecode_enable,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [AHB_DATA_WIDTH-1:0] keymem_a_rd_data,
         input wire [AHB_DATA_WIDTH-1:0] keymem_b_rd_data,
 
@@ -89,7 +89,7 @@ module skdecode_top
     logic s1s2_keymem_b_valid;
 
     //Read address counters
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
 
 
     //IO flops

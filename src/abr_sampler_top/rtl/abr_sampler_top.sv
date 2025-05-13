@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "mldsa_config_defines.svh"
-
 module abr_sampler_top
   import abr_sampler_pkg::*;
   import abr_sha3_pkg::*;
@@ -40,11 +38,11 @@ module abr_sampler_top
 
   input logic                    sampler_start_i,
 
-  input logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr_i,
+  input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_i,
 
   //NTT read from sib_mem
-  input mem_if_t                          sib_mem_rd_req_i,
-  output logic [MLDSA_MEM_DATA_WIDTH-1:0] sib_mem_rd_data_o,
+  input mem_if_t                        sib_mem_rd_req_i,
+  output logic [ABR_MEM_DATA_WIDTH-1:0] sib_mem_rd_data_o,
 
   //output
   output logic                     sampler_busy_o,
@@ -54,7 +52,7 @@ module abr_sampler_top
 
   output logic                                        sampler_mem_dv_o,
   output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_mem_data_o,
-  output logic [MLDSA_MEM_ADDR_WIDTH-1:0]             sampler_mem_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0]               sampler_mem_addr_o,
 
   output logic                                        sampler_state_dv_o,
   output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o [Sha3Share]
@@ -132,7 +130,7 @@ module abr_sampler_top
   logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_wrdata;
   logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_rddata;
 
-  logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_addr;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] dest_addr;
   logic [$clog2(ABR_COEFF_CNT/4):0] coeff_cnt;
   logic vld_cycle;
   logic sampler_done;

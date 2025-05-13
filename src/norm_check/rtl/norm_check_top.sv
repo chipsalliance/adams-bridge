@@ -45,7 +45,7 @@ module norm_check_top
         input wire shuffling_enable,
         input wire [5:0] randomness,
 
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         input [4*REG_SIZE-1:0] mem_rd_data,
         output logic invalid,

@@ -50,31 +50,31 @@ package mldsa_params_pkg;
   parameter MLDSA_NUM_NTT = 1;
   
   //Memory interface
-  parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
-  parameter MLDSA_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
+  parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
+  parameter ABR_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
 
-  parameter MLDSA_MEM_MASKED_INST = 3;
+  parameter ABR_MEM_MASKED_INST = 3;
 
-  //parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
-  //parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
-  parameter MLDSA_MEM_INST0_DEPTH = 1664/2; //9.75 KB
-  parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
-  parameter MLDSA_MEM_INST0_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST1_DEPTH = 576; //6.75 KB
-  parameter MLDSA_MEM_INST1_ADDR_W = $clog2(MLDSA_MEM_INST1_DEPTH);
-  parameter MLDSA_MEM_INST1_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST2_DEPTH = 1472; //17.25 KB
-  parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
-  parameter MLDSA_MEM_INST2_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST3_DEPTH = 64; //3 KB
-  parameter MLDSA_MEM_INST3_ADDR_W = $clog2(MLDSA_MEM_INST3_DEPTH);
-  parameter MLDSA_MEM_INST3_DATA_W = MLDSA_MEM_MASKED_DATA_WIDTH;
-  parameter MLDSA_MEM_W1_DEPTH = 512;
-  parameter MLDSA_MEM_W1_ADDR_W = $clog2(MLDSA_MEM_W1_DEPTH);
-  parameter MLDSA_MEM_W1_DATA_W = 4;
+  //parameter ABR_MEM_INST0_DEPTH = 1664; //19.5 KB
+  //parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
+  parameter ABR_MEM_INST0_DEPTH = 1664/2; //9.75 KB
+  parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
+  parameter ABR_MEM_INST0_DATA_W = ABR_MEM_DATA_WIDTH;
+  parameter ABR_MEM_INST1_DEPTH = 576; //6.75 KB
+  parameter ABR_MEM_INST1_ADDR_W = $clog2(ABR_MEM_INST1_DEPTH);
+  parameter ABR_MEM_INST1_DATA_W = ABR_MEM_DATA_WIDTH;
+  parameter ABR_MEM_INST2_DEPTH = 1472; //17.25 KB
+  parameter ABR_MEM_INST2_ADDR_W = $clog2(ABR_MEM_INST2_DEPTH);
+  parameter ABR_MEM_INST2_DATA_W = ABR_MEM_DATA_WIDTH;
+  parameter ABR_MEM_INST3_DEPTH = 64; //3 KB
+  parameter ABR_MEM_INST3_ADDR_W = $clog2(ABR_MEM_INST3_DEPTH);
+  parameter ABR_MEM_INST3_DATA_W = ABR_MEM_MASKED_DATA_WIDTH;
+  parameter ABR_MEM_W1_DEPTH = 512;
+  parameter ABR_MEM_W1_ADDR_W = $clog2(ABR_MEM_W1_DEPTH);
+  parameter ABR_MEM_W1_DATA_W = 4;
   
-  parameter MLDSA_MEM_MAX_DEPTH = MLDSA_MEM_INST2_DEPTH;
-  parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
+  parameter ABR_MEM_MAX_DEPTH = ABR_MEM_INST2_DEPTH;
+  parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
   
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;
@@ -92,7 +92,7 @@ package mldsa_params_pkg;
 
   typedef struct packed {
       mem_rw_mode_e rd_wr_en;
-      logic [MLDSA_MEM_ADDR_WIDTH-1:0] addr;
+      logic [ABR_MEM_ADDR_WIDTH-1:0] addr;
   } mem_if_t;
 
 endpackage

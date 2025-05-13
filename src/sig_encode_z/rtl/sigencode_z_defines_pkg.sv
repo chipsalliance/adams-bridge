@@ -24,7 +24,7 @@
 package sigencode_z_defines_pkg;
     import mldsa_params_pkg::*;
 
-    parameter API_ADDR_WIDTH = MLDSA_MEM_ADDR_WIDTH;
+    parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;
     parameter MLDSA_L = 7;
 
     typedef struct packed {

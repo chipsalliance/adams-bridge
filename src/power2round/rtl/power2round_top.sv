@@ -33,9 +33,9 @@ module power2round_top
         input wire zeroize,
 
         input wire enable,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
-        // input wire [MLDSA_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr - TODO: finalize size
+        // input wire [ABR_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr, //reg API base addr - TODO: finalize size
 
         //Input from internal memory
         output mem_if_t mem_a_rd_req,

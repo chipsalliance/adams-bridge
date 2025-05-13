@@ -29,9 +29,9 @@ module power2round_ctrl
         input wire zeroize,
 
         input wire enable,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr,
-        // input wire [MLDSA_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr,
+        // input wire [ABR_MEM_ADDR_WIDTH-1:0] pk_dest_base_addr,
         input wire r_valid,
         input wire sk_buff_valid,
         input wire sk_buff_full,
@@ -46,8 +46,8 @@ module power2round_ctrl
         output logic done
     );
 
-    localparam [MLDSA_MEM_ADDR_WIDTH-1 : 0] MAX_MEM_ADDR = (MLDSA_K * (MLDSA_N/4))-2;
-    localparam [MLDSA_MEM_ADDR_WIDTH-1 : 0] MAX_SKMEM_ADDR = (MLDSA_K * (MLDSA_N/32) * 13)-2;
+    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_MEM_ADDR = (MLDSA_K * (MLDSA_N/4))-2;
+    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_SKMEM_ADDR = (MLDSA_K * (MLDSA_N/32) * 13)-2;
     localparam [7 : 0] MAX_PK_ADDR = ((MLDSA_K * (MLDSA_N/8))-1);
 
     power2round_read_state_type read_fsm_state_ps, read_fsm_state_ns;
@@ -55,8 +55,8 @@ module power2round_ctrl
     power2round_pk_write_state_type pk_write_fsm_state_ps, pk_write_fsm_state_ns;
 
     
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_rd_addr_nxt, mem_rd_addr_delay, mem_rd_addr_tmp;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] skmem_wr_addr, skmem_wr_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, mem_rd_addr_nxt, mem_rd_addr_delay, mem_rd_addr_tmp;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] skmem_wr_addr, skmem_wr_addr_nxt;
     logic [7 : 0] pk_wr_addr, pk_wr_addr_nxt;
     
     logic rst_mem_rd_addr, incr_mem_rd_addr, last_mem_rd_addr;

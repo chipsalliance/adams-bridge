@@ -31,8 +31,8 @@ module skdecode_ctrl
         input wire zeroize,
 
         input wire skdecode_enable, //One enable for all of s0, s1, t0 unpack
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire s1s2_valid,
         input wire t0_valid,
         input wire s1s2_error,
@@ -52,8 +52,8 @@ module skdecode_ctrl
     );
 
     //Memory interface wires
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt, mem_offset;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] kmem_rd_addr, kmem_rd_addr_nxt;
 
     logic incr_wr_addr, incr_skdec_count;
     logic rst_wr_addr, rst_skdec_count;
