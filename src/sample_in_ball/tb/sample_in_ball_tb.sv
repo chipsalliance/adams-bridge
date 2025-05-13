@@ -23,7 +23,7 @@ import "DPI-C" function string getenv(input string env_name);
 
 module sample_in_ball_tb
   import sampler_pkg::*;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb

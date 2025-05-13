@@ -29,7 +29,7 @@
 // TODO: need a restart input (other than zeroize)
 
 module norm_check_top
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MLDSA_N = 256

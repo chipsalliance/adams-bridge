@@ -22,7 +22,7 @@ module mldsa_ctrl
   import abr_sha3_pkg::*;
   import abr_sampler_pkg::*;
   import mldsa_ctrl_pkg::*;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   import ntt_defines_pkg::*;
   `ifdef CALIPTRA
   import kv_defines_pkg::*; 

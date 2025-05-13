@@ -30,7 +30,7 @@
 //======================================================================
 
 module ntt_top
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,

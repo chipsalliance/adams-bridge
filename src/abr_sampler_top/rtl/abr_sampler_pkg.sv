@@ -24,7 +24,7 @@
 `define ABR_SAMPLER_PKG
 
 package abr_sampler_pkg;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
 
   parameter ABR_COEFF_CNT = 256;
 

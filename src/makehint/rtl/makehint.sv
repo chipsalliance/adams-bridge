@@ -32,7 +32,7 @@
 //======================================================================
 
 module makehint
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import makehint_defines_pkg::*;
     #(
         parameter REG_SIZE = 24,

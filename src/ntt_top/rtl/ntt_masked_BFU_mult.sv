@@ -20,7 +20,7 @@
 
 module ntt_masked_BFU_mult
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter WIDTH = 46,
     parameter HALF_WIDTH = WIDTH/2,

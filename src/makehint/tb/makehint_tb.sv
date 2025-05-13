@@ -25,7 +25,7 @@
 
 module makehint_tb
     import makehint_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter NUM_WR = 4,
     parameter NUM_RD = 4,

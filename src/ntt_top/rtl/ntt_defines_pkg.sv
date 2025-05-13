@@ -24,7 +24,7 @@
 `define MLDSA_NTT_DEFINES
 
 package ntt_defines_pkg;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 
 // `define MLDSA_MASKING
 

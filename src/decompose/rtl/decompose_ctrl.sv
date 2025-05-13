@@ -18,7 +18,7 @@
 // Takes care of memory accesses during decompose function
 
 module decompose_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import decompose_defines_pkg::*;
     (
         input wire clk,

@@ -22,7 +22,7 @@
 `define MLDSA_SIGDECODE_Z_DEFINES
 
 package sigdecode_z_defines_pkg;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 
     parameter API_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH;
     parameter MLDSA_L = 7;

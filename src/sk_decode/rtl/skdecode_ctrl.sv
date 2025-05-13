@@ -18,7 +18,7 @@
 // Enables unpack modules and keeps track of memory writes
 
 module skdecode_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
         parameter MLDSA_L = 7,

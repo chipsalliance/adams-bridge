@@ -14,16 +14,16 @@
 //
 //======================================================================
 //
-// mldsa_params_pkg.sv
+// abr_params_pkg.sv
 // --------
 // Common params and defines for ML-DSA 87
 //
 //======================================================================
 
-`ifndef MLDSA_PARAMS_PKG
-`define MLDSA_PARAMS_PKG
+`ifndef ABR_PARAMS_PKG
+`define ABR_PARAMS_PKG
 
-package mldsa_params_pkg;
+package abr_params_pkg;
 
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
@@ -99,5 +99,5 @@ endpackage
 
 `endif
 //======================================================================
-// EOF mldsa_params_pkg.sv
+// EOF abr_params_pkg.sv
 //======================================================================

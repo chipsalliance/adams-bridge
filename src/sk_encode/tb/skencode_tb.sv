@@ -22,7 +22,7 @@
 `default_nettype none
 
 module skencode_tb
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,

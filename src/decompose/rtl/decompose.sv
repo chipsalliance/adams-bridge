@@ -35,7 +35,7 @@
 `include "abr_prim_assert.sv"
 
 module decompose 
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import decompose_defines_pkg::*;
     #(
         parameter Q_MINUS_2GAMMA2 = MLDSA_Q - (2*MLDSA_GAMMA2)

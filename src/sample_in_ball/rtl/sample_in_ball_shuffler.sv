@@ -18,7 +18,7 @@
 //For sign value of 1, the value Q-1 is written to Index j, else 1 is written to Index j
 
 module sample_in_ball_shuffler
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   #(
      parameter SIB_SAMPLE_W = 8
   )

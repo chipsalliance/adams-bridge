@@ -6,13 +6,13 @@ targets:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/abr_config_defines.svh
-      - $COMPILE_ROOT/rtl/mldsa_params_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_params_pkg.sv
       - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/abr_config_defines.svh
-      - $COMPILE_ROOT/rtl/mldsa_params_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_params_pkg.sv
       - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
 ---
 provides: [mldsa_uvm_pkg]

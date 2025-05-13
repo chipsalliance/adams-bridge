@@ -15,7 +15,7 @@
 //
 `include "abr_config_defines.svh"
 module abr_mem_top
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   import mldsa_ctrl_pkg::*;
 (
   input logic clk_i,

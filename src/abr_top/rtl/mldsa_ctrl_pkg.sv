@@ -25,7 +25,7 @@
 `define MLDSA_CTRL_PKG
 
 package mldsa_ctrl_pkg;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import abr_sampler_pkg::*;
 
     localparam integer MLDSA_OPR_WIDTH       = 15;

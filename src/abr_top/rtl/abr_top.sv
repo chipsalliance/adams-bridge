@@ -19,7 +19,7 @@
 module abr_top
   import abr_prim_alert_pkg::*;
   import abr_reg_pkg::*;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   import mldsa_ctrl_pkg::*;
   import abr_sampler_pkg::*;
   import abr_sha3_pkg::*;

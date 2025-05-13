@@ -15,7 +15,7 @@
 module abr_sampler_top
   import abr_sampler_pkg::*;
   import abr_sha3_pkg::*;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   import abr_prim_alert_pkg::*;
   #(
   //top level params

@@ -17,7 +17,7 @@
 // ---------------------
 
 module power2round_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import power2round_defines_pkg::*;
     #(
         parameter MLDSA_K = 8,

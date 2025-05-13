@@ -16,7 +16,7 @@
 //      Signals for SRAM interfaces needed for mldsa
 //
 
-import mldsa_params_pkg::*;
+import abr_params_pkg::*;
 import mldsa_ctrl_pkg::*;
 
 `define ABR_MEM_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\

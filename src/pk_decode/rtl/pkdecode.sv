@@ -23,7 +23,7 @@
 //======================================================================
 
 module pkdecode
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter MLDSA_K = 'h8,
         parameter MLDSA_N = 'd256,

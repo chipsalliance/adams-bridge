@@ -30,7 +30,7 @@
 //======================================================================
 
 module skdecode_top
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
         parameter MLDSA_ETA = 2,

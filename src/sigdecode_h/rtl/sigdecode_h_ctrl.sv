@@ -19,7 +19,7 @@
 // Keeps track of indices and polynomial count
 
 module sigdecode_h_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import sigdecode_h_defines_pkg::*;
     #(
         parameter MLDSA_N = 256,

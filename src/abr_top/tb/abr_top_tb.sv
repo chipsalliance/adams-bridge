@@ -24,7 +24,7 @@ import "DPI-C" function string getenv(input string env_name);
 `include "mldsa_config_defines.svh"
 
 module abr_top_tb
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   import abr_prim_alert_pkg::*;
 (
 `ifdef VERILATOR

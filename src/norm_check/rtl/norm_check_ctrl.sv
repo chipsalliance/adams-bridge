@@ -22,7 +22,7 @@
 // assumes all polynomials of the vector are stored in continuous addr space in memory
 
 module norm_check_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MLDSA_N = 256,
