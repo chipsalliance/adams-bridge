@@ -18,7 +18,7 @@
 
 module abr_top
   import abr_prim_alert_pkg::*;
-  import mldsa_reg_pkg::*;
+  import abr_reg_pkg::*;
   import mldsa_params_pkg::*;
   import mldsa_ctrl_pkg::*;
   import abr_sampler_pkg::*;
@@ -223,18 +223,18 @@ module abr_top
   logic [RND_W-7:0] ntt_rand_bits;
 
   //gasket to assemble reg requests
-  logic mldsa_reg_dv;
-  logic mldsa_reg_hold;
-  logic mldsa_reg_rd_ack, mldsa_reg_wr_ack;
-  logic [CLIENT_DATA_WIDTH-1:0] mldsa_reg_rdata;
-  logic [AHB_ADDR_WIDTH-1:0]    mldsa_reg_addr;
-  logic [CLIENT_DATA_WIDTH-1:0] mldsa_reg_wdata;
-  logic                         mldsa_reg_write;
+  logic abr_reg_dv;
+  logic abr_reg_hold;
+  logic abr_reg_rd_ack, abr_reg_wr_ack;
+  logic [CLIENT_DATA_WIDTH-1:0] abr_reg_rdata;
+  logic [AHB_ADDR_WIDTH-1:0]    abr_reg_addr;
+  logic [CLIENT_DATA_WIDTH-1:0] abr_reg_wdata;
+  logic                         abr_reg_write;
 
-  logic mldsa_reg_err, mldsa_reg_read_err, mldsa_reg_write_err;
+  logic abr_reg_err, abr_reg_read_err, abr_reg_write_err;
 
-  mldsa_reg__in_t mldsa_reg_hwif_in;
-  mldsa_reg__out_t mldsa_reg_hwif_out;
+  abr_reg__in_t abr_reg_hwif_in;
+  abr_reg__out_t abr_reg_hwif_out;
 
   mem_if_t zeroize_mem;
   logic zeroize_mem_we;
@@ -274,38 +274,38 @@ module abr_top
     .hrdata_o(hrdata_o),
 
     //COMPONENT INF
-    .dv(mldsa_reg_dv),
-    .hld(mldsa_reg_hold),
-    .err(mldsa_reg_err),
-    .write(mldsa_reg_write),
-    .wdata(mldsa_reg_wdata),
-    .addr(mldsa_reg_addr[AHB_ADDR_WIDTH-1:0]),
+    .dv(abr_reg_dv),
+    .hld(abr_reg_hold),
+    .err(abr_reg_err),
+    .write(abr_reg_write),
+    .wdata(abr_reg_wdata),
+    .addr(abr_reg_addr[AHB_ADDR_WIDTH-1:0]),
 
-    .rdata(mldsa_reg_rdata)
+    .rdata(abr_reg_rdata)
 );
 
-always_comb mldsa_reg_err = (mldsa_reg_rd_ack & mldsa_reg_read_err) | (mldsa_reg_wr_ack & mldsa_reg_write_err);
-always_comb mldsa_reg_hold = mldsa_reg_dv & ~(mldsa_reg_rd_ack | mldsa_reg_wr_ack); //FIXME can we do this without dv?
+always_comb abr_reg_err = (abr_reg_rd_ack & abr_reg_read_err) | (abr_reg_wr_ack & abr_reg_write_err);
+always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack); //FIXME can we do this without dv?
 
-mldsa_reg mldsa_reg_inst (
+mldsa_reg abr_reg_inst (
   .clk(clk),
   .rst(rst_b),
 
-  .s_cpuif_req(mldsa_reg_dv),
-  .s_cpuif_req_is_wr(mldsa_reg_write),
-  .s_cpuif_addr(mldsa_reg_addr[MLDSA_REG_ADDR_WIDTH-1:0]),
-  .s_cpuif_wr_data(mldsa_reg_wdata),
+  .s_cpuif_req(abr_reg_dv),
+  .s_cpuif_req_is_wr(abr_reg_write),
+  .s_cpuif_addr(abr_reg_addr[ABR_REG_ADDR_WIDTH-1:0]),
+  .s_cpuif_wr_data(abr_reg_wdata),
   .s_cpuif_wr_biten('1),
   .s_cpuif_req_stall_wr(),
   .s_cpuif_req_stall_rd(),
-  .s_cpuif_rd_ack(mldsa_reg_rd_ack),
-  .s_cpuif_rd_err(mldsa_reg_read_err),
-  .s_cpuif_rd_data(mldsa_reg_rdata),
-  .s_cpuif_wr_ack(mldsa_reg_wr_ack),
-  .s_cpuif_wr_err(mldsa_reg_write_err),
+  .s_cpuif_rd_ack(abr_reg_rd_ack),
+  .s_cpuif_rd_err(abr_reg_read_err),
+  .s_cpuif_rd_data(abr_reg_rdata),
+  .s_cpuif_wr_ack(abr_reg_wr_ack),
+  .s_cpuif_wr_err(abr_reg_write_err),
 
-  .hwif_in(mldsa_reg_hwif_in),
-  .hwif_out(mldsa_reg_hwif_out)
+  .hwif_in(abr_reg_hwif_in),
+  .hwif_out(abr_reg_hwif_out)
 );
 
 mldsa_ctrl mldsa_ctrl_inst
@@ -333,8 +333,8 @@ mldsa_ctrl mldsa_ctrl_inst
 `endif
 
   //control interface
-  .mldsa_reg_hwif_in_o(mldsa_reg_hwif_in),
-  .mldsa_reg_hwif_out_i(mldsa_reg_hwif_out),
+  .abr_reg_hwif_in_o(abr_reg_hwif_in),
+  .abr_reg_hwif_out_i(abr_reg_hwif_out),
 
   //sampler interface
   .sampler_mode_o(sampler_mode),

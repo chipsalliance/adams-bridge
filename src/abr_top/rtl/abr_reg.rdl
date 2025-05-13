@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-addrmap mldsa_reg {
+addrmap abr_reg {
     desc="address maps for adams bridge register space";
 
 

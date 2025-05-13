@@ -16,7 +16,7 @@ package mldsa_reg_model_top_pkg;
 
    import uvm_pkg::*;
 // pragma uvmf custom additional_imports begin
-   import mldsa_reg_uvm::*;
+   import abr_reg_uvm::*;
 // pragma uvmf custom additional_imports end
 
    `include "uvm_macros.svh"
@@ -149,7 +149,7 @@ package mldsa_reg_model_top_pkg;
    // 
    //--------------------------------------------------------------------
 
-   class mldsa_reg_model_top extends mldsa_reg;
+   class mldsa_reg_model_top extends abr_reg;
       `uvm_object_utils(mldsa_reg_model_top)
     
       mldsa_AHB_map_coverage AHB_map_cg;

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`ifndef MLDSA_REG_COVERGROUPS
-    `define MLDSA_REG_COVERGROUPS
+`ifndef ABR_REG_COVERGROUPS
+    `define ABR_REG_COVERGROUPS
     
-    /*----------------------- MLDSA_REG__MLDSA_NAME COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_NAME_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_NAME COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_NAME_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -27,7 +27,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_NAME_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_NAME_fld_cg with function sample(
     input bit [32-1:0] NAME
     );
         option.per_instance = 1;
@@ -35,8 +35,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_VERSION COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_VERSION_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_VERSION COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_VERSION_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -47,7 +47,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_VERSION_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_VERSION_fld_cg with function sample(
     input bit [32-1:0] VERSION
     );
         option.per_instance = 1;
@@ -55,8 +55,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_CTRL COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_CTRL_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_CTRL COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_CTRL_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -67,7 +67,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_CTRL_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_CTRL_fld_cg with function sample(
     input bit [3-1:0] CTRL,
     input bit [1-1:0] ZEROIZE,
     input bit [1-1:0] PCR_SIGN,
@@ -83,8 +83,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_STATUS COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_STATUS_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_STATUS COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_STATUS_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -95,7 +95,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_STATUS_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_STATUS_fld_cg with function sample(
     input bit [1-1:0] READY,
     input bit [1-1:0] VALID,
     input bit [1-1:0] MSG_STREAM_READY
@@ -107,8 +107,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_ENTROPY COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_ENTROPY_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_ENTROPY COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_ENTROPY_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -119,7 +119,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_ENTROPY_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_ENTROPY_fld_cg with function sample(
     input bit [32-1:0] ENTROPY
     );
         option.per_instance = 1;
@@ -127,8 +127,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_SEED COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_SEED_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_SEED COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_SEED_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -139,7 +139,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_SEED_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_SEED_fld_cg with function sample(
     input bit [32-1:0] SEED
     );
         option.per_instance = 1;
@@ -147,8 +147,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_SIGN_RND COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_SIGN_RND_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_SIGN_RND COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_SIGN_RND_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -159,7 +159,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_SIGN_RND_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_SIGN_RND_fld_cg with function sample(
     input bit [32-1:0] SIGN_RND
     );
         option.per_instance = 1;
@@ -167,8 +167,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_MSG COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_MSG_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_MSG COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_MSG_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -179,7 +179,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_MSG_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_MSG_fld_cg with function sample(
     input bit [32-1:0] MSG
     );
         option.per_instance = 1;
@@ -187,8 +187,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_VERIFY_RES COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_VERIFY_RES_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_VERIFY_RES COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_VERIFY_RES_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -199,7 +199,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_VERIFY_RES_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_VERIFY_RES_fld_cg with function sample(
     input bit [32-1:0] VERIFY_RES
     );
         option.per_instance = 1;
@@ -207,8 +207,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_EXTERNAL_MU COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_EXTERNAL_MU_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_EXTERNAL_MU COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_EXTERNAL_MU_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -219,7 +219,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_EXTERNAL_MU_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_EXTERNAL_MU_fld_cg with function sample(
     input bit [32-1:0] EXTERNAL_MU
     );
         option.per_instance = 1;
@@ -227,8 +227,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_MSG_STROBE COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_MSG_STROBE_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_MSG_STROBE COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_MSG_STROBE_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -239,7 +239,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_MSG_STROBE_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_MSG_STROBE_fld_cg with function sample(
     input bit [4-1:0] STROBE
     );
         option.per_instance = 1;
@@ -247,8 +247,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_CTX_CONFIG COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_CTX_CONFIG_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_CTX_CONFIG COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_CTX_CONFIG_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -259,7 +259,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_CTX_CONFIG_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_CTX_CONFIG_fld_cg with function sample(
     input bit [8-1:0] CTX_SIZE
     );
         option.per_instance = 1;
@@ -267,8 +267,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__MLDSA_CTX COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__MLDSA_CTX_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__MLDSA_CTX COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLDSA_CTX_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -279,7 +279,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__MLDSA_CTX_fld_cg with function sample(
+    covergroup abr_reg__MLDSA_CTX_fld_cg with function sample(
     input bit [32-1:0] CTX
     );
         option.per_instance = 1;
@@ -337,8 +337,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__global_intr_en_t_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__global_intr_en_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -349,7 +349,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__global_intr_en_t_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__global_intr_en_t_fld_cg with function sample(
     input bit [1-1:0] error_en,
     input bit [1-1:0] notif_en
     );
@@ -359,8 +359,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__ERROR_INTR_EN_T COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__error_intr_en_t_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__ERROR_INTR_EN_T COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__error_intr_en_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -371,7 +371,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__error_intr_en_t_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__error_intr_en_t_fld_cg with function sample(
     input bit [1-1:0] error_internal_en
     );
         option.per_instance = 1;
@@ -379,8 +379,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__NOTIF_INTR_EN_T COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__notif_intr_en_t_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__NOTIF_INTR_EN_T COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__notif_intr_en_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -391,7 +391,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__notif_intr_en_t_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__notif_intr_en_t_fld_cg with function sample(
     input bit [1-1:0] notif_cmd_done_en
     );
         option.per_instance = 1;
@@ -399,8 +399,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__GLOBAL_INTR_T_AGG_STS_DD3DCF0A COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__GLOBAL_INTR_T_AGG_STS_DD3DCF0A COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -411,7 +411,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a_fld_cg with function sample(
     input bit [1-1:0] agg_sts
     );
         option.per_instance = 1;
@@ -419,8 +419,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__GLOBAL_INTR_T_AGG_STS_E6399B4A COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__GLOBAL_INTR_T_AGG_STS_E6399B4A COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -431,7 +431,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a_fld_cg with function sample(
     input bit [1-1:0] agg_sts
     );
         option.per_instance = 1;
@@ -439,8 +439,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__ERROR_INTR_T_ERROR_INTERNAL_STS_83ADAB02 COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__ERROR_INTR_T_ERROR_INTERNAL_STS_83ADAB02 COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -451,7 +451,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02_fld_cg with function sample(
     input bit [1-1:0] error_internal_sts
     );
         option.per_instance = 1;
@@ -459,8 +459,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__NOTIF_INTR_T_NOTIF_CMD_DONE_STS_1C68637E COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__NOTIF_INTR_T_NOTIF_CMD_DONE_STS_1C68637E COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -471,7 +471,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e_fld_cg with function sample(
     input bit [1-1:0] notif_cmd_done_sts
     );
         option.per_instance = 1;
@@ -479,8 +479,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__ERROR_INTR_TRIG_T COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__error_intr_trig_t_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__ERROR_INTR_TRIG_T COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__error_intr_trig_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -491,7 +491,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__error_intr_trig_t_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__error_intr_trig_t_fld_cg with function sample(
     input bit [1-1:0] error_internal_trig
     );
         option.per_instance = 1;
@@ -499,8 +499,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__NOTIF_INTR_TRIG_T COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__notif_intr_trig_t_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__NOTIF_INTR_TRIG_T COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__notif_intr_trig_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -511,7 +511,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__notif_intr_trig_t_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__notif_intr_trig_t_fld_cg with function sample(
     input bit [1-1:0] notif_cmd_done_trig
     );
         option.per_instance = 1;
@@ -519,8 +519,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__INTR_COUNT_T_CNT_60DDFF93 COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__intr_count_t_cnt_60ddff93_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__INTR_COUNT_T_CNT_60DDFF93 COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__intr_count_t_cnt_60ddff93_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -531,7 +531,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__intr_count_t_cnt_60ddff93_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__intr_count_t_cnt_60ddff93_fld_cg with function sample(
     input bit [32-1:0] cnt
     );
         option.per_instance = 1;
@@ -539,8 +539,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__INTR_COUNT_T_CNT_BE67D6D5 COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__intr_count_t_cnt_be67d6d5_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__INTR_COUNT_T_CNT_BE67D6D5 COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__intr_count_t_cnt_be67d6d5_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -551,7 +551,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__intr_count_t_cnt_be67d6d5_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__intr_count_t_cnt_be67d6d5_fld_cg with function sample(
     input bit [32-1:0] cnt
     );
         option.per_instance = 1;
@@ -559,8 +559,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__INTR_COUNT_INCR_T_PULSE_15E6ED7E COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__INTR_COUNT_INCR_T_PULSE_15E6ED7E COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -571,7 +571,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e_fld_cg with function sample(
     input bit [1-1:0] pulse
     );
         option.per_instance = 1;
@@ -579,8 +579,8 @@
 
     endgroup
 
-    /*----------------------- MLDSA_REG__INTR_BLOCK_T__INTR_COUNT_INCR_T_PULSE_6173128E COVERGROUPS -----------------------*/
-    covergroup mldsa_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__INTR_BLOCK_T__INTR_COUNT_INCR_T_PULSE_6173128E COVERGROUPS -----------------------*/
+    covergroup abr_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -591,7 +591,7 @@
         }
 
     endgroup
-    covergroup mldsa_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_fld_cg with function sample(
+    covergroup abr_reg__intr_block_t__intr_count_incr_t_pulse_6173128e_fld_cg with function sample(
     input bit [1-1:0] pulse
     );
         option.per_instance = 1;

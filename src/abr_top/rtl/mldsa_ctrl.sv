@@ -20,7 +20,7 @@
 `include "mldsa_config_defines.svh"
 
 module mldsa_ctrl
-  import mldsa_reg_pkg::*;
+  import abr_reg_pkg::*;
   import abr_sha3_pkg::*;
   import abr_sampler_pkg::*;
   import mldsa_ctrl_pkg::*;
@@ -43,8 +43,8 @@ module mldsa_ctrl
   output logic INTT_trigger,
 `endif
 
-  output mldsa_reg__in_t mldsa_reg_hwif_in_o,
-  input  mldsa_reg__out_t mldsa_reg_hwif_out_i,
+  output abr_reg__in_t abr_reg_hwif_in_o,
+  input  abr_reg__out_t abr_reg_hwif_out_i,
 
   //sampler interface
   output abr_sampler_mode_e          sampler_mode_o,
@@ -161,8 +161,8 @@ module mldsa_ctrl
 
   );
 
-  mldsa_reg__in_t mldsa_reg_hwif_in;
-  mldsa_reg__out_t mldsa_reg_hwif_out;
+  abr_reg__in_t abr_reg_hwif_in;
+  abr_reg__out_t abr_reg_hwif_out;
   logic mldsa_ready;
   logic mldsa_valid_reg;
   logic mldsa_privkey_lock;
@@ -187,18 +187,18 @@ module mldsa_ctrl
 
   always_comb begin: mldsa_kv_ctrl_reg
     //ready when fsm is not busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
+    abr_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
     //ready when fsm is not busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
+    abr_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
     //set valid when fsm is done
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
+    abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
     //clear valid when new request is made
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
+    abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
     //clear enable when busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
+    abr_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
   end
 
-  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
+  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, abr_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
   always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
@@ -243,20 +243,20 @@ always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
   end
 end
 
-always_comb pcr_sign_mode = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
+always_comb pcr_sign_mode = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 
 `else
 always_comb begin: mldsa_kv_ctrl_reg
   //ready when fsm is not busy
-  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = '0;
+  abr_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = '0;
   //ready when fsm is not busy
-  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = '0;
+  abr_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = '0;
   //set valid when fsm is done
-  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = '0;
+  abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = '0;
   //clear valid when new request is made
-  mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = '0;
+  abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = '0;
   //clear enable when busy
-  mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
+  abr_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
 end
 
 always_comb kv_seed_data_present = '0;
@@ -374,8 +374,8 @@ always_comb kv_seed_data_present = '0;
   logic [MLDSA_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
   logic zeroize_mem_done;
   
-  assign mldsa_reg_hwif_in_o = mldsa_reg_hwif_in;
-  assign mldsa_reg_hwif_out = mldsa_reg_hwif_out_i;
+  assign abr_reg_hwif_in_o = abr_reg_hwif_in;
+  assign abr_reg_hwif_out = abr_reg_hwif_out_i;
 
   always_comb mldsa_ready = (prim_prog_cntr == MLDSA_RESET);
 
@@ -391,105 +391,105 @@ always_comb kv_seed_data_present = '0;
   always_comb busy_o = ~mldsa_ready;
 
 //HWIF to reg block
-  always_comb mldsa_reg_hwif_in.reset_b = rst_b;
-  always_comb mldsa_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
-  always_comb mldsa_reg_hwif_in.mldsa_ready = mldsa_ready;
-  always_comb cmd_reg = mldsa_reg_hwif_out.MLDSA_CTRL.CTRL.value;
-  always_comb mldsa_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |cmd_reg;
+  always_comb abr_reg_hwif_in.reset_b = rst_b;
+  always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
+  always_comb abr_reg_hwif_in.mldsa_ready = mldsa_ready;
+  always_comb cmd_reg = abr_reg_hwif_out.MLDSA_CTRL.CTRL.value;
+  always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |cmd_reg;
   `ifdef CALIPTRA
-    always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
+    always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
   `else
-    always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
+    always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
   `endif
 
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = '0;
+  always_comb abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
+  always_comb abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
+  always_comb abr_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
+  always_comb abr_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = '0;
   
-  always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
-  always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
-  always_comb mldsa_reg_hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next = stream_msg_rdy;
+  always_comb abr_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
+  always_comb abr_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
+  always_comb abr_reg_hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next = stream_msg_rdy;
 
-  always_comb zeroize = mldsa_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || debugUnlock_or_scan_mode_switch;
+  always_comb zeroize = abr_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || debugUnlock_or_scan_mode_switch;
   
-  always_comb external_mu = 0; //mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value; //TODO: enable after ExternalMu validation
-  always_comb mldsa_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = mldsa_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
+  always_comb external_mu = 0; //abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value; //TODO: enable after ExternalMu validation
+  always_comb abr_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   
-  always_comb stream_msg_mode = mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
-  always_comb mldsa_reg_hwif_in.MLDSA_CTRL.STREAM_MSG.hwclr = zeroize;
+  always_comb stream_msg_mode = abr_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
+  always_comb abr_reg_hwif_in.MLDSA_CTRL.STREAM_MSG.hwclr = zeroize;
 
-  always_comb mldsa_reg_hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr = zeroize;
+  always_comb abr_reg_hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr = zeroize;
 
-  always_comb mldsa_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.swwe = stream_msg_rdy;
-  always_comb mldsa_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.hwclr = zeroize;
+  always_comb abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.swwe = stream_msg_rdy;
+  always_comb abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.hwclr = zeroize;
 
   always_comb begin // mldsa reg writing 
 
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
-      entropy_reg[dword] = mldsa_reg_hwif_out.MLDSA_ENTROPY[dword].ENTROPY.value;
-      mldsa_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
+      entropy_reg[dword] = abr_reg_hwif_out.MLDSA_ENTROPY[dword].ENTROPY.value;
+      abr_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
-      seed_reg[dword] = mldsa_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
+      seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
                                                       kv_seed_write_data;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready & ~kv_seed_data_present;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready & ~kv_seed_data_present;
       `else
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.next = '0;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize;
-      mldsa_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = '0;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = mldsa_ready;
       `endif
     end
   
     for (int dword=0; dword < MSG_NUM_DWORDS; dword++) begin
-      msg_reg[dword] = external_mu_mode? '0 : mldsa_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
+      msg_reg[dword] = external_mu_mode? '0 : abr_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
       `ifdef CALIPTRA
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[MSG_NUM_DWORDS-1-dword];
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[MSG_NUM_DWORDS-1-dword];
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
       `else
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.we = '0;
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.next = '0;
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = '0;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = '0;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
       `endif
-      mldsa_reg_hwif_in.MLDSA_MSG[dword].MSG.swwe = mldsa_ready | stream_msg_rdy;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.swwe = mldsa_ready | stream_msg_rdy;
     end
 
     for (int dword=0; dword < MU_NUM_DWORDS; dword++) begin
-      external_mu_reg[dword] = mldsa_reg_hwif_out.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.value;
-      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we = internal_mu_we & !external_mu & !zeroize;
-      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[dword];
-      mldsa_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
+      external_mu_reg[dword] = abr_reg_hwif_out.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.value;
+      abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we = internal_mu_we & !external_mu & !zeroize;
+      abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[dword];
+      abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
     end
   
     for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++) begin
-      sign_rnd_reg[dword] = mldsa_reg_hwif_out.MLDSA_SIGN_RND[dword].SIGN_RND.value;
-      mldsa_reg_hwif_in.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr = zeroize;
+      sign_rnd_reg[dword] = abr_reg_hwif_out.MLDSA_SIGN_RND[dword].SIGN_RND.value;
+      abr_reg_hwif_in.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr = zeroize;
     end
   
     for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
-      mldsa_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
   
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
-        mldsa_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
+        abr_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
 
     for (int dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
-      ctx_reg[dword] = mldsa_reg_hwif_out.MLDSA_CTX[dword].CTX.value;
-      mldsa_reg_hwif_in.MLDSA_CTX[dword].CTX.hwclr = zeroize;
+      ctx_reg[dword] = abr_reg_hwif_out.MLDSA_CTX[dword].CTX.value;
+      abr_reg_hwif_in.MLDSA_CTX[dword].CTX.hwclr = zeroize;
     end
 
-    ctx_size = mldsa_reg_hwif_out.MLDSA_CTX_CONFIG.CTX_SIZE.value;
+    ctx_size = abr_reg_hwif_out.MLDSA_CTX_CONFIG.CTX_SIZE.value;
 
   end
 
@@ -500,17 +500,17 @@ always_comb kv_seed_data_present = '0;
     else if (zeroize)
       mldsa_status_done_d <= 1'b0;
     else
-      mldsa_status_done_d <= mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next;
+      mldsa_status_done_d <= abr_reg_hwif_in.MLDSA_STATUS.VALID.next;
   end
 
-  always_comb mldsa_status_done_p = mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next & !mldsa_status_done_d;
+  always_comb mldsa_status_done_p = abr_reg_hwif_in.MLDSA_STATUS.VALID.next & !mldsa_status_done_d;
 
-  assign error_intr = mldsa_reg_hwif_out.intr_block_rf.error_global_intr_r.intr;
-  assign notif_intr = mldsa_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
+  assign error_intr = abr_reg_hwif_out.intr_block_rf.error_global_intr_r.intr;
+  assign notif_intr = abr_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
 
   always_comb begin
-    mldsa_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
-    mldsa_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
+    abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
+    abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
   end
 
   //Private Key External Memory
@@ -545,17 +545,17 @@ always_comb kv_seed_data_present = '0;
       mldsa_privkey_lock <= '0;
   end
   
-  always_comb api_keymem_rd_vld = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
+  always_comb api_keymem_rd_vld = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
                                   mldsa_valid_reg & ~mldsa_privkey_lock ;
 
-  always_comb api_sk_waddr = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
-  always_comb api_sk_raddr = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
+  always_comb api_sk_waddr = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
+  always_comb api_sk_raddr = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
-  always_comb api_sk_reg_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
-  always_comb api_keymem_wr_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_sk_reg_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
+  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
 
-  always_comb api_sk_reg_rd_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
-  always_comb api_keymem_rd_dec = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_sk_reg_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
+  always_comb api_keymem_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
 
   assign api_sk_reg_waddr = api_sk_waddr[4:0];
   assign api_sk_reg_raddr = api_sk_raddr[4:0];
@@ -567,7 +567,7 @@ always_comb kv_seed_data_present = '0;
     for (int i = 0; i < 2; i++) begin
       skencode_keymem_we_bank[i] = ((skencode_keymem_if_i.rd_wr_en == RW_WRITE) & (skencode_keymem_if_i.addr[0] == i));
       pwr2rnd_keymem_we_bank[i] = (pwr2rnd_keymem_if_i[i].rd_wr_en == RW_WRITE);
-      api_keymem_we_bank[i] = mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_keymem_wr_dec & (api_sk_mem_waddr[0] == i);
+      api_keymem_we_bank[i] = abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_keymem_wr_dec & (api_sk_mem_waddr[0] == i);
 
       sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | api_keymem_we_bank[i] | zeroize_mem_we;
 
@@ -578,7 +578,7 @@ always_comb kv_seed_data_present = '0;
                  
       sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
                         ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
-                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data);         
+                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & abr_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data);         
     end
   end     
   
@@ -647,9 +647,9 @@ always_comb kv_seed_data_present = '0;
           //HW write tr
           privatekey_reg.enc.tr <= sampler_state_data_i[0][511:0];
         end
-      end else if (mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_sk_reg_wr_dec) begin
+      end else if (abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & mldsa_ready & api_sk_reg_wr_dec) begin
         //SW write port
-        privatekey_reg.raw[api_sk_reg_waddr] <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
+        privatekey_reg.raw[api_sk_reg_waddr] <= abr_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
       end
     end 
   end
@@ -667,17 +667,17 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
+  assign abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
   //no reads to PRIVKEY_IN allowed - just ack it
-  assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
-  assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_data = '0;
+  assign abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
+  assign abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_data = '0;
 
 
   logic privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
 
-  always_comb  mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack;
-  always_comb  mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack;
-  always_comb  mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack;
+  always_comb  abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack;
+  always_comb  abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack;
+  always_comb  abr_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack;
 
   //ack the read request one clock later
   always_ff @(posedge clk or negedge rst_b) begin
@@ -692,16 +692,16 @@ always_comb kv_seed_data_present = '0;
       pubkey_rd_ack <= 0;
     end
     else begin
-      privkey_out_rd_ack <= mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
-      signature_rd_ack <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-      pubkey_rd_ack <= mldsa_reg_hwif_out.MLDSA_PUBKEY.req & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+      privkey_out_rd_ack <= abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+      signature_rd_ack <= abr_reg_hwif_out.MLDSA_SIGNATURE.req & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+      pubkey_rd_ack <= abr_reg_hwif_out.MLDSA_PUBKEY.req & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
     end
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
+  always_comb abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
 
   //No write to PRIVKEY_OUT allowed - just ack it
-  assign mldsa_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & mldsa_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+  assign abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
 
   //Signature external mem
   logic sig_z_ram_we, sig_z_ram_re;
@@ -731,21 +731,21 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb api_sig_addr = mldsa_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
+  always_comb api_sig_addr = abr_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
 
-  always_comb api_sig_c_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
-  always_comb api_sig_z_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
-  always_comb api_sig_h_dec = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
+  always_comb api_sig_c_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
+  always_comb api_sig_z_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
+  always_comb api_sig_h_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
 
   always_comb api_sig_z_addr.addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
   always_comb api_sig_z_addr.offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD; //FIXME can this be done better?
   always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
   always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
 
-  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = mldsa_reg_hwif_out.MLDSA_SIGNATURE.req &  mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-  always_comb api_sig_z_we = mldsa_ready & api_sig_z_dec & mldsa_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
+  always_comb abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = abr_reg_hwif_out.MLDSA_SIGNATURE.req &  abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb api_sig_z_we = mldsa_ready & api_sig_z_dec & abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
 
-  always_comb api_sig_z_re = mldsa_valid_reg & api_sig_z_dec & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb api_sig_z_re = mldsa_valid_reg & api_sig_z_dec & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
   always_comb sig_z_mem_if.we_i = (sig_z_ram_we);
   always_comb sig_z_mem_if.waddr_i = (sig_z_ram_waddr);
@@ -761,7 +761,7 @@ always_comb kv_seed_data_present = '0;
                                 ({SIG_Z_MEM_ADDR_W{api_sig_z_re}} & api_sig_z_addr.addr);
 
   always_comb sigdecode_z_rd_data_o = sig_z_ram_rdata;
-  always_comb mldsa_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr_f.offset] : signature_reg_rdata;
+  always_comb abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr_f.offset] : signature_reg_rdata;
 
   //write requests
   always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we;
@@ -775,7 +775,7 @@ always_comb kv_seed_data_present = '0;
 
 
   always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
-                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32));
+                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32));
 
   //signature reg read flop
   always_ff @(posedge clk or negedge rst_b) begin
@@ -784,7 +784,7 @@ always_comb kv_seed_data_present = '0;
     end else if (zeroize) begin
       signature_reg_rdata <= '0;
     end else begin
-      if (mldsa_valid_reg & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req & ~mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr)
+      if (mldsa_valid_reg & abr_reg_hwif_out.MLDSA_SIGNATURE.req & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr)
         signature_reg_rdata <= {DATA_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
                                {DATA_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
     end
@@ -799,9 +799,9 @@ always_comb kv_seed_data_present = '0;
       //HW write c
       if (sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
         signature_reg.enc.c <= sampler_state_data_i[0][511:0];
-      end else if (mldsa_ready & api_sig_c_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+      end else if (mldsa_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
         for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-          signature_reg.enc.c[api_sig_c_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
+          signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
         end
       end
       //HW write h
@@ -812,8 +812,8 @@ always_comb kv_seed_data_present = '0;
           if (makehint_reg_wr_addr_i == dword)
             signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
         end
-      end else if (mldsa_ready & api_sig_h_dec & mldsa_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-        signature_reg.enc.h[api_sig_h_addr] <= mldsa_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
+      end else if (mldsa_ready & api_sig_h_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
+        signature_reg.enc.h[api_sig_h_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
     end
   end
@@ -865,10 +865,10 @@ always_comb kv_seed_data_present = '0;
     end
   end
 
-  always_comb api_pubkey_addr = mldsa_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
+  always_comb api_pubkey_addr = abr_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
 
-  always_comb api_pubkey_rho_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
-  always_comb api_pubkey_dec = mldsa_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
+  always_comb api_pubkey_rho_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
+  always_comb api_pubkey_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
 
   always_comb api_pubkey_mem_addr.addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
   always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS; //FIXME can this be done better?
@@ -877,10 +877,10 @@ always_comb kv_seed_data_present = '0;
   always_comb sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
   always_comb api_pk_rho_addr = api_pubkey_addr[2:0];
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack = mldsa_reg_hwif_out.MLDSA_PUBKEY.req &  mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
-  always_comb api_pubkey_we = mldsa_ready & api_pubkey_dec & mldsa_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
+  always_comb abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack = abr_reg_hwif_out.MLDSA_PUBKEY.req &  abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_we = mldsa_ready & api_pubkey_dec & abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
 
-  always_comb api_pubkey_re = mldsa_valid_reg & api_pubkey_dec & ~mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_re = mldsa_valid_reg & api_pubkey_dec & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
 
 
   always_comb pk_mem_if.we_i = (pubkey_ram_we);
@@ -912,7 +912,7 @@ always_comb kv_seed_data_present = '0;
     endcase
   end
 
-  always_comb mldsa_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr_f.offset] : pk_reg_rdata;
+  always_comb abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr_f.offset] : pk_reg_rdata;
 
   //write requests
   always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we | zeroize_mem_we;
@@ -926,7 +926,7 @@ always_comb kv_seed_data_present = '0;
 
 
   always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
-                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(mldsa_reg_hwif_out.MLDSA_PUBKEY.wr_data << api_pubkey_mem_addr.offset*32));
+                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_PUBKEY.wr_data << api_pubkey_mem_addr.offset*32));
 
 
   //pk reg read flop
@@ -951,8 +951,8 @@ always_comb kv_seed_data_present = '0;
       //HW write rho
       if (sampler_state_dv_i & (prim_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID)) begin
         publickey_reg.enc.rho <= sampler_state_data_i[0][255:0];
-      end else if (mldsa_ready & api_pubkey_rho_dec & mldsa_reg_hwif_out.MLDSA_PUBKEY.req_is_wr) begin
-        publickey_reg.enc.rho[api_pk_rho_addr] <= mldsa_reg_hwif_out.MLDSA_PUBKEY.wr_data;
+      end else if (mldsa_ready & api_pubkey_rho_dec & abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr) begin
+        publickey_reg.enc.rho[api_pk_rho_addr] <= abr_reg_hwif_out.MLDSA_PUBKEY.wr_data;
       end
     end
   end
@@ -1362,7 +1362,7 @@ always_ff @(posedge clk or negedge rst_b) begin
     stream_msg_valid <= 0;
   end
   else if (stream_msg_rdy) begin
-    stream_msg_valid <= mldsa_reg_hwif_out.MLDSA_MSG[0].MSG.swmod;
+    stream_msg_valid <= abr_reg_hwif_out.MLDSA_MSG[0].MSG.swmod;
   end
 end 
 
@@ -1417,8 +1417,8 @@ always_comb begin
     MLDSA_MSG_RDY: begin
       //Stream msg
       stream_msg_rdy = 1;
-      stream_msg_strobe = stream_msg_valid ? mldsa_reg_hwif_out.MLDSA_MSG_STROBE.STROBE.value : '0;
-      stream_msg_data = mldsa_reg_hwif_out.MLDSA_MSG[0].MSG.value;
+      stream_msg_strobe = stream_msg_valid ? abr_reg_hwif_out.MLDSA_MSG_STROBE.STROBE.value : '0;
+      stream_msg_data = abr_reg_hwif_out.MLDSA_MSG[0].MSG.value;
       if ((stream_msg_strobe != '1) & stream_msg_valid) begin
         stream_msg_fsm_ns = MLDSA_MSG_FLUSH;
       end
@@ -2018,7 +2018,7 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_SEC_CTRL_FSM_X, {sec_ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
-  `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
+  `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
   //Assumption that stream message is never fast enough to get stalled
   `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, (stream_msg_fsm_ps != MLDSA_MSG_IDLE) & msg_hold, clk, !rst_b)

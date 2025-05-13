@@ -7,13 +7,13 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/mldsa_config_defines.svh
       - $COMPILE_ROOT/rtl/mldsa_params_pkg.sv
-      - $COMPILE_ROOT/rtl/mldsa_reg_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
       - $COMPILE_ROOT/rtl/mldsa_config_defines.svh
       - $COMPILE_ROOT/rtl/mldsa_params_pkg.sv
-      - $COMPILE_ROOT/rtl/mldsa_reg_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
 ---
 provides: [mldsa_uvm_pkg]
 schema_version: 2.4.0
@@ -22,7 +22,7 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/mldsa_reg_uvm.sv
+      - $COMPILE_ROOT/rtl/abr_reg_uvm.sv
 ---
 provides: [abr_top]
 schema_version: 2.4.0
@@ -55,7 +55,7 @@ targets:
       - $COMPILE_ROOT/rtl/mldsa_seq_sec.sv
       - $COMPILE_ROOT/rtl/mldsa_ctrl.sv
       - $COMPILE_ROOT/rtl/abr_top.sv
-      - $COMPILE_ROOT/rtl/mldsa_reg.sv
+      - $COMPILE_ROOT/rtl/abr_reg.sv
     tops: [abr_top]
 global:
   tool:
