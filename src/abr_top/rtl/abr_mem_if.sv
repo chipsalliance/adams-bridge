@@ -17,7 +17,7 @@
 //
 
 import abr_params_pkg::*;
-import mldsa_ctrl_pkg::*;
+import abr_ctrl_pkg::*;
 
 `define ABR_MEM_IF_SIGNALS(_PARAM_PREFIX, _signal_prefix)\
 logic ``_signal_prefix``_we_i;\

@@ -19,20 +19,20 @@
 //  Verify
 
 module mldsa_seq_prim
-  import mldsa_ctrl_pkg::*;
+  import abr_ctrl_pkg::*;
   (
   input logic clk,
 
   input  logic en_i,
-  input  logic [MLDSA_PROG_ADDR_W-1 : 0] addr_i,
-  output mldsa_seq_instr_t data_o
+  input  logic [ABR_PROG_ADDR_W-1 : 0] addr_i,
+  output abr_seq_instr_t data_o
   );
 
 
 `ifdef RV_FPGA_OPTIMIZE
-    (*rom_style = "block" *) mldsa_seq_instr_t data_o_rom;
+    (*rom_style = "block" *) abr_seq_instr_t data_o_rom;
 `else 
-    mldsa_seq_instr_t data_o_rom;
+    abr_seq_instr_t data_o_rom;
 `endif
     assign data_o = data_o_rom;
 

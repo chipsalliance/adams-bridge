@@ -17,11 +17,11 @@
 //  Keygen
 //  Signing
 
-module mldsa_ctrl
+module abr_ctrl
   import abr_reg_pkg::*;
   import abr_sha3_pkg::*;
   import abr_sampler_pkg::*;
-  import mldsa_ctrl_pkg::*;
+  import abr_ctrl_pkg::*;
   import abr_params_pkg::*;
   import ntt_defines_pkg::*;
   `ifdef CALIPTRA
@@ -61,13 +61,13 @@ module mldsa_ctrl
   output logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
 
   //ntt interfaces
-  output logic [MLDSA_NUM_NTT-1:0]            ntt_enable_o,
-  output mldsa_ntt_mode_e [MLDSA_NUM_NTT-1:0] ntt_mode_o,
-  output ntt_mem_addr_t [MLDSA_NUM_NTT-1:0]   ntt_mem_base_addr_o,
-  output pwo_mem_addr_t [MLDSA_NUM_NTT-1:0]   pwo_mem_base_addr_o,
-  output logic [MLDSA_NUM_NTT-1:0]            ntt_masking_en_o,
-  output logic [MLDSA_NUM_NTT-1:0]            ntt_shuffling_en_o,
-  input logic [MLDSA_NUM_NTT-1:0]             ntt_busy_i,
+  output logic [ABR_NUM_NTT-1:0]            ntt_enable_o,
+  output mldsa_ntt_mode_e [ABR_NUM_NTT-1:0] ntt_mode_o,
+  output ntt_mem_addr_t [ABR_NUM_NTT-1:0]   ntt_mem_base_addr_o,
+  output pwo_mem_addr_t [ABR_NUM_NTT-1:0]   pwo_mem_base_addr_o,
+  output logic [ABR_NUM_NTT-1:0]            ntt_masking_en_o,
+  output logic [ABR_NUM_NTT-1:0]            ntt_shuffling_en_o,
+  input logic [ABR_NUM_NTT-1:0]             ntt_busy_i,
 
   //aux interfaces
   output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
@@ -273,7 +273,7 @@ always_comb kv_seed_data_present = '0;
   logic process_done;
 
   //assign appropriate data to msg interface
-  logic [MLDSA_OPR_WIDTH-1:0]  sampler_src;
+  logic [ABR_OPR_WIDTH-1:0]  sampler_src;
   logic [15:0]               sampler_src_offset;
   logic [2:0]                sampler_src_offset_f;
   logic [15:0]               sampler_imm;
@@ -316,15 +316,15 @@ always_comb kv_seed_data_present = '0;
 
   logic prim_seq_en;
   logic sec_seq_en;
-  logic [MLDSA_PROG_ADDR_W-1 : 0] prim_prog_cntr, prim_prog_cntr_nxt;
-  mldsa_seq_instr_t prim_instr_o, prim_instr;
-  logic [MLDSA_PROG_ADDR_W-1 : 0] sec_prog_cntr, sec_prog_cntr_nxt;
-  mldsa_seq_instr_t sec_instr_o, sec_instr;
+  logic [ABR_PROG_ADDR_W-1 : 0] prim_prog_cntr, prim_prog_cntr_nxt;
+  abr_seq_instr_t prim_instr_o, prim_instr;
+  logic [ABR_PROG_ADDR_W-1 : 0] sec_prog_cntr, sec_prog_cntr_nxt;
+  abr_seq_instr_t sec_instr_o, sec_instr;
 
   logic msg_done;
   logic msg_last;
   logic [MsgStrbW-1:0] msg_strobe_nxt, last_msg_strobe;
-  logic [MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt_nxt, msg_cnt;
+  logic [ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt_nxt, msg_cnt;
   logic msg_valid_nxt;
   logic msg_hold;
 
@@ -334,9 +334,9 @@ always_comb kv_seed_data_present = '0;
   logic subcomponent_busy;
   logic sec_subcomponent_busy;
 
-  mldsa_ctrl_fsm_state_e prim_ctrl_fsm_ps, prim_ctrl_fsm_ns;
+  abr_ctrl_fsm_state_e prim_ctrl_fsm_ps, prim_ctrl_fsm_ns;
   logic msg_valid;
-  mldsa_ctrl_fsm_state_e sec_ctrl_fsm_ps, sec_ctrl_fsm_ns;
+  abr_ctrl_fsm_state_e sec_ctrl_fsm_ps, sec_ctrl_fsm_ns;
 
   mldsa_privkey_u privatekey_reg;
   mldsa_signature_u signature_reg;
@@ -359,7 +359,7 @@ always_comb kv_seed_data_present = '0;
   logic [1:0] ntt_active; //This is the mux select for 1 NTT mode
   logic [1:0] ntt_busy;
 
-  logic [MLDSA_NUM_NTT-1:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
+  logic [ABR_NUM_NTT-1:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
   logic mldsa_status_done_d, mldsa_status_done_p;
@@ -1120,7 +1120,7 @@ always_comb kv_seed_data_present = '0;
                                    (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
 //Primary sequencer for keygen, signing, and verify
-  always_comb subcomponent_busy = !(prim_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE, MLDSA_CTRL_MSG_WAIT}) |
+  always_comb subcomponent_busy = !(prim_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
                                   sampler_busy_i | ntt_busy[0];
 `ifdef CALIPTRA
   always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
@@ -1365,7 +1365,7 @@ always_ff @(posedge clk or negedge rst_b) begin
 end 
 
 //set stream message ip when given instruction to load MSG
-always_comb stream_msg_ip = stream_msg_mode & (prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) & (sampler_src == MLDSA_MSG_ID);
+always_comb stream_msg_ip = stream_msg_mode & (prim_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) & (sampler_src == MLDSA_MSG_ID);
 
 //count how many dwords of ctx sent
 always_ff @(posedge clk or negedge rst_b) begin
@@ -1477,8 +1477,8 @@ always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
 
 //Last cycle when msg count is equal to length
 //length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_last = stream_msg_ip ? '0 : (msg_cnt == prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
-always_comb msg_done = stream_msg_ip ? stream_msg_done : (msg_cnt > prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+always_comb msg_last = stream_msg_ip ? '0 : (msg_cnt == prim_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+always_comb msg_done = stream_msg_ip ? stream_msg_done : (msg_cnt > prim_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 //overload msg interface with stream msg interface
 always_comb msg_cnt_nxt = stream_msg_ip ? '0 :
@@ -1529,44 +1529,44 @@ always_comb begin : primary_ctrl_fsm_out_combo
     lfsr_enable_o = '0;
 
     unique case (prim_ctrl_fsm_ps)
-      MLDSA_CTRL_IDLE: begin
+      ABR_CTRL_IDLE: begin
         //load keccak data to SIPO
         if (prim_instr.opcode.keccak_en)
-          prim_ctrl_fsm_ns = MLDSA_CTRL_SHA3_START;
+          prim_ctrl_fsm_ns = ABR_CTRL_SHA3_START;
         //start sampler flow, data already driven to SIPO
         else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
-          prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          prim_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
-      MLDSA_CTRL_SHA3_START: begin
-        prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_START;
+      ABR_CTRL_SHA3_START: begin
+        prim_ctrl_fsm_ns = ABR_CTRL_MSG_START;
         //drive start
         sha3_start_o = 1;
       end
-      MLDSA_CTRL_MSG_START: begin
-        prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+      ABR_CTRL_MSG_START: begin
+        prim_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
         msg_start_o = 1;
       end
-      MLDSA_CTRL_MSG_LOAD: begin
+      ABR_CTRL_MSG_LOAD: begin
         msg_valid = 1;
         sampler_src = prim_instr.operand1;
         sampler_imm = prim_instr.imm;
         if (msg_done & ~msg_hold) begin
           msg_valid = 0;
-          if (prim_instr.opcode.sampler_en & ~ntt_busy[0]) prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
-          else prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
+          if (prim_instr.opcode.sampler_en & ~ntt_busy[0]) prim_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
+          else prim_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
         end
       end
-      MLDSA_CTRL_MSG_WAIT: begin
+      ABR_CTRL_MSG_WAIT: begin
         //load another message
-        if (prim_instr.opcode.keccak_en) prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        if (prim_instr.opcode.keccak_en) prim_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
         //kick off the sampler
         else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
-          prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          prim_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
         else 
-          prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+          prim_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
       end
-      MLDSA_CTRL_FUNC_START: begin
-        prim_ctrl_fsm_ns = MLDSA_CTRL_DONE;
+      ABR_CTRL_FUNC_START: begin
+        prim_ctrl_fsm_ns = ABR_CTRL_DONE;
         sampler_start_o = prim_instr.opcode.sampler_en;
         ntt_en[0] = prim_instr.opcode.ntt_en;
         ntt_active[0] = prim_instr.opcode.ntt_en;
@@ -1581,7 +1581,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
           lfsr_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR);
         end
       end
-      MLDSA_CTRL_DONE: begin
+      ABR_CTRL_DONE: begin
         ntt_active[0] = prim_instr.opcode.ntt_en;
         if ((~sampler_busy_i & ~ntt_busy[0] & ~prim_instr.opcode.aux_en) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT}) & decompose_done_i) |
@@ -1593,7 +1593,7 @@ always_comb begin : primary_ctrl_fsm_out_combo
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
           
-          prim_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
+          prim_ctrl_fsm_ns = ABR_CTRL_IDLE;
 
         end
       end
@@ -1605,10 +1605,10 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : primary_ctrl_fsm_flops
   if (!rst_b) begin
-      prim_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      prim_ctrl_fsm_ps <= ABR_CTRL_IDLE;
   end
   else if (zeroize) begin
-      prim_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      prim_ctrl_fsm_ps <= ABR_CTRL_IDLE;
   end
   else begin
       prim_ctrl_fsm_ps <= prim_ctrl_fsm_ns;
@@ -1625,7 +1625,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
 );
 
   //Second sequencer for simultaneous signing operations
-  always_comb sec_subcomponent_busy = !(sec_ctrl_fsm_ns inside {MLDSA_CTRL_IDLE}) | ntt_busy[1];
+  always_comb sec_subcomponent_busy = !(sec_ctrl_fsm_ns inside {ABR_CTRL_IDLE}) | ntt_busy[1];
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
@@ -1781,15 +1781,15 @@ always_comb begin : secondary_ctrl_fsm_out_combo
     sigencode_enable_o = '0;
 
     unique case (sec_ctrl_fsm_ps)
-      MLDSA_CTRL_IDLE: begin
+      ABR_CTRL_IDLE: begin
         //Start function
         if (sec_instr.opcode.sampler_en)
-          sec_ctrl_fsm_ns = MLDSA_CTRL_ERROR;
+          sec_ctrl_fsm_ns = ABR_CTRL_ERROR;
         if ((sec_instr.opcode.aux_en | sec_instr.opcode.ntt_en) & ~ntt_busy[1])
-          sec_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+          sec_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
-      MLDSA_CTRL_FUNC_START: begin
-        sec_ctrl_fsm_ns = MLDSA_CTRL_DONE;
+      ABR_CTRL_FUNC_START: begin
+        sec_ctrl_fsm_ns = ABR_CTRL_DONE;
         ntt_en[1] = sec_instr.opcode.ntt_en;
         ntt_active[1] = sec_instr.opcode.ntt_en;
         if (sec_instr.opcode.aux_en) begin
@@ -1799,14 +1799,14 @@ always_comb begin : secondary_ctrl_fsm_out_combo
           sigencode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
         end
       end
-      MLDSA_CTRL_DONE: begin
+      ABR_CTRL_DONE: begin
         ntt_active[1] = sec_instr.opcode.ntt_en;
         if ((sec_instr.opcode.ntt_en & ~ntt_busy[1]) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
             (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) ) begin
-          sec_ctrl_fsm_ns = MLDSA_CTRL_IDLE;
+          sec_ctrl_fsm_ns = ABR_CTRL_IDLE;
         end
       end
       default: begin
@@ -1817,10 +1817,10 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : secondary_ctrl_fsm_flops
   if (!rst_b) begin
-      sec_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      sec_ctrl_fsm_ps <= ABR_CTRL_IDLE;
   end
   else if (zeroize) begin
-      sec_ctrl_fsm_ps <= MLDSA_CTRL_IDLE;
+      sec_ctrl_fsm_ps <= ABR_CTRL_IDLE;
   end
   else begin
       sec_ctrl_fsm_ps <= sec_ctrl_fsm_ns;
@@ -1840,14 +1840,14 @@ mldsa_seq_sec mldsa_seq_sec_inst
 //If we have 2 NTT, connect to 0/1
 //If we have 1 NTT, connect both to 0
 localparam PRIM_SEQ_NTT = 0;
-localparam SEC_SEQ_NTT = MLDSA_NUM_NTT-1;
+localparam SEC_SEQ_NTT = ABR_NUM_NTT-1;
 
 //Check if ntt is being enabled in this clock also
 always_comb ntt_busy[0] = prim_instr.opcode.ntt_en & (ntt_busy_i[PRIM_SEQ_NTT] | ntt_enable_o[PRIM_SEQ_NTT]);
 always_comb ntt_busy[1] = sec_instr.opcode.ntt_en & (ntt_busy_i[SEC_SEQ_NTT] | ntt_enable_o[SEC_SEQ_NTT]);
 
 always_comb begin
-  for (int ntt = 0; ntt < MLDSA_NUM_NTT; ntt++) begin
+  for (int ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
     ntt_enable_o[ntt] = '0;
     ntt_mode_o[ntt] = MLDSA_NTT_NONE;
     ntt_masking_en_o[ntt] = '0;

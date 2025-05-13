@@ -48,12 +48,12 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/mldsa_ctrl_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
       - $COMPILE_ROOT/rtl/abr_mem_if.sv
       - $COMPILE_ROOT/rtl/abr_mem_top.sv
       - $COMPILE_ROOT/rtl/mldsa_seq_prim.sv
       - $COMPILE_ROOT/rtl/mldsa_seq_sec.sv
-      - $COMPILE_ROOT/rtl/mldsa_ctrl.sv
+      - $COMPILE_ROOT/rtl/abr_ctrl.sv
       - $COMPILE_ROOT/rtl/abr_top.sv
       - $COMPILE_ROOT/rtl/abr_reg.sv
     tops: [abr_top]

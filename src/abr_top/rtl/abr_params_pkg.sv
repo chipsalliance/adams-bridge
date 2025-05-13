@@ -47,7 +47,7 @@ package abr_params_pkg;
   parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
 
   //Can be 1 or 2 only
-  parameter MLDSA_NUM_NTT = 1;
+  parameter ABR_NUM_NTT = 1;
   
   //Memory interface
   parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
