@@ -38,12 +38,17 @@ package mldsa_params_pkg;
   
   parameter COEFF_PER_CLK = 4;
 
+  parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled
+  parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
 
+  //Can be 1 or 2 only
+  parameter MLDSA_NUM_NTT = 1;
   
   //Memory interface
-  parameter MLDSA_MEM_MAX_DEPTH = 1408;
-  parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH;
-  parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
+  parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
+  parameter MLDSA_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
+
+  parameter MLDSA_MEM_MASKED_INST = 3;
 
   //parameter MLDSA_MEM_INST0_DEPTH = 1664; //19.5 KB
   //parameter MLDSA_MEM_INST0_ADDR_W = $clog2(MLDSA_MEM_INST0_DEPTH);
@@ -53,16 +58,19 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_INST1_DEPTH = 576; //6.75 KB
   parameter MLDSA_MEM_INST1_ADDR_W = $clog2(MLDSA_MEM_INST1_DEPTH);
   parameter MLDSA_MEM_INST1_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST2_DEPTH = 1408; //16.5 KB
+  parameter MLDSA_MEM_INST2_DEPTH = 1472; //17.25 KB
   parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
   parameter MLDSA_MEM_INST2_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST3_DEPTH = 128; //1.5 KB
+  parameter MLDSA_MEM_INST3_DEPTH = 64; //3 KB
   parameter MLDSA_MEM_INST3_ADDR_W = $clog2(MLDSA_MEM_INST3_DEPTH);
-  parameter MLDSA_MEM_INST3_DATA_W = MLDSA_MEM_DATA_WIDTH;
+  parameter MLDSA_MEM_INST3_DATA_W = MLDSA_MEM_MASKED_DATA_WIDTH;
   parameter MLDSA_MEM_W1_DEPTH = 512;
   parameter MLDSA_MEM_W1_ADDR_W = $clog2(MLDSA_MEM_W1_DEPTH);
   parameter MLDSA_MEM_W1_DATA_W = 4;
-
+  
+  parameter MLDSA_MEM_MAX_DEPTH = MLDSA_MEM_INST2_DEPTH;
+  parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
+  
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;
   parameter MLDSA_VERIFY      = 3'b011;
