@@ -43,7 +43,7 @@ module mldsa_sampler_top
   input logic [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr_i,
 
   //NTT read from sib_mem
-  input mem_if_t                        sib_mem_rd_req_i,
+  input mem_if_t                          sib_mem_rd_req_i,
   output logic [MLDSA_MEM_DATA_WIDTH-1:0] sib_mem_rd_data_o,
 
   //output
@@ -86,14 +86,22 @@ module mldsa_sampler_top
   logic sha3_count_error;
   logic sha3_rst_storage_err;
 
-  //rej sampler
-  logic                                            rejs_piso_dv;
-  logic                                            rejs_piso_hold;
-  logic [REJS_NUM_SAMPLERS-1:0][REJS_SAMPLE_W-1:0] rejs_piso_data;
+  //mldsa rej sampler
+  logic                                                        mldsa_rejs_piso_dv;
+  logic                                                        mldsa_rejs_piso_hold;
 
-  logic                                            rejs_dv;
-  logic [REJS_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]  rejs_data;
-  logic [REJS_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]  rejs_data_q;
+  logic                                            mldsa_rejs_dv;
+  logic [REJS_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]  mldsa_rejs_data_q;
+
+  //mlkem rej sampler
+  logic                                                        mlkem_rejs_piso_dv;
+  logic                                                        mlkem_rejs_piso_hold;
+
+  logic                                            mlkem_rejs_dv;
+  logic [REJS_VLD_SAMPLES-1:0][MLKEM_Q_WIDTH-1:0]  mlkem_rejs_data_q;
+
+  //common rejs piso data
+  logic [MLDSA_REJS_NUM_SAMPLERS-1:0][MLDSA_REJS_SAMPLE_W-1:0] rejs_piso_data;
 
   //rej bounded
   logic                                               rejb_piso_dv;
@@ -129,7 +137,7 @@ module mldsa_sampler_top
   logic vld_cycle;
   logic sampler_done;
 
-  logic zeroize_sha3, zeroize_rejb, zeroize_rejs, zeroize_sib, zeroize_exp_mask;
+  logic zeroize_sha3, zeroize_rejb, zeroize_mldsa_rejs, zeroize_mlkem_rejs, zeroize_sib, zeroize_exp_mask;
   logic zeroize_sib_mem;
   logic zeroize_piso;
 
@@ -149,7 +157,8 @@ module mldsa_sampler_top
     sampler_state_dv_o = 0;
     sampler_state_data_o[0] = 0;
     zeroize_rejb = zeroize;
-    zeroize_rejs = zeroize;
+    zeroize_mldsa_rejs = zeroize;
+    zeroize_mlkem_rejs = zeroize;
     zeroize_exp_mask = zeroize;
     zeroize_sib = zeroize;
     zeroize_sib_mem = zeroize;
@@ -174,12 +183,22 @@ module mldsa_sampler_top
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
+      MLKEM_REJ_SAMPLER: begin
+        mode = abr_sha3_pkg::Shake;
+        strength = abr_sha3_pkg::L128;
+        vld_cycle = mlkem_rejs_dv;
+        sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
+        zeroize_mlkem_rejs |= sampler_done;
+        zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = 0;
+      end
       MLDSA_REJ_SAMPLER: begin
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L128;
-        vld_cycle = rejs_dv;
+        vld_cycle = mldsa_rejs_dv;
         sampler_done = (coeff_cnt == (MLDSA_COEFF_CNT/4));
-        zeroize_rejs |= sampler_done;
+        zeroize_mldsa_rejs |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
         piso_mode = 0;
@@ -321,10 +340,6 @@ always_ff @(posedge clk or negedge rst_b) begin : sampler_fsm_flops
   end
 end  
 
-//rej sampler output gets sent to NTT
-always_comb sampler_ntt_dv_o = rejs_dv;
-always_comb sampler_ntt_data_o = rejs_data;
-
 //SHA3 instance
   abr_sha3 #(
     .RoundsPerClock(RoundsPerClock),
@@ -370,7 +385,7 @@ always_comb sampler_ntt_data_o = rejs_data;
 
     .state_valid_o      (sha3_state_dv),
     .state_valid_hold_i (sha3_state_hold),
-    .state_o       (sha3_state),
+    .state_o            (sha3_state),
 
     .error_o (sha3_err),
     .sparse_fsm_error_o (sha3_state_error),
@@ -404,12 +419,14 @@ always_comb sampler_ntt_data_o = rejs_data;
     .data_o(piso_data)
   );
 
-  always_comb rejs_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
+  always_comb mldsa_rejs_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
+  always_comb mlkem_rejs_piso_dv = piso_dv & (sampler_mode_i == MLKEM_REJ_SAMPLER); 
   always_comb rejb_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_BOUNDED);
   always_comb exp_piso_dv = piso_dv & (sampler_mode_i == MLDSA_EXP_MASK);
   always_comb sib_piso_dv = piso_dv & (sampler_mode_i == MLDSA_SAMPLE_IN_BALL);
 
-  always_comb piso_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & rejs_piso_hold) |
+  always_comb piso_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & mldsa_rejs_piso_hold) |
+                          ((sampler_mode_i == MLKEM_REJ_SAMPLER)    & mlkem_rejs_piso_hold) |
                           ((sampler_mode_i == MLDSA_REJ_BOUNDED)    & rejb_piso_hold) |
                           ((sampler_mode_i == MLDSA_EXP_MASK)       & exp_piso_hold)  |
                           ((sampler_mode_i == MLDSA_SAMPLE_IN_BALL) & sib_piso_hold);
@@ -420,36 +437,63 @@ always_comb sampler_ntt_data_o = rejs_data;
   always_comb sib_piso_data = piso_data[SIB_PISO_OUTPUT_RATE-1:0];
 
   rej_sampler_ctrl#(
-    .REJ_NUM_SAMPLERS(REJS_NUM_SAMPLERS),
-    .REJ_SAMPLE_W(REJS_SAMPLE_W),
+    .REJ_NUM_SAMPLERS(MLDSA_REJS_NUM_SAMPLERS),
+    .REJ_SAMPLE_W(MLDSA_REJS_SAMPLE_W),
     .REJ_VLD_SAMPLES(REJS_VLD_SAMPLES),
+    .REJ_VLD_SAMPLES_W(MLDSA_Q_WIDTH),
     .REJ_VALUE(MLDSA_Q)
-  ) rej_sampler_inst (
+  ) mldsa_rej_sampler_inst (
     .clk(clk),
     .rst_b(rst_b),
-    .zeroize(zeroize_rejs), 
+    .zeroize(zeroize_mldsa_rejs), 
     //input data
-    .data_valid_i(rejs_piso_dv),
-    .data_hold_o(rejs_piso_hold),
+    .data_valid_i(mldsa_rejs_piso_dv),
+    .data_hold_o(mldsa_rejs_piso_hold),
     .data_i(rejs_piso_data),
 
     //output data
-    .data_valid_o(rejs_dv),
-    .data_o(rejs_data_q)
+    .data_valid_o(mldsa_rejs_dv),
+    .data_o(mldsa_rejs_data_q)
   );
   
+  rej_sampler_ctrl#(
+    .REJ_NUM_SAMPLERS(MLKEM_REJS_NUM_SAMPLERS),
+    .REJ_SAMPLE_W(MLKEM_REJS_SAMPLE_W),
+    .REJ_VLD_SAMPLES(REJS_VLD_SAMPLES),
+    .REJ_VLD_SAMPLES_W(MLKEM_Q_WIDTH),
+    .REJ_VALUE(MLKEM_Q)
+  ) mlkem_rej_sampler_inst (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize_mlkem_rejs), 
+    //input data
+    .data_valid_i(mlkem_rejs_piso_dv),
+    .data_hold_o(mlkem_rejs_piso_hold),
+    .data_i(rejs_piso_data),
+
+    //output data
+    .data_valid_o(mlkem_rejs_dv),
+    .data_o(mlkem_rejs_data_q)
+  );
+
 //optimization - align sampler data in ntt
 always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
   if (!rst_b) begin
-    rejs_data <= 0;
+    sampler_ntt_data_o <= 0;
   end
   else if (zeroize) begin
-    rejs_data <= 0;
+    sampler_ntt_data_o <= 0;
   end
   else begin
-    rejs_data <= rejs_data_q;
+    for (int i = 0; i < COEFF_PER_CLK; i++) begin
+      sampler_ntt_data_o[i] <= {MLDSA_Q_WIDTH{(sampler_mode_i == MLDSA_REJ_SAMPLER)}} & mldsa_rejs_data_q[i] | 
+                               {MLDSA_Q_WIDTH{(sampler_mode_i == MLKEM_REJ_SAMPLER)}} & {{MLDSA_Q_WIDTH-MLKEM_Q_WIDTH{1'b0}},mlkem_rejs_data_q[i]};
+    end
   end
 end  
+
+//rej sampler output gets sent to NTT
+always_comb sampler_ntt_dv_o = mldsa_rejs_dv | mlkem_rejs_dv;
 
 //rej bounded
   rej_bounded_ctrl #(

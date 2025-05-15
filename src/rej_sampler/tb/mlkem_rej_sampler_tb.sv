@@ -21,7 +21,7 @@
 
 import "DPI-C" function string getenv(input string env_name);
 
-module rej_sampler_tb
+module mlkem_rej_sampler_tb
   import mldsa_sampler_pkg::*;
   import mldsa_params_pkg::*;
 (
@@ -30,15 +30,15 @@ module rej_sampler_tb
 `endif
   );
 
-  parameter REJ_NUM_SAMPLERS = 5;
-  parameter REJ_SAMPLE_W     = 24;
+  parameter REJ_NUM_SAMPLERS = 10;
+  parameter REJ_SAMPLE_W     = 12;
   parameter REJ_VLD_SAMPLES  = 4;
   parameter PISO_BUFFER_W    = 1440;
   parameter PISO_INPUT_RATE  = 1344;
   parameter PISO_OUTPUT_RATE = 120;
-  parameter MLDSA_Q = 8380417;
-  parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1;
-  parameter MLDSA_N = 256;
+  parameter MLKEM_Q = 3329;
+  parameter MLKEM_Q_WIDTH = $clog2(MLKEM_Q) + 1;
+  parameter MLKEM_N = 256;
 
 
   `ifndef VERILATOR
@@ -60,6 +60,7 @@ module rej_sampler_tb
       VEC_CNT = 10;
       $info("No argument provided for VEC_CNT, defaulting to %d", VEC_CNT);
     end
+    
   end
   `else
   parameter MAX_CYCLES = 20_0000;
@@ -81,7 +82,7 @@ module rej_sampler_tb
 
   //output data
   logic                                         data_valid_o;
-  logic [REJ_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0] data_o;
+  logic [REJ_VLD_SAMPLES-1:0][MLKEM_Q_WIDTH-1:0] data_o;
 
   logic zeroize;
 
@@ -104,8 +105,8 @@ module rej_sampler_tb
   assign clk_i = clk_tb;
   assign rst_ni = reset_n_tb;
 
-  logic [MLDSA_Q_WIDTH-1:0] exp_result;
-  logic [MLDSA_Q_WIDTH-1:0] expected_results[$];  // queue of results
+  logic [MLKEM_Q_WIDTH-1:0] exp_result;
+  logic [MLKEM_Q_WIDTH-1:0] expected_results[$];  // queue of results
 
   string seed_filename, vector_filename, exp_res_filename;
   assign exp_res_filename = "exp_results.txt";
@@ -137,7 +138,8 @@ module rej_sampler_tb
     .REJ_NUM_SAMPLERS(REJ_NUM_SAMPLERS),
     .REJ_SAMPLE_W(REJ_SAMPLE_W),
     .REJ_VLD_SAMPLES(REJ_VLD_SAMPLES),
-    .REJ_VALUE(MLDSA_Q)
+    .REJ_VLD_SAMPLES_W(MLKEM_Q_WIDTH),
+    .REJ_VALUE(MLKEM_Q)
   ) dut (
   .clk(clk_i),
   .rst_b(rst_ni),
@@ -230,17 +232,17 @@ module rej_sampler_tb
   //----------------------------------------------------------------
   task display_test_result;
     begin
-      if (error_ctr == 0)
-        begin
+      if (error_ctr == 0) begin
           $display("*** All %02d test cases completed successfully.", tc_ctr);
           $display("* TESTCASE PASSED");
-        end
-      else
-        begin
+      end
+      else begin
           $display("*** %02d test cases completed.", tc_ctr);
           $display("*** %02d errors detected during testing.", error_ctr);
           $display("* TESTCASE FAILED");
-        end
+      end
+      $display("   -- Testbench for REJ_SAMPLER done. --");
+      $finish;
     end
   endtask // display_test_result
 
@@ -251,7 +253,7 @@ module rej_sampler_tb
     forever begin
       @(posedge clk_tb)
       if (data_valid_o) begin
-        if (expected_results.size() >= 4) begin
+        if (expected_results.size() >= REJ_VLD_SAMPLES) begin
           for (int i = 0; i < REJ_VLD_SAMPLES; i++) begin
             vld_coeff_ctr += 1; //increment vld coeff ctr
             if (expected_results[0] != data_o[i]) begin
@@ -259,14 +261,15 @@ module rej_sampler_tb
               $display("[%t] Expected results mismatch for output index %d", $time, i);
               $display("[%t] Actual:   %x", $time,data_o[i]);
               $display("[%t] Expected: %x", $time,expected_results[0]);
-              error_ctr += 1;
+              error_ctr++;
             end
             expected_results.pop_front();
           end
         end else begin
           //ERROR
           $display("[%t] Not enough valid samples in the queue", $time);
-          error_ctr += 1;
+          error_ctr++;
+          display_test_result();
         end
       end
     end
@@ -330,7 +333,7 @@ module rej_sampler_tb
     end
     $fclose(fd_w);
     //generate input vectors and expected results
-    $system($sformatf("python rej_sampler.py"));
+    $system($sformatf("python mlkem_rej_sampler.py"));
 
 
     //open expected results files
@@ -338,6 +341,7 @@ module rej_sampler_tb
     if (fd_r_exp == 0) begin
       $error("Cannot open file %s for reading", exp_res_filename);
       error_ctr++;
+      display_test_result();
     end
 
   endtask
@@ -360,6 +364,7 @@ module rej_sampler_tb
     if (fd_r_inp == 0) begin
       $error("Cannot open file %s for reading", vector_filename);
       error_ctr++;
+      display_test_result();
     end
 
     //open expected results files
@@ -367,6 +372,7 @@ module rej_sampler_tb
     if (fd_r_exp == 0) begin
       $error("Cannot open file %s for reading", exp_res_filename);
       error_ctr++;
+      display_test_result();
     end
 
     for (int iter = 0; iter < VEC_CNT; iter++) begin
@@ -374,9 +380,10 @@ module rej_sampler_tb
       if (!($fgets(line_read, fd_r_exp))) begin
         $error("Failed to read a new line");
         error_ctr++;
+        display_test_result();
       end
-      for (int res = 0; res < MLDSA_N; res++) begin
-        exp_result = line_read.substr(res*7, res*7 + 7-2).atohex();
+      for (int res = 0; res < MLKEM_N; res++) begin
+        exp_result = line_read.substr(res*4, res*4 + 2).atohex(); //3 chars wide and skip the space between results
         expected_results.push_back(exp_result);
       end
 
@@ -384,6 +391,7 @@ module rej_sampler_tb
       if (!($fgets(line_read, fd_r_inp))) begin
         $error("Failed to read a new line");
         error_ctr++;
+        display_test_result();
       end
 
       num_states = (line_read.len()/PISO_INPUT_CHARS);
@@ -428,8 +436,6 @@ module rej_sampler_tb
       @(posedge clk_tb);
       display_test_result();
 
-      $display("   -- Testbench for REJ_SAMPLER done. --");
-      $finish;
     end // main
 
 endmodule // rej_sampler_tb
