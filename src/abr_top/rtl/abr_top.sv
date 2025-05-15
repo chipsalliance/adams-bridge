@@ -398,7 +398,6 @@ abr_ctrl abr_ctrl_inst
 
   .normcheck_enable_o(normcheck_enable),
   .normcheck_mode_o(normcheck_mode),
-  .normcheck_src_addr_o(normcheck_src_addr),
   .normcheck_invalid_i(normcheck_invalid),
   .normcheck_done_i(normcheck_done),
 
@@ -681,8 +680,8 @@ skdecode_inst
   .skdecode_enable(skdecode_enable),
   .skdecode_done(skdecode_done),
 
-  .keymem_src_base_addr(aux_src0_base_addr[1]), 
-  .dest_base_addr(aux_dest_base_addr[1]),
+  .keymem_src_base_addr(aux_src0_base_addr[0]), 
+  .dest_base_addr(aux_dest_base_addr[0]),
 
   .keymem_a_rd_req(skdecode_keymem_if[0]),
   .keymem_a_rd_data(skdecode_rd_data[0]),
@@ -710,7 +709,7 @@ makehint_inst
   .makehint_enable(makehint_enable),
   .makehint_done(makehint_done),
 
-  .mem_base_addr(aux_src0_base_addr[1]),
+  .mem_base_addr(aux_src0_base_addr[0]),
   .dest_base_addr('0),
 
   .mem_rd_req(makehint_mem_rd_req),
@@ -742,7 +741,7 @@ norm_check_inst
   .norm_check_ready(),
   .norm_check_done(normcheck_done),
   
-  .mem_base_addr(normcheck_src_addr),
+  .mem_base_addr(aux_src0_base_addr[0]),
   .mem_rd_req(normcheck_mem_rd_req),
   .mem_rd_data(normcheck_mem_rd_data),
 
@@ -760,8 +759,8 @@ sigencode_z_inst
   .sigencode_z_enable(sigencode_enable),
   .sigencode_z_done(sigencode_done),
 
-  .src_base_addr(aux_src0_base_addr[1]),
-  .sigmem_dest_base_addr(aux_dest_base_addr[1]),
+  .src_base_addr(aux_src0_base_addr[0]),
+  .sigmem_dest_base_addr(aux_dest_base_addr[0]),
 
   .mem_a_rd_req(sigencode_mem_rd_req[0]),
   .mem_a_rd_data(sigencode_mem_rd_data[0]),

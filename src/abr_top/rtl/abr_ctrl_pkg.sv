@@ -432,18 +432,28 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_MODE   = MLDSA_SIGN_S + 3;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_MU         = MLDSA_SIGN_CHECK_MODE + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_RHO_P      = MLDSA_SIGN_H_MU + 2;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_CLR  = MLDSA_SIGN_H_RHO_P + 3;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_CHECK_Y_CLR + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_INIT_S       = MLDSA_SIGN_H_RHO_P + 3;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGCHECK_Y_CLR  = MLDSA_SIGN_INIT_S+24;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_INIT_S+24; //MLDSA_SIGN_CHECK_Y_CLR + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 3;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_CLR = MLDSA_SIGN_MAKE_Y_S+ 14;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_CHECK_W0_CLR+ 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_Y        = MLDSA_SIGN_MAKE_W_S+ 64;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 66;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_W0       = MLDSA_SIGN_MAKE_W+ 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_CLR  = MLDSA_SIGN_SET_W0+ 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_CHECK_C_CLR+ 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_C        = MLDSA_SIGN_MAKE_C+ 2;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_SET_C + 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_CLR = MLDSA_SIGN_MAKE_Y_S+ 14;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_MAKE_Y_S+ 14;//MLDSA_SIGN_CHECK_W0_CLR+ 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_Y        = MLDSA_SIGN_MAKE_W_S+ 64;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 65;//MLDSA_SIGN_MAKE_W_S+ 66;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_W0       = MLDSA_SIGN_MAKE_W+ 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_CLR  = MLDSA_SIGN_SET_W0+ 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_MAKE_W+ 1;//MLDSA_SIGN_CHECK_C_CLR+ 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_SET_C        = MLDSA_SIGN_MAKE_C+ 2;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_VLD  = MLDSA_SIGN_SET_C + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_VALID_S      = MLDSA_SIGN_MAKE_C+ 2;//MLDSA_SIGN_CHECK_C_VLD + 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_VLD  = MLDSA_SIGN_VALID_S + 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_Y      = MLDSA_SIGN_VALID_S + 37;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_VLD = MLDSA_SIGN_VALID_S + 54;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_W0     = MLDSA_SIGN_VALID_S + 103;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_S        = MLDSA_SIGN_VALID_S + 101;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_C      = MLDSA_SIGN_GEN_S + 1;
+    //localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_E        = MLDSA_SIGN_GEN_S + 2;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_VALID_S + 101;//MLDSA_SIGN_GEN_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_CHL_E + 1;
     //Verify
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;
@@ -459,19 +469,6 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_E          = MLDSA_VERIFY_RES + 4;
 
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_ERROR             = '1;
-
-    //Signing Sequencer Subroutine listing
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_INIT_S       = MLDSA_ZEROIZE + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_C_VLD  = MLDSA_SIGN_INIT_S + 24;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_VALID_S      = MLDSA_SIGN_CHECK_C_VLD + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_Y_VLD  = MLDSA_SIGN_VALID_S + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_Y      = MLDSA_SIGN_VALID_S + 37;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_W0_VLD = MLDSA_SIGN_VALID_S + 54;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_W0     = MLDSA_SIGN_VALID_S + 103;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_S        = MLDSA_SIGN_VALID_S + 105;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CLEAR_C      = MLDSA_SIGN_GEN_S + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_GEN_E        = MLDSA_SIGN_GEN_S + 2;
-
 
 endpackage
 

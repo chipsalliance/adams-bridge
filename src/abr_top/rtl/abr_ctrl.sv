@@ -106,7 +106,6 @@ module abr_ctrl
 
   output logic normcheck_enable_o,
   output logic [1:0] normcheck_mode_o,
-  output logic [ABR_MEM_ADDR_WIDTH-1:0] normcheck_src_addr_o,
   input logic normcheck_invalid_i,
   input logic normcheck_done_i,
 
@@ -269,7 +268,6 @@ always_comb kv_seed_data_present = '0;
   logic keygen_done;
   logic signature_done;
   logic verify_done;
-  logic signature_validity_chk_done;
   logic process_done;
 
   //assign appropriate data to msg interface
@@ -315,11 +313,8 @@ always_comb kv_seed_data_present = '0;
   logic [CTX_SIZE_W-$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt,ctx_cnt_nxt;
 
   logic prim_seq_en;
-  logic sec_seq_en;
   logic [ABR_PROG_ADDR_W-1 : 0] prim_prog_cntr, prim_prog_cntr_nxt;
   abr_seq_instr_t prim_instr_o, prim_instr;
-  logic [ABR_PROG_ADDR_W-1 : 0] sec_prog_cntr, sec_prog_cntr_nxt;
-  abr_seq_instr_t sec_instr_o, sec_instr;
 
   logic msg_done;
   logic msg_last;
@@ -332,11 +327,9 @@ always_comb kv_seed_data_present = '0;
   logic error_flag_reg;
   logic error_flag_edge;
   logic subcomponent_busy;
-  logic sec_subcomponent_busy;
 
   abr_ctrl_fsm_state_e prim_ctrl_fsm_ps, prim_ctrl_fsm_ns;
   logic msg_valid;
-  abr_ctrl_fsm_state_e sec_ctrl_fsm_ps, sec_ctrl_fsm_ns;
 
   mldsa_privkey_u privatekey_reg;
   mldsa_signature_u signature_reg;
@@ -350,9 +343,6 @@ always_comb kv_seed_data_present = '0;
   //signature and verify validity checks
   logic signature_valid, set_signature_valid, clear_signature_valid;
   logic verify_valid, set_verify_valid, clear_verify_valid;
-  
-  //shared aux functions
-  logic [1:0] normcheck_enable;
   
   //per controller enable/busy for ntt
   logic [1:0] ntt_en; //This is the pulse we drive to NTT to start it
@@ -1175,7 +1165,11 @@ always_comb kv_seed_data_present = '0;
     set_entropy = 0;
     prim_prog_cntr_nxt = MLDSA_RESET;
     prim_seq_en = !zeroize;
-    external_mu_mode_nxt = 0;
+    external_mu_mode_nxt = 0;    
+    clear_c_valid = 0;
+    clear_y_valid = 0;
+    clear_w0_valid = 0;
+    set_signature_valid = 0;
 
     unique case (prim_prog_cntr) inside
       MLDSA_RESET : begin 
@@ -1202,6 +1196,7 @@ always_comb kv_seed_data_present = '0;
           MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
             prim_prog_cntr_nxt = MLDSA_KG_S;
             keygen_signing_process_nxt  = 1;
+            set_signature_valid = 1;
             set_entropy = 1;
             external_mu_mode_nxt = external_mu;
           end
@@ -1222,6 +1217,7 @@ always_comb kv_seed_data_present = '0;
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
         if (keygen_signing_process) begin
+          set_signature_valid = 1;
           prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_MODE;
           signing_process_nxt  = 1;
         end
@@ -1239,63 +1235,16 @@ always_comb kv_seed_data_present = '0;
         else
           prim_prog_cntr_nxt = MLDSA_SIGN_H_MU;
       end
-      //START of Y access - check if Y is still valid
-      MLDSA_SIGN_CHECK_Y_CLR : begin
-        if (signature_validity_chk_done) 
-          prim_prog_cntr_nxt = MLDSA_SIGN_E;
-        else if (y_valid | w0_valid) begin //Stalled until Y and w0 can be overwritten
-          prim_prog_cntr_nxt = prim_prog_cntr;
-        end
-        else begin
-          prim_prog_cntr_nxt = prim_prog_cntr + 1;
-        end
-      end
-      //END of Y access - SET Y valid
-      MLDSA_SIGN_SET_Y : begin
-        set_y_valid = 1;
-        prim_prog_cntr_nxt = prim_prog_cntr + 1;
-      end
-      //START of W0 access - check if W0 is still valid
-      MLDSA_SIGN_CHECK_W0_CLR : begin
-        if (signature_validity_chk_done) 
-          prim_prog_cntr_nxt = MLDSA_SIGN_E;
-        else if (w0_valid) begin //Stalled until W0 can be overwritten
-          prim_prog_cntr_nxt = prim_prog_cntr;
-        end
-        else begin
-          prim_prog_cntr_nxt = prim_prog_cntr + 1;
-        end
-      end
-      //END of W0 access - SET W0 valid
-      MLDSA_SIGN_SET_W0 : begin
-        set_w0_valid = 1;
-        prim_prog_cntr_nxt = prim_prog_cntr + 1;
-      end
-      //START of C access - check if C is still valid
-      MLDSA_SIGN_CHECK_C_CLR : begin
-        if (signature_validity_chk_done) 
-          prim_prog_cntr_nxt = MLDSA_SIGN_E;
-        else if (c_valid) begin //Stalled until C can be overwritten
-          prim_prog_cntr_nxt = prim_prog_cntr;
-        end
-        else begin
-          prim_prog_cntr_nxt = prim_prog_cntr + 1;
-        end
-      end
-      //END of C access - SET C valid
-      MLDSA_SIGN_SET_C : begin
-        set_c_valid = 1;
-        prim_prog_cntr_nxt = prim_prog_cntr + 1;
-      end
       MLDSA_SIGN_CHL_E : begin // end of challenge generation
-        if (signature_validity_chk_done) 
+        if (signature_valid) 
           prim_prog_cntr_nxt = MLDSA_SIGN_E;
         else begin
+          set_signature_valid = 1;
           //increment kappa value
           update_kappa = 1;
           //restart challenge generation
-          prim_prog_cntr_nxt = MLDSA_SIGN_CHECK_Y_CLR;
-        end
+          prim_prog_cntr_nxt = MLDSA_SIGN_LFSR_S;
+       end
       end
       MLDSA_SIGN_E : begin // end of signature
         signature_done = 1;
@@ -1312,8 +1261,6 @@ always_comb kv_seed_data_present = '0;
       default : begin
         if (clear_verify_valid)
           prim_prog_cntr_nxt = MLDSA_VERIFY_E;
-        else if (signature_validity_chk_done) 
-          prim_prog_cntr_nxt = MLDSA_SIGN_E;
         else if (subcomponent_busy) begin //Stalled until sub-component is done 
           prim_prog_cntr_nxt = prim_prog_cntr;
         end
@@ -1349,8 +1296,9 @@ always_comb kv_seed_data_present = '0;
   always_comb aux_src1_base_addr_o[0] = prim_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
   always_comb aux_dest_base_addr_o[0] = prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
-//Message streaming mode
+  always_comb normcheck_mode_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? prim_instr.imm[1:0] : '0;
 
+//Message streaming mode
 //new input data available
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1525,7 +1473,10 @@ always_comb begin : primary_ctrl_fsm_out_combo
     pkdecode_enable_o = '0;
     sigdecode_h_enable_o = '0;
     sigdecode_z_enable_o = '0;
-    normcheck_enable[0] = '0;
+    skdecode_enable_o = '0;
+    makehint_enable_o = '0;
+    sigencode_enable_o = '0;
+    normcheck_enable_o = '0;
     lfsr_enable_o = '0;
 
     unique case (prim_ctrl_fsm_ps)
@@ -1577,7 +1528,10 @@ always_comb begin : primary_ctrl_fsm_out_combo
           pkdecode_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
           sigdecode_h_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H);
           sigdecode_z_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z);
-          normcheck_enable[0] = (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+          skdecode_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SKDECODE);
+          makehint_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT);
+          sigencode_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
+          normcheck_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
           lfsr_enable_o = (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR);
         end
       end
@@ -1591,6 +1545,9 @@ always_comb begin : primary_ctrl_fsm_out_combo
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_Z) & sigdecode_z_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
+            (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) |
             (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_LFSR)) ) begin
           
           prim_ctrl_fsm_ns = ABR_CTRL_IDLE;
@@ -1624,218 +1581,6 @@ mldsa_seq_prim mldsa_seq_prim_inst
   .data_o(prim_instr_o)
 );
 
-  //Second sequencer for simultaneous signing operations
-  always_comb sec_subcomponent_busy = !(sec_ctrl_fsm_ns inside {ABR_CTRL_IDLE}) | ntt_busy[1];
-  //program counter
-  always_ff @(posedge clk or negedge rst_b) begin
-    if(!rst_b) begin
-      sec_prog_cntr <= MLDSA_RESET;
-    end
-    else if(zeroize) begin
-      sec_prog_cntr <= MLDSA_ZEROIZE;
-    end
-    else begin
-      if (error_flag_edge) begin
-        sec_prog_cntr <= MLDSA_ERROR;
-      end
-      else begin
-        sec_prog_cntr <= sec_prog_cntr_nxt;
-      end
-    end
-  end
-
-  //subroutine decode
-  always_comb begin
-    sec_prog_cntr_nxt = MLDSA_RESET;
-    clear_c_valid = 0;
-    clear_y_valid = 0;
-    clear_w0_valid = 0;
-    set_signature_valid = 0;
-    signature_validity_chk_done = 0;
-    sec_seq_en = !zeroize;
-
-    unique case (sec_prog_cntr) inside
-      MLDSA_RESET : begin 
-        // Waiting for new valid command 
-        unique case (cmd_reg) inside
-          MLDSA_KEYGEN : begin  // keygen
-            sec_prog_cntr_nxt = MLDSA_RESET;
-            sec_seq_en = 0;
-          end   
-          MLDSA_SIGN : begin  // signing
-            sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
-          end                                   
-          MLDSA_VERIFY : begin  // verifying
-            sec_prog_cntr_nxt = MLDSA_RESET;
-            sec_seq_en = 0;
-          end                     
-          MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
-            sec_prog_cntr_nxt = MLDSA_RESET;
-          end
-          default : begin
-            sec_prog_cntr_nxt = MLDSA_RESET;
-            sec_seq_en = 0;
-          end   
-        endcase
-        if (keygen_signing_process & (prim_prog_cntr == MLDSA_KG_JUMP_SIGN)) begin
-          sec_prog_cntr_nxt = MLDSA_SIGN_INIT_S;
-          sec_seq_en = 1;
-        end
-      end
-      MLDSA_ZEROIZE : begin
-        if (zeroize_mem_done)
-          sec_prog_cntr_nxt = MLDSA_RESET;
-        else
-          sec_prog_cntr_nxt = MLDSA_ZEROIZE;
-        sec_seq_en = 0;
-      end
-      //START of C access - check if C is valid
-      MLDSA_SIGN_CHECK_C_VLD : begin
-        if (c_valid) begin
-          set_signature_valid = 1;
-          sec_prog_cntr_nxt = sec_prog_cntr + 1;
-        end
-        else begin
-          sec_prog_cntr_nxt = sec_prog_cntr;
-        end
-      end
-      //END of C access - SET C valid
-      //Need to protect C the entire validity checks so that challenge generation doesn't overwrite the valid c~
-      //another place to consider odd/even counter on challenge/validity
-      MLDSA_SIGN_CLEAR_C : begin
-        clear_c_valid = 1;
-        sec_prog_cntr_nxt = MLDSA_SIGN_CHECK_C_VLD;
-      end
-      //START of Y access - check if Y is valid
-      MLDSA_SIGN_CHECK_Y_VLD : begin
-        if (y_valid & w0_valid) begin 
-          sec_prog_cntr_nxt = sec_prog_cntr + 1;
-        end
-        else begin
-          sec_prog_cntr_nxt = sec_prog_cntr;
-        end
-      end
-      //END of Y access - SET Y valid
-      MLDSA_SIGN_CLEAR_Y : begin
-        clear_y_valid = 1;
-        sec_prog_cntr_nxt = sec_prog_cntr + 1;
-      end
-      //START of W0 access - check if W0 is valid
-      MLDSA_SIGN_CHECK_W0_VLD : begin
-        if (w0_valid) begin 
-          sec_prog_cntr_nxt = sec_prog_cntr + 1;
-        end
-        else begin
-          sec_prog_cntr_nxt = sec_prog_cntr ;
-        end
-      end
-      //END of W0 access - SET W0 valid
-      MLDSA_SIGN_CLEAR_W0 : begin
-        clear_w0_valid = 1;
-        sec_prog_cntr_nxt = sec_prog_cntr + 1;
-      end
-      MLDSA_SIGN_GEN_S : begin // end of validity checks
-        if (signature_valid) begin
-          sec_prog_cntr_nxt = MLDSA_SIGN_GEN_E; //Jump to end
-        end else begin
-          //restart
-          sec_prog_cntr_nxt = MLDSA_SIGN_CLEAR_C;
-        end
-      end
-      MLDSA_SIGN_GEN_E : begin // Successful signature generation
-        signature_validity_chk_done = 1;
-        if (signature_done)
-          sec_prog_cntr_nxt = MLDSA_RESET;
-        else
-          sec_prog_cntr_nxt = sec_prog_cntr;
-      end
-      default : begin
-        if (sec_subcomponent_busy) begin //Stalled until sub-component is done
-          sec_prog_cntr_nxt = sec_prog_cntr;
-        end
-        else begin
-          sec_prog_cntr_nxt = sec_prog_cntr + 1;
-        end
-      end
-    endcase
-  end
-
-  always_comb aux_src0_base_addr_o[1] = sec_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[1] = sec_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[1] = sec_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
-
-  always_comb normcheck_mode_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? prim_instr.imm[1:0] :
-                                 (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? sec_instr.imm[1:0] : '0;
-  always_comb normcheck_src_addr_o = (prim_instr.opcode.aux_en & (prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[0] :
-                                     (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? aux_src0_base_addr_o[1] : '0;
-  always_comb normcheck_enable_o = |normcheck_enable;
-
-//State logic
-always_comb begin : secondary_ctrl_fsm_out_combo
-    sec_ctrl_fsm_ns = sec_ctrl_fsm_ps;
-    ntt_en[1] = '0;
-    ntt_active[1] = '0;
-    skdecode_enable_o = '0;
-    makehint_enable_o = '0;
-    normcheck_enable[1] = '0;
-    sigencode_enable_o = '0;
-
-    unique case (sec_ctrl_fsm_ps)
-      ABR_CTRL_IDLE: begin
-        //Start function
-        if (sec_instr.opcode.sampler_en)
-          sec_ctrl_fsm_ns = ABR_CTRL_ERROR;
-        if ((sec_instr.opcode.aux_en | sec_instr.opcode.ntt_en) & ~ntt_busy[1])
-          sec_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
-      end
-      ABR_CTRL_FUNC_START: begin
-        sec_ctrl_fsm_ns = ABR_CTRL_DONE;
-        ntt_en[1] = sec_instr.opcode.ntt_en;
-        ntt_active[1] = sec_instr.opcode.ntt_en;
-        if (sec_instr.opcode.aux_en) begin
-          skdecode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE);
-          makehint_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT);
-          normcheck_enable[1] = (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
-          sigencode_enable_o = (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
-        end
-      end
-      ABR_CTRL_DONE: begin
-        ntt_active[1] = sec_instr.opcode.ntt_en;
-        if ((sec_instr.opcode.ntt_en & ~ntt_busy[1]) |
-            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SKDECODE) & skdecode_done_i) |
-            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_MAKEHINT) & makehint_done_i) |
-            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK) & normcheck_done_i) |
-            (sec_instr.opcode.aux_en & (sec_instr.opcode.mode.aux_mode == MLDSA_SIGENC) & sigencode_done_i) ) begin
-          sec_ctrl_fsm_ns = ABR_CTRL_IDLE;
-        end
-      end
-      default: begin
-      end
-    endcase
-end
-
-//State flop
-always_ff @(posedge clk or negedge rst_b) begin : secondary_ctrl_fsm_flops
-  if (!rst_b) begin
-      sec_ctrl_fsm_ps <= ABR_CTRL_IDLE;
-  end
-  else if (zeroize) begin
-      sec_ctrl_fsm_ps <= ABR_CTRL_IDLE;
-  end
-  else begin
-      sec_ctrl_fsm_ps <= sec_ctrl_fsm_ns;
-  end
-end  
-
-mldsa_seq_sec mldsa_seq_sec_inst
-(
-  .clk(clk),
-  
-  .en_i(sec_seq_en),
-  .addr_i(sec_prog_cntr_nxt),
-  .data_o(sec_instr_o)
-);
-
 //NTT gasket
 //If we have 2 NTT, connect to 0/1
 //If we have 1 NTT, connect both to 0
@@ -1844,7 +1589,7 @@ localparam SEC_SEQ_NTT = ABR_NUM_NTT-1;
 
 //Check if ntt is being enabled in this clock also
 always_comb ntt_busy[0] = prim_instr.opcode.ntt_en & (ntt_busy_i[PRIM_SEQ_NTT] | ntt_enable_o[PRIM_SEQ_NTT]);
-always_comb ntt_busy[1] = sec_instr.opcode.ntt_en & (ntt_busy_i[SEC_SEQ_NTT] | ntt_enable_o[SEC_SEQ_NTT]);
+always_comb ntt_busy[1] = 1'b0; //FIXME for mlkem sec_instr.opcode.ntt_en & (ntt_busy_i[SEC_SEQ_NTT] | ntt_enable_o[SEC_SEQ_NTT]);
 
 always_comb begin
   for (int ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
@@ -1871,6 +1616,7 @@ always_comb begin
                                           pw_base_addr_a:prim_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
                                           pw_base_addr_c:prim_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
   end
+/* FIXME for ML-KEM
   if (ntt_active[1]) begin
     ntt_enable_o[SEC_SEQ_NTT] = ntt_en[1]; //this comes from sec seq
     ntt_mode_o[SEC_SEQ_NTT] = sec_instr.opcode.mode.ntt_mode;
@@ -1888,11 +1634,11 @@ always_comb begin
                                          pw_base_addr_a:sec_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
                                          pw_base_addr_c:sec_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
   end
+*/  
 end
 
 //Zeroizer
 always_comb prim_instr = ((prim_prog_cntr == MLDSA_ZEROIZE) | (prim_prog_cntr == MLDSA_RESET))? '0 : prim_instr_o;
-always_comb sec_instr = ((sec_prog_cntr == MLDSA_ZEROIZE) | (sec_prog_cntr == MLDSA_RESET))? '0 : sec_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -2013,7 +1759,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
 `endif
 
   `ABR_ASSERT_KNOWN(ERR_PRIM_CTRL_FSM_X, {prim_ctrl_fsm_ps}, clk, !rst_b)
-  `ABR_ASSERT_KNOWN(ERR_SEC_CTRL_FSM_X, {sec_ctrl_fsm_ps}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
