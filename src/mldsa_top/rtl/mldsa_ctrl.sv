@@ -1445,7 +1445,9 @@ always_comb begin
     MLDSA_MSG_FLUSH: begin
       //Flush buffer
       stream_msg_buffer_flush = 1;
-      stream_msg_fsm_ns = MLDSA_MSG_DONE;
+      if (stream_msg_buffer_strobe == '0) begin
+        stream_msg_fsm_ns = MLDSA_MSG_DONE;
+      end
     end
     MLDSA_MSG_DONE: begin
       stream_msg_done = 1;
@@ -1487,7 +1489,7 @@ abr_msg_buffer #(
 );
 
 //send valid when full packet, or when flushing
-always_comb stream_msg_buffer_valid = (&stream_msg_buffer_strobe) | stream_msg_buffer_flush;
+always_comb stream_msg_buffer_valid = stream_msg_buffer_flush ? (|stream_msg_buffer_strobe) : (&stream_msg_buffer_strobe);
 
 //determine the number of bytes in the last message
 //operand 2 contains the length of the message being fed to sha3
@@ -2001,6 +2003,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {mldsa_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
   //Assumption that stream message is never fast enough to get stalled
-  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, (stream_msg_fsm_ps != MLDSA_MSG_IDLE) & msg_hold, clk, !rst_b)
+  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, !(stream_msg_fsm_ps inside {MLDSA_MSG_IDLE}) & msg_hold, clk, !rst_b)
 
 endmodule
