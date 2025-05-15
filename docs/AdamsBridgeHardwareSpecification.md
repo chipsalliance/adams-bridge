@@ -191,6 +191,8 @@ When streaming message mode is enabled, this field is ignored except for dword 0
 
 To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a certain segment of signature (segment c\~), and if they are equal the signature is valid.
 
+A verification result of all 0s indicates a failed verification attempt. Firmware should reject any signature with an all 0 value for it's c segment.
+
 ## msg strobe
 
 A 4-bit indication of enabled bytes in the next dword of the streamed message.
