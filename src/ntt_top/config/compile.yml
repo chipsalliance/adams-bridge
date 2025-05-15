@@ -7,7 +7,7 @@
 provides: [ntt_pkg]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - abr_libs
 targets:
   rtl:

@@ -1,5 +1,5 @@
 ---
-provides: [mldsa_defines]
+provides: [abr_defines]
 schema_version: 2.4.0
 targets:
   tb:
@@ -15,7 +15,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_params_pkg.sv
       - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
 ---
-provides: [mldsa_uvm_pkg]
+provides: [abr_uvm_pkg]
 schema_version: 2.4.0
 requires: []
 targets:
@@ -27,7 +27,7 @@ targets:
 provides: [abr_top]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - abr_sampler_top
   - ntt_top
@@ -67,7 +67,7 @@ provides: [abr_top_tb]
 schema_version: 2.4.0
 requires:
   - abr_top
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - abr_sampler_top
 targets:
@@ -84,7 +84,7 @@ global:
         - +define+ABR_ASSERT_ON
         - '-noinherit_timescale=1ns/1ps'
 ---
-provides: [mldsa_coverage]  
+provides: [abr_coverage]  
 schema_version: 2.4.0
 requires: 
   - abr_top

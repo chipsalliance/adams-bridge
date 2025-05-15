@@ -2,7 +2,7 @@
 provides: [abr_sampler_pkg]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
 targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
@@ -17,7 +17,7 @@ provides: [abr_sampler_top]
 schema_version: 2.4.0
 requires:
   - abr_sampler_pkg
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - rej_bounded
   - rej_sampler
