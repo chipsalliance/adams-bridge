@@ -65,11 +65,11 @@ package abr_reg_pkg;
 
     typedef struct packed{
         logic hwclr;
-    } abr_reg__MLDSA_ENTROPY__ENTROPY__in_t;
+    } abr_reg__ABR_ENTROPY__ENTROPY__in_t;
 
     typedef struct packed{
-        abr_reg__MLDSA_ENTROPY__ENTROPY__in_t ENTROPY;
-    } abr_reg__MLDSA_ENTROPY__in_t;
+        abr_reg__ABR_ENTROPY__ENTROPY__in_t ENTROPY;
+    } abr_reg__ABR_ENTROPY__in_t;
 
     typedef struct packed{
         logic [31:0] next;
@@ -198,6 +198,104 @@ package abr_reg_pkg;
     } kv_status_reg__in_t;
 
     typedef struct packed{
+        logic [31:0] next;
+    } abr_reg__MLKEM_NAME__NAME__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_NAME__NAME__in_t NAME;
+    } abr_reg__MLKEM_NAME__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+    } abr_reg__MLKEM_VERSION__VERSION__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_VERSION__VERSION__in_t VERSION;
+    } abr_reg__MLKEM_VERSION__in_t;
+
+    typedef struct packed{
+        logic hwclr;
+    } abr_reg__MLKEM_CTRL__CTRL__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_CTRL__CTRL__in_t CTRL;
+    } abr_reg__MLKEM_CTRL__in_t;
+
+    typedef struct packed{
+        logic next;
+    } abr_reg__MLKEM_STATUS__READY__in_t;
+
+    typedef struct packed{
+        logic next;
+    } abr_reg__MLKEM_STATUS__VALID__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_STATUS__READY__in_t READY;
+        abr_reg__MLKEM_STATUS__VALID__in_t VALID;
+    } abr_reg__MLKEM_STATUS__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic swwe;
+        logic hwclr;
+    } abr_reg__MLKEM_SEED_D__SEED__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SEED_D__SEED__in_t SEED;
+    } abr_reg__MLKEM_SEED_D__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic swwe;
+        logic hwclr;
+    } abr_reg__MLKEM_SEED_Z__SEED__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SEED_Z__SEED__in_t SEED;
+    } abr_reg__MLKEM_SEED_Z__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic swwe;
+        logic hwclr;
+    } abr_reg__MLKEM_MSG__MSG__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_MSG__MSG__in_t MSG;
+    } abr_reg__MLKEM_MSG__in_t;
+
+    typedef struct packed{
+        logic [31:0] next;
+        logic we;
+        logic hwclr;
+    } abr_reg__MLKEM_SHARED_KEY__KEY__in_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SHARED_KEY__KEY__in_t KEY;
+    } abr_reg__MLKEM_SHARED_KEY__in_t;
+
+    typedef struct packed{
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } abr_reg__MLKEM_DECAPS_KEY__external__in_t;
+
+    typedef struct packed{
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } abr_reg__MLKEM_ENCAPS_KEY__external__in_t;
+
+    typedef struct packed{
+        logic rd_ack;
+        logic [31:0] rd_data;
+        logic wr_ack;
+    } abr_reg__MLKEM_CIPHERTEXT__external__in_t;
+
+    typedef struct packed{
         logic hwset;
     } abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02__error_internal_sts_enable_d33001bb_next_52b75ffa_resetsignal_0d7eaa27__in_t;
 
@@ -221,12 +319,12 @@ package abr_reg_pkg;
     typedef struct packed{
         logic reset_b;
         logic hard_reset_b;
-        logic mldsa_ready;
+        logic abr_ready;
         abr_reg__MLDSA_NAME__in_t [2-1:0]MLDSA_NAME;
         abr_reg__MLDSA_VERSION__in_t [2-1:0]MLDSA_VERSION;
         abr_reg__MLDSA_CTRL__in_t MLDSA_CTRL;
         abr_reg__MLDSA_STATUS__in_t MLDSA_STATUS;
-        abr_reg__MLDSA_ENTROPY__in_t [16-1:0]MLDSA_ENTROPY;
+        abr_reg__ABR_ENTROPY__in_t [16-1:0]ABR_ENTROPY;
         abr_reg__MLDSA_SEED__in_t [8-1:0]MLDSA_SEED;
         abr_reg__MLDSA_SIGN_RND__in_t [8-1:0]MLDSA_SIGN_RND;
         abr_reg__MLDSA_MSG__in_t [16-1:0]MLDSA_MSG;
@@ -241,6 +339,17 @@ package abr_reg_pkg;
         abr_reg__MLDSA_PRIVKEY_IN__external__in_t MLDSA_PRIVKEY_IN;
         kv_read_ctrl_reg__in_t mldsa_kv_rd_seed_ctrl;
         kv_status_reg__in_t mldsa_kv_rd_seed_status;
+        abr_reg__MLKEM_NAME__in_t [2-1:0]MLKEM_NAME;
+        abr_reg__MLKEM_VERSION__in_t [2-1:0]MLKEM_VERSION;
+        abr_reg__MLKEM_CTRL__in_t MLKEM_CTRL;
+        abr_reg__MLKEM_STATUS__in_t MLKEM_STATUS;
+        abr_reg__MLKEM_SEED_D__in_t [8-1:0]MLKEM_SEED_D;
+        abr_reg__MLKEM_SEED_Z__in_t [8-1:0]MLKEM_SEED_Z;
+        abr_reg__MLKEM_MSG__in_t [8-1:0]MLKEM_MSG;
+        abr_reg__MLKEM_SHARED_KEY__in_t [8-1:0]MLKEM_SHARED_KEY;
+        abr_reg__MLKEM_DECAPS_KEY__external__in_t MLKEM_DECAPS_KEY;
+        abr_reg__MLKEM_ENCAPS_KEY__external__in_t MLKEM_ENCAPS_KEY;
+        abr_reg__MLKEM_CIPHERTEXT__external__in_t MLKEM_CIPHERTEXT;
         abr_reg__intr_block_t__in_t intr_block_rf;
     } abr_reg__in_t;
 
@@ -274,11 +383,11 @@ package abr_reg_pkg;
 
     typedef struct packed{
         logic [31:0] value;
-    } abr_reg__MLDSA_ENTROPY__ENTROPY__out_t;
+    } abr_reg__ABR_ENTROPY__ENTROPY__out_t;
 
     typedef struct packed{
-        abr_reg__MLDSA_ENTROPY__ENTROPY__out_t ENTROPY;
-    } abr_reg__MLDSA_ENTROPY__out_t;
+        abr_reg__ABR_ENTROPY__ENTROPY__out_t ENTROPY;
+    } abr_reg__ABR_ENTROPY__out_t;
 
     typedef struct packed{
         logic [31:0] value;
@@ -401,6 +510,76 @@ package abr_reg_pkg;
     } kv_read_ctrl_reg__out_t;
 
     typedef struct packed{
+        logic [2:0] value;
+    } abr_reg__MLKEM_CTRL__CTRL__out_t;
+
+    typedef struct packed{
+        logic value;
+    } abr_reg__MLKEM_CTRL__ZEROIZE__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_CTRL__CTRL__out_t CTRL;
+        abr_reg__MLKEM_CTRL__ZEROIZE__out_t ZEROIZE;
+    } abr_reg__MLKEM_CTRL__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } abr_reg__MLKEM_SEED_D__SEED__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SEED_D__SEED__out_t SEED;
+    } abr_reg__MLKEM_SEED_D__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } abr_reg__MLKEM_SEED_Z__SEED__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SEED_Z__SEED__out_t SEED;
+    } abr_reg__MLKEM_SEED_Z__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+        logic swmod;
+    } abr_reg__MLKEM_MSG__MSG__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_MSG__MSG__out_t MSG;
+    } abr_reg__MLKEM_MSG__out_t;
+
+    typedef struct packed{
+        logic [31:0] value;
+    } abr_reg__MLKEM_SHARED_KEY__KEY__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_SHARED_KEY__KEY__out_t KEY;
+    } abr_reg__MLKEM_SHARED_KEY__out_t;
+
+    typedef struct packed{
+        logic req;
+        logic [11:0] addr;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } abr_reg__MLKEM_DECAPS_KEY__external__out_t;
+
+    typedef struct packed{
+        logic req;
+        logic [10:0] addr;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } abr_reg__MLKEM_ENCAPS_KEY__external__out_t;
+
+    typedef struct packed{
+        logic req;
+        logic [10:0] addr;
+        logic req_is_wr;
+        logic [31:0] wr_data;
+        logic [31:0] wr_biten;
+    } abr_reg__MLKEM_CIPHERTEXT__external__out_t;
+
+    typedef struct packed{
         logic intr;
     } abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a__out_t;
 
@@ -425,7 +604,7 @@ package abr_reg_pkg;
 
     typedef struct packed{
         abr_reg__MLDSA_CTRL__out_t MLDSA_CTRL;
-        abr_reg__MLDSA_ENTROPY__out_t [16-1:0]MLDSA_ENTROPY;
+        abr_reg__ABR_ENTROPY__out_t [16-1:0]ABR_ENTROPY;
         abr_reg__MLDSA_SEED__out_t [8-1:0]MLDSA_SEED;
         abr_reg__MLDSA_SIGN_RND__out_t [8-1:0]MLDSA_SIGN_RND;
         abr_reg__MLDSA_MSG__out_t [16-1:0]MLDSA_MSG;
@@ -439,6 +618,14 @@ package abr_reg_pkg;
         abr_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
         abr_reg__MLDSA_PRIVKEY_IN__external__out_t MLDSA_PRIVKEY_IN;
         kv_read_ctrl_reg__out_t mldsa_kv_rd_seed_ctrl;
+        abr_reg__MLKEM_CTRL__out_t MLKEM_CTRL;
+        abr_reg__MLKEM_SEED_D__out_t [8-1:0]MLKEM_SEED_D;
+        abr_reg__MLKEM_SEED_Z__out_t [8-1:0]MLKEM_SEED_Z;
+        abr_reg__MLKEM_MSG__out_t [8-1:0]MLKEM_MSG;
+        abr_reg__MLKEM_SHARED_KEY__out_t [8-1:0]MLKEM_SHARED_KEY;
+        abr_reg__MLKEM_DECAPS_KEY__external__out_t MLKEM_DECAPS_KEY;
+        abr_reg__MLKEM_ENCAPS_KEY__external__out_t MLKEM_ENCAPS_KEY;
+        abr_reg__MLKEM_CIPHERTEXT__external__out_t MLKEM_CIPHERTEXT;
         abr_reg__intr_block_t__out_t intr_block_rf;
     } abr_reg__out_t;
 

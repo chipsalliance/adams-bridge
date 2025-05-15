@@ -409,7 +409,7 @@ end
     .rst_b(rst_b),
     .zeroize(zeroize_piso),
     .mode(piso_mode),
-    .valid_i(sha3_state_dv & sampler_mode_i inside {ABR_REJ_SAMPLER,ABR_REJ_BOUNDED,ABR_EXP_MASK,ABR_SAMPLE_IN_BALL}),
+    .valid_i(sha3_state_dv & sampler_mode_i inside {MLKEM_REJ_SAMPLER,MLDSA_REJ_SAMPLER,ABR_REJ_BOUNDED,ABR_EXP_MASK,ABR_SAMPLE_IN_BALL}),
     .hold_o(sha3_state_hold),
     .data_i(sha3_state[0][REJS_PISO_INPUT_RATE-1:0]),
     .valid_o(piso_dv),
@@ -480,7 +480,7 @@ always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
     sampler_ntt_data_o <= 0;
   end
   else if (zeroize) begin
-    rejs_data <= 0;
+    sampler_ntt_data_o <= 0;
   end
   else begin
     for (int i = 0; i < COEFF_PER_CLK; i++) begin

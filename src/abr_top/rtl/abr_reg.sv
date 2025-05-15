@@ -87,7 +87,7 @@ module abr_reg (
         logic [2-1:0]MLDSA_VERSION;
         logic MLDSA_CTRL;
         logic MLDSA_STATUS;
-        logic [16-1:0]MLDSA_ENTROPY;
+        logic [16-1:0]ABR_ENTROPY;
         logic [8-1:0]MLDSA_SEED;
         logic [8-1:0]MLDSA_SIGN_RND;
         logic [16-1:0]MLDSA_MSG;
@@ -102,6 +102,17 @@ module abr_reg (
         logic MLDSA_PRIVKEY_IN;
         logic mldsa_kv_rd_seed_ctrl;
         logic mldsa_kv_rd_seed_status;
+        logic [2-1:0]MLKEM_NAME;
+        logic [2-1:0]MLKEM_VERSION;
+        logic MLKEM_CTRL;
+        logic MLKEM_STATUS;
+        logic [8-1:0]MLKEM_SEED_D;
+        logic [8-1:0]MLKEM_SEED_Z;
+        logic [8-1:0]MLKEM_MSG;
+        logic [8-1:0]MLKEM_SHARED_KEY;
+        logic MLKEM_DECAPS_KEY;
+        logic MLKEM_ENCAPS_KEY;
+        logic MLKEM_CIPHERTEXT;
         struct packed{
             logic global_intr_en_r;
             logic error_intr_en_r;
@@ -140,7 +151,7 @@ module abr_reg (
         decoded_reg_strb.MLDSA_CTRL = cpuif_req_masked & (cpuif_addr == 16'h10);
         decoded_reg_strb.MLDSA_STATUS = cpuif_req_masked & (cpuif_addr == 16'h14);
         for(int i0=0; i0<16; i0++) begin
-            decoded_reg_strb.MLDSA_ENTROPY[i0] = cpuif_req_masked & (cpuif_addr == 16'h18 + i0*16'h4);
+            decoded_reg_strb.ABR_ENTROPY[i0] = cpuif_req_masked & (cpuif_addr == 16'h18 + i0*16'h4);
         end
         for(int i0=0; i0<8; i0++) begin
             decoded_reg_strb.MLDSA_SEED[i0] = cpuif_req_masked & (cpuif_addr == 16'h58 + i0*16'h4);
@@ -170,21 +181,47 @@ module abr_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
         decoded_reg_strb.MLDSA_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
-        decoded_reg_strb.mldsa_kv_rd_seed_ctrl = cpuif_req_masked & (cpuif_addr == 16'h8000);
-        decoded_reg_strb.mldsa_kv_rd_seed_status = cpuif_req_masked & (cpuif_addr == 16'h8004);
-        decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'h8100);
-        decoded_reg_strb.intr_block_rf.error_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'h8104);
-        decoded_reg_strb.intr_block_rf.notif_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'h8108);
-        decoded_reg_strb.intr_block_rf.error_global_intr_r = cpuif_req_masked & (cpuif_addr == 16'h810c);
-        decoded_reg_strb.intr_block_rf.notif_global_intr_r = cpuif_req_masked & (cpuif_addr == 16'h8110);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_r = cpuif_req_masked & (cpuif_addr == 16'h8114);
-        decoded_reg_strb.intr_block_rf.notif_internal_intr_r = cpuif_req_masked & (cpuif_addr == 16'h8118);
-        decoded_reg_strb.intr_block_rf.error_intr_trig_r = cpuif_req_masked & (cpuif_addr == 16'h811c);
-        decoded_reg_strb.intr_block_rf.notif_intr_trig_r = cpuif_req_masked & (cpuif_addr == 16'h8120);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_count_r = cpuif_req_masked & (cpuif_addr == 16'h8200);
-        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r = cpuif_req_masked & (cpuif_addr == 16'h8280);
-        decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 16'h8300);
-        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 16'h8304);
+        decoded_reg_strb.mldsa_kv_rd_seed_ctrl = cpuif_req_masked & (cpuif_addr == 16'h7320);
+        decoded_reg_strb.mldsa_kv_rd_seed_status = cpuif_req_masked & (cpuif_addr == 16'h7324);
+        for(int i0=0; i0<2; i0++) begin
+            decoded_reg_strb.MLKEM_NAME[i0] = cpuif_req_masked & (cpuif_addr == 16'h8000 + i0*16'h4);
+        end
+        for(int i0=0; i0<2; i0++) begin
+            decoded_reg_strb.MLKEM_VERSION[i0] = cpuif_req_masked & (cpuif_addr == 16'h8008 + i0*16'h4);
+        end
+        decoded_reg_strb.MLKEM_CTRL = cpuif_req_masked & (cpuif_addr == 16'h8010);
+        decoded_reg_strb.MLKEM_STATUS = cpuif_req_masked & (cpuif_addr == 16'h8014);
+        for(int i0=0; i0<8; i0++) begin
+            decoded_reg_strb.MLKEM_SEED_D[i0] = cpuif_req_masked & (cpuif_addr == 16'h8018 + i0*16'h4);
+        end
+        for(int i0=0; i0<8; i0++) begin
+            decoded_reg_strb.MLKEM_SEED_Z[i0] = cpuif_req_masked & (cpuif_addr == 16'h8038 + i0*16'h4);
+        end
+        for(int i0=0; i0<8; i0++) begin
+            decoded_reg_strb.MLKEM_MSG[i0] = cpuif_req_masked & (cpuif_addr == 16'h8058 + i0*16'h4);
+        end
+        for(int i0=0; i0<8; i0++) begin
+            decoded_reg_strb.MLKEM_SHARED_KEY[i0] = cpuif_req_masked & (cpuif_addr == 16'h8078 + i0*16'h4);
+        end
+        decoded_reg_strb.MLKEM_DECAPS_KEY = cpuif_req_masked & (cpuif_addr >= 16'h9000) & (cpuif_addr <= 16'h9000 + 16'hc5f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 16'h9000) & (cpuif_addr <= 16'h9000 + 16'hc5f);
+        decoded_reg_strb.MLKEM_ENCAPS_KEY = cpuif_req_masked & (cpuif_addr >= 16'ha000) & (cpuif_addr <= 16'ha000 + 16'h61f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 16'ha000) & (cpuif_addr <= 16'ha000 + 16'h61f);
+        decoded_reg_strb.MLKEM_CIPHERTEXT = cpuif_req_masked & (cpuif_addr >= 16'ha800) & (cpuif_addr <= 16'ha800 + 16'h61f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 16'ha800) & (cpuif_addr <= 16'ha800 + 16'h61f);
+        decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb000);
+        decoded_reg_strb.intr_block_rf.error_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb004);
+        decoded_reg_strb.intr_block_rf.notif_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb008);
+        decoded_reg_strb.intr_block_rf.error_global_intr_r = cpuif_req_masked & (cpuif_addr == 16'hb00c);
+        decoded_reg_strb.intr_block_rf.notif_global_intr_r = cpuif_req_masked & (cpuif_addr == 16'hb010);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_r = cpuif_req_masked & (cpuif_addr == 16'hb014);
+        decoded_reg_strb.intr_block_rf.notif_internal_intr_r = cpuif_req_masked & (cpuif_addr == 16'hb018);
+        decoded_reg_strb.intr_block_rf.error_intr_trig_r = cpuif_req_masked & (cpuif_addr == 16'hb01c);
+        decoded_reg_strb.intr_block_rf.notif_intr_trig_r = cpuif_req_masked & (cpuif_addr == 16'hb020);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_count_r = cpuif_req_masked & (cpuif_addr == 16'hb100);
+        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r = cpuif_req_masked & (cpuif_addr == 16'hb180);
+        decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 16'hb200);
+        decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r = cpuif_req_masked & (cpuif_addr == 16'hb204);
         decoded_strb_is_external = is_external;
         external_req = is_external;
     end
@@ -228,7 +265,7 @@ module abr_reg (
                 logic [31:0] next;
                 logic load_next;
             } ENTROPY;
-        } [16-1:0]MLDSA_ENTROPY;
+        } [16-1:0]ABR_ENTROPY;
         struct packed{
             struct packed{
                 logic [31:0] next;
@@ -301,6 +338,40 @@ module abr_reg (
                 logic load_next;
             } VALID;
         } mldsa_kv_rd_seed_status;
+        struct packed{
+            struct packed{
+                logic [2:0] next;
+                logic load_next;
+            } CTRL;
+            struct packed{
+                logic next;
+                logic load_next;
+            } ZEROIZE;
+        } MLKEM_CTRL;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } SEED;
+        } [8-1:0]MLKEM_SEED_D;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } SEED;
+        } [8-1:0]MLKEM_SEED_Z;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } MSG;
+        } [8-1:0]MLKEM_MSG;
+        struct packed{
+            struct packed{
+                logic [31:0] next;
+                logic load_next;
+            } KEY;
+        } [8-1:0]MLKEM_SHARED_KEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -418,7 +489,7 @@ module abr_reg (
             struct packed{
                 logic [31:0] value;
             } ENTROPY;
-        } [16-1:0]MLDSA_ENTROPY;
+        } [16-1:0]ABR_ENTROPY;
         struct packed{
             struct packed{
                 logic [31:0] value;
@@ -478,6 +549,34 @@ module abr_reg (
                 logic value;
             } VALID;
         } mldsa_kv_rd_seed_status;
+        struct packed{
+            struct packed{
+                logic [2:0] value;
+            } CTRL;
+            struct packed{
+                logic value;
+            } ZEROIZE;
+        } MLKEM_CTRL;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } SEED;
+        } [8-1:0]MLKEM_SEED_D;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } SEED;
+        } [8-1:0]MLKEM_SEED_Z;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } MSG;
+        } [8-1:0]MLKEM_MSG;
+        struct packed{
+            struct packed{
+                logic [31:0] value;
+            } KEY;
+        } [8-1:0]MLKEM_SHARED_KEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -557,7 +656,7 @@ module abr_reg (
         automatic logic load_next_c;
         next_c = field_storage.MLDSA_CTRL.CTRL.value;
         load_next_c = '0;
-        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
             next_c = (field_storage.MLDSA_CTRL.CTRL.value & ~decoded_wr_biten[2:0]) | (decoded_wr_data[2:0] & decoded_wr_biten[2:0]);
             load_next_c = '1;
         end else if(hwif_in.MLDSA_CTRL.CTRL.hwclr) begin // HW Clear
@@ -605,7 +704,7 @@ module abr_reg (
         automatic logic load_next_c;
         next_c = field_storage.MLDSA_CTRL.PCR_SIGN.value;
         load_next_c = '0;
-        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
             next_c = (field_storage.MLDSA_CTRL.PCR_SIGN.value & ~decoded_wr_biten[4:4]) | (decoded_wr_data[4:4] & decoded_wr_biten[4:4]);
             load_next_c = '1;
         end else if(hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr) begin // HW Clear
@@ -629,7 +728,7 @@ module abr_reg (
         automatic logic load_next_c;
         next_c = field_storage.MLDSA_CTRL.EXTERNAL_MU.value;
         load_next_c = '0;
-        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
             next_c = (field_storage.MLDSA_CTRL.EXTERNAL_MU.value & ~decoded_wr_biten[5:5]) | (decoded_wr_data[5:5] & decoded_wr_biten[5:5]);
             load_next_c = '1;
         end else if(hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr) begin // HW Clear
@@ -653,7 +752,7 @@ module abr_reg (
         automatic logic load_next_c;
         next_c = field_storage.MLDSA_CTRL.STREAM_MSG.value;
         load_next_c = '0;
-        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
             next_c = (field_storage.MLDSA_CTRL.STREAM_MSG.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
             load_next_c = '1;
         end else if(hwif_in.MLDSA_CTRL.STREAM_MSG.hwclr) begin // HW Clear
@@ -672,30 +771,30 @@ module abr_reg (
     end
     assign hwif_out.MLDSA_CTRL.STREAM_MSG.value = field_storage.MLDSA_CTRL.STREAM_MSG.value;
     for(genvar i0=0; i0<16; i0++) begin
-        // Field: abr_reg.MLDSA_ENTROPY[].ENTROPY
+        // Field: abr_reg.ABR_ENTROPY[].ENTROPY
         always_comb begin
             automatic logic [31:0] next_c;
             automatic logic load_next_c;
-            next_c = field_storage.MLDSA_ENTROPY[i0].ENTROPY.value;
+            next_c = field_storage.ABR_ENTROPY[i0].ENTROPY.value;
             load_next_c = '0;
-            if(decoded_reg_strb.MLDSA_ENTROPY[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
-                next_c = (field_storage.MLDSA_ENTROPY[i0].ENTROPY.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            if(decoded_reg_strb.ABR_ENTROPY[i0] && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
+                next_c = (field_storage.ABR_ENTROPY[i0].ENTROPY.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
-            end else if(hwif_in.MLDSA_ENTROPY[i0].ENTROPY.hwclr) begin // HW Clear
+            end else if(hwif_in.ABR_ENTROPY[i0].ENTROPY.hwclr) begin // HW Clear
                 next_c = '0;
                 load_next_c = '1;
             end
-            field_combo.MLDSA_ENTROPY[i0].ENTROPY.next = next_c;
-            field_combo.MLDSA_ENTROPY[i0].ENTROPY.load_next = load_next_c;
+            field_combo.ABR_ENTROPY[i0].ENTROPY.next = next_c;
+            field_combo.ABR_ENTROPY[i0].ENTROPY.load_next = load_next_c;
         end
         always_ff @(posedge clk or negedge hwif_in.reset_b) begin
             if(~hwif_in.reset_b) begin
-                field_storage.MLDSA_ENTROPY[i0].ENTROPY.value <= 32'h0;
-            end else if(field_combo.MLDSA_ENTROPY[i0].ENTROPY.load_next) begin
-                field_storage.MLDSA_ENTROPY[i0].ENTROPY.value <= field_combo.MLDSA_ENTROPY[i0].ENTROPY.next;
+                field_storage.ABR_ENTROPY[i0].ENTROPY.value <= 32'h0;
+            end else if(field_combo.ABR_ENTROPY[i0].ENTROPY.load_next) begin
+                field_storage.ABR_ENTROPY[i0].ENTROPY.value <= field_combo.ABR_ENTROPY[i0].ENTROPY.next;
             end
         end
-        assign hwif_out.MLDSA_ENTROPY[i0].ENTROPY.value = field_storage.MLDSA_ENTROPY[i0].ENTROPY.value;
+        assign hwif_out.ABR_ENTROPY[i0].ENTROPY.value = field_storage.ABR_ENTROPY[i0].ENTROPY.value;
     end
     for(genvar i0=0; i0<8; i0++) begin
         // Field: abr_reg.MLDSA_SEED[].SEED
@@ -733,7 +832,7 @@ module abr_reg (
             automatic logic load_next_c;
             next_c = field_storage.MLDSA_SIGN_RND[i0].SIGN_RND.value;
             load_next_c = '0;
-            if(decoded_reg_strb.MLDSA_SIGN_RND[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            if(decoded_reg_strb.MLDSA_SIGN_RND[i0] && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
                 next_c = (field_storage.MLDSA_SIGN_RND[i0].SIGN_RND.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
             end else if(hwif_in.MLDSA_SIGN_RND[i0].SIGN_RND.hwclr) begin // HW Clear
@@ -815,7 +914,7 @@ module abr_reg (
             automatic logic load_next_c;
             next_c = field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value;
             load_next_c = '0;
-            if(decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            if(decoded_reg_strb.MLDSA_EXTERNAL_MU[i0] && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
                 next_c = (field_storage.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
             end else if(hwif_in.MLDSA_EXTERNAL_MU[i0].EXTERNAL_MU.we) begin // HW Write - we
@@ -867,7 +966,7 @@ module abr_reg (
         automatic logic load_next_c;
         next_c = field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value;
         load_next_c = '0;
-        if(decoded_reg_strb.MLDSA_CTX_CONFIG && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+        if(decoded_reg_strb.MLDSA_CTX_CONFIG && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
             next_c = (field_storage.MLDSA_CTX_CONFIG.CTX_SIZE.value & ~decoded_wr_biten[7:0]) | (decoded_wr_data[7:0] & decoded_wr_biten[7:0]);
             load_next_c = '1;
         end else if(hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr) begin // HW Clear
@@ -892,7 +991,7 @@ module abr_reg (
             automatic logic load_next_c;
             next_c = field_storage.MLDSA_CTX[i0].CTX.value;
             load_next_c = '0;
-            if(decoded_reg_strb.MLDSA_CTX[i0] && decoded_req_is_wr && hwif_in.mldsa_ready) begin // SW write
+            if(decoded_reg_strb.MLDSA_CTX[i0] && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
                 next_c = (field_storage.MLDSA_CTX[i0].CTX.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
             end else if(hwif_in.MLDSA_CTX[i0].CTX.hwclr) begin // HW Clear
@@ -1041,6 +1140,183 @@ module abr_reg (
             field_storage.mldsa_kv_rd_seed_status.VALID.value <= field_combo.mldsa_kv_rd_seed_status.VALID.next;
         end
     end
+    // Field: abr_reg.MLKEM_CTRL.CTRL
+    always_comb begin
+        automatic logic [2:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLKEM_CTRL.CTRL.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLKEM_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
+            next_c = (field_storage.MLKEM_CTRL.CTRL.value & ~decoded_wr_biten[2:0]) | (decoded_wr_data[2:0] & decoded_wr_biten[2:0]);
+            load_next_c = '1;
+        end else if(hwif_in.MLKEM_CTRL.CTRL.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLKEM_CTRL.CTRL.next = next_c;
+        field_combo.MLKEM_CTRL.CTRL.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLKEM_CTRL.CTRL.value <= 3'h0;
+        end else if(field_combo.MLKEM_CTRL.CTRL.load_next) begin
+            field_storage.MLKEM_CTRL.CTRL.value <= field_combo.MLKEM_CTRL.CTRL.next;
+        end
+    end
+    assign hwif_out.MLKEM_CTRL.CTRL.value = field_storage.MLKEM_CTRL.CTRL.value;
+    // Field: abr_reg.MLKEM_CTRL.ZEROIZE
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLKEM_CTRL.ZEROIZE.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLKEM_CTRL && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.MLKEM_CTRL.ZEROIZE.value & ~decoded_wr_biten[3:3]) | (decoded_wr_data[3:3] & decoded_wr_biten[3:3]);
+            load_next_c = '1;
+        end else begin // singlepulse clears back to 0
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLKEM_CTRL.ZEROIZE.next = next_c;
+        field_combo.MLKEM_CTRL.ZEROIZE.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLKEM_CTRL.ZEROIZE.value <= 1'h0;
+        end else if(field_combo.MLKEM_CTRL.ZEROIZE.load_next) begin
+            field_storage.MLKEM_CTRL.ZEROIZE.value <= field_combo.MLKEM_CTRL.ZEROIZE.next;
+        end
+    end
+    assign hwif_out.MLKEM_CTRL.ZEROIZE.value = field_storage.MLKEM_CTRL.ZEROIZE.value;
+    for(genvar i0=0; i0<8; i0++) begin
+        // Field: abr_reg.MLKEM_SEED_D[].SEED
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLKEM_SEED_D[i0].SEED.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLKEM_SEED_D[i0] && decoded_req_is_wr && hwif_in.MLKEM_SEED_D[i0].SEED.swwe) begin // SW write
+                next_c = (field_storage.MLKEM_SEED_D[i0].SEED.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_SEED_D[i0].SEED.we) begin // HW Write - we
+                next_c = hwif_in.MLKEM_SEED_D[i0].SEED.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_SEED_D[i0].SEED.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLKEM_SEED_D[i0].SEED.next = next_c;
+            field_combo.MLKEM_SEED_D[i0].SEED.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLKEM_SEED_D[i0].SEED.value <= 32'h0;
+            end else if(field_combo.MLKEM_SEED_D[i0].SEED.load_next) begin
+                field_storage.MLKEM_SEED_D[i0].SEED.value <= field_combo.MLKEM_SEED_D[i0].SEED.next;
+            end
+        end
+        assign hwif_out.MLKEM_SEED_D[i0].SEED.value = field_storage.MLKEM_SEED_D[i0].SEED.value;
+    end
+    for(genvar i0=0; i0<8; i0++) begin
+        // Field: abr_reg.MLKEM_SEED_Z[].SEED
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLKEM_SEED_Z[i0].SEED.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLKEM_SEED_Z[i0] && decoded_req_is_wr && hwif_in.MLKEM_SEED_Z[i0].SEED.swwe) begin // SW write
+                next_c = (field_storage.MLKEM_SEED_Z[i0].SEED.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_SEED_Z[i0].SEED.we) begin // HW Write - we
+                next_c = hwif_in.MLKEM_SEED_Z[i0].SEED.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_SEED_Z[i0].SEED.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLKEM_SEED_Z[i0].SEED.next = next_c;
+            field_combo.MLKEM_SEED_Z[i0].SEED.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLKEM_SEED_Z[i0].SEED.value <= 32'h0;
+            end else if(field_combo.MLKEM_SEED_Z[i0].SEED.load_next) begin
+                field_storage.MLKEM_SEED_Z[i0].SEED.value <= field_combo.MLKEM_SEED_Z[i0].SEED.next;
+            end
+        end
+        assign hwif_out.MLKEM_SEED_Z[i0].SEED.value = field_storage.MLKEM_SEED_Z[i0].SEED.value;
+    end
+    for(genvar i0=0; i0<8; i0++) begin
+        // Field: abr_reg.MLKEM_MSG[].MSG
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLKEM_MSG[i0].MSG.value;
+            load_next_c = '0;
+            if(decoded_reg_strb.MLKEM_MSG[i0] && decoded_req_is_wr && hwif_in.MLKEM_MSG[i0].MSG.swwe) begin // SW write
+                next_c = (field_storage.MLKEM_MSG[i0].MSG.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_MSG[i0].MSG.we) begin // HW Write - we
+                next_c = hwif_in.MLKEM_MSG[i0].MSG.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_MSG[i0].MSG.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLKEM_MSG[i0].MSG.next = next_c;
+            field_combo.MLKEM_MSG[i0].MSG.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLKEM_MSG[i0].MSG.value <= 32'h0;
+            end else if(field_combo.MLKEM_MSG[i0].MSG.load_next) begin
+                field_storage.MLKEM_MSG[i0].MSG.value <= field_combo.MLKEM_MSG[i0].MSG.next;
+            end
+        end
+        assign hwif_out.MLKEM_MSG[i0].MSG.value = field_storage.MLKEM_MSG[i0].MSG.value;
+        assign hwif_out.MLKEM_MSG[i0].MSG.swmod = decoded_reg_strb.MLKEM_MSG[i0] && decoded_req_is_wr;
+    end
+    for(genvar i0=0; i0<8; i0++) begin
+        // Field: abr_reg.MLKEM_SHARED_KEY[].KEY
+        always_comb begin
+            automatic logic [31:0] next_c;
+            automatic logic load_next_c;
+            next_c = field_storage.MLKEM_SHARED_KEY[i0].KEY.value;
+            load_next_c = '0;
+            if(hwif_in.MLKEM_SHARED_KEY[i0].KEY.we) begin // HW Write - we
+                next_c = hwif_in.MLKEM_SHARED_KEY[i0].KEY.next;
+                load_next_c = '1;
+            end else if(hwif_in.MLKEM_SHARED_KEY[i0].KEY.hwclr) begin // HW Clear
+                next_c = '0;
+                load_next_c = '1;
+            end
+            field_combo.MLKEM_SHARED_KEY[i0].KEY.next = next_c;
+            field_combo.MLKEM_SHARED_KEY[i0].KEY.load_next = load_next_c;
+        end
+        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+            if(~hwif_in.reset_b) begin
+                field_storage.MLKEM_SHARED_KEY[i0].KEY.value <= 32'h0;
+            end else if(field_combo.MLKEM_SHARED_KEY[i0].KEY.load_next) begin
+                field_storage.MLKEM_SHARED_KEY[i0].KEY.value <= field_combo.MLKEM_SHARED_KEY[i0].KEY.next;
+            end
+        end
+        assign hwif_out.MLKEM_SHARED_KEY[i0].KEY.value = field_storage.MLKEM_SHARED_KEY[i0].KEY.value;
+    end
+    assign hwif_out.MLKEM_DECAPS_KEY.req = decoded_reg_strb.MLKEM_DECAPS_KEY;
+    assign hwif_out.MLKEM_DECAPS_KEY.addr = decoded_addr[11:0];
+    assign hwif_out.MLKEM_DECAPS_KEY.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLKEM_DECAPS_KEY.wr_data = decoded_wr_data;
+    assign hwif_out.MLKEM_DECAPS_KEY.wr_biten = decoded_wr_biten;
+    assign hwif_out.MLKEM_ENCAPS_KEY.req = decoded_reg_strb.MLKEM_ENCAPS_KEY;
+    assign hwif_out.MLKEM_ENCAPS_KEY.addr = decoded_addr[10:0];
+    assign hwif_out.MLKEM_ENCAPS_KEY.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLKEM_ENCAPS_KEY.wr_data = decoded_wr_data;
+    assign hwif_out.MLKEM_ENCAPS_KEY.wr_biten = decoded_wr_biten;
+    assign hwif_out.MLKEM_CIPHERTEXT.req = decoded_reg_strb.MLKEM_CIPHERTEXT;
+    assign hwif_out.MLKEM_CIPHERTEXT.addr = decoded_addr[10:0];
+    assign hwif_out.MLKEM_CIPHERTEXT.req_is_wr = decoded_req_is_wr;
+    assign hwif_out.MLKEM_CIPHERTEXT.wr_data = decoded_wr_data;
+    assign hwif_out.MLKEM_CIPHERTEXT.wr_biten = decoded_wr_biten;
     // Field: abr_reg.intr_block_rf.global_intr_en_r.error_en
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1408,6 +1684,9 @@ module abr_reg (
         wr_ack |= hwif_in.MLDSA_SIGNATURE.wr_ack;
         wr_ack |= hwif_in.MLDSA_PRIVKEY_OUT.wr_ack;
         wr_ack |= hwif_in.MLDSA_PRIVKEY_IN.wr_ack;
+        wr_ack |= hwif_in.MLKEM_DECAPS_KEY.wr_ack;
+        wr_ack |= hwif_in.MLKEM_ENCAPS_KEY.wr_ack;
+        wr_ack |= hwif_in.MLKEM_CIPHERTEXT.wr_ack;
         external_wr_ack = wr_ack;
     end
     assign cpuif_wr_ack = external_wr_ack | (decoded_req & decoded_req_is_wr & ~decoded_strb_is_external);
@@ -1425,6 +1704,9 @@ module abr_reg (
         rd_ack |= hwif_in.MLDSA_SIGNATURE.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_OUT.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_IN.rd_ack;
+        rd_ack |= hwif_in.MLKEM_DECAPS_KEY.rd_ack;
+        rd_ack |= hwif_in.MLKEM_ENCAPS_KEY.rd_ack;
+        rd_ack |= hwif_in.MLKEM_CIPHERTEXT.rd_ack;
         readback_external_rd_ack_c = rd_ack;
     end
 
@@ -1437,7 +1719,7 @@ module abr_reg (
     logic [31:0] readback_data;
 
     // Assign readback values to a flattened array
-    logic [40-1:0][31:0] readback_array;
+    logic [56-1:0][31:0] readback_array;
     for(genvar i0=0; i0<2; i0++) begin
         assign readback_array[i0*1 + 0][31:0] = (decoded_reg_strb.MLDSA_NAME[i0] && !decoded_req_is_wr) ? hwif_in.MLDSA_NAME[i0].NAME.next : '0;
     end
@@ -1463,31 +1745,46 @@ module abr_reg (
     assign readback_array[26][1:1] = (decoded_reg_strb.mldsa_kv_rd_seed_status && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_status.VALID.value : '0;
     assign readback_array[26][9:2] = (decoded_reg_strb.mldsa_kv_rd_seed_status && !decoded_req_is_wr) ? hwif_in.mldsa_kv_rd_seed_status.ERROR.next : '0;
     assign readback_array[26][31:10] = '0;
-    assign readback_array[27][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
-    assign readback_array[27][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
-    assign readback_array[27][31:2] = '0;
-    assign readback_array[28][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
-    assign readback_array[28][31:1] = '0;
-    assign readback_array[29][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
-    assign readback_array[29][31:1] = '0;
-    assign readback_array[30][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
-    assign readback_array[30][31:1] = '0;
-    assign readback_array[31][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
-    assign readback_array[31][31:1] = '0;
-    assign readback_array[32][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
-    assign readback_array[32][31:1] = '0;
-    assign readback_array[33][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
-    assign readback_array[33][31:1] = '0;
-    assign readback_array[34][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
-    assign readback_array[34][31:1] = '0;
-    assign readback_array[35][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
-    assign readback_array[35][31:1] = '0;
-    assign readback_array[36][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
-    assign readback_array[37][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
-    assign readback_array[38][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[38][31:1] = '0;
-    assign readback_array[39][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
-    assign readback_array[39][31:1] = '0;
+    for(genvar i0=0; i0<2; i0++) begin
+        assign readback_array[i0*1 + 27][31:0] = (decoded_reg_strb.MLKEM_NAME[i0] && !decoded_req_is_wr) ? hwif_in.MLKEM_NAME[i0].NAME.next : '0;
+    end
+    for(genvar i0=0; i0<2; i0++) begin
+        assign readback_array[i0*1 + 29][31:0] = (decoded_reg_strb.MLKEM_VERSION[i0] && !decoded_req_is_wr) ? hwif_in.MLKEM_VERSION[i0].VERSION.next : '0;
+    end
+    assign readback_array[31][0:0] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.READY.next : '0;
+    assign readback_array[31][1:1] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.VALID.next : '0;
+    assign readback_array[31][31:2] = '0;
+    for(genvar i0=0; i0<8; i0++) begin
+        assign readback_array[i0*1 + 32][31:0] = (decoded_reg_strb.MLKEM_SHARED_KEY[i0] && !decoded_req_is_wr) ? field_storage.MLKEM_SHARED_KEY[i0].KEY.value : '0;
+    end
+    assign readback_array[40] = hwif_in.MLKEM_DECAPS_KEY.rd_ack ? hwif_in.MLKEM_DECAPS_KEY.rd_data : '0;
+    assign readback_array[41] = hwif_in.MLKEM_ENCAPS_KEY.rd_ack ? hwif_in.MLKEM_ENCAPS_KEY.rd_data : '0;
+    assign readback_array[42] = hwif_in.MLKEM_CIPHERTEXT.rd_ack ? hwif_in.MLKEM_CIPHERTEXT.rd_data : '0;
+    assign readback_array[43][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
+    assign readback_array[43][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
+    assign readback_array[43][31:2] = '0;
+    assign readback_array[44][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
+    assign readback_array[44][31:1] = '0;
+    assign readback_array[45][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
+    assign readback_array[45][31:1] = '0;
+    assign readback_array[46][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
+    assign readback_array[46][31:1] = '0;
+    assign readback_array[47][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
+    assign readback_array[47][31:1] = '0;
+    assign readback_array[48][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
+    assign readback_array[48][31:1] = '0;
+    assign readback_array[49][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
+    assign readback_array[49][31:1] = '0;
+    assign readback_array[50][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
+    assign readback_array[50][31:1] = '0;
+    assign readback_array[51][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
+    assign readback_array[51][31:1] = '0;
+    assign readback_array[52][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
+    assign readback_array[53][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
+    assign readback_array[54][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[54][31:1] = '0;
+    assign readback_array[55][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[55][31:1] = '0;
 
     // Reduce the array
     always_comb begin
@@ -1495,7 +1792,7 @@ module abr_reg (
         readback_done = decoded_req & ~decoded_req_is_wr & ~decoded_strb_is_external;
         readback_err = '0;
         readback_data_var = '0;
-        for(int i=0; i<40; i++) readback_data_var |= readback_array[i];
+        for(int i=0; i<56; i++) readback_data_var |= readback_array[i];
         readback_data = readback_data_var;
     end
 

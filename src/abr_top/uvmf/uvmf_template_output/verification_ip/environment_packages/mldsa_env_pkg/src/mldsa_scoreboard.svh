@@ -158,8 +158,8 @@ class mldsa_scoreboard #(
           t.address <= scbr_mldsa_rm.MLDSA_VERSION[$size(scbr_mldsa_rm.MLDSA_VERSION)-1].get_address(scbr_mldsa_map)) ||
         (t.address == scbr_mldsa_rm.MLDSA_CTRL.get_address(scbr_mldsa_map)) ||
         (t.address == scbr_mldsa_rm.MLDSA_STATUS.get_address(scbr_mldsa_map)) ||
-        (t.address >= scbr_mldsa_rm.MLDSA_ENTROPY[0].get_address(scbr_mldsa_map) &&
-          t.address <= scbr_mldsa_rm.MLDSA_ENTROPY[$size(scbr_mldsa_rm.MLDSA_ENTROPY)-1].get_address(scbr_mldsa_map)) ||
+        (t.address >= scbr_mldsa_rm.ABR_ENTROPY[0].get_address(scbr_mldsa_map) &&
+          t.address <= scbr_mldsa_rm.ABR_ENTROPY[$size(scbr_mldsa_rm.ABR_ENTROPY)-1].get_address(scbr_mldsa_map)) ||
         (t.address >= scbr_mldsa_rm.MLDSA_SEED[0].get_address(scbr_mldsa_map) &&
           t.address <= scbr_mldsa_rm.MLDSA_SEED[$size(scbr_mldsa_rm.MLDSA_SEED)-1].get_address(scbr_mldsa_map)) ||
         (t.address >= scbr_mldsa_rm.MLDSA_SIGN_RND[0].get_address(scbr_mldsa_map) &&
@@ -258,8 +258,8 @@ class mldsa_scoreboard #(
           t.address <= scbr_mldsa_rm.MLDSA_VERSION[$size(scbr_mldsa_rm.MLDSA_VERSION)-1].get_address(scbr_mldsa_map)) ||
         (t.address == scbr_mldsa_rm.MLDSA_CTRL.get_address(scbr_mldsa_map)) ||
         (t.address == scbr_mldsa_rm.MLDSA_STATUS.get_address(scbr_mldsa_map)) ||
-        (t.address >= scbr_mldsa_rm.MLDSA_ENTROPY[0].get_address(scbr_mldsa_map) &&
-          t.address <= scbr_mldsa_rm.MLDSA_ENTROPY[$size(scbr_mldsa_rm.MLDSA_ENTROPY)-1].get_address(scbr_mldsa_map)) ||
+        (t.address >= scbr_mldsa_rm.ABR_ENTROPY[0].get_address(scbr_mldsa_map) &&
+          t.address <= scbr_mldsa_rm.ABR_ENTROPY[$size(scbr_mldsa_rm.ABR_ENTROPY)-1].get_address(scbr_mldsa_map)) ||
         (t.address >= scbr_mldsa_rm.MLDSA_SEED[0].get_address(scbr_mldsa_map) &&
           t.address <= scbr_mldsa_rm.MLDSA_SEED[$size(scbr_mldsa_rm.MLDSA_SEED)-1].get_address(scbr_mldsa_map)) ||
         (t.address >= scbr_mldsa_rm.MLDSA_SIGN_RND[0].get_address(scbr_mldsa_map) &&

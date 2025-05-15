@@ -127,8 +127,8 @@
         end
     endfunction
 
-    /*----------------------- ABR_REG__MLDSA_ENTROPY SAMPLE FUNCTIONS -----------------------*/
-    function void abr_reg__MLDSA_ENTROPY::sample(uvm_reg_data_t  data,
+    /*----------------------- ABR_REG__ABR_ENTROPY SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__ABR_ENTROPY::sample(uvm_reg_data_t  data,
                                                    uvm_reg_data_t  byte_en,
                                                    bit             is_read,
                                                    uvm_reg_map     map);
@@ -143,7 +143,7 @@
         end
     endfunction
 
-    function void abr_reg__MLDSA_ENTROPY::sample_values();
+    function void abr_reg__ABR_ENTROPY::sample_values();
         if (get_coverage(UVM_CVR_REG_BITS)) begin
             foreach(ENTROPY_bit_cg[bt]) this.ENTROPY_bit_cg[bt].sample(ENTROPY.get_mirrored_value() >> bt);
         end
@@ -409,6 +409,210 @@
         end
         if (get_coverage(UVM_CVR_FIELD_VALS)) begin
             this.fld_cg.sample( READY.get_mirrored_value()  ,  VALID.get_mirrored_value()  ,  ERROR.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_NAME SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_NAME::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(NAME_bit_cg[bt]) this.NAME_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*NAME*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_NAME::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(NAME_bit_cg[bt]) this.NAME_bit_cg[bt].sample(NAME.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( NAME.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_VERSION SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_VERSION::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(VERSION_bit_cg[bt]) this.VERSION_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*VERSION*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_VERSION::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(VERSION_bit_cg[bt]) this.VERSION_bit_cg[bt].sample(VERSION.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( VERSION.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_CTRL SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_CTRL::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTRL_bit_cg[bt]) this.CTRL_bit_cg[bt].sample(data[0 + bt]);
+            foreach(ZEROIZE_bit_cg[bt]) this.ZEROIZE_bit_cg[bt].sample(data[3 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[2:0]/*CTRL*/  ,  data[3:3]/*ZEROIZE*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_CTRL::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(CTRL_bit_cg[bt]) this.CTRL_bit_cg[bt].sample(CTRL.get_mirrored_value() >> bt);
+            foreach(ZEROIZE_bit_cg[bt]) this.ZEROIZE_bit_cg[bt].sample(ZEROIZE.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( CTRL.get_mirrored_value()  ,  ZEROIZE.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_STATUS SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_STATUS::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(data[0 + bt]);
+            foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(data[1 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[0:0]/*READY*/  ,  data[1:1]/*VALID*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_STATUS::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(READY_bit_cg[bt]) this.READY_bit_cg[bt].sample(READY.get_mirrored_value() >> bt);
+            foreach(VALID_bit_cg[bt]) this.VALID_bit_cg[bt].sample(VALID.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( READY.get_mirrored_value()  ,  VALID.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_SEED_D SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_SEED_D::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(SEED_bit_cg[bt]) this.SEED_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*SEED*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_SEED_D::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(SEED_bit_cg[bt]) this.SEED_bit_cg[bt].sample(SEED.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( SEED.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_SEED_Z SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_SEED_Z::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(SEED_bit_cg[bt]) this.SEED_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*SEED*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_SEED_Z::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(SEED_bit_cg[bt]) this.SEED_bit_cg[bt].sample(SEED.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( SEED.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_MSG SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_MSG::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(MSG_bit_cg[bt]) this.MSG_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*MSG*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_MSG::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(MSG_bit_cg[bt]) this.MSG_bit_cg[bt].sample(MSG.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( MSG.get_mirrored_value()   );
+        end
+    endfunction
+
+    /*----------------------- ABR_REG__MLKEM_SHARED_KEY SAMPLE FUNCTIONS -----------------------*/
+    function void abr_reg__MLKEM_SHARED_KEY::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(KEY_bit_cg[bt]) this.KEY_bit_cg[bt].sample(data[0 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[31:0]/*KEY*/   );
+        end
+    endfunction
+
+    function void abr_reg__MLKEM_SHARED_KEY::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(KEY_bit_cg[bt]) this.KEY_bit_cg[bt].sample(KEY.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( KEY.get_mirrored_value()   );
         end
     endfunction
 

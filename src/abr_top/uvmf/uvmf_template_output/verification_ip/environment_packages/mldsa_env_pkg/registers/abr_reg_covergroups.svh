@@ -107,8 +107,8 @@
 
     endgroup
 
-    /*----------------------- ABR_REG__MLDSA_ENTROPY COVERGROUPS -----------------------*/
-    covergroup abr_reg__MLDSA_ENTROPY_bit_cg with function sample(input bit reg_bit);
+    /*----------------------- ABR_REG__ABR_ENTROPY COVERGROUPS -----------------------*/
+    covergroup abr_reg__ABR_ENTROPY_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;
         reg_bit_cp : coverpoint reg_bit {
             bins value[2] = {0,1};
@@ -119,7 +119,7 @@
         }
 
     endgroup
-    covergroup abr_reg__MLDSA_ENTROPY_fld_cg with function sample(
+    covergroup abr_reg__ABR_ENTROPY_fld_cg with function sample(
     input bit [32-1:0] ENTROPY
     );
         option.per_instance = 1;
@@ -334,6 +334,170 @@
         READY_cp : coverpoint READY;
         VALID_cp : coverpoint VALID;
         ERROR_cp : coverpoint ERROR;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_NAME COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_NAME_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_NAME_fld_cg with function sample(
+    input bit [32-1:0] NAME
+    );
+        option.per_instance = 1;
+        NAME_cp : coverpoint NAME;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_VERSION COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_VERSION_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_VERSION_fld_cg with function sample(
+    input bit [32-1:0] VERSION
+    );
+        option.per_instance = 1;
+        VERSION_cp : coverpoint VERSION;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_CTRL COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_CTRL_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_CTRL_fld_cg with function sample(
+    input bit [3-1:0] CTRL,
+    input bit [1-1:0] ZEROIZE
+    );
+        option.per_instance = 1;
+        CTRL_cp : coverpoint CTRL;
+        ZEROIZE_cp : coverpoint ZEROIZE;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_STATUS COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_STATUS_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_STATUS_fld_cg with function sample(
+    input bit [1-1:0] READY,
+    input bit [1-1:0] VALID
+    );
+        option.per_instance = 1;
+        READY_cp : coverpoint READY;
+        VALID_cp : coverpoint VALID;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_SEED_D COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_SEED_D_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_SEED_D_fld_cg with function sample(
+    input bit [32-1:0] SEED
+    );
+        option.per_instance = 1;
+        SEED_cp : coverpoint SEED;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_SEED_Z COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_SEED_Z_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_SEED_Z_fld_cg with function sample(
+    input bit [32-1:0] SEED
+    );
+        option.per_instance = 1;
+        SEED_cp : coverpoint SEED;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_MSG COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_MSG_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_MSG_fld_cg with function sample(
+    input bit [32-1:0] MSG
+    );
+        option.per_instance = 1;
+        MSG_cp : coverpoint MSG;
+
+    endgroup
+
+    /*----------------------- ABR_REG__MLKEM_SHARED_KEY COVERGROUPS -----------------------*/
+    covergroup abr_reg__MLKEM_SHARED_KEY_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup abr_reg__MLKEM_SHARED_KEY_fld_cg with function sample(
+    input bit [32-1:0] KEY
+    );
+        option.per_instance = 1;
+        KEY_cp : coverpoint KEY;
 
     endgroup
 

@@ -154,17 +154,17 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_STATUS
 
-    // Reg - abr_reg::MLDSA_ENTROPY
-    class abr_reg__MLDSA_ENTROPY extends uvm_reg;
+    // Reg - abr_reg::ABR_ENTROPY
+    class abr_reg__ABR_ENTROPY extends uvm_reg;
         protected uvm_reg_data_t m_current;
         protected uvm_reg_data_t m_data;
         protected bit            m_is_read;
 
-        abr_reg__MLDSA_ENTROPY_bit_cg ENTROPY_bit_cg[32];
-        abr_reg__MLDSA_ENTROPY_fld_cg fld_cg;
+        abr_reg__ABR_ENTROPY_bit_cg ENTROPY_bit_cg[32];
+        abr_reg__ABR_ENTROPY_fld_cg fld_cg;
         rand uvm_reg_field ENTROPY;
 
-        function new(string name = "abr_reg__MLDSA_ENTROPY");
+        function new(string name = "abr_reg__ABR_ENTROPY");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
         endfunction : new
         extern virtual function void sample_values();
@@ -182,7 +182,7 @@ package abr_reg_uvm;
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();
         endfunction : build
-    endclass : abr_reg__MLDSA_ENTROPY
+    endclass : abr_reg__ABR_ENTROPY
 
     // Reg - abr_reg::MLDSA_SEED
     class abr_reg__MLDSA_SEED extends uvm_reg;
@@ -572,6 +572,304 @@ package abr_reg_uvm;
                 fld_cg = new();
         endfunction : build
     endclass : kv_status_reg
+
+    // Reg - abr_reg::MLKEM_NAME
+    class abr_reg__MLKEM_NAME extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_NAME_bit_cg NAME_bit_cg[32];
+        abr_reg__MLKEM_NAME_fld_cg fld_cg;
+        rand uvm_reg_field NAME;
+
+        function new(string name = "abr_reg__MLKEM_NAME");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.NAME = new("NAME");
+            this.NAME.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(NAME_bit_cg[bt]) NAME_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_NAME
+
+    // Reg - abr_reg::MLKEM_VERSION
+    class abr_reg__MLKEM_VERSION extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_VERSION_bit_cg VERSION_bit_cg[32];
+        abr_reg__MLKEM_VERSION_fld_cg fld_cg;
+        rand uvm_reg_field VERSION;
+
+        function new(string name = "abr_reg__MLKEM_VERSION");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.VERSION = new("VERSION");
+            this.VERSION.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(VERSION_bit_cg[bt]) VERSION_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_VERSION
+
+    // Reg - abr_reg::MLKEM_CTRL
+    class abr_reg__MLKEM_CTRL extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_CTRL_bit_cg CTRL_bit_cg[3];
+        abr_reg__MLKEM_CTRL_bit_cg ZEROIZE_bit_cg[1];
+        abr_reg__MLKEM_CTRL_fld_cg fld_cg;
+        rand uvm_reg_field CTRL;
+        rand uvm_reg_field ZEROIZE;
+
+        function new(string name = "abr_reg__MLKEM_CTRL");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.CTRL = new("CTRL");
+            this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
+            this.ZEROIZE = new("ZEROIZE");
+            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(CTRL_bit_cg[bt]) CTRL_bit_cg[bt] = new();
+                foreach(ZEROIZE_bit_cg[bt]) ZEROIZE_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_CTRL
+
+    // Reg - abr_reg::MLKEM_STATUS
+    class abr_reg__MLKEM_STATUS extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_STATUS_bit_cg READY_bit_cg[1];
+        abr_reg__MLKEM_STATUS_bit_cg VALID_bit_cg[1];
+        abr_reg__MLKEM_STATUS_fld_cg fld_cg;
+        rand uvm_reg_field READY;
+        rand uvm_reg_field VALID;
+
+        function new(string name = "abr_reg__MLKEM_STATUS");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.READY = new("READY");
+            this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            this.VALID = new("VALID");
+            this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
+                foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_STATUS
+
+    // Reg - abr_reg::MLKEM_SEED_D
+    class abr_reg__MLKEM_SEED_D extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_SEED_D_bit_cg SEED_bit_cg[32];
+        abr_reg__MLKEM_SEED_D_fld_cg fld_cg;
+        rand uvm_reg_field SEED;
+
+        function new(string name = "abr_reg__MLKEM_SEED_D");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.SEED = new("SEED");
+            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(SEED_bit_cg[bt]) SEED_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_SEED_D
+
+    // Reg - abr_reg::MLKEM_SEED_Z
+    class abr_reg__MLKEM_SEED_Z extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_SEED_Z_bit_cg SEED_bit_cg[32];
+        abr_reg__MLKEM_SEED_Z_fld_cg fld_cg;
+        rand uvm_reg_field SEED;
+
+        function new(string name = "abr_reg__MLKEM_SEED_Z");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.SEED = new("SEED");
+            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(SEED_bit_cg[bt]) SEED_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_SEED_Z
+
+    // Reg - abr_reg::MLKEM_MSG
+    class abr_reg__MLKEM_MSG extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_MSG_bit_cg MSG_bit_cg[32];
+        abr_reg__MLKEM_MSG_fld_cg fld_cg;
+        rand uvm_reg_field MSG;
+
+        function new(string name = "abr_reg__MLKEM_MSG");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.MSG = new("MSG");
+            this.MSG.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(MSG_bit_cg[bt]) MSG_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_MSG
+
+    // Reg - abr_reg::MLKEM_SHARED_KEY
+    class abr_reg__MLKEM_SHARED_KEY extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        abr_reg__MLKEM_SHARED_KEY_bit_cg KEY_bit_cg[32];
+        abr_reg__MLKEM_SHARED_KEY_fld_cg fld_cg;
+        rand uvm_reg_field KEY;
+
+        function new(string name = "abr_reg__MLKEM_SHARED_KEY");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.KEY = new("KEY");
+            this.KEY.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(KEY_bit_cg[bt]) KEY_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : abr_reg__MLKEM_SHARED_KEY
+
+    // Mem - abr_reg::MLKEM_DECAPS_KEY
+    class abr_reg__MLKEM_DECAPS_KEY extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_DECAPS_KEY");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 792, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_DECAPS_KEY
+
+    // Mem - abr_reg::MLKEM_ENCAPS_KEY
+    class abr_reg__MLKEM_ENCAPS_KEY extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_ENCAPS_KEY");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 392, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_ENCAPS_KEY
+
+    // Mem - abr_reg::MLKEM_CIPHERTEXT
+    class abr_reg__MLKEM_CIPHERTEXT extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_CIPHERTEXT");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 392, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_CIPHERTEXT
 
     // Reg - abr_reg::intr_block_t::global_intr_en_t
     class abr_reg__intr_block_t__global_intr_en_t extends uvm_reg;
@@ -1064,7 +1362,7 @@ package abr_reg_uvm;
         rand abr_reg__MLDSA_VERSION MLDSA_VERSION[2];
         rand abr_reg__MLDSA_CTRL MLDSA_CTRL;
         rand abr_reg__MLDSA_STATUS MLDSA_STATUS;
-        rand abr_reg__MLDSA_ENTROPY MLDSA_ENTROPY[16];
+        rand abr_reg__ABR_ENTROPY ABR_ENTROPY[16];
         rand abr_reg__MLDSA_SEED MLDSA_SEED[8];
         rand abr_reg__MLDSA_SIGN_RND MLDSA_SIGN_RND[8];
         rand abr_reg__MLDSA_MSG MLDSA_MSG[16];
@@ -1079,6 +1377,17 @@ package abr_reg_uvm;
         rand abr_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
         rand kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
         rand kv_status_reg mldsa_kv_rd_seed_status;
+        rand abr_reg__MLKEM_NAME MLKEM_NAME[2];
+        rand abr_reg__MLKEM_VERSION MLKEM_VERSION[2];
+        rand abr_reg__MLKEM_CTRL MLKEM_CTRL;
+        rand abr_reg__MLKEM_STATUS MLKEM_STATUS;
+        rand abr_reg__MLKEM_SEED_D MLKEM_SEED_D[8];
+        rand abr_reg__MLKEM_SEED_Z MLKEM_SEED_Z[8];
+        rand abr_reg__MLKEM_MSG MLKEM_MSG[8];
+        rand abr_reg__MLKEM_SHARED_KEY MLKEM_SHARED_KEY[8];
+        rand abr_reg__MLKEM_DECAPS_KEY MLKEM_DECAPS_KEY;
+        rand abr_reg__MLKEM_ENCAPS_KEY MLKEM_ENCAPS_KEY;
+        rand abr_reg__MLKEM_CIPHERTEXT MLKEM_CIPHERTEXT;
         rand abr_reg__intr_block_t intr_block_rf;
 
         function new(string name = "abr_reg");
@@ -1111,12 +1420,12 @@ package abr_reg_uvm;
 
             this.MLDSA_STATUS.build();
             this.default_map.add_reg(this.MLDSA_STATUS, 'h14);
-            foreach(this.MLDSA_ENTROPY[i0]) begin
-                this.MLDSA_ENTROPY[i0] = new($sformatf("MLDSA_ENTROPY[%0d]", i0));
-                this.MLDSA_ENTROPY[i0].configure(this);
+            foreach(this.ABR_ENTROPY[i0]) begin
+                this.ABR_ENTROPY[i0] = new($sformatf("ABR_ENTROPY[%0d]", i0));
+                this.ABR_ENTROPY[i0].configure(this);
                 
-                this.MLDSA_ENTROPY[i0].build();
-                this.default_map.add_reg(this.MLDSA_ENTROPY[i0], 'h18 + i0*'h4);
+                this.ABR_ENTROPY[i0].build();
+                this.default_map.add_reg(this.ABR_ENTROPY[i0], 'h18 + i0*'h4);
             end
             foreach(this.MLDSA_SEED[i0]) begin
                 this.MLDSA_SEED[i0] = new($sformatf("MLDSA_SEED[%0d]", i0));
@@ -1190,16 +1499,80 @@ package abr_reg_uvm;
             this.mldsa_kv_rd_seed_ctrl.configure(this);
 
             this.mldsa_kv_rd_seed_ctrl.build();
-            this.default_map.add_reg(this.mldsa_kv_rd_seed_ctrl, 'h8000);
+            this.default_map.add_reg(this.mldsa_kv_rd_seed_ctrl, 'h7320);
             this.mldsa_kv_rd_seed_status = new("mldsa_kv_rd_seed_status");
             this.mldsa_kv_rd_seed_status.configure(this);
 
             this.mldsa_kv_rd_seed_status.build();
-            this.default_map.add_reg(this.mldsa_kv_rd_seed_status, 'h8004);
+            this.default_map.add_reg(this.mldsa_kv_rd_seed_status, 'h7324);
+            foreach(this.MLKEM_NAME[i0]) begin
+                this.MLKEM_NAME[i0] = new($sformatf("MLKEM_NAME[%0d]", i0));
+                this.MLKEM_NAME[i0].configure(this);
+                
+                this.MLKEM_NAME[i0].build();
+                this.default_map.add_reg(this.MLKEM_NAME[i0], 'h8000 + i0*'h4);
+            end
+            foreach(this.MLKEM_VERSION[i0]) begin
+                this.MLKEM_VERSION[i0] = new($sformatf("MLKEM_VERSION[%0d]", i0));
+                this.MLKEM_VERSION[i0].configure(this);
+                
+                this.MLKEM_VERSION[i0].build();
+                this.default_map.add_reg(this.MLKEM_VERSION[i0], 'h8008 + i0*'h4);
+            end
+            this.MLKEM_CTRL = new("MLKEM_CTRL");
+            this.MLKEM_CTRL.configure(this);
+
+            this.MLKEM_CTRL.build();
+            this.default_map.add_reg(this.MLKEM_CTRL, 'h8010);
+            this.MLKEM_STATUS = new("MLKEM_STATUS");
+            this.MLKEM_STATUS.configure(this);
+
+            this.MLKEM_STATUS.build();
+            this.default_map.add_reg(this.MLKEM_STATUS, 'h8014);
+            foreach(this.MLKEM_SEED_D[i0]) begin
+                this.MLKEM_SEED_D[i0] = new($sformatf("MLKEM_SEED_D[%0d]", i0));
+                this.MLKEM_SEED_D[i0].configure(this);
+                
+                this.MLKEM_SEED_D[i0].build();
+                this.default_map.add_reg(this.MLKEM_SEED_D[i0], 'h8018 + i0*'h4);
+            end
+            foreach(this.MLKEM_SEED_Z[i0]) begin
+                this.MLKEM_SEED_Z[i0] = new($sformatf("MLKEM_SEED_Z[%0d]", i0));
+                this.MLKEM_SEED_Z[i0].configure(this);
+                
+                this.MLKEM_SEED_Z[i0].build();
+                this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h8038 + i0*'h4);
+            end
+            foreach(this.MLKEM_MSG[i0]) begin
+                this.MLKEM_MSG[i0] = new($sformatf("MLKEM_MSG[%0d]", i0));
+                this.MLKEM_MSG[i0].configure(this);
+                
+                this.MLKEM_MSG[i0].build();
+                this.default_map.add_reg(this.MLKEM_MSG[i0], 'h8058 + i0*'h4);
+            end
+            foreach(this.MLKEM_SHARED_KEY[i0]) begin
+                this.MLKEM_SHARED_KEY[i0] = new($sformatf("MLKEM_SHARED_KEY[%0d]", i0));
+                this.MLKEM_SHARED_KEY[i0].configure(this);
+                
+                this.MLKEM_SHARED_KEY[i0].build();
+                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8078 + i0*'h4);
+            end
+            this.MLKEM_DECAPS_KEY = new("MLKEM_DECAPS_KEY");
+            this.MLKEM_DECAPS_KEY.configure(this);
+            this.MLKEM_DECAPS_KEY.build();
+            this.default_map.add_submap(this.MLKEM_DECAPS_KEY.default_map, 'h9000);
+            this.MLKEM_ENCAPS_KEY = new("MLKEM_ENCAPS_KEY");
+            this.MLKEM_ENCAPS_KEY.configure(this);
+            this.MLKEM_ENCAPS_KEY.build();
+            this.default_map.add_submap(this.MLKEM_ENCAPS_KEY.default_map, 'ha000);
+            this.MLKEM_CIPHERTEXT = new("MLKEM_CIPHERTEXT");
+            this.MLKEM_CIPHERTEXT.configure(this);
+            this.MLKEM_CIPHERTEXT.build();
+            this.default_map.add_submap(this.MLKEM_CIPHERTEXT.default_map, 'ha800);
             this.intr_block_rf = new("intr_block_rf");
             this.intr_block_rf.configure(this);
             this.intr_block_rf.build();
-            this.default_map.add_submap(this.intr_block_rf.default_map, 'h8100);
+            this.default_map.add_submap(this.intr_block_rf.default_map, 'hb000);
         endfunction : build
     endclass : abr_reg
 

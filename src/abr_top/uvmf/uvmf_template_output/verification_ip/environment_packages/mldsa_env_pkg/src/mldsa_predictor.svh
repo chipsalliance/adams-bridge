@@ -356,9 +356,9 @@ class mldsa_predictor #(
           //   lock_IP = lock_IP;
           // end
         end
-        else if (reg_addr >= p_mldsa_rm.MLDSA_ENTROPY[0].get_address(p_mldsa_map) &&
-                reg_addr <= p_mldsa_rm.MLDSA_ENTROPY[$size(p_mldsa_rm.MLDSA_ENTROPY)-1].get_address(p_mldsa_map)) begin
-            `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_ENTROPY at address: 0x%x", reg_addr), UVM_HIGH)
+        else if (reg_addr >= p_mldsa_rm.ABR_ENTROPY[0].get_address(p_mldsa_map) &&
+                reg_addr <= p_mldsa_rm.ABR_ENTROPY[$size(p_mldsa_rm.ABR_ENTROPY)-1].get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register ABR_ENTROPY at address: 0x%x", reg_addr), UVM_HIGH)
         end
         else if (reg_addr >= p_mldsa_rm.MLDSA_SEED[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_SEED[$size(p_mldsa_rm.MLDSA_SEED)-1].get_address(p_mldsa_map)) begin
@@ -636,8 +636,8 @@ class mldsa_predictor #(
       end
       p_mldsa_rm.MLDSA_CTRL.set(zero_value);
       p_mldsa_rm.MLDSA_STATUS.set(zero_value);
-      foreach (p_mldsa_rm.MLDSA_ENTROPY[i]) begin
-        p_mldsa_rm.MLDSA_ENTROPY[i].set(zero_value);
+      foreach (p_mldsa_rm.ABR_ENTROPY[i]) begin
+        p_mldsa_rm.ABR_ENTROPY[i].set(zero_value);
       end
       foreach (p_mldsa_rm.MLDSA_SEED[i]) begin
         p_mldsa_rm.MLDSA_SEED[i].set(zero_value);

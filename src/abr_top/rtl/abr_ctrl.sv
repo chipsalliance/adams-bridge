@@ -278,7 +278,7 @@ always_comb kv_seed_data_present = '0;
   
   logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
   logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
-  logic [MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
+  logic [MLDSA_MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic internal_mu_we;
   logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] internal_mu_reg;
   logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] external_mu_reg;
@@ -381,7 +381,7 @@ always_comb kv_seed_data_present = '0;
 //HWIF to reg block
   always_comb abr_reg_hwif_in.reset_b = rst_b;
   always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
-  always_comb abr_reg_hwif_in.mldsa_ready = mldsa_ready;
+  always_comb abr_reg_hwif_in.abr_ready = mldsa_ready; //FIXME add mlkem
   always_comb cmd_reg = abr_reg_hwif_out.MLDSA_CTRL.CTRL.value;
   always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |cmd_reg;
   `ifdef CALIPTRA
@@ -415,8 +415,8 @@ always_comb kv_seed_data_present = '0;
   always_comb begin // mldsa reg writing 
 
     for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
-      entropy_reg[dword] = abr_reg_hwif_out.MLDSA_ENTROPY[dword].ENTROPY.value;
-      abr_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
+      entropy_reg[dword] = abr_reg_hwif_out.ABR_ENTROPY[dword].ENTROPY.value;
+      abr_reg_hwif_in.ABR_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
@@ -436,11 +436,11 @@ always_comb kv_seed_data_present = '0;
       `endif
     end
   
-    for (int dword=0; dword < MSG_NUM_DWORDS; dword++) begin
+    for (int dword=0; dword < MLDSA_MSG_NUM_DWORDS; dword++) begin
       msg_reg[dword] = external_mu_mode? '0 : abr_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
-      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[MSG_NUM_DWORDS-1-dword];
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[MLDSA_MSG_NUM_DWORDS-1-dword];
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
       `else
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = '0;
@@ -468,10 +468,6 @@ always_comb kv_seed_data_present = '0;
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
     end
   
-    for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
-        abr_reg_hwif_in.MLDSA_ENTROPY[dword].ENTROPY.hwclr = zeroize;
-    end
-
     for (int dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
       ctx_reg[dword] = abr_reg_hwif_out.MLDSA_CTX[dword].CTX.value;
       abr_reg_hwif_in.MLDSA_CTX[dword].CTX.hwclr = zeroize;
@@ -945,9 +941,56 @@ always_comb kv_seed_data_present = '0;
     end
   end
   
+//MLKEM tie offs
+  always_comb begin
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_ack = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = '0;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_ack = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = '0;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = '0;
+    abr_reg_hwif_in.MLKEM_CTRL.CTRL.hwclr = zeroize; //MERGE with MLDSA CTRL?
+    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = '0; //FIXME need this?
+    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = '0; //FIXME need this?
+    abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = '0; //FIXME need this?
+    abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = '0; //FIXME need this?
+    for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.hwclr = zeroize;
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.next = '0;
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.we = '0;
+    end
+
+    for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = '0;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = '0;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = '0;
+    end
+
+    for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+      abr_reg_hwif_in.MLKEM_SEED_Z[dword].SEED.we = '0;
+      abr_reg_hwif_in.MLKEM_SEED_Z[dword].SEED.next = '0;
+      abr_reg_hwif_in.MLKEM_SEED_Z[dword].SEED.hwclr = zeroize;
+      abr_reg_hwif_in.MLKEM_SEED_Z[dword].SEED.swwe = '0;
+    end
+
+    for (int dword=0; dword < MLKEM_MSG_NUM_DWORDS; dword++) begin
+      abr_reg_hwif_in.MLKEM_MSG[dword].MSG.we = '0;
+      abr_reg_hwif_in.MLKEM_MSG[dword].MSG.next = '0;
+      abr_reg_hwif_in.MLKEM_MSG[dword].MSG.hwclr = zeroize;
+      abr_reg_hwif_in.MLKEM_MSG[dword].MSG.swwe = '0;
+    end
+
+    abr_reg_hwif_in.MLKEM_STATUS.READY.next = '0;
+    abr_reg_hwif_in.MLKEM_STATUS.VALID.next = '0;
+  end
+
   //pure-MLDSA assuming 512-bit input msg and empty ctx
   //padding zeroes for highest dword to prevent x prop
-  logic [MSG_NUM_DWORDS-1+2 : 0][DATA_WIDTH-1:0] msg_p_reg;
+  logic [MLDSA_MSG_NUM_DWORDS-1+2 : 0][DATA_WIDTH-1:0] msg_p_reg;
   always_comb begin
     if (stream_msg_mode) msg_p_reg = {512'b0 ,stream_msg_buffer_data};
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
@@ -1276,7 +1319,7 @@ always_comb kv_seed_data_present = '0;
     sampler_mode_o = ABR_SAMPLER_NONE;
     if (prim_instr.opcode.sampler_en) begin
       if (prim_instr.opcode.ntt_en & prim_instr.opcode.mode.ntt_mode inside {MLDSA_PWM_SMPL, MLDSA_PWM_ACCUM_SMPL}) begin
-        sampler_mode_o = ABR_REJ_SAMPLER;
+        sampler_mode_o = MLDSA_REJ_SAMPLER;
       end else begin
         sampler_mode_o = prim_instr.opcode.mode.sampler_mode;
       end

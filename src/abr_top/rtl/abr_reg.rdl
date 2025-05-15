@@ -24,7 +24,7 @@ addrmap abr_reg {
     default hw = na;
     signal {activelow; async; cpuif_reset; field_reset;} reset_b;
     signal {activelow; async;} hard_reset_b;
-    signal {} mldsa_ready;
+    signal {} abr_ready;
 
 
     /* -----------------------
@@ -74,13 +74,13 @@ addrmap abr_reg {
                 [br]            011 for VERIFYING
                 [br]            100 for KEYGEN+SIGN
                 
-                [br] After each software write, hardware will erase the register"; swwe = mldsa_ready; hwclr;} CTRL[3] = 3'b0;
+                [br] After each software write, hardware will erase the register"; swwe = abr_ready; hwclr;} CTRL[3] = 3'b0;
         field {desc = "Zeroize all internal registers: Zeroize all internal registers and memories to avoid SCA leakage.
                                 [br] Software write generates only a single-cycle pulse on the 
                                 hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
-        field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = mldsa_ready; hwclr;} PCR_SIGN = 1'b0;
-        field {desc = "ExternalMu Mode"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU = 1'b0;
-        field {desc = "Enable streaming mode to get message for signing/verifying operation"; swwe = mldsa_ready; hwclr;} STREAM_MSG = 1'b0;
+        field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = abr_ready; hwclr;} PCR_SIGN = 1'b0;
+        field {desc = "ExternalMu Mode"; swwe = abr_ready; hwclr;} EXTERNAL_MU = 1'b0;
+        field {desc = "Enable streaming mode to get message for signing/verifying operation"; swwe = abr_ready; hwclr;} STREAM_MSG = 1'b0;
     
     } MLDSA_CTRL;
 
@@ -106,9 +106,9 @@ addrmap abr_reg {
     } MLDSA_STATUS;
 
 
-    /* ---- MLDSA Component Input ENTROPY ---- */
+    /* ---- ABR Component Input ENTROPY ---- */
     reg {
-        name = "MLDSA component entropy register type definition";
+        name = "ABR component entropy register type definition, used for MLDSA and MLKEM";
         desc = "16 32-bit registers storing the 512-bit entropy  
                 required for SCA countermeasures with no change on the outputs. 
                 The entropy can be any 512-bit value in [0 : 2^512-1].";
@@ -116,9 +116,9 @@ addrmap abr_reg {
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Input entropy field"; swwe = mldsa_ready; hwclr;} ENTROPY[32] = 32'b0;
+        field {desc = "Input entropy field"; swwe = abr_ready; hwclr;} ENTROPY[32] = 32'b0;
     
-    } MLDSA_ENTROPY[16];
+    } ABR_ENTROPY[16];
 
     /* ---- MLDSA Component Input SEED ---- */
     reg {
@@ -145,7 +145,7 @@ addrmap abr_reg {
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Input sign_rnd field"; swwe = mldsa_ready; hwclr;} SIGN_RND[32] = 32'b0;
+        field {desc = "Input sign_rnd field"; swwe = abr_ready; hwclr;} SIGN_RND[32] = 32'b0;
     
     } MLDSA_SIGN_RND[8];
 
@@ -189,7 +189,7 @@ addrmap abr_reg {
         default hw = rw;
         default we = true;
         default resetsignal = reset_b;
-        field {desc = "Input message field"; swwe = mldsa_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
+        field {desc = "Input message field"; swwe = abr_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
     
     } MLDSA_EXTERNAL_MU[16];
     
@@ -218,7 +218,7 @@ addrmap abr_reg {
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Context Byte size field"; swwe = mldsa_ready; hwclr;} CTX_SIZE[8] = 8'b0;
+        field {desc = "Context Byte size field"; swwe = abr_ready; hwclr;} CTX_SIZE[8] = 8'b0;
 
     } MLDSA_CTX_CONFIG;
 
@@ -230,7 +230,7 @@ addrmap abr_reg {
         default sw = w;
         default hw = r;
         default resetsignal = reset_b;
-        field {desc = "Input context field"; swwe = mldsa_ready; hwclr;} CTX[32] = 32'b0;
+        field {desc = "Input context field"; swwe = abr_ready; hwclr;} CTX[32] = 32'b0;
 
     } MLDSA_CTX[64];
 
@@ -280,8 +280,158 @@ addrmap abr_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
-    kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl @0x8000;
+    kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
     kv_status_reg mldsa_kv_rd_seed_status;
+
+    /* ---- MLKEM Component Name ---- */
+    reg {
+        name = "MLKEM component name register type definition";
+        desc = "Two 32-bit read-only registers representing of the name
+                of MLKEM component.";
+
+        default sw = r;
+        default hw = w;
+        field {desc = "Name field";} NAME[32];
+
+    } MLKEM_NAME[2] @0x8000;
+
+    /* ---- MLKEM Component Version ---- */
+    reg {
+        name = "MLKEM component version register type definition";
+        desc = "Two 32-bit read-only registers representing of the version
+                of MLKEM component.";
+
+        default sw = r;
+        default hw = w;
+        field {desc = "Version field";} VERSION[32];
+        
+    } MLKEM_VERSION[2];
+
+    /* ---- MLKEM Component Control ---- */
+    reg {
+        name = "MLKEM component control register type definition";
+        desc = "Control register to set the type of MLKEM operations.";
+
+        default sw = w;
+        default hw = r;
+        default resetsignal = reset_b;
+        field {desc = "Control command field. This can be: 
+                [br]            000 for NONE
+                [br]            001 for KEYGEN
+                [br]            010 for ENCAPS
+                [br]            011 for DECAPS
+                [br]            100 for KEYGEN+DECAPS
+                
+                [br] After each software write, hardware will erase the register"; swwe = abr_ready; hwclr;} CTRL[3] = 3'b0;
+
+        field {desc = "Zeroize all internal registers: Zeroize all internal registers and memories to avoid SCA leakage.
+                       [br] Software write generates only a single-cycle pulse on the 
+                       [br] hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
+    
+    } MLKEM_CTRL;
+
+    /* ---- MLKEM Component Status ---- */
+    reg {
+        name = "MLKEM component status register type definition";
+        desc = "One 3-bit register including the following flags: 
+                [br]bit #0: READY : ​Indicates if the core is ready to take
+                [br]                a control command and process the inputs.  
+                [br]bit #1: VALID : ​Indicates if the process is done and the
+                [br]                result is valid. 
+                ";
+
+        default sw = r;
+        default hw = w;
+        default resetsignal = reset_b;
+        field {desc = "Status ready bit";} READY = 1'b0;
+        field {desc = "Status valid bit";} VALID = 1'b0;
+    
+    } MLKEM_STATUS;
+    
+    /* ---- MLKEM Component Input SEED ---- */
+    reg {
+        name = "MLKEM component seed register type definition";
+        desc = "8 32-bit registers storing the 256-bit seed for keygen.
+                The seed can be any 256-bit value in [0 : 2^256-1].";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Input seed d field"; swwe; hwclr;} SEED[32] = 32'b0;
+    
+    } MLKEM_SEED_D[8];
+
+    /* ---- MLKEM Component Input SEED ---- */
+    reg {
+        name = "MLKEM component seed register type definition";
+        desc = "8 32-bit registers storing the 256-bit seed for keygen.
+                The seed can be any 256-bit value in [0 : 2^256-1].";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Input seed z field"; swwe; hwclr;} SEED[32] = 32'b0;
+    
+    } MLKEM_SEED_Z[8];
+
+    /* ---- MLKEM Component Input Message ---- */
+    reg {
+        name = "MLKEM component message register type definition";
+        desc = "8 32-bit registers storing the message.
+                The message can be a fixed size of 256-bit value in [0 : 2^256-1].";
+
+        default sw = w;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Input message field"; swmod; swwe; hwclr;} MSG[32] = 32'b0;
+    
+    } MLKEM_MSG[8];
+
+    /* ---- MLKEM Component Shared Key ---- */
+    reg {
+        name = "MLKEM component shared key register type definition";
+        desc = "8 32-bit registers storing the shared key.";
+
+        default sw = r;
+        default hw = rw;
+        default we = true;
+        default resetsignal = reset_b;
+        field {desc = "Output verify result field"; hwclr;} KEY[32] = 32'b0;
+    
+    } MLKEM_SHARED_KEY[8];
+
+    /* ---- MLKEM Component Decaps Key ---- */
+    external mem {
+        name = "MLKEM component decaps key register type definition";
+        desc = "3,168 byte decapsulation key";
+
+        sw = rw;
+        mementries = 792;
+        memwidth = 32;
+    } MLKEM_DECAPS_KEY;
+
+    /* ---- MLKEM Component Encaps Key ---- */
+    external mem {
+        name = "MLKEM component encaps key register type definition";
+        desc = "1,568 byte encapsulation key";
+
+        sw = rw;
+        mementries = 392;
+        memwidth = 32;
+    } MLKEM_ENCAPS_KEY;
+
+    /* ---- MLKEM Component Ciphertext ---- */
+    external mem {
+        name = "MLKEM component ciphertext register type definition";
+        desc = "1,568 byte ciphertext";
+
+        sw = rw;
+        mementries = 392;
+        memwidth = 32;
+    } MLKEM_CIPHERTEXT;
 
     ////////////////////////////////////////////////////////////////
     // Interrupts
@@ -302,7 +452,7 @@ addrmap abr_reg {
 
         name = "Interrupt Register Block";
         desc = "Set of registers to implement interrupt functionality
-                for MLDSA";
+                for MLKEM";
 
         default regwidth = 32; // reg property
         default accesswidth = 32; // reg property
@@ -546,5 +696,5 @@ addrmap abr_reg {
     /* -----------------------
      * Register File instance
      * ----------------------- */
-    intr_block_t intr_block_rf @0x8100;
+    intr_block_t intr_block_rf @0xb000;
 };

@@ -86,10 +86,10 @@ package abr_sampler_pkg;
     ABR_SHAKE128,
     //SAMPLER MODES
     MLDSA_REJ_SAMPLER,
+    MLKEM_REJ_SAMPLER,
     ABR_EXP_MASK,
     ABR_REJ_BOUNDED,
     ABR_SAMPLE_IN_BALL
-    MLKEM_REJ_SAMPLER
   } abr_sampler_mode_e;
 
 endpackage

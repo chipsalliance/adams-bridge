@@ -33,7 +33,8 @@ package abr_ctrl_pkg;
     localparam ABR_PROG_ADDR_W             = 9;
 
     localparam SEED_NUM_DWORDS = 8;
-    localparam MSG_NUM_DWORDS = 16;
+    localparam MLDSA_MSG_NUM_DWORDS = 16;
+    localparam MLKEM_MSG_NUM_DWORDS = 8;
     localparam MU_NUM_DWORDS = 16;
     localparam PRIVKEY_NUM_DWORDS = 1224;
     localparam PRIVKEY_REG_NUM_DWORDS = 32;
@@ -54,6 +55,7 @@ package abr_ctrl_pkg;
     localparam CTX_SIZE_W = $clog2(CTX_NUM_DWORDS*4);
     localparam STREAM_MSG_W = 32;
     localparam STREAM_MSG_STROBE_W = STREAM_MSG_W/8;
+    localparam SHAREDKEY_NUM_DWORDS = 8;
 
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
