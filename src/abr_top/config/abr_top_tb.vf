@@ -168,8 +168,8 @@ ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_skencode.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_if.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_top.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mldsa_seq_prim.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mldsa_seq_sec.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mldsa_seq.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mlkem_seq.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_top.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg.sv
