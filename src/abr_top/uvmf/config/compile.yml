@@ -4,8 +4,8 @@ schema_version: 2.4.0
 requires:
   - mldsa_uvmf_lib
   - abr_top
-  - mldsa_uvm_pkg
-  - mldsa_coverage
+  - abr_uvm_pkg
+  - abr_coverage
 targets:
   tb:
     directories:
