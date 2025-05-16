@@ -115,7 +115,7 @@ class ML_DSA_randomized_KeySign_stream_msg_sequence extends mldsa_bench_sequence
     if (!this.randomize(msg_length)) begin
       `uvm_error("RANDOMIZE_FAIL", "Failed to randomize MLDSA_MSG lenght");
     end
-    msg_length = msg_length & 16'h3FFE;
+    msg_length = msg_length & 16'h1FFF;
     `uvm_info("RANDOMIZATION", $sformatf("MLDSA_MSG Lenght is %0d", ((msg_length*4)+last_msg_padding)), UVM_LOW);
 
 
