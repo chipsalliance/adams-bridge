@@ -451,8 +451,7 @@ addrmap abr_reg {
          * ----------------------- */
 
         name = "Interrupt Register Block";
-        desc = "Set of registers to implement interrupt functionality
-                for MLKEM";
+        desc = "Set of registers to implement interrupt functionality for ABR";
 
         default regwidth = 32; // reg property
         default accesswidth = 32; // reg property

@@ -15,10 +15,10 @@
 //Sequencer for MLDSA
 //MLDSA functions
 //  Keygen
-//  Signing - challenge generation
+//  Signing
 //  Verify
 
-module mldsa_seq_prim
+module mldsa_seq
   import abr_ctrl_pkg::*;
   (
   input logic clk,

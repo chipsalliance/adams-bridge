@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//Sequencer for MLDSA
-//MLDSA functions
-//  Signing initial steps
-//  Signing validity checks
-//  Signing signature generation
+//Sequencer for MLKEM
+//MLKEM functions
+//  Keygen
+//  Encaps
+//  Decaps
 
-module mldsa_seq_sec
+module mlkem_seq
   import abr_ctrl_pkg::*;
   (
   input logic clk,
@@ -41,6 +41,8 @@ module mldsa_seq_sec
   // ROM content
   //----------------------------------------------------------------
  
+//FIXME todo, remove MLDSA references
+
   always_ff @(posedge clk) begin
         if (en_i) begin
             unique case(addr_i)
