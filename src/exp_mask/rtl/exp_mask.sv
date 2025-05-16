@@ -16,7 +16,7 @@
 //and returns a coefficient calculated by the function 2^19-a%q
 
 module exp_mask
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   #(
     parameter EXP_SAMPLE_W     = 20
    ,parameter EXP_VLD_SAMPLE_W = 23

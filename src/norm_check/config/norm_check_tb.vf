@@ -1,12 +1,12 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/rtl
-+incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/tb
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_config_defines.svh
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_top.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/tb/norm_check_tb.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv

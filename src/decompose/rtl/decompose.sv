@@ -35,7 +35,7 @@
 `include "abr_prim_assert.sv"
 
 module decompose 
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import decompose_defines_pkg::*;
     #(
         parameter Q_MINUS_2GAMMA2 = MLDSA_Q - (2*MLDSA_GAMMA2)
@@ -47,9 +47,9 @@ module decompose
 
         input wire decompose_enable,
         input dcmp_mode_t dcmp_mode,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
 
         //Output to memory - r0
         output mem_if_t mem_rd_req,
@@ -221,10 +221,10 @@ module decompose
     always_comb begin
         z_neq_z_mux               = verify ? 'h0 : z_neq_z_d2;
         z_mem_wr_req_int.rd_wr_en = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-        z_mem_wr_req_int.addr     = verify ? 'h0 : MLDSA_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
+        z_mem_wr_req_int.addr     = verify ? 'h0 : ABR_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                    = verify & (&usehint_ready) ? r1_usehint : r1_reg;
 
-        mem_hint_rd_req.addr     = verify ? MLDSA_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
+        mem_hint_rd_req.addr     = verify ? ABR_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
         mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
     end
 

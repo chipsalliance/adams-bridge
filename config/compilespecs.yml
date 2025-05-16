@@ -19,8 +19,8 @@ files:
   - src/sigdecode_h/config/compile.yml
   - src/pk_decode/config/compile.yml
   - src/power2round/config/compile.yml
-  - src/mldsa_sampler_top/config/compile.yml
+  - src/abr_sampler_top/config/compile.yml
   - src/ntt_top/config/compile.yml
-  - src/mldsa_top/config/compile.yml
+  - src/abr_top/config/compile.yml
   # UVMF TBs
-  - src/mldsa_top/uvmf/config/compile.yml
+  - src/abr_top/uvmf/config/compile.yml

@@ -18,7 +18,7 @@ targets:
 provides: [sample_in_ball]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - sample_in_ball_pkg
 targets:

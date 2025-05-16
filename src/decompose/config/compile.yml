@@ -21,7 +21,7 @@ targets:
 provides: [decompose]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - ntt_pkg
   - decompose_pkg
   - ntt_top

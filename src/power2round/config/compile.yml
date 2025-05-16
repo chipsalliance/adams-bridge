@@ -16,7 +16,7 @@ targets:
 provides: [power2round]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - power2round_pkg
 targets:
@@ -37,7 +37,7 @@ targets:
 provides: [power2round_tb]  
 schema_version: 2.4.0
 requires: 
-  - mldsa_defines
+  - abr_defines
   - abr_libs
   - power2round
   - power2round_pkg

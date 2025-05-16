@@ -27,7 +27,7 @@
 //======================================================================
 
 module skencode
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
         parameter MEM_ADDR_WIDTH = 15,

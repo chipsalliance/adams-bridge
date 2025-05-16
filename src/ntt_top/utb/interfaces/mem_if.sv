@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 interface mem_if(input bit clk);
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     logic reset_n;
     mem_if_t mem_port0_req;
     mem_if_t mem_port1_req;

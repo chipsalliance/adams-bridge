@@ -22,7 +22,7 @@
 // 210 clks if PWM, 264 clks if PWMA
 
 module ntt_masked_pwm
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter WIDTH = 46

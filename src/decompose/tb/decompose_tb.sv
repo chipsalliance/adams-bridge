@@ -25,7 +25,7 @@
 
 module decompose_tb
     import decompose_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter NUM_WR = 4, //TODO: sample_buffer needs more writes than reads?
     parameter NUM_RD = 4,

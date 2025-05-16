@@ -20,7 +20,7 @@
 //======================================================================
 
 module hintgen
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 23,
         parameter MLDSA_Q = 23'd8380417,

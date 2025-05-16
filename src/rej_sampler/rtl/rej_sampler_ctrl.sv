@@ -14,7 +14,7 @@
 
 
 module rej_sampler_ctrl
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   #(
    parameter REJ_NUM_SAMPLERS = 5
   ,parameter REJ_SAMPLE_W     = 24

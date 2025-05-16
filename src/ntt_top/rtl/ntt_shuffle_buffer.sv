@@ -29,7 +29,7 @@
 // INTT mode --> Starting write addr is randomized. Reads from buffer are in order
 
 module ntt_shuffle_buffer
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
         parameter REG_SIZE = 24

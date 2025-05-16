@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-python3 tools/scripts/reg_gen.py src/mldsa_top/rtl/mldsa_reg.rdl
+python3 tools/scripts/reg_gen.py src/abr_top/rtl/abr_reg.rdl

@@ -22,7 +22,7 @@
 `default_nettype none
 
 module sigencode_z_tb
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     import sigencode_z_defines_pkg::*;
 #(

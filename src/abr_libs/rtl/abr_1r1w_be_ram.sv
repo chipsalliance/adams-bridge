@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "mldsa_config_defines.svh"
 module abr_1r1w_be_ram #(
      parameter DEPTH      = 64
     ,parameter DATA_WIDTH = 32

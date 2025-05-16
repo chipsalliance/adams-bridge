@@ -24,7 +24,7 @@
 `default_nettype none
 
 module norm_check_tb
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
 #(
     parameter NUM_WR = 4,

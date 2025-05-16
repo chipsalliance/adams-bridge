@@ -21,7 +21,7 @@
 
 module ntt_masked_mult_redux46
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter WIDTH = 46
 )

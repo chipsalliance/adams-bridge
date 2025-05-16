@@ -21,7 +21,7 @@
 
 module ntt_wrapper
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter RADIX = 23,

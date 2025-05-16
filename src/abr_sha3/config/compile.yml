@@ -13,7 +13,7 @@ requires:
   - abr_sha3_pkg
   - abr_libs
   - abr_prim
-  - mldsa_defines
+  - abr_defines
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]

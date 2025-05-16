@@ -30,7 +30,7 @@
 //======================================================================
 
 module ntt_top
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,
@@ -74,15 +74,15 @@ module ntt_top
     //Reuse between pwm c, ntt
     output mem_if_t mem_wr_req,
     output mem_if_t mem_rd_req,
-    output logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data,
-    input  wire  [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data,
+    output logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data,
+    input  wire  [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data,
 
     //Memory IF for PWM
     output mem_if_t pwm_a_rd_req,
     output mem_if_t pwm_b_rd_req,
-    input wire [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data,
+    input wire [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data,
     //Reuse between pwm mem data or sampler data (mux should be outside)
-    input wire [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data,
+    input wire [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data,
 
     output logic ntt_busy,
     output logic ntt_done
@@ -95,12 +95,12 @@ module ntt_top
 
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
     logic [MEM_DATA_WIDTH-1:0] mem_wr_data_int, mem_wr_data_reg, mem_wr_data_reg_d2;
     
     //Read IF
     logic mem_rden;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr;
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg;
 
     //Butterfly IF signals
@@ -139,18 +139,18 @@ module ntt_top
     logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_rd_data_reg, share_mem_rd_data_reg_d1;
 
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg, pwm_wr_addr_c_reg_d2;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg, pwm_wr_addr_c_reg_d2;
     logic [(4*REG_SIZE)-1:0] pwm_wr_data_reg;
 
     //ntt_ctrl output connections
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_a_reg, pw_mem_rd_addr_b_reg;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_wr_addr_c;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_c, pw_mem_rd_addr_a, pw_mem_rd_addr_b;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pw_mem_rd_addr_a_reg, pw_mem_rd_addr_b_reg;
     logic ntt_done_int;
 
     //pwm mem data_out connections
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a, pwm_rd_data_b; 
-    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_rd_data_c; 
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_rd_data_c; 
 
     //Flop pwm mem data_out before sending to BFU
     logic [(4*REG_SIZE)-1:0] pwm_rd_data_a_reg, pwm_rd_data_b_reg, pwm_rd_data_c_reg;
@@ -217,11 +217,11 @@ module ntt_top
                                                   : 'h0;
     always_comb begin 
         if (!masking_en) //TODO: use flopped masking_en?
-            mem_wr_data      = shuffle_en ? pwm_mode ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg)
-                                                     : (pwa_mode | pws_mode) ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg) : MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int)
-                                          : MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int);
+            mem_wr_data      = shuffle_en ? pwm_mode ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg)
+                                                     : (pwa_mode | pws_mode) ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg) : ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int)
+                                          : ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int);
         else
-            mem_wr_data      = gs_mode ? MLDSA_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int) : pwm_mode ? shuffle_en ? share_mem_wr_data : share_mem_wr_data_comb : '0; //In masking, only gs_mode will have mem wr data. PWM mode will write only shares
+            mem_wr_data      = gs_mode ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int) : pwm_mode ? shuffle_en ? share_mem_wr_data : share_mem_wr_data_comb : '0; //In masking, only gs_mode will have mem wr data. PWM mode will write only shares
     end
     
     always_ff @(posedge clk or negedge reset_n) begin
@@ -260,7 +260,7 @@ module ntt_top
     assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
     assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
     assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0;
-    assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : MLDSA_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
+    assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : ABR_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
     assign pwm_a_rd_req.rd_wr_en = pwo_mode ? (masking_en & ~shuffle_en) ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
@@ -283,7 +283,7 @@ module ntt_top
 
     
     ntt_ctrl #(
-        .MEM_ADDR_WIDTH(MLDSA_MEM_ADDR_WIDTH)
+        .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
     )
     ntt_ctrl_inst0 (
         .clk(clk),
