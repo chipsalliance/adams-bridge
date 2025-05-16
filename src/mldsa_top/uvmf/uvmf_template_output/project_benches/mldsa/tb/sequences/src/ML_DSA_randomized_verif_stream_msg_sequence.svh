@@ -110,12 +110,12 @@ class ML_DSA_randomized_verif_stream_msg_sequence extends mldsa_bench_sequence_b
     if (!this.randomize(last_msg_padding)) begin
       `uvm_error("RANDOMIZE_FAIL", "Failed to randomize MLDSA_MSG last padding");
     end
-    last_msg_padding = last_msg_padding & 3;
+    last_msg_padding = last_msg_padding & 2'h3;
     `uvm_info("RANDOMIZATION", $sformatf("MLDSA_MSG last message padding is %0d", last_msg_padding), UVM_LOW);
     if (!this.randomize(msg_length)) begin
       `uvm_error("RANDOMIZE_FAIL", "Failed to randomize MLDSA_MSG lenght");
     end
-    msg_length = msg_length & 16'h3FFE;
+    msg_length = msg_length & 16'h1FFF;
     `uvm_info("RANDOMIZATION", $sformatf("MLDSA_MSG Lenght is %0d", ((msg_length*4)+last_msg_padding)), UVM_LOW);
 
 
