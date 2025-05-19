@@ -144,7 +144,7 @@ package mldsa_ctrl_pkg;
         MLDSA_CTRL_MSG_WAIT,
         MLDSA_CTRL_FUNC_START,
         MLDSA_CTRL_DONE,
-        MLDSA_CTRL_ERROR
+        MLDSA_CTRL_STALLED
       } mldsa_ctrl_fsm_state_e;
 
     typedef enum logic[3:0] {

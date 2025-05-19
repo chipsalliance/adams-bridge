@@ -1537,8 +1537,9 @@ always_comb begin : primary_ctrl_fsm_out_combo
         //load keccak data to SIPO
         if (prim_instr.opcode.keccak_en)
           prim_ctrl_fsm_ns = MLDSA_CTRL_SHA3_START;
-        //start sampler flow, data already driven to SIPO
-        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
+        else if (prim_instr.opcode.ntt_en & ntt_busy[0])
+          prim_ctrl_fsm_ns = MLDSA_CTRL_STALLED;
+        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en))
           prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_SHA3_START: begin
@@ -1556,18 +1557,27 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_imm = prim_instr.imm;
         if (msg_done & ~msg_hold) begin
           msg_valid = 0;
-          if (prim_instr.opcode.sampler_en & ~ntt_busy[0]) prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
-          else prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
+          if (prim_instr.opcode.ntt_en & ntt_busy[0]) prim_ctrl_fsm_ns = MLDSA_CTRL_STALLED;
+          else if (prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
+	  else prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_WAIT;
         end
       end
       MLDSA_CTRL_MSG_WAIT: begin
         //load another message
-        if (prim_instr.opcode.keccak_en) prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
-        //kick off the sampler
-        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en) & ~ntt_busy[0])
+        if (prim_instr.opcode.keccak_en) 
+          prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+        //NTT is stalled
+        else if (prim_instr.opcode.ntt_en & ntt_busy[0]) 
+          prim_ctrl_fsm_ns = MLDSA_CTRL_STALLED;
+        //Start the function
+        else if ((prim_instr.opcode.sampler_en | prim_instr.opcode.aux_en | prim_instr.opcode.ntt_en))
           prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
         else 
           prim_ctrl_fsm_ns = MLDSA_CTRL_MSG_LOAD;
+      end
+      MLDSA_CTRL_STALLED: begin
+        if (prim_instr.opcode.ntt_en & ~ntt_busy[0]) 
+          prim_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
       MLDSA_CTRL_FUNC_START: begin
         prim_ctrl_fsm_ns = MLDSA_CTRL_DONE;
@@ -1787,8 +1797,6 @@ always_comb begin : secondary_ctrl_fsm_out_combo
     unique case (sec_ctrl_fsm_ps)
       MLDSA_CTRL_IDLE: begin
         //Start function
-        if (sec_instr.opcode.sampler_en)
-          sec_ctrl_fsm_ns = MLDSA_CTRL_ERROR;
         if ((sec_instr.opcode.aux_en | sec_instr.opcode.ntt_en) & ~ntt_busy[1])
           sec_ctrl_fsm_ns = MLDSA_CTRL_FUNC_START;
       end
