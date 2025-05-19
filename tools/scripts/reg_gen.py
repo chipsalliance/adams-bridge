@@ -91,7 +91,7 @@ try:
       print("ADAMSBRIDGE_ROOT environment variable is not defined.")
     # Compile your RDL files
     # #compile the kv defines so that rdl files including kv controls have the definition
-    rdlc.compile_file(os.path.join(repo_root, "src/mldsa_top/rtl/kv_def.rdl")) 
+    rdlc.compile_file(os.path.join(repo_root, "src/abr_top/rtl/kv_def.rdl")) 
     rdlc.compile_file(sys.argv[1])
 
     # Elaborate the design

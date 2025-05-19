@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-`include "mldsa_config_defines.svh"
 `ifndef RV_FPGA_OPTIMIZE
 module abr_1r1w_ram #(
      parameter DEPTH      = 64

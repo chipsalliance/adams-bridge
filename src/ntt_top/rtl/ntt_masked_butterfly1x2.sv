@@ -21,7 +21,7 @@
 // Total latency = 264 clks
 
 module ntt_masked_butterfly1x2
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
         parameter WIDTH = 46,
@@ -117,7 +117,7 @@ module ntt_masked_butterfly1x2
     //Perform div2 on combined outputs
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .MLDSA_Q(abr_params_pkg::MLDSA_Q)
     ) div2_inst0 (
         .op_i(u10_combined),
         .res_o(u10_div2)
@@ -125,7 +125,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .MLDSA_Q(abr_params_pkg::MLDSA_Q)
     ) div2_inst1 (
         .op_i(v10_combined),
         .res_o(v10_div2)
@@ -133,7 +133,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .MLDSA_Q(abr_params_pkg::MLDSA_Q)
     ) div2_inst2 (
         .op_i(u11_combined),
         .res_o(u11_div2)
@@ -141,7 +141,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .MLDSA_Q(abr_params_pkg::MLDSA_Q)
     ) div2_inst3 (
         .op_i(v11_combined),
         .res_o(v11_div2)

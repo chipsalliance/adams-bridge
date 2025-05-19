@@ -22,7 +22,7 @@
 `default_nettype none
 
 module sigdecode_z_tb
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import sigdecode_z_defines_pkg::*;
 #(
     parameter REG_SIZE = 24,

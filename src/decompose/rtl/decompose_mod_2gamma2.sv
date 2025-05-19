@@ -19,9 +19,9 @@
 
 
 module decompose_mod_2gamma2
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
-        parameter REG_SIZE = mldsa_params_pkg::REG_SIZE-1,
+        parameter REG_SIZE = abr_params_pkg::REG_SIZE-1,
         localparam MLDSA_2GAMMA2_SIZE = $clog2(2*MLDSA_GAMMA2)
     )
     (

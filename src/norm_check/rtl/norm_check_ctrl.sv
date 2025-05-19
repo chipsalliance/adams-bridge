@@ -22,7 +22,7 @@
 // assumes all polynomials of the vector are stored in continuous addr space in memory
 
 module norm_check_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import norm_check_defines_pkg::*;
     #(
         parameter MLDSA_N = 256,
@@ -39,7 +39,7 @@ module norm_check_ctrl
 
         input wire [5:0] randomness,
 
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
         output logic check_enable,
         output logic norm_check_done
@@ -47,7 +47,7 @@ module norm_check_ctrl
 
     
     chk_read_state_e read_fsm_state_ps, read_fsm_state_ns;
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_rd_addr, locked_based_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_rd_addr, locked_based_addr;
 
     //Flags
     logic incr_rd_addr;
@@ -81,7 +81,7 @@ module norm_check_ctrl
                 latched_out_randomness  <= randomness[5:1];
                 latched_in_randomness   <= randomness[0];
                 increment_addr          <= randomness[5:1];
-                mem_rd_addr             <= {{(MLDSA_MEM_ADDR_WIDTH-6){1'b0}}, randomness};
+                mem_rd_addr             <= {{(ABR_MEM_ADDR_WIDTH-6){1'b0}}, randomness};
                 neutral_cnt             <= 'h0;
                 locked_based_addr       <=  mem_base_addr;
             end
@@ -89,14 +89,14 @@ module norm_check_ctrl
                 latched_in_randomness   <= latched_in_randomness;
                 latched_out_randomness  <= latched_out_randomness;
                 increment_addr          <= increment_addr;
-                mem_rd_addr             <= {mem_rd_addr[MLDSA_MEM_ADDR_WIDTH-1:6], increment_addr, latched_in_randomness};
+                mem_rd_addr             <= {mem_rd_addr[ABR_MEM_ADDR_WIDTH-1:6], increment_addr, latched_in_randomness};
                 neutral_cnt             <= neutral_cnt + 'h1;
             end
             else if (~incr_rd_addr) begin
                 latched_in_randomness   <= randomness[0];
                 latched_out_randomness  <= latched_out_randomness;
                 increment_addr          <= increment_addr + 'h1;
-                mem_rd_addr             <= {mem_rd_addr[MLDSA_MEM_ADDR_WIDTH-1:1], ~latched_in_randomness};
+                mem_rd_addr             <= {mem_rd_addr[ABR_MEM_ADDR_WIDTH-1:1], ~latched_in_randomness};
                 neutral_cnt             <= neutral_cnt + 'h1;
             end
         end

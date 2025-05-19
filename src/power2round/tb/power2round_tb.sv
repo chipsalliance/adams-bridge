@@ -24,7 +24,7 @@
 `default_nettype none
 
 module power2round_tb
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
         parameter REG_SIZE = 24,
         parameter MLDSA_Q = 23'd8380417,

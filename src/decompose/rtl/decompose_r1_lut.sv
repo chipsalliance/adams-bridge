@@ -21,7 +21,7 @@
 //======================================================================
 
 module decompose_r1_lut
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 23
     )

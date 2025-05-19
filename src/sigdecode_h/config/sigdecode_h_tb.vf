@@ -1,10 +1,10 @@
-+incdir+${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sigdecode_h/tb
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_config_defines.svh
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_params_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/mldsa_top/rtl/mldsa_reg_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sva.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_macros.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_1r1w_ram.sv

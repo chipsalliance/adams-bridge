@@ -23,7 +23,7 @@
 // 4 coeffs are written to each memory addr.
 
 module sigdecode_h
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 24,
         parameter MLDSA_OMEGA = 75,
@@ -38,7 +38,7 @@ module sigdecode_h
         input wire [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h_i,
 
         input wire sigdecode_h_enable,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
 
         output mem_if_t mem_wr_req,
         output logic [(4*REG_SIZE)-1:0] mem_wr_data,

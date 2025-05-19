@@ -2,7 +2,7 @@
 provides: [abr_libs]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
 targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
