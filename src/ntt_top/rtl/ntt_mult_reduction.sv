@@ -89,6 +89,7 @@ module ntt_mult_reduction #(
         .opa_i({{REG_SIZE-14{1'b0}},f[13:0]}),
         .opb_i(z_f[45:23]),
         .prime_i(PRIME),
+        .mlkem(1'b0),
         .res_o(e),
         .ready_o() //(ready_e)
     );
@@ -124,6 +125,7 @@ module ntt_mult_reduction #(
         .opa_i(g_reduced),
         .opb_i(e[22:0]),
         .prime_i(PRIME),
+        .mlkem(1'b0),
         .res_o(res),
         .ready_o() //(ready)
     );

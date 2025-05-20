@@ -37,6 +37,7 @@ module ntt_wrapper
 
     input mode_t mode,
     input wire ntt_enable,
+    input wire mlkem,
     input wire shuffle_en,
     input wire masking_en,
     input wire [5:0] random,
@@ -175,6 +176,7 @@ module ntt_wrapper
         .zeroize(zeroize),
         .mode(mode),
         .ntt_enable(ntt_enable),
+        .mlkem(mlkem),
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
         .accumulate(accumulate),

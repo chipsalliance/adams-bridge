@@ -35,6 +35,10 @@ package mldsa_params_pkg;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
   parameter MLDSA_K = 8;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
+
+  parameter MLKEM_Q = 12'd3329;
+  parameter MLKEM_NTT_N = 128;
+  parameter MLKEM_REG_SIZE = 12;
   
   parameter COEFF_PER_CLK = 4;
 
@@ -44,6 +48,9 @@ package mldsa_params_pkg;
   parameter MLDSA_NUM_NTT = 2;
   
   //Memory interface
+  //TODO: revert
+  parameter MLDSA_MEM_INST2_DEPTH = 1472; //17.25 KB
+  parameter MLDSA_MEM_MAX_DEPTH = MLDSA_MEM_INST2_DEPTH;
   parameter MLDSA_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
   parameter MLDSA_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
   parameter MLDSA_MEM_ADDR_WIDTH = $clog2(MLDSA_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
@@ -58,7 +65,6 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_INST1_DEPTH = 576; //6.75 KB
   parameter MLDSA_MEM_INST1_ADDR_W = $clog2(MLDSA_MEM_INST1_DEPTH);
   parameter MLDSA_MEM_INST1_DATA_W = MLDSA_MEM_DATA_WIDTH;
-  parameter MLDSA_MEM_INST2_DEPTH = 1472; //17.25 KB
   parameter MLDSA_MEM_INST2_ADDR_W = $clog2(MLDSA_MEM_INST2_DEPTH);
   parameter MLDSA_MEM_INST2_DATA_W = MLDSA_MEM_DATA_WIDTH;
   parameter MLDSA_MEM_INST3_DEPTH = 64; //3 KB
@@ -68,7 +74,7 @@ package mldsa_params_pkg;
   parameter MLDSA_MEM_W1_ADDR_W = $clog2(MLDSA_MEM_W1_DEPTH);
   parameter MLDSA_MEM_W1_DATA_W = 4;
   
-  parameter MLDSA_MEM_MAX_DEPTH = MLDSA_MEM_INST2_DEPTH;
+  
 
   parameter MLDSA_KEYGEN      = 3'b001;
   parameter MLDSA_SIGN        = 3'b010;

@@ -114,10 +114,10 @@ module ntt_masked_butterfly1x2
         v11_combined = pwm_mode ? '0 : HALF_WIDTH'(v11_packed[0] + v11_packed[1]);
     end
 
-    //Perform div2 on combined outputs
+    //Perform div2 on combined outputs - TODO: add MLKEM instances
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .PRIME(mldsa_params_pkg::MLDSA_Q)
     ) div2_inst0 (
         .op_i(u10_combined),
         .res_o(u10_div2)
@@ -125,7 +125,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .PRIME(mldsa_params_pkg::MLDSA_Q)
     ) div2_inst1 (
         .op_i(v10_combined),
         .res_o(v10_div2)
@@ -133,7 +133,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .PRIME(mldsa_params_pkg::MLDSA_Q)
     ) div2_inst2 (
         .op_i(u11_combined),
         .res_o(u11_div2)
@@ -141,7 +141,7 @@ module ntt_masked_butterfly1x2
 
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
-        .MLDSA_Q(mldsa_params_pkg::MLDSA_Q)
+        .PRIME(mldsa_params_pkg::MLDSA_Q)
     ) div2_inst3 (
         .op_i(v11_combined),
         .res_o(v11_div2)

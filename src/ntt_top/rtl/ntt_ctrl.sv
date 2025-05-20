@@ -52,6 +52,7 @@ module ntt_ctrl
     input wire shuffle_en,
     input wire   [5:0] random, //4+2 bits
     input wire masking_en,
+    input wire mlkem,
 
     output logic bf_enable,
     output logic [2:0] opcode,
@@ -78,7 +79,9 @@ module ntt_ctrl
     output logic pw_wren,
     output logic pw_share_mem_rden, 
     output logic busy,
-    output logic done
+    output logic done,
+    output logic ntt_passthrough,
+    output logic intt_passthrough
 );
 
 //Parameters
@@ -294,7 +297,12 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (rounds_count == num_rounds)
         rounds_count <= 'h0;
 end
-assign num_rounds = (ntt_mode inside {ct, gs, pwm_intt}) ? NTT_NUM_ROUNDS : PWO_NUM_ROUNDS;
+assign num_rounds = (ntt_mode inside {ct, gs/*, pwm_intt*/}) ? NTT_NUM_ROUNDS : PWO_NUM_ROUNDS;
+
+always_comb begin
+    ntt_passthrough  = ct_mode & mlkem & (rounds_count == NTT_NUM_ROUNDS-1);
+    intt_passthrough = gs_mode & mlkem & (rounds_count == 0);
+end
 
 //------------------------------------------
 //Done flags

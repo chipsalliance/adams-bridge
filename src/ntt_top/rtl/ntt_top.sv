@@ -52,6 +52,7 @@ module ntt_top
     //Ctrl signal ports
     input mode_t mode,
     input wire ntt_enable,
+    input wire mlkem,
 
     //NTT base addr ports
     input ntt_mem_addr_t ntt_mem_base_addr,
@@ -169,6 +170,8 @@ module ntt_top
     logic pwm_mode, pwa_mode, pws_mode;
     mode_t opcode;
     logic masking_en_ctrl;
+
+    logic ntt_passthrough, intt_passthrough;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -296,6 +299,7 @@ module ntt_top
         .sampler_valid(sampler_valid),
         .shuffle_en(shuffle_en),
         .random(random),
+        .mlkem(mlkem),
 
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
@@ -326,7 +330,9 @@ module ntt_top
         .pw_share_mem_rden(pw_rden_dest_mem),
         .pw_wren(pw_wren),
         .busy(ntt_busy),
-        .done(ntt_done_int)
+        .done(ntt_done_int),
+        .ntt_passthrough(ntt_passthrough),
+        .intt_passthrough(intt_passthrough)
     );
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -344,6 +350,7 @@ module ntt_top
         .DATA_WIDTH(NTT_REG_SIZE)
     ) w_rom (
         .mode(mode),
+        .mlkem(mlkem),
         .raddr(twiddle_addr),
         .rdata(twiddle_factor)
     );
@@ -351,23 +358,23 @@ module ntt_top
     always_comb begin
         unique case(mode)
             ct: begin
-                uvw_i.w00_i = twiddle_factor[NTT_REG_SIZE-1:0];
-                uvw_i.w01_i = twiddle_factor[NTT_REG_SIZE-1:0];
-                uvw_i.w10_i = twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
-                uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                uvw_i.w00_i = mlkem ? {12'h0, twiddle_factor[MLKEM_REG_SIZE-1:0]}                       : twiddle_factor[NTT_REG_SIZE-1:0];
+                uvw_i.w01_i = mlkem ? {12'h0, twiddle_factor[MLKEM_REG_SIZE-1:0]}                       : twiddle_factor[NTT_REG_SIZE-1:0];
+                uvw_i.w10_i = mlkem ? {12'h0, twiddle_factor[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE]}      : twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                uvw_i.w11_i = mlkem ? {12'h0, twiddle_factor[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]}  : twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
             end
             gs: begin
                 if (shuffle_en) begin
-                    uvw_i.w11_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                    uvw_i.w10_i = twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                    uvw_i.w01_i = twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
-                    uvw_i.w00_i = twiddle_factor[NTT_REG_SIZE-1:0];
+                    uvw_i.w11_i = mlkem ? {12'h0, twiddle_factor[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]} : twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w10_i = mlkem ? {12'h0, twiddle_factor[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]} : twiddle_factor[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w01_i = mlkem ? {12'h0, twiddle_factor[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE]}     : twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                    uvw_i.w00_i = mlkem ? {12'h0, twiddle_factor[MLKEM_REG_SIZE-1:0]}                      : twiddle_factor[NTT_REG_SIZE-1:0];
                 end
                 else begin
-                    uvw_i.w11_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                    uvw_i.w10_i = twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
-                    uvw_i.w01_i = twiddle_factor_reg[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
-                    uvw_i.w00_i = twiddle_factor_reg[NTT_REG_SIZE-1:0];
+                    uvw_i.w11_i = mlkem ? {12'h0, twiddle_factor_reg[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]} : twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w10_i = mlkem ? {12'h0, twiddle_factor_reg[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]} : twiddle_factor_reg[(3*NTT_REG_SIZE)-1:(2*NTT_REG_SIZE)];
+                    uvw_i.w01_i = mlkem ? {12'h0, twiddle_factor_reg[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE]}     : twiddle_factor_reg[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE];
+                    uvw_i.w00_i = mlkem ? {12'h0, twiddle_factor_reg[MLKEM_REG_SIZE-1:0]}                      : twiddle_factor_reg[NTT_REG_SIZE-1:0];
                 end
             end
             default: begin
@@ -391,16 +398,23 @@ module ntt_top
         .enable(bf_enable_mux),
         .masking_en(gs_mode ? masking_en_ctrl : masking_en),
         .shuffle_en(shuffle_en),
+        .mlkem(mlkem),
         .uvw_i(uvw_i),
         .pw_uvw_i(pw_uvw_i),
         .pwm_shares_uvw_i(pwm_shares_uvw_i),
         .rnd_i(rnd_i),
         .accumulate(accumulate),
         .bf_shares_uvw_i(bf_shares_uvw_i),
+        .mlkem_pwo_uvwz_01(),
+        .mlkem_pwo_uvwz_23(),
+        .ntt_passthrough(ntt_passthrough),
+        .intt_passthrough(intt_passthrough),
         .uv_o(uv_o),
         .pwo_uv_o(pwo_uv_o),
         .pwm_shares_uvo(pwm_shares_uvo),
-        .ready_o(bf_ready)
+        .ready_o(bf_ready),
+        .mlkem_pwo_uv_01(),
+        .mlkem_pwo_uv_23()
     );
 
     always_ff @(posedge clk or negedge reset_n) begin

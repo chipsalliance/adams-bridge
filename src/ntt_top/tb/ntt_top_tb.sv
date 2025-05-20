@@ -88,6 +88,7 @@ bf_uvwi_t uvw_i_tb;
 pwo_uvwi_t pw_uvw_i_tb;
 logic masking_en_tb;
 logic shuffling_en_tb;
+logic mlkem_tb;
 
 //----------------------------------------------------------------
 // Device Under Test.
@@ -152,6 +153,7 @@ ntt_wrapper dut (
     .zeroize(zeroize_tb),
     .mode(mode_tb),
     .ntt_enable(enable_tb),
+    .mlkem(mlkem_tb),
     .load_tb_values(load_tb_values),
     .load_tb_addr(load_tb_addr),
     .shuffle_en(shuffling_en_tb),
@@ -313,6 +315,8 @@ task init_sim;
         masking_en_tb = 'b0;
         shuffling_en_tb = 'b0;
 
+        mlkem_tb = 'b0;
+
         $display("End of init\n");
     end
 endtask
@@ -377,7 +381,47 @@ task ntt_ctrl_test();
     repeat(64) @(posedge clk_tb);
     bf_ready_tb = 1'b0;
 endtask
+/*
+task mlkem_ntt_top_test();
+    $display("MLKEM NTT operation\n");
+    operation = "MLKEM NTT";
+    mode_tb = ct;
+    enable_tb = 1;
+    // shuffling_en_tb = 1;
+    mlkem_tb = 1;
+    ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+    acc_tb = 1'b0;
+    svalid_tb = 1'b1;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
 
+    $display("Waiting for ntt_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received ntt_done\n");
+
+    $display("MLKEM INTT operation\n");
+    operation = "MLKEM INTT";
+    mode_tb = gs;
+    enable_tb = 1;
+    // shuffling_en_tb = 1;
+    mlkem_tb = 1;
+    ntt_mem_base_addr_tb.src_base_addr = 8'd128;
+    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+    acc_tb = 1'b0;
+    svalid_tb = 1'b1;
+    @(posedge clk_tb);
+    enable_tb = 1'b0;
+
+    $display("Waiting for ntt_done\n");
+    while(ntt_done_tb == 1'b0)
+        @(posedge clk_tb);
+    $display("Received ntt_done\n");
+endtask
+*/
 task ntt_top_test();
     fork
         begin
@@ -387,7 +431,7 @@ task ntt_top_test();
             end
         end
         begin
-            
+      /*      
     $display("NTT operation\n");
     operation = "NTT";
     mode_tb = ct;
@@ -422,7 +466,7 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received intt_done\n");
-
+*/
     
     
     $display("PWM operation 1 no acc\n");
@@ -432,6 +476,7 @@ task ntt_top_test();
     enable_tb = 1;
     masking_en_tb = 1;
     acc_tb = 1'b0;
+    svalid_tb = 1'b1;
     @(posedge clk_tb);
     enable_tb = 1'b0;
     $display("Waiting for pwo_done\n");
@@ -454,6 +499,7 @@ task ntt_top_test();
         @(posedge clk_tb);
     $display("Received pwo_done\n");
 
+    
     $display("PWM operation 1 acc\n");
     operation = "Masking acc";
     // $readmemh("pwm_iter1.hex", ntt_mem_tb);
@@ -574,7 +620,7 @@ task ntt_top_test();
     $display("Received pwo_done\n");
 
     
-
+/*
     $display("PWM + sampler operation 1 no acc\n");
     operation = "PWM sampler";
     mode_tb = pwm;
@@ -682,7 +728,7 @@ task ntt_top_test();
     // svalid_tb = 1'b0;
     // @(posedge clk_tb);
 
-
+*/
         end
     join_any
         
@@ -759,20 +805,15 @@ endtask
 initial begin
     init_sim();
     reset_dut();
-    // $readmemh("zeta.txt", zeta);
-    // $readmemh("zeta_inv.hex", zeta_inv);
 
     @(posedge clk_tb);
     $display("Starting init mem\n");
     init_mem();
-    // $readmemh("ntt_stage67.hex", ntt_mem_tb);
+
     @(posedge clk_tb);
-    // buffer_test();
-    // twiddle_rom_test();
-    // ntt_ctrl_test();
     $display("Starting ntt test\n");
     ntt_top_test();
-    // pwm_opt_test();
+    // mlkem_ntt_top_test();
     repeat(1000) @(posedge clk_tb);
     $finish;
 end

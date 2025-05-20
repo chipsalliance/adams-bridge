@@ -36,11 +36,23 @@ parameter MASKED_WIDTH = 46;
 //Latency params for NTT
 //----------------------
 parameter INTT_WRBUF_LATENCY         = 13;
-parameter UNMASKED_BF_LATENCY        = 10;         //5 cycles per butterfly * 2 instances in serial = 10 clks
+parameter UNMASKED_BF_LATENCY        = 10;        //5 cycles per butterfly * 2 instances in serial = 10 clks
 parameter UNMASKED_PWM_LATENCY       = 5;         //latency of modular multiplier + modular addition to perform accumulation
 parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
+
+//----------------------
+//Latency params for MLKEM NTT
+//----------------------
+parameter MLKEM_UNMASKED_PWM_LATENCY = 5; //TODO: adjust
+parameter MLKEM_UNMASKED_PWA_LATENCY = 1;
+parameter MLKEM_UNMASKED_PWS_LATENCY = 1;
+parameter MLKEM_INTT_WRBUF_LATENCY   = 9;
+parameter MLKEM_UNMASKED_PAIRWM_ACC_LATENCY = 5;
+parameter MLKEM_UNMASKED_PAIRWM_LATENCY = 4;
+parameter MLKEM_UNMASKED_BF_STAGE1_LATENCY = 3;
+parameter MLKEM_UNMASKED_BF_LATENCY  = MLKEM_UNMASKED_BF_STAGE1_LATENCY * 2;
 
 parameter MASKED_ADD_SUB_LATENCY            = 53;      //For 1 masked add/sub operation
 parameter MASKED_PWM_LATENCY                = 211;     //For 1 masked pwm operation
@@ -59,7 +71,7 @@ localparam ct =3'd0,
            pwm=3'd2,
            pwa=3'd3,
            pws=3'd4,
-           pwm_intt = 3'd5;
+           pairwm = 3'd5; 
  
 typedef logic [2:0] mode_t;
 
@@ -180,6 +192,26 @@ typedef struct packed {
     logic [NTT_REG_SIZE-1:0] uv2;
     logic [NTT_REG_SIZE-1:0] uv3;
 } pwo_t;
+
+typedef struct packed {
+    //input a
+    logic [MLKEM_REG_SIZE-1:0] u0_i;
+    logic [MLKEM_REG_SIZE-1:0] u1_i;
+    //input b
+    logic [MLKEM_REG_SIZE-1:0] v0_i;
+    logic [MLKEM_REG_SIZE-1:0] v1_i;
+    //accumulated input c (comes from dest mem)
+    logic [MLKEM_REG_SIZE-1:0] w0_i;
+    logic [MLKEM_REG_SIZE-1:0] w1_i;
+    //input zeta
+    logic [MLKEM_REG_SIZE-1:0] z0_i;
+    logic [MLKEM_REG_SIZE-1:0] z1_i;
+} mlkem_pwo_uvwzi_t;
+
+typedef struct packed {
+    logic [MLKEM_REG_SIZE-1:0] uv0_o;
+    logic [MLKEM_REG_SIZE-1:0] uv1_o;
+} mlkem_pwo_t;
 
 typedef struct packed {
     //input a
