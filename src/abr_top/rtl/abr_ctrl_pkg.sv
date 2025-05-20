@@ -146,7 +146,7 @@ package abr_ctrl_pkg;
         ABR_CTRL_MSG_WAIT,
         ABR_CTRL_FUNC_START,
         ABR_CTRL_DONE,
-        ABR_CTRL_ERROR
+        ABR_CTRL_STALLED
     } abr_ctrl_fsm_state_e;
 
     typedef enum logic[3:0] {

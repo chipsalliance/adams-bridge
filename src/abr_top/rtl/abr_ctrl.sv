@@ -1529,8 +1529,9 @@ always_comb begin : primary_ctrl_fsm_out_combo
         //load keccak data to SIPO
         if (mldsa_instr.opcode.keccak_en)
           mldsa_ctrl_fsm_ns = ABR_CTRL_SHA3_START;
-        //start sampler flow, data already driven to SIPO
-        else if ((mldsa_instr.opcode.sampler_en | mldsa_instr.opcode.aux_en | mldsa_instr.opcode.ntt_en) & ~ntt_busy[0])
+        else if (mldsa_instr.opcode.ntt_en & ntt_busy[0])
+          mldsa_ctrl_fsm_ns = ABR_CTRL_STALLED;
+        else if ((mldsa_instr.opcode.sampler_en | mldsa_instr.opcode.aux_en | mldsa_instr.opcode.ntt_en))
           mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
       ABR_CTRL_SHA3_START: begin
@@ -1548,18 +1549,25 @@ always_comb begin : primary_ctrl_fsm_out_combo
         sampler_imm = mldsa_instr.imm;
         if (msg_done & ~msg_hold) begin
           msg_valid = 0;
-          if (mldsa_instr.opcode.sampler_en & ~ntt_busy[0]) mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
-          else mldsa_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
+          if (mldsa_instr.opcode.ntt_en & ntt_busy[0]) mldsa_ctrl_fsm_ns = ABR_CTRL_STALLED;
+          else if (mldsa_instr.opcode.sampler_en | mldsa_instr.opcode.aux_en | mldsa_instr.opcode.ntt_en) mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
+	  else mldsa_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
         end
       end
       ABR_CTRL_MSG_WAIT: begin
         //load another message
-        if (mldsa_instr.opcode.keccak_en) mldsa_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
-        //kick off the sampler
-        else if ((mldsa_instr.opcode.sampler_en | mldsa_instr.opcode.aux_en | mldsa_instr.opcode.ntt_en) & ~ntt_busy[0])
-          mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
-        else 
+        if (mldsa_instr.opcode.keccak_en) 
           mldsa_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
+        //NTT is stalled
+        else if (mldsa_instr.opcode.ntt_en & ntt_busy[0]) 
+          mldsa_ctrl_fsm_ns = ABR_CTRL_STALLED;
+        //Start the function
+        else if ((mldsa_instr.opcode.sampler_en | mldsa_instr.opcode.aux_en | mldsa_instr.opcode.ntt_en))
+          mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
+      end
+      ABR_CTRL_STALLED: begin
+        if (mldsa_instr.opcode.ntt_en & ~ntt_busy[0]) 
+          mldsa_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
       ABR_CTRL_FUNC_START: begin
         mldsa_ctrl_fsm_ns = ABR_CTRL_DONE;
