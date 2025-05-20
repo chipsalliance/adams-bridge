@@ -14,7 +14,7 @@
 
 
 module rej_bounded_ctrl
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   #(
    parameter REJ_NUM_SAMPLERS = 8
   ,parameter REJ_SAMPLE_W     = 4

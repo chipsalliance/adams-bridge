@@ -23,7 +23,7 @@
 // above modified w1 is passed onto w1 encode
 
 module decompose_usehint
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
         parameter REG_SIZE = 23
     )
