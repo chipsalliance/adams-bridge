@@ -9,6 +9,7 @@ files:
   - src/rej_bounded/config/compile.yml
   - src/exp_mask/config/compile.yml
   - src/sample_in_ball/config/compile.yml
+  - src/cbd_sampler/config/compile.yml
   - src/decompose/config/compile.yml
   - src/sk_encode/config/compile.yml
   - src/sk_decode/config/compile.yml

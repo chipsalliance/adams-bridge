@@ -1,6 +1,6 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
-+incdir+${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
@@ -32,7 +32,6 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
-${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h.sv
-${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl/cbd_sampler_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl/cbd_sampler.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv

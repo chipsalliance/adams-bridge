@@ -23,6 +23,7 @@ requires:
   - rej_sampler
   - exp_mask
   - sample_in_ball
+  - cbd_sampler
   - abr_sha3
 targets:
   rtl:
