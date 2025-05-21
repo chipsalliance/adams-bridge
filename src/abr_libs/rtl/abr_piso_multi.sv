@@ -46,8 +46,8 @@ module abr_piso_multi #(
 
   // Select input/output rates based on mode
   always_comb begin
-    current_input_rate  = PISO_PTR_W'(INPUT_RATES[mode]);
-    current_output_rate = PISO_PTR_W'(OUTPUT_RATES[mode]);
+    current_input_rate  = INPUT_RATES[mode][PISO_PTR_W-1:0];
+    current_output_rate = OUTPUT_RATES[mode][PISO_PTR_W-1:0];
   end
 
   // Flow control

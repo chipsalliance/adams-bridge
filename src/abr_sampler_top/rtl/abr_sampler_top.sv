@@ -149,8 +149,11 @@ module abr_sampler_top
   logic zeroize_piso;
 
   abr_piso_mode_e piso_mode;
+  logic sha3_piso_dv;
   logic piso_dv, piso_hold;
   logic [REJS_PISO_OUTPUT_RATE-1:0] piso_data;
+
+  abr_sampler_fsm_state_e sampler_fsm_ps, sampler_fsm_ns;
 
   //Sampler mode muxes
   always_comb begin
@@ -170,6 +173,7 @@ module abr_sampler_top
     zeroize_sib = zeroize;
     zeroize_sib_mem = zeroize;
     zeroize_sha3 = zeroize;
+    zeroize_cbd = zeroize;
     zeroize_piso = zeroize;
     piso_mode = ABR_REJS_MODE;
 
@@ -268,16 +272,6 @@ module abr_sampler_top
   end
 
 //FSM Controller
-//declare fsm state variables
-typedef enum logic [2:0] {
-  abr_sampler_IDLE   = 3'b000,
-  abr_sampler_PROC   = 3'b001,
-  abr_sampler_WAIT   = 3'b010,
-  abr_sampler_RUN    = 3'b011,
-  abr_sampler_DONE   = 3'b100
-} abr_sampler_fsm_state_e;
-
-abr_sampler_fsm_state_e sampler_fsm_ps, sampler_fsm_ns;
 
 //Count coefficients
 //Load and increment dest address
@@ -298,7 +292,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != abr_sampler_IDLE);
+always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != ABR_SAMPLER_IDLE);
 
 //State logic
 always_comb begin : sampler_fsm_out_comb
@@ -308,40 +302,40 @@ always_comb begin : sampler_fsm_out_comb
     sha3_done = abr_prim_mubi_pkg::MuBi4False;
 
     unique case (sampler_fsm_ps)
-      abr_sampler_IDLE: begin
+      ABR_SAMPLER_IDLE: begin
         //wait for start
         if (sampler_start_i)
-          sampler_fsm_ns = abr_sampler_PROC;
+          sampler_fsm_ns = ABR_SAMPLER_PROC;
       end
-      abr_sampler_PROC: begin
-        sampler_fsm_ns = abr_sampler_WAIT;
+      ABR_SAMPLER_PROC: begin
+        sampler_fsm_ns = ABR_SAMPLER_WAIT;
         //drive process signal
         sha3_process = 1;
       end
-      abr_sampler_WAIT: begin
+      ABR_SAMPLER_WAIT: begin
         if (sampler_done) begin
-          sampler_fsm_ns = abr_sampler_DONE;
+          sampler_fsm_ns = ABR_SAMPLER_DONE;
         end else if (sha3_state_dv & ~sha3_state_hold) begin
-          sampler_fsm_ns = abr_sampler_RUN;
+          sampler_fsm_ns = ABR_SAMPLER_RUN;
         end
       end
-      abr_sampler_RUN: begin
+      ABR_SAMPLER_RUN: begin
         if (sampler_done) begin
-          sampler_fsm_ns = abr_sampler_DONE;
+          sampler_fsm_ns = ABR_SAMPLER_DONE;
         end else begin 
-          sampler_fsm_ns = abr_sampler_WAIT;
+          sampler_fsm_ns = ABR_SAMPLER_WAIT;
           //drive run signal
           sha3_run = 1;
         end
       end
-      abr_sampler_DONE: begin
+      ABR_SAMPLER_DONE: begin
         //drive done
         if (sha3_fsm == abr_sha3_pkg::StSqueeze) begin
           sha3_done = abr_prim_mubi_pkg::MuBi4True;
         end
         //Go to IDLE when sha3 resets
         if (~sha3_squeezing) begin 
-          sampler_fsm_ns = abr_sampler_IDLE;
+          sampler_fsm_ns = ABR_SAMPLER_IDLE;
         end
       end
       default: begin
@@ -352,10 +346,10 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : sampler_fsm_flops
   if (!rst_b) begin
-      sampler_fsm_ps <= abr_sampler_IDLE;
+      sampler_fsm_ps <= ABR_SAMPLER_IDLE;
   end
   else if (zeroize) begin
-      sampler_fsm_ps <= abr_sampler_IDLE;
+      sampler_fsm_ps <= ABR_SAMPLER_IDLE;
   end
   else begin
       sampler_fsm_ps <= sampler_fsm_ns;
@@ -415,7 +409,6 @@ end
     .keccak_storage_rst_error_o (sha3_rst_storage_err)
   );
 
-  logic sha3_piso_dv;
   always_comb sha3_piso_dv = sha3_state_dv & !(sampler_mode_i inside {ABR_SHAKE256, ABR_SHAKE128});
 
   //Multi-rate piso

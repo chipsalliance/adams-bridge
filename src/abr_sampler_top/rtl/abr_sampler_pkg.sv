@@ -80,12 +80,22 @@ package abr_sampler_pkg;
   parameter SIB_PISO_OUTPUT_RATE = SIB_NUM_SAMPLERS*SIB_SAMPLE_W;
 
   //CBD Sampler
-    parameter CBD_NUM_SAMPLERS     = COEFF_PER_CLK;
-    parameter CBD_SAMPLE_W         = 2*MLKEM_ETA;
-    parameter CBD_VLD_SAMPLES      = COEFF_PER_CLK;
-    parameter CBD_PISO_BUFFER_W    = 1344;
-    parameter CBD_PISO_INPUT_RATE  = 1088;
-    parameter CBD_PISO_OUTPUT_RATE = CBD_NUM_SAMPLERS*CBD_SAMPLE_W;
+  parameter CBD_NUM_SAMPLERS     = COEFF_PER_CLK;
+  parameter CBD_SAMPLE_W         = 2*MLKEM_ETA;
+  parameter CBD_VLD_SAMPLES      = COEFF_PER_CLK;
+  parameter CBD_PISO_BUFFER_W    = 1344;
+  parameter CBD_PISO_INPUT_RATE  = 1088;
+  parameter CBD_PISO_OUTPUT_RATE = CBD_NUM_SAMPLERS*CBD_SAMPLE_W;
+
+
+  //declare fsm state variables
+  typedef enum logic [2:0] {
+    ABR_SAMPLER_IDLE   = 3'b000,
+    ABR_SAMPLER_PROC   = 3'b001,
+    ABR_SAMPLER_WAIT   = 3'b010,
+    ABR_SAMPLER_RUN    = 3'b011,
+    ABR_SAMPLER_DONE   = 3'b100
+  } abr_sampler_fsm_state_e;
 
   typedef enum logic [2:0] {
     ABR_REJS_MODE,
