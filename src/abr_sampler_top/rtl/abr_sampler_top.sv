@@ -130,18 +130,30 @@ module abr_sampler_top
   logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_wrdata;
   logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_rddata;
 
+  //cbd
+  logic                                               cbd_piso_dv;
+  logic                                               cbd_piso_hold;
+  logic [CBD_NUM_SAMPLERS-1:0][CBD_SAMPLE_W-1:0]      cbd_piso_data;
+
+  logic                                               cbd_dv;
+  logic [CBD_VLD_SAMPLES-1:0][MLKEM_Q_WIDTH-1:0]      cbd_data;
+
   logic [ABR_MEM_ADDR_WIDTH-1:0] dest_addr;
   logic [$clog2(ABR_COEFF_CNT/4):0] coeff_cnt;
   logic vld_cycle;
   logic sampler_done;
 
-  logic zeroize_sha3, zeroize_rejb, zeroize_mldsa_rejs, zeroize_mlkem_rejs, zeroize_sib, zeroize_exp_mask;
+  logic zeroize_sha3, zeroize_rejb, zeroize_mldsa_rejs, zeroize_sib, zeroize_exp_mask;
+  logic zeroize_cbd, zeroize_mlkem_rejs;
   logic zeroize_sib_mem;
   logic zeroize_piso;
 
-  logic [1:0] piso_mode;
+  abr_piso_mode_e piso_mode;
+  logic sha3_piso_dv;
   logic piso_dv, piso_hold;
   logic [REJS_PISO_OUTPUT_RATE-1:0] piso_data;
+
+  abr_sampler_fsm_state_e sampler_fsm_ps, sampler_fsm_ns;
 
   //Sampler mode muxes
   always_comb begin
@@ -161,8 +173,9 @@ module abr_sampler_top
     zeroize_sib = zeroize;
     zeroize_sib_mem = zeroize;
     zeroize_sha3 = zeroize;
+    zeroize_cbd = zeroize;
     zeroize_piso = zeroize;
-    piso_mode = 0;
+    piso_mode = ABR_REJS_MODE;
 
     unique case (sampler_mode_i) inside
       ABR_SHAKE256: begin
@@ -189,7 +202,7 @@ module abr_sampler_top
         zeroize_mlkem_rejs |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = 0;
+        piso_mode = ABR_REJS_MODE;
       end
       MLDSA_REJ_SAMPLER: begin
         mode = abr_sha3_pkg::Shake;
@@ -199,7 +212,7 @@ module abr_sampler_top
         zeroize_mldsa_rejs |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = 0;
+        piso_mode = ABR_REJS_MODE;
       end
       ABR_EXP_MASK: begin
         mode = abr_sha3_pkg::Shake;
@@ -212,7 +225,7 @@ module abr_sampler_top
         zeroize_exp_mask |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = 2;
+        piso_mode = ABR_EXP_MODE;
       end
       ABR_REJ_BOUNDED: begin
         mode = abr_sha3_pkg::Shake;
@@ -225,7 +238,7 @@ module abr_sampler_top
         zeroize_rejb |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = 1;
+        piso_mode = ABR_REJB_MODE;
       end
       ABR_SAMPLE_IN_BALL: begin
         mode = abr_sha3_pkg::Shake;
@@ -235,7 +248,22 @@ module abr_sampler_top
         zeroize_sib |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = 3;
+        piso_mode = ABR_SIB_MODE;
+      end
+      ABR_CBD_SAMPLER: begin
+        mode = abr_sha3_pkg::Shake;
+        strength = abr_sha3_pkg::L256;
+        vld_cycle = cbd_dv;
+        sampler_mem_dv_o = cbd_dv;
+        for (int coeff = 0; coeff < COEFF_PER_CLK; coeff++) begin
+          sampler_mem_data_o[coeff][MLKEM_Q_WIDTH-1:0] = cbd_data[coeff];
+        end
+        sampler_mem_addr_o = dest_addr;
+        sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
+        zeroize_cbd |= sampler_done;
+        zeroize_sha3 |= sampler_done;
+        zeroize_piso |= sampler_done;
+        piso_mode = ABR_CBD_MODE;
       end
       default: begin
 
@@ -244,16 +272,6 @@ module abr_sampler_top
   end
 
 //FSM Controller
-//declare fsm state variables
-typedef enum logic [2:0] {
-  abr_sampler_IDLE   = 3'b000,
-  abr_sampler_PROC   = 3'b001,
-  abr_sampler_WAIT   = 3'b010,
-  abr_sampler_RUN    = 3'b011,
-  abr_sampler_DONE   = 3'b100
-} abr_sampler_fsm_state_e;
-
-abr_sampler_fsm_state_e sampler_fsm_ps, sampler_fsm_ns;
 
 //Count coefficients
 //Load and increment dest address
@@ -274,7 +292,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != abr_sampler_IDLE);
+always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != ABR_SAMPLER_IDLE);
 
 //State logic
 always_comb begin : sampler_fsm_out_comb
@@ -284,40 +302,40 @@ always_comb begin : sampler_fsm_out_comb
     sha3_done = abr_prim_mubi_pkg::MuBi4False;
 
     unique case (sampler_fsm_ps)
-      abr_sampler_IDLE: begin
+      ABR_SAMPLER_IDLE: begin
         //wait for start
         if (sampler_start_i)
-          sampler_fsm_ns = abr_sampler_PROC;
+          sampler_fsm_ns = ABR_SAMPLER_PROC;
       end
-      abr_sampler_PROC: begin
-        sampler_fsm_ns = abr_sampler_WAIT;
+      ABR_SAMPLER_PROC: begin
+        sampler_fsm_ns = ABR_SAMPLER_WAIT;
         //drive process signal
         sha3_process = 1;
       end
-      abr_sampler_WAIT: begin
+      ABR_SAMPLER_WAIT: begin
         if (sampler_done) begin
-          sampler_fsm_ns = abr_sampler_DONE;
+          sampler_fsm_ns = ABR_SAMPLER_DONE;
         end else if (sha3_state_dv & ~sha3_state_hold) begin
-          sampler_fsm_ns = abr_sampler_RUN;
+          sampler_fsm_ns = ABR_SAMPLER_RUN;
         end
       end
-      abr_sampler_RUN: begin
+      ABR_SAMPLER_RUN: begin
         if (sampler_done) begin
-          sampler_fsm_ns = abr_sampler_DONE;
+          sampler_fsm_ns = ABR_SAMPLER_DONE;
         end else begin 
-          sampler_fsm_ns = abr_sampler_WAIT;
+          sampler_fsm_ns = ABR_SAMPLER_WAIT;
           //drive run signal
           sha3_run = 1;
         end
       end
-      abr_sampler_DONE: begin
+      ABR_SAMPLER_DONE: begin
         //drive done
         if (sha3_fsm == abr_sha3_pkg::StSqueeze) begin
           sha3_done = abr_prim_mubi_pkg::MuBi4True;
         end
         //Go to IDLE when sha3 resets
         if (~sha3_squeezing) begin 
-          sampler_fsm_ns = abr_sampler_IDLE;
+          sampler_fsm_ns = ABR_SAMPLER_IDLE;
         end
       end
       default: begin
@@ -328,10 +346,10 @@ end
 //State flop
 always_ff @(posedge clk or negedge rst_b) begin : sampler_fsm_flops
   if (!rst_b) begin
-      sampler_fsm_ps <= abr_sampler_IDLE;
+      sampler_fsm_ps <= ABR_SAMPLER_IDLE;
   end
   else if (zeroize) begin
-      sampler_fsm_ps <= abr_sampler_IDLE;
+      sampler_fsm_ps <= ABR_SAMPLER_IDLE;
   end
   else begin
       sampler_fsm_ps <= sampler_fsm_ns;
@@ -383,33 +401,30 @@ end
 
     .state_valid_o      (sha3_state_dv),
     .state_valid_hold_i (sha3_state_hold),
-    .state_o       (sha3_state),
+    .state_o            (sha3_state),
 
-    .error_o (sha3_err),
+    .error_o            (sha3_err),
     .sparse_fsm_error_o (sha3_state_error),
-    .count_error_o  (sha3_count_error),
+    .count_error_o      (sha3_count_error),
     .keccak_storage_rst_error_o (sha3_rst_storage_err)
   );
 
-//one piso
-  abr_piso_4 #(
+  always_comb sha3_piso_dv = sha3_state_dv & !(sampler_mode_i inside {ABR_SHAKE256, ABR_SHAKE128});
+
+  //Multi-rate piso
+  abr_piso_multi #(
+    .NUM_MODES(5),
     .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-    .PISO_INPUT_RATE0(REJS_PISO_INPUT_RATE),
-    .PISO_INPUT_RATE1(REJB_PISO_INPUT_RATE),
-    .PISO_INPUT_RATE2(EXP_PISO_INPUT_RATE),
-    .PISO_INPUT_RATE3(SIB_PISO_INPUT_RATE),
-    .PISO_OUTPUT_RATE0(REJS_PISO_OUTPUT_RATE),
-    .PISO_OUTPUT_RATE1(REJB_PISO_OUTPUT_RATE),
-    .PISO_OUTPUT_RATE2(EXP_PISO_OUTPUT_RATE),
-    .PISO_OUTPUT_RATE3(SIB_PISO_OUTPUT_RATE),
     .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
-    .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE)
+    .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
+    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
+    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE})
   ) abr_piso_inst (
     .clk(clk),
     .rst_b(rst_b),
     .zeroize(zeroize_piso),
     .mode(piso_mode),
-    .valid_i(sha3_state_dv & sampler_mode_i inside {MLKEM_REJ_SAMPLER,MLDSA_REJ_SAMPLER,ABR_REJ_BOUNDED,ABR_EXP_MASK,ABR_SAMPLE_IN_BALL}),
+    .valid_i(sha3_piso_dv),
     .hold_o(sha3_state_hold),
     .data_i(sha3_state[0][REJS_PISO_INPUT_RATE-1:0]),
     .valid_o(piso_dv),
@@ -422,17 +437,20 @@ end
   always_comb rejb_piso_dv = piso_dv & (sampler_mode_i == ABR_REJ_BOUNDED);
   always_comb exp_piso_dv = piso_dv & (sampler_mode_i == ABR_EXP_MASK);
   always_comb sib_piso_dv = piso_dv & (sampler_mode_i == ABR_SAMPLE_IN_BALL);
+  always_comb cbd_piso_dv = piso_dv & (sampler_mode_i == ABR_CBD_SAMPLER);
 
   always_comb piso_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & mldsa_rejs_piso_hold) |
                           ((sampler_mode_i == MLKEM_REJ_SAMPLER)    & mlkem_rejs_piso_hold) |
                           ((sampler_mode_i == ABR_REJ_BOUNDED)    & rejb_piso_hold) |
                           ((sampler_mode_i == ABR_EXP_MASK)       & exp_piso_hold)  |
-                          ((sampler_mode_i == ABR_SAMPLE_IN_BALL) & sib_piso_hold);
+                          ((sampler_mode_i == ABR_SAMPLE_IN_BALL) & sib_piso_hold)  |
+                          ((sampler_mode_i == ABR_CBD_SAMPLER)    & cbd_piso_hold);
 
   always_comb rejs_piso_data = piso_data[REJS_PISO_OUTPUT_RATE-1:0];
   always_comb rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
   always_comb exp_piso_data = piso_data[EXP_PISO_OUTPUT_RATE-1:0];
   always_comb sib_piso_data = piso_data[SIB_PISO_OUTPUT_RATE-1:0];
+  always_comb cbd_piso_data = piso_data[CBD_PISO_OUTPUT_RATE-1:0];
 
   rej_sampler_ctrl#(
     .REJ_NUM_SAMPLERS(MLDSA_REJS_NUM_SAMPLERS),
@@ -584,6 +602,20 @@ always_comb sampler_ntt_dv_o = mldsa_rejs_dv | mlkem_rejs_dv;
     .rddata_i(sib_mem_rddata)
   );
 
+  cbd_sampler_ctrl
+  cbd_sampler_inst (
+  .clk(clk),
+  .rst_b(rst_b),
+  .zeroize(zeroize_cbd), 
+  //input data
+  .data_valid_i(cbd_piso_dv),
+  .data_hold_o(cbd_piso_hold),
+  .data_i(cbd_piso_data),
+
+  //output data
+  .data_valid_o(cbd_dv),
+  .data_o(cbd_data)
+  );
 
   `ABR_ASSERT_MUTEX(ERR_SAMPLER_O_MUTEX, {sampler_ntt_dv_o,sampler_mem_dv_o,sampler_state_dv_o}, clk, !rst_b)
 
