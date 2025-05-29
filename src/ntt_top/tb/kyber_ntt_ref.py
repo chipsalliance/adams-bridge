@@ -108,22 +108,22 @@ def fwd_NTT(poly_r):
     m = 128
     while (m >= 2):
         start = 0
-        # print("===================",m,"========================")
-        # print_table("r_array=", r, rows=64, cols=4)
+        print("========= NTT ==========",m,"========================")
+        print_table("r_array=", r, rows=64, cols=4)
         while (start < 256):
             k += 1
             zeta = zetas[k]
             # print("start = ", start)
             for j in range(start, start+m):
-                # print("Before ntt, r[j], r[j+m], zeta = ", hex(r[j]), hex(r[j+m]), hex(zeta), "at index ", j, j+m)
+                print("Before ntt, r[j], r[j+m], zeta = ", hex(r[j]), hex(r[j+m]), hex(zeta), "at index ", j, j+m)
                 r[j], r[j + m] = ct_bf(r[j], r[j + m], zeta)
                 # print("m = ", m, "k = ", k, "index = ", j, j+m)
                 # print("After ntt, r[j], r[j+m] = ", r[j], r[j+m], "at index ", j, j+m)
             start = start + 2 * m
         m >>= 1
 
-    # print("===================",m,"========================")
-    # print_table("r_array=", r, rows=64, cols=4)
+    print("===================",m,"========================")
+    print_table("r_array=", r, rows=64, cols=4)
     return r
 
 def inv_NTT(poly_r):
@@ -137,7 +137,7 @@ def inv_NTT(poly_r):
     m = 2 #1
     while (m <= KYBER_N):
         start = 0
-        print("===================",m,"========================")
+        print("========== INTT =========",m,"========================")
         print_table("r_array=", r, rows=64, cols=4)
         while (start < 256): #KYBER_N):
             k -= 1

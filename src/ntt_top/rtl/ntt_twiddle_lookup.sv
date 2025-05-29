@@ -42,8 +42,8 @@ reg [(3*KYBER_DATA_WIDTH)-1:0] kyber_ntt_twiddle_mem  [84:0];
 reg [(3*KYBER_DATA_WIDTH)-1:0] kyber_intt_twiddle_mem [84:0];
 
 always_comb begin
-    if (mlkem) //TODO: make sure there is no pairwm op after gs
-        rdata = (mode inside {ct, pwm}) ? {12'h0, kyber_ntt_twiddle_mem[raddr]} : (mode == gs) ? {12'h0, kyber_intt_twiddle_mem[raddr]} : 'h0;
+    if (mlkem) //pairwm only uses NTT domain zeta values
+        rdata = (mode inside {ct, pairwm}) ? {12'h0, kyber_ntt_twiddle_mem[raddr]} : (mode == gs) ? {12'h0, kyber_intt_twiddle_mem[raddr]} : 'h0;
     else
         rdata = (mode == ct) ? ntt_twiddle_mem[raddr] : (mode == gs) ? intt_twiddle_mem[raddr] : 'h0;
 end

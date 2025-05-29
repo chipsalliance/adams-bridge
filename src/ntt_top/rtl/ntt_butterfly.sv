@@ -25,7 +25,7 @@
 
 module ntt_butterfly 
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter REG_SIZE  = 23,
     parameter MLDSA_Q     = 23'd8380417,
@@ -225,7 +225,7 @@ module ntt_butterfly
     end
 
     //Mod sub - used in GS
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_0(
@@ -243,7 +243,7 @@ module ntt_butterfly
     );
 
     //Mod sub - used in CT
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_1(
@@ -261,7 +261,7 @@ module ntt_butterfly
     );
 
     //Mod add - used in CT and GS, PWM
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         add_inst_0(

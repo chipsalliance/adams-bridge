@@ -14,14 +14,16 @@
 //
 //======================================================================
 //
-// abr_add_sub_mod.sv
+// abr_ntt_add_sub_mod.sv
 // --------
 // modular addtion/subtraction module to compute opa+-opb % prime
-//
+// This is intended specifically for ntt usage, where input sizes differ for MLDSA vs MLKEM
 //
 //======================================================================
 
-module abr_add_sub_mod #(
+module abr_ntt_add_sub_mod 
+    import abr_params_pkg::*;
+    #(
     parameter REG_SIZE      = 384
     )
     (
@@ -36,6 +38,7 @@ module abr_add_sub_mod #(
     input  wire  [REG_SIZE-1:0] opa_i,
     input  wire  [REG_SIZE-1:0] opb_i,
     input  wire  [REG_SIZE-1:0] prime_i,
+    input  wire                 mlkem,
     output logic [REG_SIZE-1:0] res_o,
     output logic                ready_o
 );
@@ -44,13 +47,13 @@ module abr_add_sub_mod #(
     logic [REG_SIZE-1 : 0] opb1;
     logic [REG_SIZE-1 : 0] r0;
     logic [REG_SIZE-1 : 0] r1;
-    logic                  carry0; 
+    logic                  carry0_int; 
 
     logic                  sub_n;
     logic [REG_SIZE-1 : 0] r0_reg;
     logic                  carry0_reg;
 
-    logic                  carry1;
+    logic                  carry1_int;
     logic [1 : 0]          push_result_reg;
 
     abr_adder #(
@@ -58,23 +61,25 @@ module abr_add_sub_mod #(
         ) 
         adder_inst_0(
         .a_i(opa_i),
-        .b_i(opb0),
+        .b_i(mlkem ? {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, opb0[MLKEM_REG_SIZE-1:0]} : opb0),
         .cin_i(sub_i),
         .s_o(r0),
-        .cout_o(carry0)
+        .cout_o(carry0_int)
     );
 
     abr_adder #(
         .RADIX(REG_SIZE)
         ) 
         adder_inst_1(
-        .a_i(r0_reg),
-        .b_i(opb1),
+        .a_i(mlkem ? {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, r0_reg[MLKEM_REG_SIZE-1:0]} : r0_reg), //discard carry bit (bit 12) in mlkem
+        .b_i(mlkem ? {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, opb1[MLKEM_REG_SIZE-1:0]} : opb1),
         .cin_i(sub_n),
         .s_o(r1),
-        .cout_o(carry1)
+        .cout_o(carry1_int)
     );
 
+    assign carry0 = mlkem ? r0[MLKEM_REG_SIZE] : carry0_int;
+    assign carry1 = mlkem ? r1[MLKEM_REG_SIZE] : carry1_int;
 
     assign opb0 = sub_i ? ~opb_i : opb_i;
 
@@ -117,6 +122,11 @@ module abr_add_sub_mod #(
 
     assign ready_o = push_result_reg[0];
 
-    assign res_o = sub_n ? (carry0_reg ^ carry1)? r1 : r0_reg : (carry0_reg) ? r0_reg : r1;
+    always_comb begin
+        if (mlkem)
+            res_o = sub_n ? (carry0_reg ^ carry1)? {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, r1[MLKEM_REG_SIZE-1:0]} : {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, r0_reg[MLKEM_REG_SIZE-1:0]} : (carry0_reg) ? {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, r0_reg[MLKEM_REG_SIZE-1:0]} : {{(REG_SIZE-MLKEM_REG_SIZE){1'b0}}, r1[MLKEM_REG_SIZE-1:0]};
+        else
+            res_o = sub_n ? (carry0_reg ^ carry1)? r1 : r0_reg : (carry0_reg) ? r0_reg : r1;
+    end
     
 endmodule

@@ -77,7 +77,7 @@ module ntt_mult_reduction #(
     end
 
     //Mod add
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         mod_add_inst_0(
@@ -113,7 +113,7 @@ module ntt_mult_reduction #(
     //Calculate ab mod q
     //--------------------
     //Mod sub
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         mod_sub_inst_0(

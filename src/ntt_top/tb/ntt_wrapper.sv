@@ -61,15 +61,15 @@ module ntt_wrapper
     //NTT, PWM C memory IF
     mem_if_t mem_wr_req;
     mem_if_t mem_rd_req;
-    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data;
-    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data;
 
 
     //PWM A/B, PWA/S memory IF
     mem_if_t pwm_a_rd_req;
     mem_if_t pwm_b_rd_req;
-    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data;
-    logic [MLDSA_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data;
 
     //NTT/PWM muxes
     logic ntt_mem_wren, ntt_mem_rden;
@@ -103,7 +103,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(MLDSA_MEM_MASKED_DATA_WIDTH)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) ntt_mem (
         .clk(clk),
         .reset_n(reset_n),
@@ -124,7 +124,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(MLDSA_MEM_MASKED_DATA_WIDTH)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) pwm_mem_a (
         .clk(clk),
         .reset_n(reset_n),
@@ -145,7 +145,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(MLDSA_MEM_MASKED_DATA_WIDTH)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) pwm_mem_b (
         .clk(clk),
         .reset_n(reset_n),

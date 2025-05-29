@@ -47,7 +47,6 @@ parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
 //----------------------
 //Latency params for MLKEM NTT
 //----------------------
-parameter MLKEM_UNMASKED_PWM_LATENCY = 5; //TODO: adjust
 parameter MLKEM_UNMASKED_PWA_LATENCY = 1;
 parameter MLKEM_UNMASKED_PWS_LATENCY = 1;
 parameter MLKEM_INTT_WRBUF_LATENCY   = 9;
@@ -206,9 +205,15 @@ typedef struct packed {
     logic [MLKEM_REG_SIZE-1:0] w0_i;
     logic [MLKEM_REG_SIZE-1:0] w1_i;
     //input zeta
+    // logic [MLKEM_REG_SIZE-1:0] z0_i;
+    // logic [MLKEM_REG_SIZE-1:0] z1_i;
+} mlkem_pwo_uvwzi_t;
+
+typedef struct packed {
+    //input zeta
     logic [MLKEM_REG_SIZE-1:0] z0_i;
     logic [MLKEM_REG_SIZE-1:0] z1_i;
-} mlkem_pwo_uvwzi_t;
+} mlkem_pairwm_zeta_t;
 
 typedef struct packed {
     logic [MLKEM_REG_SIZE-1:0] uv0_o;

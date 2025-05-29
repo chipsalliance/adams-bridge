@@ -34,6 +34,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:

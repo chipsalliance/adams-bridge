@@ -163,11 +163,15 @@ module ntt_top
     //PWM output shares
     pwm_shares_uvo_t pwm_shares_uvo, pwm_shares_uvo_reg;
 
+    //PairWM
+    mlkem_pairwm_zeta_t mlkem_pairwm_zeta13_i;
+
     //Modes
     logic ct_mode;
     logic gs_mode;
     logic pwo_mode;
     logic pwm_mode, pwa_mode, pws_mode;
+    logic pairwm_mode;
     mode_t opcode;
     logic masking_en_ctrl;
 
@@ -181,6 +185,7 @@ module ntt_top
             pwm_mode <= 0;
             pwa_mode <= 0;
             pws_mode <= 0;
+            pairwm_mode <= 0;
         end
         else if (zeroize) begin
             ct_mode <= 0;
@@ -189,14 +194,16 @@ module ntt_top
             pwm_mode <= 0;
             pwa_mode <= 0;
             pws_mode <= 0;
+            pairwm_mode <= 0;
         end
         else begin
             ct_mode <= (mode == ct);
             gs_mode <= (mode == gs);
-            pwo_mode <= (mode inside {pwm, pwa, pws});
-            pwm_mode <= (mode == pwm);
+            pwo_mode <= (mode inside {pwm, pwa, pws}) | (mlkem & (mode == pairwm));
+            pwm_mode <= (mode == pwm); //TODO: add pairwm here instead?
             pwa_mode <= (mode == pwa);
             pws_mode <= (mode == pws);
+            pairwm_mode <= mlkem & (mode == pairwm);
         end
     end
 
@@ -208,7 +215,7 @@ module ntt_top
     assign mem_wr_data_int  = !pwo_mode ? (ct_mode ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u20_o} : buf_data_o)
                                         : pwm_wr_data_reg;
 
-    //Share mem:
+    //Share mem: TODO: mlkem
     assign share_mem_wr_req.rd_wr_en = (pwm_mode & masking_en) ? ((accumulate ? pw_wren_reg_d1 : pw_wren_reg) ? RW_WRITE : RW_IDLE) : RW_IDLE;
     assign share_mem_wr_req.addr     = (pwm_mode & masking_en) ? accumulate ? pwm_wr_addr_c_reg_d2 : pwm_wr_addr_c_reg /*pw_mem_wr_addr_c*/ : 'h0; //TODO: why is d2 required for accumulate case?
     assign share_mem_rd_req.rd_wr_en = masking_en ? (pwm_mode & accumulate) ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) 
@@ -220,7 +227,7 @@ module ntt_top
                                                   : 'h0;
     always_comb begin 
         if (!masking_en) //TODO: use flopped masking_en?
-            mem_wr_data      = shuffle_en ? pwm_mode ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg)
+            mem_wr_data      = shuffle_en ? (pwm_mode | pairwm_mode) ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg)
                                                      : (pwa_mode | pws_mode) ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_reg) : ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int)
                                           : ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int);
         else
@@ -260,9 +267,9 @@ module ntt_top
     end
 
     //mem rd - NTT/INTT mode, read ntt data. PWM mode, read accumulate data from c mem. PWA/S mode, unused
-    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : pwm_mode ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
-    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : pwm_mode ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
-    assign pwm_rd_data_c       = (pwm_mode & accumulate) ? mem_rd_data : 'h0;
+    assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : (pwm_mode | pairwm_mode) ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
+    assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : (pwm_mode | pairwm_mode) ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
+    assign pwm_rd_data_c       = ((pwm_mode | pairwm_mode) & accumulate) ? mem_rd_data : 'h0;
     assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : ABR_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
@@ -386,6 +393,16 @@ module ntt_top
         endcase
     end
 
+    always_comb begin
+        if (mlkem & (mode == pairwm)) begin
+            mlkem_pairwm_zeta13_i.z0_i = twiddle_factor_reg[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE];
+            mlkem_pairwm_zeta13_i.z1_i = twiddle_factor_reg[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]; //TODO: justify
+        end
+        else begin
+            mlkem_pairwm_zeta13_i = '0;
+        end
+    end
+
     //ntt_hybrid_butterfly_2x2 #(
     ntt_hybrid_butterfly_2x2 #(
         .WIDTH(WIDTH)
@@ -405,16 +422,13 @@ module ntt_top
         .rnd_i(rnd_i),
         .accumulate(accumulate),
         .bf_shares_uvw_i(bf_shares_uvw_i),
-        .mlkem_pwo_uvwz_01(),
-        .mlkem_pwo_uvwz_23(),
+        .mlkem_pairwm_zeta13_i(mlkem_pairwm_zeta13_i),
         .ntt_passthrough(ntt_passthrough),
         .intt_passthrough(intt_passthrough),
         .uv_o(uv_o),
         .pwo_uv_o(pwo_uv_o),
         .pwm_shares_uvo(pwm_shares_uvo),
-        .ready_o(bf_ready),
-        .mlkem_pwo_uv_01(),
-        .mlkem_pwo_uv_23()
+        .ready_o(bf_ready)
     );
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -632,7 +646,7 @@ module ntt_top
 
             pw_uvw_i         = 'h0;
         end
-        pwm: begin
+        pwm, pairwm: begin
             uvw_i.u00_i      = 'h0;
             uvw_i.u01_i      = 'h0;
             uvw_i.v00_i      = 'h0;

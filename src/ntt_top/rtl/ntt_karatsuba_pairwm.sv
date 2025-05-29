@@ -29,7 +29,7 @@
 
 module ntt_karatsuba_pairwm
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 (
     //Clock and reset
     input wire clk,
@@ -38,28 +38,28 @@ module ntt_karatsuba_pairwm
 
     //Data ports
     input wire accumulate,
-    input mlkem_pwo_uvwzi_t pwo_uvwz_i,
+    input mlkem_pwo_uvwzi_t pwo_uvw_i,
+    input [MLKEM_REG_SIZE-1:0] pwo_z_i,
     output mlkem_pwo_t pwo_uv_o
 );
 
-logic [MLKEM_REG_SIZE-1:0] u0, u1, v0, v1, w0, w1, z0, z1;
+logic [MLKEM_REG_SIZE-1:0] u0, u1, v0, v1, w0, w1, z1;
 
 logic [(2*MLKEM_REG_SIZE)-1:0] uv00, uv01, uv11, mul_res_uv12, uvz11;
-logic [MLKEM_REG_SIZE-1:0] uv00_reduced, uv11_reduced, /*add_res_u, add_res_v,*/ mul_res_uv12_reduced, /*sub_res0,*/ sub_res1, uvz11_reduced;
+logic [MLKEM_REG_SIZE-1:0] uv00_reduced, uv11_reduced, mul_res_uv12_reduced, sub_res1, uvz11_reduced;
 logic [REG_SIZE-1:0] add_res_u, add_res_v, sub_res0;
 
 always_comb begin
-    u0 = pwo_uvwz_i.u0_i;
-    u1 = pwo_uvwz_i.u1_i;
+    u0 = pwo_uvw_i.u0_i;
+    u1 = pwo_uvw_i.u1_i;
 
-    v0 = pwo_uvwz_i.v0_i;
-    v1 = pwo_uvwz_i.v1_i;
+    v0 = pwo_uvw_i.v0_i;
+    v1 = pwo_uvw_i.v1_i;
 
-    w0 = pwo_uvwz_i.w0_i;
-    w1 = pwo_uvwz_i.w1_i;
+    w0 = pwo_uvw_i.w0_i;
+    w1 = pwo_uvw_i.w1_i;
 
-    z0 = pwo_uvwz_i.z0_i; //TODO: confirm z0 is not used
-    z1 = pwo_uvwz_i.z1_i;
+    z1 = pwo_z_i;
 end
 
 //--------------------------------
@@ -84,7 +84,6 @@ mul_redux_inst_0 (
 
 logic [2:0][MLKEM_REG_SIZE-1:0] uv00_reduced_reg, uv11_reduced_reg, z1_reg;
 logic [3:0][MLKEM_REG_SIZE-1:0] w0_reg, w1_reg;
-// logic [MLKEM_REG_SIZE-1:0] uv0_o_int, uv1_o_int, uv1_o_int_reg, uv0_o_acc, uv1_o_acc;
 logic [REG_SIZE-1:0] uv0_o_int, uv1_o_int, uv1_o_int_reg, uv0_o_acc, uv1_o_acc;
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -154,7 +153,7 @@ mul_zeta_redux_inst (
 );
 
 //1 cycle
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE) //generic adder works with MLDSA reg size. In MLKEM, we're keeping the same reg size and just checking [12] for carry bit to reuse butterfly units. However, this instance is specific to MLKEM, so we need to pass reg size + 1 to preserve functionality
 )
 add_inst_uvz11(
@@ -174,7 +173,7 @@ add_inst_uvz11(
 
 //--------------------------------
 //1 cycle
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 add_inst_u(
@@ -192,7 +191,7 @@ add_inst_u(
 );
 
 //1 cycle
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 add_inst_v(
@@ -231,7 +230,7 @@ mul_redux_inst_12 (
 );
 //--------------------------------
 //1 cycle
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 sub_inst_0(
@@ -249,7 +248,7 @@ sub_inst_0(
 );
 
 //1 cycle
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 sub_inst_1(
@@ -258,8 +257,8 @@ sub_inst_1(
     .zeroize(zeroize),
     .add_en_i(1'b1),
     .sub_i(1'b1),
-    .opa_i(REG_SIZE'(uv11_reduced_reg[1])),
-    .opb_i(sub_res0),
+    .opa_i(sub_res0),
+    .opb_i(REG_SIZE'(uv11_reduced_reg[1])),
     .prime_i(REG_SIZE'(MLKEM_Q)),
     .mlkem(1'b1),
     .res_o(uv1_o_int),
@@ -268,7 +267,7 @@ sub_inst_1(
 
 //--------------------------------
 //accumulation
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 add_uv0_acc_inst(
@@ -285,7 +284,7 @@ add_uv0_acc_inst(
     .ready_o()
 );
 
-abr_add_sub_mod #(
+abr_ntt_add_sub_mod #(
     .REG_SIZE(REG_SIZE)
 )
 add_uv1_acc_inst(

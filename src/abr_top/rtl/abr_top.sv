@@ -537,11 +537,11 @@ generate
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
         end
-        MLDSA_PWM_INTT: begin
-          mode[g_inst] = pwm_intt;
-          ntt_random_en[g_inst] = 1;
-          sampler_valid[g_inst] = 1;
-        end
+        // MLDSA_PWM_INTT: begin
+        //   mode[g_inst] = pwm_intt;
+        //   ntt_random_en[g_inst] = 1;
+        //   sampler_valid[g_inst] = 1;
+        // end
         default: begin
         end
       endcase
@@ -562,6 +562,7 @@ generate
 
     .mode(mode[g_inst]),
     .ntt_enable(ntt_enable[g_inst]),
+    .mlkem(0),
     .ntt_mem_base_addr(ntt_mem_base_addr[g_inst]),
     .pwo_mem_base_addr(pwo_mem_base_addr[g_inst]),
     .accumulate(accumulate[g_inst]),

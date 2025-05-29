@@ -64,7 +64,7 @@ reg [23:0] zeta_inv [255:0];
 reg [(4*(REG_SIZE+1))-1:0] ntt_mem_tb [63:0];
 
 reg load_tb_values;
-reg [MLDSA_MEM_ADDR_WIDTH-1:0] load_tb_addr;
+reg [ABR_MEM_ADDR_WIDTH-1:0] load_tb_addr;
 
 reg [7:0] src_base_addr, interim_base_addr, dest_base_addr;
 reg acc_tb, svalid_tb, sampler_mode_tb;
@@ -381,47 +381,346 @@ task ntt_ctrl_test();
     repeat(64) @(posedge clk_tb);
     bf_ready_tb = 1'b0;
 endtask
-/*
+
 task mlkem_ntt_top_test();
-    $display("MLKEM NTT operation\n");
-    operation = "MLKEM NTT";
-    mode_tb = ct;
-    enable_tb = 1;
-    // shuffling_en_tb = 1;
-    mlkem_tb = 1;
-    ntt_mem_base_addr_tb.src_base_addr = 8'd0;
-    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
-    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
-    acc_tb = 1'b0;
-    svalid_tb = 1'b1;
-    @(posedge clk_tb);
-    enable_tb = 1'b0;
+    fork
+        begin
+            while(1) begin
+                random_tb <= $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
+            $display("MLKEM NTT operation\n");
+            operation = "MLKEM NTT with shuffling";
+            mode_tb = ct;
+            enable_tb = 1;
+            shuffling_en_tb = 1;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
 
-    $display("Waiting for ntt_done\n");
-    while(ntt_done_tb == 1'b0)
-        @(posedge clk_tb);
-    $display("Received ntt_done\n");
+            $display("Waiting for ntt_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received ntt_done\n");
 
-    $display("MLKEM INTT operation\n");
-    operation = "MLKEM INTT";
-    mode_tb = gs;
-    enable_tb = 1;
-    // shuffling_en_tb = 1;
-    mlkem_tb = 1;
-    ntt_mem_base_addr_tb.src_base_addr = 8'd128;
-    ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
-    ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
-    acc_tb = 1'b0;
-    svalid_tb = 1'b1;
-    @(posedge clk_tb);
-    enable_tb = 1'b0;
+            $display("MLKEM INTT operation\n");
+            operation = "MLKEM INTT";
+            mode_tb = gs;
+            enable_tb = 1;
+            // shuffling_en_tb = 1;
+            mlkem_tb = 1;
+            ntt_mem_base_addr_tb.src_base_addr = 8'd128;
+            ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
 
-    $display("Waiting for ntt_done\n");
-    while(ntt_done_tb == 1'b0)
-        @(posedge clk_tb);
-    $display("Received ntt_done\n");
+            $display("Waiting for ntt_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received ntt_done\n");
+        end
+    join_any
 endtask
-*/
+
+task mlkem_pwa_pws_top_test();
+
+    fork
+        begin
+            while(1) begin
+                random_tb <= $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
+
+            $display("MLKEM pwa operation\n");
+            operation = "MLKEM pwa no countermeasure";
+            mode_tb = pwa;
+            enable_tb = 1;
+            shuffling_en_tb = 0;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+            //---------------------------------------------------
+            $display("MLKEM pws operation\n");
+            operation = "MLKEM pws no countermeasure";
+            mode_tb = pws;
+            enable_tb = 1;
+            shuffling_en_tb = 0;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+
+            //--------------------------------------------
+
+            $display("MLKEM pwa operation with shuffling\n");
+            operation = "MLKEM pwa shuffling";
+            mode_tb = pwa;
+            enable_tb = 1;
+            shuffling_en_tb = 1;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+            //---------------------------------------------------
+            $display("MLKEM pws operation with shuffling\n");
+            operation = "MLKEM pws";
+            mode_tb = pws;
+            enable_tb = 1;
+            shuffling_en_tb = 1;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b0;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+        end
+    join_any
+
+endtask
+
+task mlkem_pairwm_top_test();
+    fork
+        begin
+            while(1) begin
+                random_tb <= $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
+            @(posedge clk_tb);
+            $display("MLKEM PairWM operation\n");
+            operation = "MLKEM PairWM";
+            mode_tb = pairwm;
+            enable_tb = 1;
+            shuffling_en_tb = 1;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b1;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+
+            //----------------------------------------------
+            $display("MLKEM PairWM operation with acc\n");
+            operation = "MLKEM pairwm";
+            mode_tb = pairwm;
+            enable_tb = 1;
+            shuffling_en_tb = 0;
+            masking_en_tb = 0;
+            mlkem_tb = 1;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b1;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+
+            //---------------------------------------------
+            @(posedge clk_tb);
+            $display("MLDSA PWM operation\n");
+            operation = "MLDSA PWM";
+            mode_tb = pwm;
+            enable_tb = 1;
+            shuffling_en_tb = 1;
+            masking_en_tb = 0;
+            mlkem_tb = 0;
+            // ntt_mem_base_addr_tb.src_base_addr = 8'd0;
+            // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
+            // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            acc_tb = 1'b1;
+            svalid_tb = 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+
+            //----------------------------------------------
+        end
+    join_any
+endtask
+
+task mlkem_pairwm_sampler_top_test();
+    fork
+        begin
+            while(1) begin
+                random_tb <= $urandom();
+                @(posedge clk_tb);
+            end
+        end
+        begin
+            $display("PairWM + sampler operation 1 no acc\n");
+            operation = "PairWM sampler";
+            mode_tb = pairwm;
+            mlkem_tb = 1;
+            enable_tb = 1;
+            acc_tb = 1'b0;
+            sampler_mode_tb = 1'b1;
+            shuffling_en_tb = 1'b0;
+            masking_en_tb = 1'b0;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            repeat(2) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            repeat(41) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(5) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+
+            //---------------------------------------
+
+            $display("PairWM + sampler operation 1 with acc\n");
+            operation = "PairWM sampler acc";
+            mode_tb = pairwm;
+            mlkem_tb = 1;
+            enable_tb = 1;
+            acc_tb = 1'b1;
+            sampler_mode_tb = 1'b1;
+            shuffling_en_tb = 1'b0;
+            masking_en_tb = 1'b0;
+            pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
+            repeat(2) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            enable_tb = 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            repeat(41) @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(5) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            repeat(10) @(posedge clk_tb);
+            svalid_tb <= 1'b1;
+            @(posedge clk_tb);
+            svalid_tb <= 1'b0;
+            $display("Waiting for pwo_done\n");
+            while(ntt_done_tb == 1'b0)
+                @(posedge clk_tb);
+            $display("Received pwo_done\n");
+        end
+    join_any
+endtask
+
 task ntt_top_test();
     fork
         begin
@@ -431,7 +730,7 @@ task ntt_top_test();
             end
         end
         begin
-      /*      
+           
     $display("NTT operation\n");
     operation = "NTT";
     mode_tb = ct;
@@ -466,7 +765,7 @@ task ntt_top_test();
     while(ntt_done_tb == 1'b0)
         @(posedge clk_tb);
     $display("Received intt_done\n");
-*/
+
     
     
     $display("PWM operation 1 no acc\n");
@@ -619,8 +918,6 @@ task ntt_top_test();
         @(posedge clk_tb);
     $display("Received pwo_done\n");
 
-    
-/*
     $display("PWM + sampler operation 1 no acc\n");
     operation = "PWM sampler";
     mode_tb = pwm;
@@ -728,7 +1025,6 @@ task ntt_top_test();
     // svalid_tb = 1'b0;
     // @(posedge clk_tb);
 
-*/
         end
     join_any
         
@@ -812,8 +1108,11 @@ initial begin
 
     @(posedge clk_tb);
     $display("Starting ntt test\n");
-    ntt_top_test();
-    // mlkem_ntt_top_test();
+    // ntt_top_test();
+    mlkem_ntt_top_test();
+    mlkem_pairwm_top_test();
+    mlkem_pairwm_sampler_top_test();
+    mlkem_pwa_pws_top_test();
     repeat(1000) @(posedge clk_tb);
     $finish;
 end
