@@ -55,6 +55,8 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_gs_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/../barrett_reduction/rtl/barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_r1_lut.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_w1_mem.sv
@@ -63,4 +65,5 @@ ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_w1_encode.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_usehint.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/tb/decompose_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
