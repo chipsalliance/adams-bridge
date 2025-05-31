@@ -1,0 +1,50 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [compress_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/compress_defines_pkg.sv
+---
+provides: [compress]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+  - compress_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/compress_top.sv
+      - $COMPILE_ROOT/rtl/compress.sv
+      - $COMPILE_ROOT/rtl/compress_ctrl.sv
+      - $COMPILE_ROOT/../barrett_reduction/rtl/barrett_reduction.sv
+      
+    tops: [compress]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/compress/config/design_lint/compress/sglint_waivers
+---
+provides: [compress_tb]  
+schema_version: 2.4.0
+requires: 
+  - compress
+  - compress_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/compress_tb.sv
+    tops: [compress_tb]
+  # sim:
+  #   pre_exec: 'echo "[PRE-EXEC] Copying compress hex to $PWD" && cp $COMPILE_ROOT/tb/test_vector.hex . && cp $COMPILE_ROOT/tb/dcmp_usehint_test_vector.hex .'
+
