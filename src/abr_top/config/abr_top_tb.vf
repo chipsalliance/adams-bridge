@@ -5,6 +5,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/rej_sampler/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/exp_mask/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl
@@ -31,7 +32,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_1r1w_512x4_ram.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ram_regout.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_icg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_2ff_sync.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso_4.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso_multi.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sample_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_msg_buffer.sv
@@ -63,6 +64,8 @@ ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sib_mem.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball_shuffler.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball.sv
+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl/cbd_sampler_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/cbd_sampler/rtl/cbd_sampler.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_util_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_alert_pkg.sv

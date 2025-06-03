@@ -43,6 +43,7 @@ package abr_params_pkg;
   parameter MLKEM_Q_WIDTH = $clog2(MLKEM_Q); //12
   parameter MLKEM_N = 256;
   parameter MLKEM_K = 4;
+  parameter MLKEM_ETA = 2;
 
   parameter COEFF_PER_CLK = 4;
 

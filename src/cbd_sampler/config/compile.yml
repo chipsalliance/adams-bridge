@@ -1,0 +1,33 @@
+---
+provides: [cbd_sampler]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/cbd_sampler_ctrl.sv
+      - $COMPILE_ROOT/rtl/cbd_sampler.sv
+    tops: [cbd_sampler_ctrl]
+---
+provides: [cbd_sampler_tb]
+schema_version: 2.4.0
+requires:
+  - cbd_sampler
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/cbd_sampler_tb.sv
+    tops: [cbd_sampler_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/cbd_sampler.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
