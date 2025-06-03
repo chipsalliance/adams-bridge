@@ -15,7 +15,7 @@
 // import ntt_defines_pkg::*;
 
 module ntt_utb_top
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     #(
     parameter REG_SIZE = 24,
     parameter RADIX = 23,

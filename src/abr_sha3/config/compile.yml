@@ -13,7 +13,7 @@ requires:
   - abr_sha3_pkg
   - abr_libs
   - abr_prim
-  - mldsa_defines
+  - abr_defines
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -39,7 +39,7 @@ targets:
       - $COMPILE_ROOT/tb/abr_sha3_tb.sv
     tops: [abr_sha3_tb]
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying SHA3 vector generator to ${pwd}" && cp $COMPILE_ROOT/tb/sha3.py .'
+    pre_exec: 'echo "[PRE-EXEC] Copying SHA3 vector generator to ${pwd}" && cp $COMPILE_ROOT/tb/abr_sha3.py .'
 global:
   tool:
     vcs:

@@ -2,7 +2,7 @@
 provides: [rej_sampler]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
   - abr_libs
 targets:
   rtl:
@@ -12,7 +12,7 @@ targets:
       - $COMPILE_ROOT/rtl/rej_sampler.sv
     tops: [rej_sampler_ctrl]
 ---
-provides: [rej_sampler_tb]
+provides: [mldsa_rej_sampler_tb]
 schema_version: 2.4.0
 requires:
   - rej_sampler
@@ -21,10 +21,10 @@ targets:
   tb:
     directories: [$COMPILE_ROOT/tb]
     files:
-      - $COMPILE_ROOT/tb/rej_sampler_tb.sv
-    tops: [rej_sampler_tb]
+      - $COMPILE_ROOT/tb/mldsa_rej_sampler_tb.sv
+    tops: [mldsa_rej_sampler_tb]
   sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/rej_sampler.py .'
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/mldsa_rej_sampler.py .'
 global:
   tool:
     vcs:
@@ -32,3 +32,24 @@ global:
         - '-assert svaext'
         - +define+ABR_ASSERT_ON
         - '-noinherit_timescale=1ns/1ps'
+---
+provides: [mlkem_rej_sampler_tb]
+schema_version: 2.4.0
+requires:
+  - rej_sampler
+  - mldsa_sampler_pkg
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/mlkem_rej_sampler_tb.sv
+    tops: [mlkem_rej_sampler_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ref model to ${pwd}" && cp $COMPILE_ROOT/tb/mlkem_rej_sampler.py .'
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'       

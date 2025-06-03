@@ -9,6 +9,7 @@ files:
   - src/rej_bounded/config/compile.yml
   - src/exp_mask/config/compile.yml
   - src/sample_in_ball/config/compile.yml
+  - src/cbd_sampler/config/compile.yml
   - src/decompose/config/compile.yml
   - src/sk_encode/config/compile.yml
   - src/sk_decode/config/compile.yml
@@ -19,8 +20,8 @@ files:
   - src/sigdecode_h/config/compile.yml
   - src/pk_decode/config/compile.yml
   - src/power2round/config/compile.yml
-  - src/mldsa_sampler_top/config/compile.yml
+  - src/abr_sampler_top/config/compile.yml
   - src/ntt_top/config/compile.yml
-  - src/mldsa_top/config/compile.yml
+  - src/abr_top/config/compile.yml
   # UVMF TBs
-  - src/mldsa_top/uvmf/config/compile.yml
+  - src/abr_top/uvmf/config/compile.yml

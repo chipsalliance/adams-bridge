@@ -19,7 +19,7 @@
 // Latency = 264 clks
 
 module ntt_masked_gs_butterfly
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
         parameter WIDTH = 46

@@ -24,7 +24,7 @@
 `default_nettype none
 
 module sigdecode_h_tb
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter NUM_WR = 4,
     parameter NUM_RD = 4,

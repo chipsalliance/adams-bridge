@@ -14,4 +14,4 @@
 #
 ---
 testname: rej_rand_test
-seed: 1 #${PLAYBOOK_RANDOM_SEED}
+seed: ${PLAYBOOK_RANDOM_SEED}
