@@ -359,7 +359,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if (rst_rd_addr) begin
         if (shuffle_en)
-            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode | pwo_mode) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr;
+            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode /*| pwo_mode*/) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr;
         else
             mem_rd_addr <= mem_rd_base_addr;
     end
