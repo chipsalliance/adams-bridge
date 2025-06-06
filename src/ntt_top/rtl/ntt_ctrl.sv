@@ -337,7 +337,7 @@ always_comb begin
     mem_wr_base_addr   = rounds_count[0] ? dest_base_addr : interim_base_addr;
 
     if (shuffle_en) begin
-        mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
+        mem_rd_addr_nxt    = (gs_mode /*| pwo_mode*/) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
         mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*(mlkem ? chunk_count_reg[4] : chunk_count_reg[0])) + (wr_addr_step*(mlkem ? buf_rdptr_reg[4] : buf_rdptr_reg[0])) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
     end
     else begin
@@ -1077,7 +1077,7 @@ always_comb begin
         buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt_reg;
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         mem_wr_en        = gs_mode  ? mem_wr_en_fsm : mem_wr_en_reg;
-        mem_rd_en        = (gs_mode | pwo_mode) ? mem_rd_en_reg : mem_rd_en_fsm;
+        mem_rd_en        = (gs_mode /*| pwo_mode*/) ? mem_rd_en_reg : mem_rd_en_fsm;
         twiddle_addr     = (gs_mode | pairwm_mode) ? twiddle_addr_reg_d3 : twiddle_addr_int;
         pw_rden          = pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
