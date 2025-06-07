@@ -160,11 +160,11 @@ always_comb begin
 
         u10 = u10_int;
         v10 = v10_int;
-        w10 = mlkem ? mlkem_w10_reg[0] : mldsa_w10_reg[0];
+        w10 = mlkem ? HALF_WIDTH'(mlkem_w10_reg[0]) : mldsa_w10_reg[0];
 
         u11 = u11_int;
         v11 = v11_int;
-        w11 = mlkem ? mlkem_w11_reg[0] : mldsa_w11_reg[0];
+        w11 = mlkem ? HALF_WIDTH'(mlkem_w11_reg[0]) : mldsa_w11_reg[0];
     end
 end
 
@@ -407,21 +407,21 @@ mlkem_pwo_t pairwm_uv01_o, pairwm_uv23_o;
 
 always_comb begin
     if (mlkem & (mode == pairwm)) begin
-        pairwm_uvw01_i.u0_i = pw_uvw_i.u0_i;
-        pairwm_uvw01_i.v0_i = pw_uvw_i.v0_i;
-        pairwm_uvw01_i.w0_i = pw_uvw_i.w0_i;
+        pairwm_uvw01_i.u0_i = pw_uvw_i.u0_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw01_i.v0_i = pw_uvw_i.v0_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw01_i.w0_i = pw_uvw_i.w0_i[MLKEM_REG_SIZE-1:0];
 
-        pairwm_uvw01_i.u1_i = pw_uvw_i.u1_i;
-        pairwm_uvw01_i.v1_i = pw_uvw_i.v1_i;
-        pairwm_uvw01_i.w1_i = pw_uvw_i.w1_i;
+        pairwm_uvw01_i.u1_i = pw_uvw_i.u1_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw01_i.v1_i = pw_uvw_i.v1_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw01_i.w1_i = pw_uvw_i.w1_i[MLKEM_REG_SIZE-1:0];
 
-        pairwm_uvw23_i.u0_i = pw_uvw_i.u2_i;
-        pairwm_uvw23_i.v0_i = pw_uvw_i.v2_i;
-        pairwm_uvw23_i.w0_i = pw_uvw_i.w2_i;
+        pairwm_uvw23_i.u0_i = pw_uvw_i.u2_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw23_i.v0_i = pw_uvw_i.v2_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw23_i.w0_i = pw_uvw_i.w2_i[MLKEM_REG_SIZE-1:0];
 
-        pairwm_uvw23_i.u1_i = pw_uvw_i.u3_i;
-        pairwm_uvw23_i.v1_i = pw_uvw_i.v3_i;
-        pairwm_uvw23_i.w1_i = pw_uvw_i.w3_i;
+        pairwm_uvw23_i.u1_i = pw_uvw_i.u3_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw23_i.v1_i = pw_uvw_i.v3_i[MLKEM_REG_SIZE-1:0];
+        pairwm_uvw23_i.w1_i = pw_uvw_i.w3_i[MLKEM_REG_SIZE-1:0];
     end
     else begin
         pairwm_uvw01_i = '0;
@@ -450,10 +450,10 @@ ntt_karatsuba_pairwm mlkem_pawm_inst1 (
 );
 
 always_comb begin
-    pwo_uv_o.uv0 = pairwm_mode ? pairwm_uv01_o.uv0_o : mldsa_pwo_uv_o.uv0;
-    pwo_uv_o.uv1 = pairwm_mode ? pairwm_uv01_o.uv1_o : mldsa_pwo_uv_o.uv1;
-    pwo_uv_o.uv2 = pairwm_mode ? pairwm_uv23_o.uv0_o : mldsa_pwo_uv_o.uv2;
-    pwo_uv_o.uv3 = pairwm_mode ? pairwm_uv23_o.uv1_o : mldsa_pwo_uv_o.uv3;
+    pwo_uv_o.uv0 = pairwm_mode ? HALF_WIDTH'(pairwm_uv01_o.uv0_o) : mldsa_pwo_uv_o.uv0;
+    pwo_uv_o.uv1 = pairwm_mode ? HALF_WIDTH'(pairwm_uv01_o.uv1_o) : mldsa_pwo_uv_o.uv1;
+    pwo_uv_o.uv2 = pairwm_mode ? HALF_WIDTH'(pairwm_uv23_o.uv0_o) : mldsa_pwo_uv_o.uv2;
+    pwo_uv_o.uv3 = pairwm_mode ? HALF_WIDTH'(pairwm_uv23_o.uv1_o) : mldsa_pwo_uv_o.uv3;
 end
 //----------------------------------------------------
 //Determine when results are ready
