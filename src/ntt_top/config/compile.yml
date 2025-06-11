@@ -66,6 +66,7 @@ targets:
       - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_if_cond.sv
       - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_karatsuba_pairwm.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_pairwm.sv
   # tb:
   #   directories: [$COMPILE_ROOT/rtl]
   #   files:

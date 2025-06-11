@@ -162,7 +162,7 @@ module ntt_butterfly
             pwm:begin
                 u_o = 'h0; //accumulate ? add_res : mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]; //TODO: see if pwm_res_o is good enough or reuse u_o to save routing/area
                 v_o = 'h0;
-                pwm_res_o = mlkem ? 'h0 : accumulate ? add_res : mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0];
+                pwm_res_o = mlkem ? 'h0 : accumulate ? add_res : mldsa_mul_res_reduced[REG_SIZE-1:0];
             end
             pwa:begin
                 u_o = 'h0; //add_res;
@@ -174,7 +174,7 @@ module ntt_butterfly
                 v_o = 'h0;
                 pwm_res_o = u_minus_v;
             end
-            pairwm: begin
+            pairwm: begin //Karatsuba pairwm is used instead of this butterfly
                 u_o = 'h0;
                 v_o = 'h0;
                 pwm_res_o = 'h0;
@@ -204,8 +204,8 @@ module ntt_butterfly
                 mul_opb = w_reg;
             end
             pwm:begin
-                add_opa = mlkem ? w_reg_d2 : w_reg_d4;
-                add_opb = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0];
+                add_opa = mlkem ? 'h0 : w_reg_d4;
+                add_opb = mlkem ? 'h0 : mldsa_mul_res_reduced[REG_SIZE-1:0];
                 mul_opa = opu_i;
                 mul_opb = opv_i;
             end
