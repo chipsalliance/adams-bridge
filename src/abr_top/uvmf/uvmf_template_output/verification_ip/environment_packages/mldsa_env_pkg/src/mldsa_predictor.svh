@@ -356,6 +356,9 @@ class mldsa_predictor #(
           //   lock_IP = lock_IP;
           // end
         end
+        else if (reg_addr == p_mldsa_rm.MLKEM_STATUS.get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_STATUS at address: 0x%x", reg_addr), UVM_HIGH)
+        end
         else if (reg_addr >= p_mldsa_rm.ABR_ENTROPY[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.ABR_ENTROPY[$size(p_mldsa_rm.ABR_ENTROPY)-1].get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register ABR_ENTROPY at address: 0x%x", reg_addr), UVM_HIGH)
@@ -663,6 +666,13 @@ class mldsa_predictor #(
       //foreach (p_mldsa_rm.MLDSA_SIGNATURE[i]) begin
       //  p_mldsa_rm.MLDSA_SIGNATURE[i].set(zero_value);
       //end
+      p_mldsa_rm.MLKEM_STATUS.set(zero_value);
+      foreach (p_mldsa_rm.MLKEM_SEED_D[i]) begin
+        p_mldsa_rm.MLKEM_SEED_D[i].set(zero_value);
+      end
+      foreach (p_mldsa_rm.MLKEM_SEED_Z[i]) begin
+        p_mldsa_rm.MLKEM_SEED_Z[i].set(zero_value);
+      end
     end
   endfunction
 

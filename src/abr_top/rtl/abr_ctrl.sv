@@ -62,7 +62,7 @@ module abr_ctrl
 
   //ntt interfaces
   output logic [ABR_NUM_NTT-1:0]            ntt_enable_o,
-  output mldsa_ntt_mode_e [ABR_NUM_NTT-1:0] ntt_mode_o,
+  output abr_ntt_mode_e [ABR_NUM_NTT-1:0]   ntt_mode_o,
   output ntt_mem_addr_t [ABR_NUM_NTT-1:0]   ntt_mem_base_addr_o,
   output pwo_mem_addr_t [ABR_NUM_NTT-1:0]   pwo_mem_base_addr_o,
   output logic [ABR_NUM_NTT-1:0]            ntt_masking_en_o,
@@ -259,15 +259,18 @@ end
 always_comb kv_seed_data_present = '0;
 `endif
 
-  logic [2:0] cmd_reg;
+  mldsa_cmd_e mldsa_cmd_reg;
+  mlkem_cmd_e mlkem_cmd_reg;
 
-  logic keygen_process, keygen_process_nxt;
-  logic signing_process, signing_process_nxt;
-  logic verifying_process, verifying_process_nxt;
-  logic keygen_signing_process, keygen_signing_process_nxt;
-  logic keygen_done;
-  logic signature_done;
-  logic verify_done;
+  logic mldsa_keygen_process, mldsa_keygen_process_nxt;
+  logic mldsa_signing_process, mldsa_signing_process_nxt;
+  logic mldsa_verifying_process, mldsa_verifying_process_nxt;
+  logic mldsa_keygen_signing_process, mldsa_keygen_signing_process_nxt;
+  logic mldsa_keygen_done;
+  logic mldsa_signature_done;
+  logic mldsa_verify_done;
+  logic mlkem_keygen_process, mlkem_keygen_process_nxt;
+  logic mlkem_keygen_done;
   logic process_done;
 
   //assign appropriate data to msg interface
@@ -277,7 +280,8 @@ always_comb kv_seed_data_present = '0;
   logic [15:0]               sampler_imm;
   
   logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
-  logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] seed_reg;
+  logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] mldsa_seed_reg;
+  logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] mlkem_seed_d_reg;
   logic [MLDSA_MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
   logic internal_mu_we;
   logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] internal_mu_reg;
@@ -316,6 +320,10 @@ always_comb kv_seed_data_present = '0;
   logic [ABR_PROG_ADDR_W-1 : 0] mldsa_prog_cntr, mldsa_prog_cntr_nxt;
   abr_seq_instr_t mldsa_instr_o, mldsa_instr;
 
+  logic mlkem_seq_en;
+  logic [ABR_PROG_ADDR_W-1 : 0] mlkem_prog_cntr, mlkem_prog_cntr_nxt;
+  abr_seq_instr_t mlkem_instr_o, mlkem_instr;
+
   logic msg_done;
   logic msg_last;
   logic [MsgStrbW-1:0] msg_strobe_nxt, last_msg_strobe;
@@ -329,16 +337,14 @@ always_comb kv_seed_data_present = '0;
   logic subcomponent_busy;
 
   abr_ctrl_fsm_state_e mldsa_ctrl_fsm_ps, mldsa_ctrl_fsm_ns;
+  abr_ctrl_fsm_state_e mlkem_ctrl_fsm_ps, mlkem_ctrl_fsm_ns;
   logic msg_valid;
 
   mldsa_privkey_u privatekey_reg;
   mldsa_signature_u signature_reg;
   mldsa_pubkey_u publickey_reg;
 
-  //sync points for dual sequencers
-  logic y_valid, set_y_valid, clear_y_valid;
-  logic w0_valid, set_w0_valid, clear_w0_valid;
-  logic c_valid, set_c_valid, clear_c_valid;
+  mlkem_keygen_reg_t mlkem_keygen_reg;
 
   //signature and verify validity checks
   logic signature_valid, set_signature_valid, clear_signature_valid;
@@ -382,8 +388,10 @@ always_comb kv_seed_data_present = '0;
   always_comb abr_reg_hwif_in.reset_b = rst_b;
   always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
   always_comb abr_reg_hwif_in.abr_ready = mldsa_ready; //FIXME add mlkem
-  always_comb cmd_reg = abr_reg_hwif_out.MLDSA_CTRL.CTRL.value;
-  always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |cmd_reg;
+  always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value);
+  always_comb mlkem_cmd_reg = mlkem_cmd_e'(abr_reg_hwif_out.MLKEM_CTRL.CTRL.value);
+  always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |mldsa_cmd_reg;
+  always_comb abr_reg_hwif_in.MLKEM_CTRL.CTRL.hwclr = |mlkem_cmd_reg;
   `ifdef CALIPTRA
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
   `else
@@ -420,7 +428,7 @@ always_comb kv_seed_data_present = '0;
     end
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
-      seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
+      mldsa_seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
@@ -525,7 +533,7 @@ always_comb kv_seed_data_present = '0;
     else if (zeroize)
       mldsa_privkey_lock <= '1;
     //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
-    else if (~kv_seed_data_present & (keygen_process & keygen_done))
+    else if (~kv_seed_data_present & (mldsa_keygen_process & mldsa_keygen_done))
       mldsa_privkey_lock <= '0;
   end
   
@@ -952,18 +960,14 @@ always_comb kv_seed_data_present = '0;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = '0;
-    abr_reg_hwif_in.MLKEM_CTRL.CTRL.hwclr = zeroize; //MERGE with MLDSA CTRL?
     abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = '0; //FIXME need this?
     abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = '0; //FIXME need this?
     abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = '0; //FIXME need this?
     abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = '0; //FIXME need this?
-    for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.hwclr = zeroize;
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.next = '0;
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.we = '0;
-    end
+    
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+      mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = '0;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = '0;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize;
@@ -984,8 +988,14 @@ always_comb kv_seed_data_present = '0;
       abr_reg_hwif_in.MLKEM_MSG[dword].MSG.swwe = '0;
     end
 
-    abr_reg_hwif_in.MLKEM_STATUS.READY.next = '0;
-    abr_reg_hwif_in.MLKEM_STATUS.VALID.next = '0;
+    for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.hwclr = zeroize;
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.next = '0;
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.we = '0;
+    end
+
+    abr_reg_hwif_in.MLKEM_STATUS.READY.next = mldsa_ready;
+    abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mldsa_valid_reg;
   end
 
   //pure-MLDSA assuming 512-bit input msg and empty ctx
@@ -996,7 +1006,7 @@ always_comb kv_seed_data_present = '0;
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
   end
 
-  always_comb rho_reg = verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
+  always_comb rho_reg = mldsa_verifying_process ? publickey_reg.enc.rho : privatekey_reg.enc.rho;
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
@@ -1005,7 +1015,7 @@ always_comb kv_seed_data_present = '0;
       msg_data <= '0;
     end else if (~msg_hold) begin
       unique case (sampler_src) inside
-        MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {seed_reg[{sampler_src_offset[1:0],1'b1}],seed_reg[{sampler_src_offset[1:0],1'b0}]};
+        MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {mldsa_seed_reg[{sampler_src_offset[1:0],1'b1}],mldsa_seed_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : rho_reg[sampler_src_offset[1:0]];
         MLDSA_RHO_P_ID:       msg_data <= msg_last ? {48'b0,sampler_imm} : rho_p_reg[sampler_src_offset[2:0]];
         MLDSA_TR_ID:          msg_data <= privatekey_reg.enc.tr[sampler_src_offset[2:0]];
@@ -1017,6 +1027,9 @@ always_comb kv_seed_data_present = '0;
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= {publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b1}],publickey_reg.enc.rho[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
+        MLKEM_SEED_D_ID:      msg_data <= msg_last ? {48'b0,sampler_imm} : {mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b1}],mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b0}]};
+        MLKEM_SIGMA_ID:       msg_data <= msg_last ? {48'b0,sampler_imm} : mlkem_keygen_reg.sigma[sampler_src_offset[1:0]];
+        MLKEM_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : mlkem_keygen_reg.rho[sampler_src_offset[1:0]];
         MLDSA_CNT_ID:         msg_data <= counter_reg;
         default:              msg_data <= '0;
       endcase
@@ -1032,9 +1045,11 @@ always_comb kv_seed_data_present = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       rho_p_reg <= 0;
+      mlkem_keygen_reg <= '0;
     end
     else if (zeroize) begin
       rho_p_reg <= 0;
+      mlkem_keygen_reg <= '0;
     end
     else if (sampler_state_dv_i) begin
       if (mldsa_instr.operand3 == MLDSA_DEST_K_RHO_REG_ID) begin
@@ -1042,6 +1057,13 @@ always_comb kv_seed_data_present = '0;
       end
       else if (mldsa_instr.operand3 == MLDSA_DEST_RHO_P_REG_ID) begin
         rho_p_reg <= sampler_state_data_i[0][511:0];
+      end
+      else if (mldsa_instr.operand3 == MLKEM_DEST_RHO_SIGMA_REG_ID) begin
+        mlkem_keygen_reg.rho <= sampler_state_data_i[0][255:0];
+        mlkem_keygen_reg.sigma <= sampler_state_data_i[0][511:256];
+      end
+      else if (mldsa_instr.operand3 == MLKEM_DEST_TR_REG_ID) begin
+        mlkem_keygen_reg.tr <= sampler_state_data_i[0][255:0];
       end
     end
   end
@@ -1084,55 +1106,44 @@ always_comb kv_seed_data_present = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       mldsa_valid_reg <= '0;
-      y_valid <= '0;
-      w0_valid <= '0;
-      c_valid <= '0;
       signature_valid <= 0;
       verify_valid <= 0;
-      keygen_process <= 0;
-      signing_process <= 0;
-      verifying_process <= 0;
-      keygen_signing_process <= 0;
+      mldsa_keygen_process <= 0;
+      mldsa_signing_process <= 0;
+      mldsa_verifying_process <= 0;
+      mldsa_keygen_signing_process <= 0;
+      mlkem_keygen_process <= 0;
     end
     else if (zeroize) begin
       mldsa_valid_reg <= '0;
-      y_valid <= '0;
-      w0_valid <= '0;
-      c_valid <= '0;
       signature_valid <= 0;
       verify_valid <= 0;
-      keygen_process <= 0;
-      signing_process <= 0;
-      verifying_process <= 0;
-      keygen_signing_process <= 0;
+      mldsa_keygen_process <= 0;
+      mldsa_signing_process <= 0;
+      mldsa_verifying_process <= 0;
+      mldsa_keygen_signing_process <= 0;
+      mlkem_keygen_process <= 0;
     end
     else begin
       mldsa_valid_reg <= mldsa_valid_reg | process_done;
-      y_valid <= set_y_valid ? 1 :
-                 clear_y_valid ? 0 :
-                 y_valid;
-      w0_valid <= set_w0_valid ? 1 :
-                  clear_w0_valid ? 0 :
-                  w0_valid;
-      c_valid <= set_c_valid ? 1 :
-                 clear_c_valid ? 0 :
-                 c_valid;
       signature_valid <= set_signature_valid ? 1 :
                          clear_signature_valid ? 0 :
                          signature_valid;
       verify_valid <= set_verify_valid ? 1 :
                       clear_verify_valid ? 0 :
                       verify_valid;
-      keygen_process <= process_done ? '0 : keygen_process | keygen_process_nxt;
-      signing_process <= process_done ? '0 : signing_process | signing_process_nxt;
-      verifying_process <= process_done ? '0 : verifying_process | verifying_process_nxt;
-      keygen_signing_process <= process_done ? '0 : keygen_signing_process | keygen_signing_process_nxt;
+      mldsa_keygen_process <= process_done ? '0 : mldsa_keygen_process | mldsa_keygen_process_nxt;
+      mldsa_signing_process <= process_done ? '0 : mldsa_signing_process | mldsa_signing_process_nxt;
+      mldsa_verifying_process <= process_done ? '0 : mldsa_verifying_process | mldsa_verifying_process_nxt;
+      mldsa_keygen_signing_process <= process_done ? '0 : mldsa_keygen_signing_process | mldsa_keygen_signing_process_nxt;
+      mlkem_keygen_process <= process_done ? '0 : mlkem_keygen_process | mlkem_keygen_process_nxt;
     end
   end
 
-  always_comb process_done = (keygen_process & keygen_done) |
-                             (signing_process & signature_done) |
-                             (verifying_process & verify_done);
+  always_comb process_done = (mldsa_keygen_process & mldsa_keygen_done) |
+                             (mldsa_signing_process & mldsa_signature_done) |
+                             (mldsa_verifying_process & mldsa_verify_done) |
+                             (mlkem_keygen_process & mlkem_keygen_done);
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
@@ -1146,17 +1157,17 @@ always_comb kv_seed_data_present = '0;
   end
       
   //Clear signature if makehint or normcheck fail
-  always_comb clear_signature_valid = signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
+  always_comb clear_signature_valid = mldsa_signing_process & ((makehint_done_i & makehint_invalid_i) | (normcheck_done_i & normcheck_invalid_i));
 
   //Jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
-  always_comb clear_verify_valid = verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
+  always_comb clear_verify_valid = mldsa_verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
                                    (mldsa_instr.opcode.aux_en & (mldsa_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
                                    
-//Primary sequencer for keygen, signing, and verify
+  //ML-DSA sequencer, instruction is busy
   always_comb subcomponent_busy = !(mldsa_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
                                   sampler_busy_i | ntt_busy[0];
 `ifdef CALIPTRA
-  always_comb pcr_sign_input_invalid = (cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  always_comb pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
   always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid;
 `else
   always_comb error_flag = skdecode_error_i;
@@ -1193,55 +1204,55 @@ always_comb kv_seed_data_present = '0;
   end
   //Subroutine decode
   always_comb begin
-    keygen_process_nxt = 0;
-    signing_process_nxt = 0;
-    verifying_process_nxt = 0;
-    keygen_signing_process_nxt = 0;
-    keygen_done = 0;
-    signature_done = 0;
-    verify_done = 0;
-    set_y_valid = 0;
-    set_w0_valid = 0;
-    set_c_valid = 0;
+    mldsa_keygen_process_nxt = 0;
+    mldsa_signing_process_nxt = 0;
+    mldsa_verifying_process_nxt = 0;
+    mldsa_keygen_signing_process_nxt = 0;
+    mldsa_keygen_done = 0;
+    mldsa_signature_done = 0;
+    mldsa_verify_done = 0;
+    mlkem_keygen_process_nxt = 0;
+    mlkem_keygen_done = 0;
     update_kappa = 0;
     set_verify_valid = 0;
     set_entropy = 0;
     mldsa_prog_cntr_nxt = MLDSA_RESET;
     mldsa_seq_en = !zeroize;
-    external_mu_mode_nxt = 0;    
-    clear_c_valid = 0;
-    clear_y_valid = 0;
-    clear_w0_valid = 0;
+    external_mu_mode_nxt = 0;  
     set_signature_valid = 0;
 
     unique case (mldsa_prog_cntr) inside
       MLDSA_RESET : begin 
         // Waiting for new valid command
-        unique case (cmd_reg) inside
-          MLDSA_KEYGEN : begin  // keygen
+        unique case ({mlkem_cmd_reg,mldsa_cmd_reg}) inside
+          {MLKEM_NONE,MLDSA_KEYGEN} : begin  // keygen
             mldsa_prog_cntr_nxt = MLDSA_KG_S;
-            keygen_process_nxt = 1;
+            mldsa_keygen_process_nxt = 1;
             set_entropy = 1;
-            external_mu_mode_nxt = 0;
           end   
-          MLDSA_SIGN : begin  // signing
+          {MLKEM_NONE,MLDSA_SIGN} : begin  // signing
             mldsa_prog_cntr_nxt = MLDSA_SIGN_S;
-            signing_process_nxt  = 1;
+            mldsa_signing_process_nxt  = 1;
             set_entropy = 1;
             external_mu_mode_nxt = external_mu;
           end                                   
-          MLDSA_VERIFY : begin  // verifying
+          {MLKEM_NONE,MLDSA_VERIFY} : begin  // verifying
             mldsa_prog_cntr_nxt = MLDSA_VERIFY_S;
-            verifying_process_nxt  = 1;
+            mldsa_verifying_process_nxt  = 1;
             set_verify_valid = 1;
             external_mu_mode_nxt = external_mu;
           end                          
-          MLDSA_KEYGEN_SIGN : begin  // KEYGEN + SIGNING 
+          {MLKEM_NONE,MLDSA_KEYGEN_SIGN} : begin  // KEYGEN + SIGNING 
             mldsa_prog_cntr_nxt = MLDSA_KG_S;
-            keygen_signing_process_nxt  = 1;
+            mldsa_keygen_signing_process_nxt  = 1;
             set_signature_valid = 1;
             set_entropy = 1;
             external_mu_mode_nxt = external_mu;
+          end                        
+          {MLKEM_KEYGEN,MLDSA_NONE} : begin  // KEYGEN + SIGNING 
+            mldsa_prog_cntr_nxt = MLKEM_KG_S;
+            mlkem_keygen_process_nxt  = 1;
+            set_entropy = 1;
           end
           default : begin
             mldsa_prog_cntr_nxt = MLDSA_RESET;
@@ -1259,10 +1270,10 @@ always_comb kv_seed_data_present = '0;
       end     
       MLDSA_KG_JUMP_SIGN : begin
         //Jump to signing process
-        if (keygen_signing_process) begin
+        if (mldsa_keygen_signing_process) begin
           set_signature_valid = 1;
           mldsa_prog_cntr_nxt = MLDSA_SIGN_CHECK_MODE;
-          signing_process_nxt  = 1;
+          mldsa_signing_process_nxt  = 1;
         end
         else begin
           mldsa_prog_cntr_nxt = mldsa_prog_cntr + 1;
@@ -1270,7 +1281,7 @@ always_comb kv_seed_data_present = '0;
       end
       MLDSA_KG_E : begin // end of keygen
         //mldsa_prog_cntr_nxt = MLDSA_RESET;
-        keygen_done = 1;
+        mldsa_keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
         if (external_mu_mode)
@@ -1290,7 +1301,7 @@ always_comb kv_seed_data_present = '0;
        end
       end
       MLDSA_SIGN_E : begin // end of signature
-        signature_done = 1;
+        mldsa_signature_done = 1;
       end
       MLDSA_VERIFY_CHECK_MODE : begin
         if (external_mu_mode)
@@ -1299,7 +1310,10 @@ always_comb kv_seed_data_present = '0;
           mldsa_prog_cntr_nxt = MLDSA_VERIFY_H_MU;
       end
       MLDSA_VERIFY_E : begin // end of verify flow
-        verify_done = 1;
+        mldsa_verify_done = 1;
+      end
+      MLKEM_KG_E : begin // end of keygen
+        mlkem_keygen_done = 1;
       end
       default : begin
         if (clear_verify_valid)
@@ -1320,6 +1334,8 @@ always_comb kv_seed_data_present = '0;
     if (mldsa_instr.opcode.sampler_en) begin
       if (mldsa_instr.opcode.ntt_en & mldsa_instr.opcode.mode.ntt_mode inside {MLDSA_PWM_SMPL, MLDSA_PWM_ACCUM_SMPL}) begin
         sampler_mode_o = MLDSA_REJ_SAMPLER;
+      end else if (mldsa_instr.opcode.ntt_en & mldsa_instr.opcode.mode.ntt_mode inside {MLKEM_PWM_SMPL, MLKEM_PWM_ACCUM_SMPL}) begin
+        sampler_mode_o = MLKEM_REJ_SAMPLER;
       end else begin
         sampler_mode_o = mldsa_instr.opcode.mode.sampler_mode;
       end
@@ -1634,6 +1650,15 @@ mldsa_seq mldsa_seq_inst
   .data_o(mldsa_instr_o)
 );
 
+
+mlkem_seq mlkem_seq_inst
+(
+  .clk(clk),
+  .en_i(mlkem_seq_en),
+  .addr_i(mlkem_prog_cntr_nxt),
+  .data_o(mlkem_instr_o)
+);
+
 //NTT gasket
 //If we have 2 NTT, connect to 0/1
 //If we have 1 NTT, connect both to 0
@@ -1647,7 +1672,7 @@ always_comb ntt_busy[1] = 1'b0; //FIXME for mlkem sec_instr.opcode.ntt_en & (ntt
 always_comb begin
   for (int ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
     ntt_enable_o[ntt] = '0;
-    ntt_mode_o[ntt] = MLDSA_NTT_NONE;
+    ntt_mode_o[ntt] = ABR_NTT_NONE;
     ntt_masking_en_o[ntt] = '0;
     ntt_shuffling_en_o[ntt] = '0;
     ntt_temp_address[ntt] = '0;
@@ -1660,7 +1685,7 @@ always_comb begin
     ntt_masking_en_o[MLDSA_SEQ_NTT] = mldsa_instr.opcode.masking_en;
     ntt_shuffling_en_o[MLDSA_SEQ_NTT] = mldsa_instr.opcode.shuffling_en;
     //passing a bit on the immediate field to mux between temp address locations
-    ntt_temp_address[MLDSA_SEQ_NTT] = mldsa_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE;
+    ntt_temp_address[MLDSA_SEQ_NTT] = mldsa_instr.imm[0] ? MLDSA_TEMP2_BASE[ABR_MEM_ADDR_WIDTH-1:0] : MLDSA_TEMP0_BASE[ABR_MEM_ADDR_WIDTH-1:0];
     //optimization - could be one interface here?
     ntt_mem_base_addr_o[MLDSA_SEQ_NTT] = '{src_base_addr:mldsa_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
                                           interim_base_addr:ntt_temp_address[MLDSA_SEQ_NTT],
@@ -1691,7 +1716,7 @@ always_comb begin
 end
 
 //Zeroizer
-always_comb mldsa_instr = ((mldsa_prog_cntr == MLDSA_ZEROIZE) | (mldsa_prog_cntr == MLDSA_RESET))? '0 : mldsa_instr_o;
+always_comb mldsa_instr = ((mldsa_prog_cntr == MLDSA_ZEROIZE) | (mldsa_prog_cntr == MLDSA_RESET)) ? '0 : mldsa_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1815,7 +1840,7 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_NTT_MEM_X, {ntt_mem_base_addr_o}, clk, !rst_b) 
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
-  `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (seed_reg === '0), clk, !rst_b)
+  `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (mldsa_seed_reg === '0), clk, !rst_b)
   //Assumption that stream message is never fast enough to get stalled
   `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, !(stream_msg_fsm_ps inside {MLDSA_MSG_IDLE}) & msg_hold, clk, !rst_b)
 

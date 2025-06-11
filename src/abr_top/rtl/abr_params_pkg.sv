@@ -80,10 +80,21 @@ package abr_params_pkg;
   parameter ABR_MEM_MAX_DEPTH = ABR_MEM_INST2_DEPTH;
   parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
   
-  parameter MLDSA_KEYGEN      = 3'b001;
-  parameter MLDSA_SIGN        = 3'b010;
-  parameter MLDSA_VERIFY      = 3'b011;
-  parameter MLDSA_KEYGEN_SIGN = 3'b100;
+  typedef enum logic [2:0] {
+    MLDSA_NONE        = 3'b000,
+    MLDSA_KEYGEN      = 3'b001,
+    MLDSA_SIGN        = 3'b010,
+    MLDSA_VERIFY      = 3'b011,
+    MLDSA_KEYGEN_SIGN = 3'b100
+  } mldsa_cmd_e;
+  
+  typedef enum logic [2:0] {
+    MLKEM_NONE        = 3'b000,
+    MLKEM_KEYGEN      = 3'b001,
+    MLKEM_ENC         = 3'b010,
+    MLKEM_DEC         = 3'b011,
+    MLKEM_KEYGEN_DEC  = 3'b100
+  } mlkem_cmd_e;
 
   parameter [63  : 0] MLDSA_CORE_NAME        = 64'h3837412D_44534D4C; // "MLDSA-87"
   parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00000000_3030312e; // "1.00"

@@ -108,7 +108,7 @@ module abr_top
   logic [ABR_NUM_NTT-1:0]                    sampler_valid;
   logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data;
 
-  mldsa_ntt_mode_e [ABR_NUM_NTT-1:0] ntt_mode;
+  abr_ntt_mode_e [ABR_NUM_NTT-1:0] ntt_mode;
   mode_t [ABR_NUM_NTT-1:0] mode;
   logic [ABR_NUM_NTT-1:0] accumulate;
   logic [ABR_NUM_NTT-1:0] ntt_enable;
@@ -498,7 +498,7 @@ generate
       ntt_random_en[g_inst] = 0; //Turn off random in NTT for all ops except PWM, INTT
 
       unique case (ntt_mode[g_inst]) inside
-        MLDSA_NTT_NONE: begin
+        ABR_NTT_NONE: begin
         end
         MLDSA_NTT: begin
           mode[g_inst] = ct;
@@ -537,11 +537,11 @@ generate
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
         end
-        // MLDSA_PWM_INTT: begin
-        //   mode[g_inst] = pwm_intt;
-        //   ntt_random_en[g_inst] = 1;
-        //   sampler_valid[g_inst] = 1;
-        // end
+        MLDSA_PWM_INTT: begin
+          mode[g_inst] = pwm_intt;
+          ntt_random_en[g_inst] = 1;
+          sampler_valid[g_inst] = 1;
+        end
         default: begin
         end
       endcase

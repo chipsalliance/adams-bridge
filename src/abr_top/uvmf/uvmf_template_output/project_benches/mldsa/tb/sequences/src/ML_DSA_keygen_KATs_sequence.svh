@@ -19,7 +19,7 @@ typedef struct {
   string SEED;         // Input SEED
   string expected_PK;  // Expected Public Key
   string expected_SK;  // Expected Secret Key
-} keygen_kat_t;
+} mldsa_keygen_kat_t;
 
 class ML_DSA_keygen_KATs_sequence extends mldsa_bench_sequence_base;
 
@@ -27,7 +27,7 @@ class ML_DSA_keygen_KATs_sequence extends mldsa_bench_sequence_base;
 
     
     // KAT arrays
-  keygen_kat_t keygen_kats[];
+  mldsa_keygen_kat_t keygen_kats[];
   bit [31:0] kat_SEED [];
   bit ready;
   bit valid;

@@ -194,6 +194,22 @@ module abr_sampler_top
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
+      ABR_SHA512: begin
+        mode = abr_sha3_pkg::Sha3;
+        strength = abr_sha3_pkg::L512;
+        sampler_state_dv_o = sha3_state_dv;
+        sampler_state_data_o[0] = sha3_state[0];
+        sampler_done = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
+      end
+      ABR_SHA256: begin
+        mode = abr_sha3_pkg::Sha3;
+        strength = abr_sha3_pkg::L256;
+        sampler_state_dv_o = sha3_state_dv;
+        sampler_state_data_o [0]= sha3_state[0];
+        sampler_done = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
+      end
       MLKEM_REJ_SAMPLER: begin
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L128;
