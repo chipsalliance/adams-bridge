@@ -58,6 +58,10 @@ package abr_ctrl_pkg;
     localparam SHAREDKEY_NUM_DWORDS = 8;
     localparam EK_NUM_DWORDS = 392;
     localparam EK_NUM_BYTES = EK_NUM_DWORDS * 4;
+    localparam DK_NUM_DWORDS = 792;
+    localparam DK_NUM_BYTES = DK_NUM_DWORDS * 4;
+    localparam MLKEM_DK_MEM_NUM_DWORDS = 768;;
+    localparam DK_REG_NUM_DWORDS = 24;
 
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
@@ -134,6 +138,17 @@ package abr_ctrl_pkg;
         logic [3:0][63:0] rho;
         logic [3:0][63:0] sigma;
     } mlkem_keygen_reg_t;
+
+    typedef struct packed {
+        logic [7:0][31:0] seed_z;
+        logic [7:0][31:0] tr;
+        logic [7:0][31:0] rho;
+    } mlkem_dk_reg_t;
+
+    typedef struct packed {
+        mlkem_dk_reg_t enc;
+        logic [DK_REG_NUM_DWORDS-1:0][31:0] raw;
+    } mlkem_keygen_reg_u;
 
     //FSM Controller for streaming msg
     typedef enum logic [2:0] {
