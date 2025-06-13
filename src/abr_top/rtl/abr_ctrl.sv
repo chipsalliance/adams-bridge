@@ -14,8 +14,10 @@
 
 //High level controller block for executing
 //Adams Bridge functions
-//  Keygen
-//  Signing
+//  ML-DSA Keygen
+//  ML-DSA Signing
+//  ML-DSA Verifying
+//  ML-KEM Keygen
 
 module abr_ctrl
   import abr_reg_pkg::*;
@@ -403,6 +405,9 @@ always_comb kv_seed_data_present = '0;
   logic mlkem_api_dk_mem_rd_dec, mlkem_api_dk_reg_rd_dec, mlkem_api_dk_reg_rd_dec_f;
   logic mlkem_api_dk_mem_rd_vld;
 
+  logic privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
+  logic encapskey_rd_ack, decapskey_rd_ack;
+
   logic [DATA_WIDTH-1:0] privkey_reg_rdata;
   logic [DATA_WIDTH-1:0] mlkem_dk_reg_rdata;
   logic [DATA_WIDTH-1:0] privkey_out_rdata;
@@ -771,10 +776,6 @@ always_comb kv_seed_data_present = '0;
   //no reads to PRIVKEY_IN allowed - just ack it
   assign abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
   assign abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_data = '0;
-
-
-  logic privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
-  logic encapskey_rd_ack, decapskey_rd_ack;
 
   always_comb  abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack;
   always_comb  abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack;
