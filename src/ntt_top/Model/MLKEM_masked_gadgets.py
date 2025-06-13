@@ -153,7 +153,7 @@ def barret_if_cond_mask(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0
     if debug:
         print(f"Random r0: {r0}, Q0: {Q0}, Q1: {Q1} and combined: {(Q0^Q1)}")
     
-    # Step 6.8: AND Q with the y_carries
+    # Step 6.8: OR Q with the y_carries
     Boelan_y0 =  np.zeros(12, dtype=np.uint8)
     Boelan_y1 =  np.zeros(12, dtype=np.uint8)
     for i in range(12):
@@ -210,7 +210,7 @@ def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness
             print(f"Adjusted t0: {t0} and t: {(t0+t1) & ((1 << 13)-1)}")
     
     # Step 4 (q.t): t = (t << 11) + (t << 10) + (t << 8) + t
-    carry = ((t0+t1)>>13) & 1 #should not register result of t0+t1 or carry here!
+    carry = ((t0+t1)>>13) & 1
     carry = carry * 0x2000
     t0 = (t0 << 11) + (t0 << 10) + (t0 << 8) + t0 - carry - (carry<<10)
     t1 = (t1 << 11) + (t1 << 10) + (t1 << 8) + t1 - (carry<<8) - (carry<<11)
@@ -243,8 +243,8 @@ def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness
     Arith_Q0, Arith_Q1 = barret_if_cond_mask(c0_rolled, c1_rolled, r_12_bit, turn_off_randomness, debug=debug)
     
     # Step 7: t = y - q
-    t0 = (c0 - Arith_Q0) & 0xFFF
-    t1 = (c1 - Arith_Q1) & 0xFFF
+    t0 = (c0 - Arith_Q0) & 0x1FFF
+    t1 = (c1 - Arith_Q1) & 0x1FFF
     if debug:
         print(f"Arith_Q0: {Arith_Q0}, Arith_Q1: {Arith_Q1} and Q: {(Arith_Q0+Arith_Q1) & ((1 << 13)-1)}")
         print(f"Final t0: {t0}, Final t1: {t1} and t: {(t0+t1) & ((1 << 13)-1)}")
