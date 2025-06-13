@@ -32,16 +32,42 @@ module compress_top
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
 
         output mem_if_t mem_rd_req,
-        output mem_if_t mem_wr_req,
         input wire [COEFF_PER_CLK-1:0][REG_SIZE-1:0] mem_rd_data,
-        output logic [COEFF_PER_CLK-1:0][REG_SIZE-1:0] mem_wr_data,
+
+        output logic api_wr_en,
+        output logic [ABR_MEM_ADDR_WIDTH-1:0] api_wr_addr,
+        output logic [DATA_WIDTH-1:0] api_wr_data,
 
         output logic compress_done
     );
 
-    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_int, compress_data;
-    logic /*[1:0]*/ ready;
-    logic enable;
+    localparam COMP_DATA_W = COEFF_PER_CLK*MLKEM_Q_WIDTH;
+
+    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_i, compress_data_o, compress_data;
+    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] mem_rd_data_stalled;
+    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_valid;
+    logic read_done;
+    logic mem_rd_data_valid;
+    logic mem_rd_data_hold,mem_rd_data_hold_f ;
+    logic compress_busy;
+
+    always_comb compress_done = compress_busy & read_done & ~api_wr_en;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            compress_busy <= '0;
+            mem_rd_data_hold_f <= '0;
+        end
+        else if (zeroize) begin
+            compress_busy <= '0;
+            mem_rd_data_hold_f <= '0;
+        end
+        else begin
+            compress_busy <= compress_enable ? '1 :
+                             compress_done ? '0 : compress_busy;
+            mem_rd_data_hold_f <= mem_rd_data_hold;
+        end
+    end
 
     compress_ctrl cmp_ctrl_inst (
         .clk(clk),
@@ -49,45 +75,91 @@ module compress_top
         .zeroize(zeroize),
         .cmp_enable(compress_enable),
         .src_base_addr(src_base_addr),
-        .dest_base_addr(dest_base_addr),
-        .ready(ready),
         .mem_rd_req(mem_rd_req),
-        .mem_wr_req(mem_wr_req),
-        .done(compress_done)
+        .mem_rd_data_valid(mem_rd_data_valid),
+        .mem_rd_data_hold(mem_rd_data_hold),
+        .done(read_done)
     );
 
     generate
         for (genvar i = 0; i < COEFF_PER_CLK; i++) begin
+
+            always_ff @(posedge clk or negedge reset_n) begin
+                if (!reset_n) begin
+                    mem_rd_data_stalled[i] <= '0;
+                end
+                else if (zeroize) begin
+                    mem_rd_data_stalled[i] <= '0;
+                end
+                else begin
+                    mem_rd_data_stalled[i] <= mem_rd_data[i][MLKEM_Q_WIDTH-1:0];
+                end
+            end
+
+            always_comb compress_data_i[i] = mem_rd_data_hold_f ? mem_rd_data_stalled[i] : mem_rd_data[i][MLKEM_Q_WIDTH-1:0];
+
             compress cmp_inst (
-                .op_i(mem_rd_data[i][MLKEM_Q_WIDTH-1:0]),
+                .op_i(compress_data_i[i]),
                 .mode(mode),
-                .op_o(compress_data_int[i])
+                .op_o(compress_data_o[i])
             );
         end
     endgenerate
 
-    //Flop compress data combo output, generate ready
+    always_comb begin
+        unique case (mode)
+            compress1: begin
+                compress_data = {44'b0, compress_data_o[3][0:0], compress_data_o[2][0:0], compress_data_o[1][0:0],compress_data_o[0][0:0]};
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 44);
+            end
+            compress5: begin
+                compress_data = {28'b0, compress_data_o[3][4:0], compress_data_o[2][4:0], compress_data_o[1][4:0],compress_data_o[0][4:0]};
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 28);
+            end
+            compress11: begin
+                compress_data = {4'b0, compress_data_o[3][10:0], compress_data_o[2][10:0], compress_data_o[1][10:0],compress_data_o[0][10:0]};
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 4);
+            end
+            compress12: begin
+                compress_data = compress_data_o;
+                compress_data_valid = {COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}};
+            end
+            default: begin
+                compress_data = compress_data_o; // Default case
+                compress_data_valid = '0;
+            end
+        endcase
+    end
+
+    abr_sample_buffer #(
+        .BUFFER_DATA_W(1),
+        .NUM_WR(48),
+        .NUM_RD(32)
+    ) compress_sample_buffer_inst (
+        .clk(clk),
+        .rst_b(reset_n),
+        .zeroize(zeroize),
+        .data_i(compress_data),
+        .data_valid_i(compress_data_valid),
+        .buffer_full_o(mem_rd_data_hold),
+        .data_valid_o(api_wr_en),
+        .data_o(api_wr_data)
+    );
+
+    //Compute API write address
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            compress_data <= '0;
-            enable <= '0;
-            ready <= '0;
+            api_wr_addr <= '0;
         end
         else if (zeroize) begin
-            compress_data <= '0;
-            enable <= '0;
-            ready <= '0;
+            api_wr_addr <= '0;
         end
-        else begin
-            compress_data <= compress_data_int;
-            enable <= compress_enable ? 'b1 : compress_done ? '0 : enable;
-            ready <= enable; //{enable, ready[1]};
+        else if (compress_enable) begin
+            api_wr_addr <= dest_base_addr;
+        end 
+        else if (api_wr_en) begin
+            api_wr_addr <= api_wr_addr + 'd1;
         end
     end
 
-    always_comb begin
-        for (int i = 0; i < COEFF_PER_CLK; i++) begin
-            mem_wr_data[i] = REG_SIZE'(compress_data[i]);
-        end
-    end
 endmodule

@@ -19,6 +19,7 @@ requires:
   - abr_defines
   - abr_libs
   - compress_pkg
+  - barrett_reduction
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -26,7 +27,6 @@ targets:
       - $COMPILE_ROOT/rtl/compress_top.sv
       - $COMPILE_ROOT/rtl/compress.sv
       - $COMPILE_ROOT/rtl/compress_ctrl.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/barrett_reduction.sv
       
     tops: [compress]
   rtl_lint:

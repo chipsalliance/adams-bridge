@@ -33,24 +33,32 @@ module compress
 
     logic [3:0] d;
     logic [(2*MLKEM_Q_WIDTH)-1:0] data_lsh_d, lsh_plus_halfq;
-
+    logic [MLKEM_Q_WIDTH-1:0] red_o;
+    
     always_comb begin
-        unique case(mode)
-            0: d = 1;
-            1: d = 5;
-            2: d = 11;
-            default: d = 1;
-        endcase
+        lsh_plus_halfq = 0;
 
-        data_lsh_d = (op_i << d);
-        lsh_plus_halfq = data_lsh_d + HALF_Q;
+        if (mode == 3) begin
+            op_o = op_i; // No compression, just pass through
+        end else begin
+            unique case(mode)
+                0: d = 1;
+                1: d = 5;
+                2: d = 11;
+                default: d = 1;
+            endcase
+
+            data_lsh_d = (2*MLKEM_Q_WIDTH)'(op_i << d);
+            lsh_plus_halfq = data_lsh_d + HALF_Q;
+            op_o = red_o;
+        end
     end
 
     barrett_reduction #(
         .prime(MLKEM_Q)
-    ) redux_inst (
+    ) compress_barret_reduction_inst (
         .x(lsh_plus_halfq),
-        .inv(op_o),
+        .inv(red_o),
         .r()
     );
 endmodule

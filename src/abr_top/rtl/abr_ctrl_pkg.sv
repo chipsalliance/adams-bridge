@@ -145,7 +145,7 @@ package abr_ctrl_pkg;
         logic [7:0][31:0] rho;
     } mlkem_dk_reg_t;
 
-    typedef struct packed {
+    typedef union packed {
         mlkem_dk_reg_t enc;
         logic [DK_REG_NUM_DWORDS-1:0][31:0] raw;
     } mlkem_keygen_reg_u;
@@ -209,7 +209,8 @@ package abr_ctrl_pkg;
         MLDSA_HINTSUM,
         MLDSA_DECOMP,
         MLDSA_LFSR,
-        MLKEM_BYTE_ENC
+        MLKEM_COMPRESS,
+        MLKEM_DECOMPRESS
     } abr_aux_mode_e;
 
     typedef union packed {
@@ -264,7 +265,7 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_CBD              = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_CBD_SAMPLER,   masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_REJS_PWM   = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_SMPL,       masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_REJS_PWMA  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM_SMPL, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_MLKEM_NTT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_NTT,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_NTT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_NTT,            masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_INTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_INTT,           masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWA        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b0, shuffling_en:1'b1};
     //Load Keccak with data but don't run it yet
@@ -291,7 +292,8 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_LFSR       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_BYTE_ENC   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_BYTE_ENC, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_COMPRESS   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_DECOMPRESS = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b0, shuffling_en:1'b0};
 
     //Immediate encodings
     localparam [ABR_IMM_WIDTH-1:0] MLDSA_NORMCHK_Z = 'h0000;
@@ -312,8 +314,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_DEST_LFSR_SEED_REG_ID = 'd8;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_RHO_SIGMA_REG_ID = 'd9;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_TR_REG_ID    = 'd10;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_EK_MEM_ID    = 'd11;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_DK_MEM_ID    = 'd12;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_EK_MEM_OFFSET = 'd384;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_DK_MEM_OFFSET = 'd0;
 
     //SRC register IDs
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_MSG_ID         = 'd15;

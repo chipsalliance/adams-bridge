@@ -39,6 +39,7 @@ provides: [ntt_top]
 schema_version: 2.4.0
 requires:
   - ntt_pkg
+  - barrett_reduction
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -62,9 +63,6 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_masked_pwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_butterfly1x2.sv
       - $COMPILE_ROOT/rtl/ntt_hybrid_butterfly_2x2.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/barrett_reduction.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_if_cond.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_karatsuba_pairwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_pairwm.sv
   # tb:

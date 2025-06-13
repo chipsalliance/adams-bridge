@@ -28,7 +28,8 @@ package compress_defines_pkg;
 
     localparam compress1 = 'h0,
                compress5 = 'h1,
-               compress11 = 'h2;
+               compress11 = 'h2,
+               compress12 = 'h3;
 
     typedef logic [1:0] compress_mode_t;
 endpackage

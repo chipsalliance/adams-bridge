@@ -425,7 +425,8 @@ end
     .keccak_storage_rst_error_o (sha3_rst_storage_err)
   );
 
-  always_comb sha3_piso_dv = sha3_state_dv & !(sampler_mode_i inside {ABR_SHAKE256, ABR_SHAKE128});
+  always_comb sha3_piso_dv = sha3_state_dv & (sampler_mode_i inside {MLKEM_REJ_SAMPLER, MLDSA_REJ_SAMPLER, ABR_EXP_MASK,
+                                                                     ABR_REJ_BOUNDED, ABR_SAMPLE_IN_BALL, ABR_CBD_SAMPLER});
 
   //Multi-rate piso
   abr_piso_multi #(
