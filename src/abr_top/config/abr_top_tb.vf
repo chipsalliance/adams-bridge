@@ -10,6 +10,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/decompose/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sk_encode/rtl
@@ -20,6 +21,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/sig_decode_z/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/pk_decode/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/power2round/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/compress/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_top/tb
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
@@ -52,6 +54,8 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_bounded/rtl/rej_bounded2.sv
@@ -113,6 +117,9 @@ ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3pad.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_top.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mult_dsp.sv
@@ -132,6 +139,8 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_gs_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_r1_lut.sv
@@ -168,11 +177,14 @@ ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_top.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_core.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_skencode.sv
+${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_top.sv
+${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress.sv
+${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_if.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_top.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mldsa_seq.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/mlkem_seq.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_seq.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_top.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg.sv

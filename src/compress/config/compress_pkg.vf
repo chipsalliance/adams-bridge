@@ -1,0 +1,2 @@
++incdir+${ADAMSBRIDGE_ROOT}/src/compress/rtl
+${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_defines_pkg.sv

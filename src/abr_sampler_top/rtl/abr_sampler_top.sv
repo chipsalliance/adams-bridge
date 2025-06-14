@@ -194,6 +194,22 @@ module abr_sampler_top
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
+      ABR_SHA512: begin
+        mode = abr_sha3_pkg::Sha3;
+        strength = abr_sha3_pkg::L512;
+        sampler_state_dv_o = sha3_state_dv;
+        sampler_state_data_o[0] = sha3_state[0];
+        sampler_done = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
+      end
+      ABR_SHA256: begin
+        mode = abr_sha3_pkg::Sha3;
+        strength = abr_sha3_pkg::L256;
+        sampler_state_dv_o = sha3_state_dv;
+        sampler_state_data_o [0]= sha3_state[0];
+        sampler_done = sha3_state_dv;
+        zeroize_sha3 |= sha3_state_dv;
+      end
       MLKEM_REJ_SAMPLER: begin
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L128;
@@ -409,7 +425,8 @@ end
     .keccak_storage_rst_error_o (sha3_rst_storage_err)
   );
 
-  always_comb sha3_piso_dv = sha3_state_dv & !(sampler_mode_i inside {ABR_SHAKE256, ABR_SHAKE128});
+  always_comb sha3_piso_dv = sha3_state_dv & (sampler_mode_i inside {MLKEM_REJ_SAMPLER, MLDSA_REJ_SAMPLER, ABR_EXP_MASK,
+                                                                     ABR_REJ_BOUNDED, ABR_SAMPLE_IN_BALL, ABR_CBD_SAMPLER});
 
   //Multi-rate piso
   abr_piso_multi #(

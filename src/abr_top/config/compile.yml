@@ -41,6 +41,7 @@ requires:
   - sigdecode_z
   - pkdecode
   - power2round
+  - compress
 targets:
   rtl_lint:
     waiver_files:
@@ -51,8 +52,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
       - $COMPILE_ROOT/rtl/abr_mem_if.sv
       - $COMPILE_ROOT/rtl/abr_mem_top.sv
-      - $COMPILE_ROOT/rtl/mldsa_seq.sv
-      - $COMPILE_ROOT/rtl/mlkem_seq.sv
+      - $COMPILE_ROOT/rtl/abr_seq.sv
       - $COMPILE_ROOT/rtl/abr_ctrl.sv
       - $COMPILE_ROOT/rtl/abr_top.sv
       - $COMPILE_ROOT/rtl/abr_reg.sv

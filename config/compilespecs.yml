@@ -11,6 +11,7 @@ files:
   - src/sample_in_ball/config/compile.yml
   - src/cbd_sampler/config/compile.yml
   - src/decompose/config/compile.yml
+  - src/compress/config/compile.yml
   - src/sk_encode/config/compile.yml
   - src/sk_decode/config/compile.yml
   - src/makehint/config/compile.yml
@@ -22,6 +23,7 @@ files:
   - src/power2round/config/compile.yml
   - src/abr_sampler_top/config/compile.yml
   - src/ntt_top/config/compile.yml
+  - src/barrett_reduction/config/compile.yml
   - src/abr_top/config/compile.yml
   # UVMF TBs
   - src/abr_top/uvmf/config/compile.yml

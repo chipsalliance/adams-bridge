@@ -399,7 +399,7 @@ addrmap abr_reg {
         default hw = rw;
         default we = true;
         default resetsignal = reset_b;
-        field {desc = "Output verify result field"; hwclr;} KEY[32] = 32'b0;
+        field {desc = "Output shared key"; hwclr;} KEY[32] = 32'b0;
     
     } MLKEM_SHARED_KEY[8];
 

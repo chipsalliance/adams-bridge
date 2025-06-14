@@ -25,10 +25,13 @@
 
 module ntt_butterfly 
     import ntt_defines_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter REG_SIZE  = 23,
     parameter MLDSA_Q     = 23'd8380417,
-    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2
+    parameter MLDSA_Q_DIV2_ODD = (MLDSA_Q + 1) / 2,
+    parameter MLKEM_Q = 12'd3329,
+    parameter MLKEM_Q_DIV2_ODD = (MLKEM_Q + 1) / 2
 )
 (
     //Clock and reset
@@ -39,6 +42,7 @@ module ntt_butterfly
     //Data ports
     input mode_t mode,
     input wire accumulate,
+    input wire mlkem,
 
     input wire   [REG_SIZE-1:0] opu_i,
     input wire   [REG_SIZE-1:0] opv_i,
@@ -55,17 +59,22 @@ module ntt_butterfly
     logic [REG_SIZE-1:0] w_reg, w_reg_d2, w_reg_d3, w_reg_d4; //w_reg_d4 only used in pwm mode
 
     //Multiplier wires
-    logic [(2*REG_SIZE)-1:0] vw, vw_reg, mul_res;
-    logic [REG_SIZE-1:0] mul_res_reduced;
+    logic [(2*REG_SIZE)-1:0] vw, vw_reg, mul_res; 
+    logic [(2*MLKEM_REG_SIZE)-1:0] mul_res_reg; //used in MLKEM
+    logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced;
+    logic [22:0] mldsa_mul_res_reduced;
+    logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced_reg; //used in MLKEM
     logic [REG_SIZE-1:0] mul_opa, mul_opb;
 
     //Subtractor wires
-    logic [REG_SIZE-1:0] u_minus_v, u_minus_v_div2;
+    logic [REG_SIZE-1:0] u_minus_v, mldsa_u_minus_v_div2;
+    logic [MLKEM_REG_SIZE-1:0] mlkem_u_minus_v_div2;
 
     //Adder wires
     logic [REG_SIZE-1:0] add_opa, add_opb;
     logic [REG_SIZE-1:0] add_res, add_res_d1, add_res_d2, add_res_d3, add_res_d4, sub_res;
-    logic [REG_SIZE-1:0] add_res_div2, sub_res_div2, mul_res_reduced_div2;
+    logic [REG_SIZE-1:0] mldsa_add_res_div2, sub_res_div2, mul_res_reduced_div2;
+    logic [MLKEM_REG_SIZE-1:0] mlkem_add_res_div2;
 
     //Flop u input to match multiplier output (4 cycle delay)
     always_ff @(posedge clk or negedge reset_n) begin
@@ -79,6 +88,9 @@ module ntt_butterfly
             w_reg_d2 <= 'h0; 
             w_reg_d3 <= 'h0; 
             w_reg_d4 <= 'h0;
+
+            mul_res_reg <= '0;
+            mlkem_mul_res_reduced_reg <= '0;
         end
         else if (zeroize) begin
             u_reg    <= 'h0;
@@ -90,6 +102,9 @@ module ntt_butterfly
             w_reg_d2 <= 'h0; 
             w_reg_d3 <= 'h0; 
             w_reg_d4 <= 'h0;
+
+            mul_res_reg <= '0;
+            mlkem_mul_res_reduced_reg <= '0;
         end
         else begin
             u_reg    <= opu_i;
@@ -102,6 +117,10 @@ module ntt_butterfly
             w_reg_d2 <= w_reg; 
             w_reg_d3 <= w_reg_d2; 
             w_reg_d4 <= w_reg_d3;
+
+            //Used in MLKEM
+            mul_res_reg <= (2*MLKEM_REG_SIZE)'(mul_res);
+            mlkem_mul_res_reduced_reg <= mlkem_mul_res_reduced;
         end
     end
 
@@ -136,24 +155,29 @@ module ntt_butterfly
                 pwm_res_o = 'h0;
             end
             gs: begin
-                u_o = add_res_div2;
-                v_o = mul_res_reduced; //_div2;
+                u_o = mlkem ? REG_SIZE'(mlkem_add_res_div2) : mldsa_add_res_div2;
+                v_o = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]; //_div2;
                 pwm_res_o = 'h0;
             end
             pwm:begin
-                u_o = accumulate ? add_res : mul_res_reduced; //TODO: see if pwm_res_o is good enough or reuse u_o to save routing/area
+                u_o = 'h0; //accumulate ? add_res : mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]; //TODO: see if pwm_res_o is good enough or reuse u_o to save routing/area
                 v_o = 'h0;
-                pwm_res_o = accumulate ? add_res : mul_res_reduced;
+                pwm_res_o = mlkem ? 'h0 : accumulate ? add_res : mldsa_mul_res_reduced[REG_SIZE-1:0];
             end
             pwa:begin
-                u_o = add_res;
+                u_o = 'h0; //add_res;
                 v_o = 'h0;
                 pwm_res_o = add_res;
             end
             pws:begin
-                u_o = u_minus_v;
+                u_o = 'h0; //u_minus_v;
                 v_o = 'h0;
                 pwm_res_o = u_minus_v;
+            end
+            pairwm: begin //Karatsuba pairwm is used instead of this butterfly
+                u_o = 'h0;
+                v_o = 'h0;
+                pwm_res_o = 'h0;
             end
             default: begin
                 u_o = 'h0;
@@ -168,20 +192,20 @@ module ntt_butterfly
     always_comb begin
         unique case(mode)
             ct: begin
-                add_opa = u_reg_d4;
-                add_opb = mul_res_reduced;
+                add_opa = mlkem ? u_reg_d2 : u_reg_d4;
+                add_opb = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0];
                 mul_opa = opv_i;
                 mul_opb = opw_i;
             end
             gs: begin
                 add_opa = opu_i;
                 add_opb = opv_i;
-                mul_opa = u_minus_v_div2; //u_minus_v
+                mul_opa = mlkem ? REG_SIZE'(mlkem_u_minus_v_div2) : mldsa_u_minus_v_div2; //u_minus_v
                 mul_opb = w_reg;
             end
             pwm:begin
-                add_opa = w_reg_d4;
-                add_opb = mul_res_reduced;
+                add_opa = mlkem ? 'h0 : w_reg_d4;
+                add_opb = mlkem ? 'h0 : mldsa_mul_res_reduced[REG_SIZE-1:0];
                 mul_opa = opu_i;
                 mul_opb = opv_i;
             end
@@ -201,7 +225,7 @@ module ntt_butterfly
     end
 
     //Mod sub - used in GS
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_0(
@@ -212,13 +236,14 @@ module ntt_butterfly
         .sub_i(1'b1),
         .opa_i(opu_i),
         .opb_i(opv_i),
-        .prime_i(MLDSA_Q), //TODO: convert prime input to param everywhere
+        .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
+        .mlkem(mlkem),
         .res_o(u_minus_v),
         .ready_o()
     );
 
     //Mod sub - used in CT
-    abr_add_sub_mod #(
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         sub_inst_1(
@@ -227,15 +252,16 @@ module ntt_butterfly
         .zeroize(zeroize),
         .add_en_i(1'b1),
         .sub_i(1'b1),
-        .opa_i(u_reg_d4),
-        .opb_i(mul_res_reduced),
-        .prime_i(MLDSA_Q),
+        .opa_i(mlkem ? u_reg_d2 : u_reg_d4),
+        .opb_i(mlkem ? mlkem_mul_res_reduced_reg : mldsa_mul_res_reduced[REG_SIZE-1:0]),
+        .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
+        .mlkem(mlkem),
         .res_o(sub_res),
         .ready_o()
     );
 
-    //Mod add - used in CT and GS
-    abr_add_sub_mod #(
+    //Mod add - used in CT and GS, PWM
+    abr_ntt_add_sub_mod #(
         .REG_SIZE(REG_SIZE)
         )
         add_inst_0(
@@ -246,7 +272,8 @@ module ntt_butterfly
         .sub_i(1'b0),
         .opa_i(add_opa),
         .opb_i(add_opb),
-        .prime_i(MLDSA_Q),
+        .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
+        .mlkem(mlkem),
         .res_o(add_res),
         .ready_o()
     );
@@ -263,44 +290,64 @@ module ntt_butterfly
     );
     
     ntt_mult_reduction #(
-        .REG_SIZE(REG_SIZE),
+        .REG_SIZE(23),
         .PRIME(MLDSA_Q)
         )
-        mul_redux_inst_0 (
+        mldsa_mul_redux_inst_0 (
         .clk(clk),
         .reset_n(reset_n),
         .zeroize(zeroize),
-        .opa_i(mul_res),
-        .res_o(mul_res_reduced),
+        .opa_i(mlkem ? '0 : 46'(mul_res)),
+        .res_o(mldsa_mul_res_reduced),
         .ready_o()
     );
 
-    //Output div2 - used in GS
+    barrett_reduction #(
+        .REG_SIZE(MLKEM_REG_SIZE),
+        .prime(MLKEM_Q)
+        )
+        mlkem_mul_redux_inst_0 (
+        .x(mlkem ? mul_res_reg : '0),
+        .inv(),
+        .r(mlkem_mul_res_reduced)
+    );
+
+    //Output div2 - used in MLDSA GS
     ntt_div2 #(
         .REG_SIZE(REG_SIZE),
-        .MLDSA_Q(MLDSA_Q)
+        .PRIME(MLDSA_Q)
     )
-    div2_inst_0 (
+    mldsa_div2_inst_0 (
         .op_i (add_res_d4),
-        .res_o (add_res_div2)
+        .res_o (mldsa_add_res_div2)
     );
 
     ntt_div2 #(
         .REG_SIZE(REG_SIZE),
-        .MLDSA_Q(MLDSA_Q)
+        .PRIME(MLDSA_Q)
     )
-    div2_inst_2 (
+    mldsa_div2_inst_2 (
         .op_i (u_minus_v),
-        .res_o (u_minus_v_div2)
+        .res_o (mldsa_u_minus_v_div2)
     );
 
-    // div2 #(
-    //     .REG_SIZE(REG_SIZE),
-    //     .MLDSA_Q(MLDSA_Q)
-    // )
-    // div2_inst_2 (
-    //     .op_i (mul_res_reduced),
-    //     .res_o (mul_res_reduced_div2)
-    // );
+    //Output div2 - used in MLKEM GS
+    ntt_div2 #(
+        .REG_SIZE(MLKEM_REG_SIZE),
+        .PRIME(MLKEM_Q)
+    )
+    mlkem_div2_inst_0 (
+        .op_i (add_res_d2[MLKEM_REG_SIZE-1:0]),
+        .res_o (mlkem_add_res_div2)
+    );
+
+    ntt_div2 #(
+        .REG_SIZE(MLKEM_REG_SIZE),
+        .PRIME(MLKEM_Q)
+    )
+    mlkem_div2_inst_2 (
+        .op_i (u_minus_v[MLKEM_REG_SIZE-1:0]),
+        .res_o (mlkem_u_minus_v_div2)
+    );
 
 endmodule

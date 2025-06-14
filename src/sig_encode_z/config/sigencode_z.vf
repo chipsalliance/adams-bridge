@@ -2,6 +2,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
@@ -33,8 +34,13 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mult_dsp.sv
@@ -54,6 +60,8 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_gs_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_top.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_unit.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv

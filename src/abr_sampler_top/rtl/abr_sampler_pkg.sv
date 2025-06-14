@@ -106,11 +106,13 @@ package abr_sampler_pkg;
   } abr_piso_mode_e;
 
   //common structures
-  typedef enum logic [3:0] {
+  typedef enum logic [4:0] {
     ABR_SAMPLER_NONE,
     //SHA/SHAKE only modes
     ABR_SHAKE256,
     ABR_SHAKE128,
+    ABR_SHA512,
+    ABR_SHA256,
     //SAMPLER MODES
     MLDSA_REJ_SAMPLER,
     MLKEM_REJ_SAMPLER,

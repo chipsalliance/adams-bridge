@@ -22,7 +22,8 @@ module ntt_masked_gs_butterfly
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
-        parameter WIDTH = 46
+        parameter WIDTH = 46,
+        parameter MASKED_ADD_SUB_LATENCY = 53 //Latency of add/sub block
     )
     (
         input wire clk,
@@ -56,7 +57,8 @@ module ntt_masked_gs_butterfly
 
     assign pwm_mode = (mode == pwm);
 
-    //53 clks
+    //MLDSA: 53 clks
+    //MLKEM: 21 clks
     ntt_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) add_inst_0 (
@@ -84,7 +86,8 @@ module ntt_masked_gs_butterfly
         .delayed_reg(add_res_reg)
     );
 
-    //53 clks
+    //MLDSA: 53 clks
+    //MLKEM: 21 clks
     ntt_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) sub_inst_0 (
@@ -130,7 +133,8 @@ module ntt_masked_gs_butterfly
         end
     end
 
-    //210 clks
+    //MLDSA: 210 clks
+    //MLKEM: TODO: new BFU mult with barrett redux, or split BFU mult into pre and post redux stages
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (

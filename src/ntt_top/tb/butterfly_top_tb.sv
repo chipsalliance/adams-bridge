@@ -74,10 +74,8 @@ bf_uvo_t uv_o_tb;
 // Device Under Test.
 //----------------------------------------------------------------
 
-butterfly2x2 #(
-  .REG_SIZE(23),
-  .RADIX(23),
-  .MLDSA_Q(PRIME)
+ntt_butterfly2x2 #(
+  .REG_SIZE(23)
 )
 dut (
   .clk(clk_tb),
@@ -87,7 +85,11 @@ dut (
   .enable(enable),
   .uvw_i(uvw_tb),
   .uv_o(uv_o_tb),
-  .ready_o(ready)
+  .ready_o(ready),
+  .mlkem(1'b1),
+  .pw_uvw_i(),
+  .pwo_uv_o(),
+  .accumulate()
 );
 
 // butterfly #(
@@ -461,8 +463,8 @@ task display_test_results;
       fork
       begin
         enable <= 1'b1;
-        @(posedge clk_tb);
-        enable <= 1'b0;
+        // @(posedge clk_tb);
+        // enable <= 1'b0;
       end
       begin
         // for (int l = 256; l > 0; l-2) begin
@@ -498,6 +500,7 @@ task display_test_results;
               @(posedge clk_tb);
             end //j
           end //i
+          enable <= 1'b0;
         // end //l
       end
       begin
@@ -585,13 +588,17 @@ task display_test_results;
   initial begin
     init_sim();
     reset_dut();
-    $readmemh("zeta.txt", zeta);
-    $readmemh("zeta_inv.hex", zeta_inv);
+    // $readmemh("zeta.txt", zeta);
+    // $readmemh("zeta_inv.hex", zeta_inv);
+    $readmemh("kyber_zeta.txt", zeta);
+    $readmemh("kyber_zeta_inv.hex", zeta_inv);
     $display("Zeta values are %h, %h, %h, ...", zeta[0], zeta[1], zeta[2]);
     $display("Zeta inv values are %h, %h, %h, ...", zeta_inv[0], zeta_inv[1], zeta_inv[2]);
-    $readmemh("ntt_stage2.hex", in_val);
+    $readmemh("kyber_stage0.hex", in_val);
+    // $readmemh("ntt_stage2.hex", in_val);
     $display("in_val = %h, %h, %h, ...", in_val[0], in_val[1], in_val[2]);
-    $readmemh("ntt_stage2_out.hex", out_val);
+    // $readmemh("ntt_stage2_out.hex", out_val);
+    $readmemh("kyber_stage0_out.hex", in_val);
     $display("out_val = %h, %h, %h, ...", out_val[0], out_val[1], out_val[2]);
     #(CLK_PERIOD);
     #(CLK_HALF_PERIOD);

@@ -52,6 +52,7 @@ module ntt_ctrl
     input wire shuffle_en,
     input wire   [5:0] random, //4+2 bits
     input wire masking_en,
+    input wire mlkem,
 
     output logic bf_enable,
     output logic [2:0] opcode,
@@ -78,7 +79,9 @@ module ntt_ctrl
     output logic pw_wren,
     output logic pw_share_mem_rden, 
     output logic busy,
-    output logic done
+    output logic done,
+    output logic ntt_passthrough,
+    output logic intt_passthrough
 );
 
 //Parameters
@@ -110,6 +113,7 @@ logic [1:0] buf_count;
 logic [3:0] chunk_rand_offset; 
 logic [3:0] chunk_count;
 logic [1:0] index_rand_offset, index_count, mem_rd_index_ofst;
+logic [2:0][1:0] index_rand_offset_reg, index_count_reg;
 logic [1:0] buf_rdptr_int;
 logic [1:0] buf_rdptr_f;
 
@@ -130,7 +134,7 @@ logic shuffled_pw_rden_fsm_reg;
 
 //Mode flags
 logic ct_mode, gs_mode, pwo_mode; //point-wise operations mode
-logic pwm_mode, pwa_mode, pws_mode; 
+logic pwm_mode, pwa_mode, pws_mode, pairwm_mode; 
 
 //Addr internal wires
 logic [MEM_ADDR_WIDTH-1:0] src_base_addr, interim_base_addr, dest_base_addr;
@@ -153,9 +157,10 @@ logic incr_pw_rd_addr_reg_d1;
 
 //Twiddle ROM wires
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg, incr_twiddle_addr_reg_d2;
-logic twiddle_mode, rst_twiddle_addr;
-logic [6:0] twiddle_rand_offset;
-logic [6:0] twiddle_end_addr, twiddle_addr_reg, twiddle_addr_reg_d2, twiddle_addr_reg_d3, twiddle_addr_int, twiddle_offset;
+logic rst_twiddle_addr;
+logic [6:0] twiddle_rand_offset, twiddle_rand_offset_reg;
+logic [6:0] twiddle_end_addr, twiddle_addr_reg, twiddle_addr_reg_d2, twiddle_addr_reg_d3, twiddle_addr_int, twiddle_offset, twiddle_addr_sampler_mode;
+logic [6:0] twiddle_addr_sampler_mode_d2, twiddle_addr_sampler_mode_d3;
 
 //FSM round signals
 logic [$clog2(NTT_NUM_ROUNDS):0] num_rounds;
@@ -234,7 +239,8 @@ logic [MEM_ADDR_WIDTH-1:0] masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate, mask
 always_comb begin
     ct_mode = (ntt_mode == ct);
     gs_mode = (ntt_mode == gs);
-    pwo_mode = ntt_mode inside {pwm, pwa, pws};
+    pairwm_mode = mlkem & (ntt_mode == pairwm);
+    pwo_mode = (ntt_mode inside {pwm, pwa, pws}) | pairwm_mode;
     pwm_mode = (ntt_mode == pwm);
     pwa_mode = (ntt_mode == pwa);
     pws_mode = (ntt_mode == pws);
@@ -294,7 +300,12 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (rounds_count == num_rounds)
         rounds_count <= 'h0;
 end
-assign num_rounds = (ntt_mode inside {ct, gs, pwm_intt}) ? NTT_NUM_ROUNDS : PWO_NUM_ROUNDS;
+assign num_rounds = (ntt_mode inside {ct, gs/*, pwm_intt*/}) ? NTT_NUM_ROUNDS : PWO_NUM_ROUNDS;
+
+always_comb begin
+    ntt_passthrough  = ct_mode & mlkem & (rounds_count == NTT_NUM_ROUNDS-1);
+    intt_passthrough = gs_mode & mlkem & (rounds_count == 0);
+end
 
 //------------------------------------------
 //Done flags
@@ -326,8 +337,8 @@ always_comb begin
     mem_wr_base_addr   = rounds_count[0] ? dest_base_addr : interim_base_addr;
 
     if (shuffle_en) begin
-        mem_rd_addr_nxt    = (gs_mode | pwo_mode) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
-        mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
+        mem_rd_addr_nxt    = (gs_mode /*| pwo_mode*/) ? (4*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
+        mem_wr_addr_nxt    = ct_mode ? (MEM_ADDR_WIDTH+1)'((4*(mlkem ? chunk_count_reg[4] : chunk_count_reg[0])) + (wr_addr_step*(mlkem ? buf_rdptr_reg[4] : buf_rdptr_reg[0])) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : (MEM_ADDR_WIDTH+1)'((4*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]));
     end
     else begin
         mem_rd_addr_nxt = mem_rd_addr + rd_addr_step;
@@ -348,7 +359,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if (rst_rd_addr) begin
         if (shuffle_en)
-            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode | pwo_mode) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr;
+            mem_rd_addr <= ct_mode ? mem_rd_base_addr + chunk_rand_offset : (gs_mode /*| pwo_mode*/) ? mem_rd_base_addr + (4*chunk_rand_offset) : mem_rd_base_addr;
         else
             mem_rd_addr <= mem_rd_base_addr;
     end
@@ -394,6 +405,9 @@ always_comb begin
         shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-2])
                                                    :  pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]);
     end
+    else if (pairwm_mode) begin
+        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]);
+    end
     else if (pwa_mode | pws_mode) begin
         shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7]);
     end
@@ -406,7 +420,7 @@ always_comb begin
     shuffled_pw_mem_rd_addr_c_nxt_accumulate = pw_base_addr_c + ((4*chunk_count)+(PWO_READ_ADDR_STEP*mem_rd_index_ofst));
     masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MASKED_PWM_ACC_LATENCY-MASKED_PWM_LATENCY])) : 'h0;
 
-    if (pwm_mode & accumulate) begin
+    if ((pwm_mode | pairwm_mode) & accumulate) begin
         unique case({masking_en, shuffle_en})
             2'b00: pw_mem_rd_addr_c_nxt = pw_mem_rd_addr_c + PWO_READ_ADDR_STEP;
             2'b01: pw_mem_rd_addr_c_nxt = shuffled_pw_mem_rd_addr_c_nxt_accumulate;
@@ -470,7 +484,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         end
 
         //accumulate
-        if (pwm_mode & accumulate) begin
+        if ((pwm_mode | pairwm_mode) & accumulate) begin
             if ((masking_en & /*((~shuffle_en & incr_pw_rd_addr_reg[0]) | (shuffle_en & incr_pw_rd_addr_reg[0]))*/ incr_pw_rd_addr_reg[0]) | (~masking_en & incr_pw_rd_addr)) begin
                 pw_mem_rd_addr_c <= pw_mem_rd_addr_c_nxt;
             end
@@ -492,19 +506,19 @@ end
 always_comb begin
     unique case(rounds_count)
         'h0: begin
-            twiddle_end_addr    = ct_mode ? 'd0 : 'd63;
-            twiddle_offset      = 'h0;
-            twiddle_rand_offset = ct_mode ? 'h0 : (gs_mode & masking_en_ctrl) ? 7'((4*chunk_count_reg[MASKED_INTT_WRBUF_LATENCY-3]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((4*chunk_count_reg[UNMASKED_BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]); //gs mode & masking only applies to round 0. Other rounds follow gs calc
+            twiddle_end_addr    = pairwm_mode ? 'd63 : ct_mode ? 'd0 : 'd63;
+            twiddle_offset      = pairwm_mode ? 'd21 : 'h0;
+            twiddle_rand_offset = pairwm_mode ? 7'((chunk_count % 'd16)*4 + buf_rdptr_int) : ct_mode ? 'h0 : (gs_mode & masking_en_ctrl) ? 7'((4*chunk_count_reg[MASKED_INTT_WRBUF_LATENCY-3]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) /*: mlkem ? 7'((4*chunk_count_reg[MLKEM_UNMASKED_BF_LATENCY]) + buf_wrptr_reg[MLKEM_INTT_WRBUF_LATENCY-1])*/ : 7'((4*chunk_count_reg[UNMASKED_BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]); //gs mode & masking only applies to round 0. Other rounds follow gs calc
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : 7'((chunk_count_reg[UNMASKED_BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) /*: mlkem ? 7'((chunk_count_reg[MLKEM_UNMASKED_BF_LATENCY] % 4)*4 + buf_wrptr_reg[MLKEM_INTT_WRBUF_LATENCY-1])*/ : 7'((chunk_count_reg[UNMASKED_BF_LATENCY] % 4)*4 + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
             twiddle_offset      = ct_mode ? 'd5 : 'd80;
-            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd4)*'d4 + buf_rdptr_int) : 7'(buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'((chunk_count % 'd4)*'d4 + buf_rdptr_int) /*: mlkem ? 7'(buf_wrptr_reg[MLKEM_INTT_WRBUF_LATENCY-1])*/ : 7'(buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h3: begin
             twiddle_end_addr    = ct_mode ? 'd63 : 'd0;
@@ -524,14 +538,17 @@ always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         incr_twiddle_addr_reg <= 'b0;
         incr_twiddle_addr_reg_d2 <= 'b0;
+        twiddle_rand_offset_reg <= '0;
     end
     else if (zeroize) begin
         incr_twiddle_addr_reg <= 'b0;
         incr_twiddle_addr_reg_d2 <= 'b0;
+        twiddle_rand_offset_reg <= '0;
     end
     else begin
         incr_twiddle_addr_reg <= incr_twiddle_addr_fsm;
         incr_twiddle_addr_reg_d2 <= incr_twiddle_addr_reg;
+        twiddle_rand_offset_reg <= twiddle_rand_offset;
     end
 end
 
@@ -549,7 +566,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         twiddle_addr_reg <= 'h0;
 end
 
-assign twiddle_addr_int = (~shuffle_en | ct_mode) ? twiddle_addr_reg + twiddle_offset : twiddle_rand_offset + twiddle_offset;
+assign twiddle_addr_int = (~shuffle_en | ct_mode) ? twiddle_addr_reg + twiddle_offset : (shuffle_en & pairwm_mode) ? twiddle_rand_offset + 2'(index_count + index_rand_offset) + twiddle_offset : twiddle_rand_offset + twiddle_offset;
 
 //------------------------------------------
 //Busy logic
@@ -659,10 +676,16 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_pwm_buf_rdptr_d3 <= '0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
+        // if (mlkem)
+        //     buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-MLKEM_UNMASKED_BF_LATENCY-1){'0}}, buf_rdptr_int, buf_rdptr_reg[MLKEM_UNMASKED_BF_LATENCY:1]};
+        // else
+            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready) & ~masking_en_ctrl)) begin
-        buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
+        // if (mlkem)
+        //     buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-MLKEM_INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[MLKEM_INTT_WRBUF_LATENCY-1:1]};
+        // else
+            buf_wrptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-INTT_WRBUF_LATENCY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY-1:1]};
     end
     else if ((pwo_mode & ~masking_en) & (incr_pw_rd_addr | butterfly_ready)) begin
         buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY-UNMASKED_BF_LATENCY-1){'0}}, mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
@@ -723,7 +746,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if ((pwm_mode & masking_en & masked_pwm_exec_in_progress) | (gs_mode & masking_en_ctrl)) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[MASKED_INTT_WRBUF_LATENCY-3:1]};
     end
-    else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin
+    else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode /*& ~pairwm_mode*/ & incr_pw_rd_addr)) begin
         chunk_count_reg <= {{(MASKED_BF_STAGE1_LATENCY+1-UNMASKED_BF_LATENCY){4'h0}}, chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
     end
 end
@@ -742,7 +765,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         if (masking_en_ctrl)
             buf_wrptr <= buf_wrptr_reg_d1; //1 cycle extra delay for shuffling+masking case
         else
-            buf_wrptr <= buf_wrptr_reg[0];
+            buf_wrptr <= mlkem ? buf_wrptr_reg[INTT_WRBUF_LATENCY-MLKEM_INTT_WRBUF_LATENCY] : buf_wrptr_reg[0];
 
     end
 end
@@ -750,7 +773,7 @@ end
 always_comb begin
     last_rd_addr   = (mem_rd_addr == mem_rd_base_addr + MEM_LAST_ADDR);
     last_wr_addr   = (mem_wr_addr == mem_wr_base_addr + MEM_LAST_ADDR);
-    buf_rdptr_int  = (shuffle_en & ct_mode) ? index_rand_offset + buf_count : buf_count; //TODO: flop?
+    buf_rdptr_int  = (shuffle_en & ct_mode) ? index_rand_offset + buf_count /*: (pairwm_mode & shuffle_en) ? index_rand_offset_reg[2] + index_count_reg[2]*/ : buf_count; //TODO: flop?
     buf_rdptr      = (shuffle_en & ct_mode) ? buf_rdptr_f : buf_count;
     latch_chunk_rand_offset = arc_IDLE_WR_STAGE | arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE;
     latch_index_rand_offset = ct_mode ? (buf_wrptr == 'h3) : (gs_mode | (pwo_mode & incr_pw_rd_addr)) & (arc_RD_STAGE_RD_EXEC | (index_count == 'h3));
@@ -868,12 +891,9 @@ always_comb begin
             buf_wren_ntt            = ct_mode;
             buf_rden_ntt            = ct_mode;
             incr_mem_rd_addr        = (ntt_mode inside {ct, gs});
-            if (shuffle_en)
-                mem_rd_en_fsm       = ((ntt_mode inside {ct, gs})) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) & ~arc_RD_EXEC_EXEC_WAIT : 1'b0;
-            else
-                mem_rd_en_fsm       = ((ntt_mode inside {ct, gs})) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) : 1'b0;
+            mem_rd_en_fsm           = (ntt_mode inside {ct, gs}) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) & ~arc_RD_EXEC_EXEC_WAIT : 1'b0;
             bf_enable_fsm           = pwo_mode ? sampler_valid : 1'b1;
-            incr_twiddle_addr_fsm   = ntt_mode inside {ct, gs};
+            incr_twiddle_addr_fsm   = (ntt_mode inside {ct, gs}) | (sampler_valid & pairwm_mode);
             rd_addr_step            = ct_mode ? NTT_READ_ADDR_STEP : INTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = sampler_valid & pwo_mode;
             pw_rden_fsm             = sampler_valid & pwo_mode;
@@ -885,7 +905,7 @@ always_comb begin
             buf_wr_rst_count_ntt    = 1'b1; //There are no more mem reads, so buf writes need to halt
             buf_rd_rst_count_ntt    = 1'b0; //There are still some entries in buf that BF2x2 needs to pick up
             bf_enable_fsm           = pwo_mode ? sampler_valid : (buf_count <= 3);
-            incr_twiddle_addr_fsm   = (ct_mode | gs_mode);
+            incr_twiddle_addr_fsm   = (ct_mode | gs_mode | (pairwm_mode & sampler_valid));
             rd_addr_step            = NTT_READ_ADDR_STEP;
             incr_pw_rd_addr         = (pwo_mode & sampler_valid);
             pw_rden_fsm             = (pwo_mode & sampler_valid);
@@ -1041,6 +1061,15 @@ always_comb begin
     endcase
 end
 
+always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)
+        twiddle_addr_sampler_mode <= '0;
+    else if (zeroize)
+        twiddle_addr_sampler_mode <= '0;
+    else if (sampler_valid)
+        twiddle_addr_sampler_mode <= twiddle_addr_int;
+end
+
 always_comb begin
     rst_rounds       = (read_fsm_state_ps == RD_IDLE) && (write_fsm_state_ps == WR_IDLE);
     incr_rounds      = arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE; //TODO: revisit for high-perf mode (if we go with above opt)
@@ -1048,8 +1077,8 @@ always_comb begin
         buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt_reg;
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         mem_wr_en        = gs_mode  ? mem_wr_en_fsm : mem_wr_en_reg;
-        mem_rd_en        = (gs_mode | pwo_mode) ? mem_rd_en_reg : mem_rd_en_fsm;
-        twiddle_addr     = gs_mode ? twiddle_addr_reg_d3 : twiddle_addr_int;
+        mem_rd_en        = (gs_mode /*| pwo_mode*/) ? mem_rd_en_reg : mem_rd_en_fsm;
+        twiddle_addr     = (gs_mode | pairwm_mode) ? twiddle_addr_reg_d3 : twiddle_addr_int;
         pw_rden          = pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
         pw_wren          = pw_wren_reg;
@@ -1074,6 +1103,7 @@ always_comb begin
             pwm:bf_enable = bf_enable_reg[1];
             pwa:bf_enable = bf_enable_reg[1];
             pws:bf_enable = bf_enable_reg[1];
+            pairwm: bf_enable = bf_enable_reg[1];
             default: bf_enable = 0;
         endcase
     end
@@ -1084,6 +1114,7 @@ always_comb begin
             pwm:bf_enable = bf_enable_reg[2];
             pwa:bf_enable = 0;
             pws:bf_enable = 0;
+            pairwm: bf_enable = bf_enable_reg[2];
             default: bf_enable = 0;
         endcase
     end
@@ -1094,6 +1125,7 @@ always_comb begin
             pwm:bf_enable = bf_enable_reg[0];
             pwa:bf_enable = 0;
             pws:bf_enable = 0;
+            pairwm: bf_enable = bf_enable_reg[0];
             default: bf_enable = 0;
         endcase
     end
@@ -1104,6 +1136,7 @@ always_comb begin
             pwm:bf_enable = bf_enable_reg[0];
             pwa:bf_enable = bf_enable_reg[0];
             pws:bf_enable = bf_enable_reg[0];
+            pairwm: bf_enable = bf_enable_reg[0];
             default: bf_enable = 0;
         endcase
     end
@@ -1142,8 +1175,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         mem_rd_en_reg <= 'b0;
         twiddle_addr_reg_d2 <= 'h0;
         twiddle_addr_reg_d3 <= 'h0;
+        twiddle_addr_sampler_mode_d2 <= '0;
+        twiddle_addr_sampler_mode_d3 <= '0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
+
+        index_count_reg <= '0;
+        index_rand_offset_reg <= '0;
     end
     else if (zeroize) begin
         buf_wren_ntt_reg <= 'b0;
@@ -1154,8 +1192,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         mem_rd_en_reg <= 'b0;
         twiddle_addr_reg_d2 <= 'h0;
         twiddle_addr_reg_d3 <= 'h0;
+        twiddle_addr_sampler_mode_d2 <= '0;
+        twiddle_addr_sampler_mode_d3 <= '0;
         pw_rden_reg <= '0;
         pw_wren_reg <= '0;
+
+        index_count_reg <= '0;
+        index_rand_offset_reg <= '0;
     end
     else begin
         buf_wren_ntt_reg <= buf_wren_ntt;
@@ -1166,8 +1209,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         mem_rd_en_reg <= mem_rd_en_fsm;
         twiddle_addr_reg_d2 <= twiddle_addr_int;
         twiddle_addr_reg_d3 <= twiddle_addr_reg_d2;
+        twiddle_addr_sampler_mode_d2 <= twiddle_addr_sampler_mode;
+        twiddle_addr_sampler_mode_d3 <= twiddle_addr_sampler_mode_d2;
         pw_rden_reg <= pw_rden_fsm;
         pw_wren_reg <= pw_wren_fsm;
+
+        index_count_reg <= {index_count_reg[1:0], index_count};
+        index_rand_offset_reg <= {index_rand_offset_reg[1:0], index_rand_offset};
     end
 end
 

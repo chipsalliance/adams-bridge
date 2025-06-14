@@ -28,6 +28,8 @@ package ntt_defines_pkg;
 
 // `define MLDSA_MASKING
 
+// `define MLDSA_MASKING
+
 parameter NTT_REG_SIZE = REG_SIZE-1;
 parameter MASKED_WIDTH = 46;
 // parameter MEM_DEPTH = 2**ABR_MEM_ADDR_WIDTH;
@@ -36,7 +38,7 @@ parameter MASKED_WIDTH = 46;
 //Latency params for NTT
 //----------------------
 parameter INTT_WRBUF_LATENCY         = 13;
-parameter UNMASKED_BF_LATENCY        = 10;         //5 cycles per butterfly * 2 instances in serial = 10 clks
+parameter UNMASKED_BF_LATENCY        = 10;        //5 cycles per butterfly * 2 instances in serial = 10 clks
 parameter UNMASKED_PWM_LATENCY       = 5;         //latency of modular multiplier + modular addition to perform accumulation
 parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
@@ -51,6 +53,23 @@ parameter MASKED_INTT_LATENCY               = MASKED_BF_STAGE1_LATENCY + UNMASKE
 parameter MASKED_PWM_INTT_LATENCY           = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1;           //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
 parameter MASKED_INTT_WRBUF_LATENCY         = /*MASKED_PWM_LATENCY +*/ MASKED_INTT_LATENCY + 3;       //masked PWM+INTT latency + mem latency for shuffled reads to begin (does not include PWMA case)
 
+//----------------------
+//Latency params for MLKEM NTT
+//----------------------
+parameter MLKEM_UNMASKED_PWA_LATENCY = 1;
+parameter MLKEM_UNMASKED_PWS_LATENCY = 1;
+parameter MLKEM_INTT_WRBUF_LATENCY   = 9;
+parameter MLKEM_UNMASKED_PAIRWM_ACC_LATENCY = 5;
+parameter MLKEM_UNMASKED_PAIRWM_LATENCY = 4;
+parameter MLKEM_UNMASKED_BF_STAGE1_LATENCY = 3;
+parameter MLKEM_UNMASKED_BF_LATENCY  = MLKEM_UNMASKED_BF_STAGE1_LATENCY * 2;
+
+parameter MLKEM_MASKED_PAIRWM_LATENCY = 51;
+parameter MLKEM_MASKED_PAIRWM_ACC_LATENCY = 75;
+parameter MLKEM_MASKED_MULT_LATENCY = 2 + 23; //2 for two-share mult, 23 for masked barrett reduction
+parameter MLKEM_MASKED_ADD_SUB_LATENCY = 1+26+1+2+1; //internal flops + A2B + B2A conv
+
+
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
 //TODO: tb has issue with enums in top level ports. For now, using this workaround
 //Need to try something like bundling enable and mode into a struct to support enum.
@@ -59,7 +78,7 @@ localparam ct =3'd0,
            pwm=3'd2,
            pwa=3'd3,
            pws=3'd4,
-           pwm_intt = 3'd5;
+           pairwm = 3'd5; 
  
 typedef logic [2:0] mode_t;
 
@@ -180,6 +199,32 @@ typedef struct packed {
     logic [NTT_REG_SIZE-1:0] uv2;
     logic [NTT_REG_SIZE-1:0] uv3;
 } pwo_t;
+
+typedef struct packed {
+    //input a
+    logic [MLKEM_REG_SIZE-1:0] u0_i;
+    logic [MLKEM_REG_SIZE-1:0] u1_i;
+    //input b
+    logic [MLKEM_REG_SIZE-1:0] v0_i;
+    logic [MLKEM_REG_SIZE-1:0] v1_i;
+    //accumulated input c (comes from dest mem)
+    logic [MLKEM_REG_SIZE-1:0] w0_i;
+    logic [MLKEM_REG_SIZE-1:0] w1_i;
+    //input zeta
+    // logic [MLKEM_REG_SIZE-1:0] z0_i;
+    // logic [MLKEM_REG_SIZE-1:0] z1_i;
+} mlkem_pwo_uvwzi_t;
+
+typedef struct packed {
+    //input zeta
+    logic [MLKEM_REG_SIZE-1:0] z0_i;
+    logic [MLKEM_REG_SIZE-1:0] z1_i;
+} mlkem_pairwm_zeta_t;
+
+typedef struct packed {
+    logic [MLKEM_REG_SIZE-1:0] uv0_o;
+    logic [MLKEM_REG_SIZE-1:0] uv1_o;
+} mlkem_pwo_t;
 
 typedef struct packed {
     //input a
