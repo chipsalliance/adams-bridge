@@ -181,6 +181,51 @@ def barret_if_cond_mask(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0
     
     return Arith_Q0, Arith_Q1
 
+ 
+def barret_if_cond_mask_with_vuln(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0):
+    # Perform A2B conversion
+    carry = rolled_y0 + rolled_y1
+    first_check = (carry >> 12) & 1
+    second_check = (carry >> 13) & 1
+    final_check = first_check | second_check
+    if debug:
+        print(f"y_carry combined: {final_check}")
+    #TODO: VERY VERY Important to not use the same randomness (r0) for both y_carry and Q
+    y_carry0 = final_check ^ r0
+    y_carry1 = r0
+
+    # Step 6.7: randomize Q with a 12-bit random number
+    Q0 = MLKEM_Q ^ r0
+    Q1 = r0
+    if debug:
+        print(f"Random r0: {r0}, Q0: {Q0}, Q1: {Q1} and combined: {(Q0^Q1)}")
+    # Step 6.8: OR Q with the y_carries
+    Boelan_y0 =  np.zeros(12, dtype=np.uint8)
+    Boelan_y1 =  np.zeros(12, dtype=np.uint8)
+    for i in range(12):
+        Q0_bit = (Q0 >> i) & 1
+        Q1_bit = (Q1 >> i) & 1
+        # Do not register the lines between 189 and 204 until you reach this AND gate
+        Boelan_y0[i], Boelan_y1[i] = AND_DOM(y_carry0, y_carry1, Q0_bit, Q1_bit)
+        if turn_off_randomness:
+            Boelan_y0[i] = Boelan_y0[i] ^ Boelan_y1[i]
+            Boelan_y1[i] = 0
+
+    # Convert Boelan_y0 and Boelan_y1 from boolean arrays to integers
+    Boolean0 = 0
+    Boolean1 = 0
+    for i in range(12):  # Iterate from 0 to 11
+        Boolean0 = (Boolean0 << 1) | int(Boelan_y0[11-i])
+        Boolean1 = (Boolean1 << 1) | int(Boelan_y1[11-i])
+    Arith_Q0, Arith_Q1 = B2AConv_wth_param(int(Boolean0), int(Boolean1), 2**14, turn_off_randomness)
+    if debug:
+        print(f"Q0: {int(Boolean0)}, Q1: {int(Boolean1)} and combined: {int(Boolean0)^int(Boolean1)}")
+        print("==============================================")
+    Arith_Q0 = Arith_Q0 & 0x1FFF  # Mask to 13 bits
+    Arith_Q1 = Arith_Q1 & 0x1FFF  # Mask to 13 bits
+    return Arith_Q0, Arith_Q1
+ 
+
 def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness = 0):
     # Perform the masked equivalent of the given unmasked C code
     if debug:

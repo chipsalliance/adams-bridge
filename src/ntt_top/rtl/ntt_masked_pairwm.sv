@@ -19,8 +19,8 @@
 // This module performs masked pwm operation with or without accumulate
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
-// latency with accumulate: 75 clks
-// latency without accumulate: 51 clks
+// latency with accumulate: 24 clks
+// latency without accumulate: 17 clks
 
 module ntt_masked_pairwm
     import abr_params_pkg::*;
@@ -110,7 +110,7 @@ always_comb begin
     end
 end
 
-//23 clk
+//6 clk
 masked_barrett_reduction masked_u0v0_redux_inst (
     .clk(clk),
     .rst_n(reset_n),
@@ -304,7 +304,7 @@ abr_masked_N_bit_Arith_adder #(
     .s(uvw0)
 );
 
-//23 clks
+//6 clks
 masked_barrett_reduction masked_uvw0_redux_inst (
     .clk(clk),
     .rst_n(reset_n),

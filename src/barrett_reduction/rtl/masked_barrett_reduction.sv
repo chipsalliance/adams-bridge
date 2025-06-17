@@ -16,7 +16,7 @@
 // masked_barrett_reduction.sv
 // -----------
 // Performs masked Barrett reduction on a given input x.
-// Latency: 23 cycles
+// Latency: 6 cycles
 
 module masked_barrett_reduction
     import abr_params_pkg::*;
@@ -47,8 +47,7 @@ module masked_barrett_reduction
     logic [1:0][MASKED_REG_SIZE:0] qt;
     logic [1:0][MASKED_REG_SIZE-1:0] x_reg;
     logic [1:0][11:0] arith_Q;
-    logic [1:0][12:0] c_reg [20:0];
-    // logic [MASKED_REG_SIZE+13:0] tmp_comb;
+    logic [1:0][12:0] c_reg [2:0];
 
     always_comb begin
         // x*mu
@@ -56,7 +55,6 @@ module masked_barrett_reduction
         tmp[1] = (x[1] << 12) + (x[1] << 9) + (x[1] << 8) + (x[1] << 7) + (x[1] << 5) + (x[1] << 3) + (x[1] << 2) + (x[1] << 1) + x[1];
 
         // Calculate carry and mask tmp to 13 bits (tmp >> K)
-        // tmp_comb = tmp[0] + tmp[1];
         carry  = (tmp[0][MASKED_REG_SIZE-1:0] + tmp[1][MASKED_REG_SIZE-1:0]) >> MASKED_REG_SIZE;
         t_int[0] = (tmp[0] >> MASKED_REG_SIZE);
         t_int[1] = (tmp[1] >> MASKED_REG_SIZE);
@@ -72,7 +70,7 @@ module masked_barrett_reduction
             x_reg <= '0;
             c <= '0;
 
-            for (int i = 0; i < 21; i++) begin
+            for (int i = 0; i < 3; i++) begin
                 c_reg[i] <= '0;
             end
         end
@@ -80,7 +78,7 @@ module masked_barrett_reduction
             t <= '0;
             x_reg <= '0;
             c <= '0;
-            for (int i = 0; i < 21; i++) begin
+            for (int i = 0; i < 3; i++) begin
                 c_reg[i] <= '0;
             end
         end 
@@ -90,7 +88,7 @@ module masked_barrett_reduction
             t[1] <= t_int[1];
             x_reg <= x;
             c <= c_int;
-            c_reg <= {{c_int[1], c_int[0]}, c_reg[20:1]};
+            c_reg <= {{c[1], c[0]}, c_reg[2:1]};
         end
     end
 
@@ -112,8 +110,8 @@ module masked_barrett_reduction
         c_rolled[1] = c[1];
     end
 
-    //Barrett if condition masked instance - 20 cycles
-    masked_barrett_if_cond masked_barrett_if_cond_inst (
+    //Barrett if condition masked instance - 3 cycles
+    masked_barrett_if_cond_v2 masked_barrett_if_cond_inst (
         .clk(clk),
         .rst_n(rst_n),
         .zeroize(zeroize),
@@ -127,10 +125,6 @@ module masked_barrett_reduction
     );
 
     //Calculate t = y - q
-    // always_comb begin
-    //     y[0] = MLKEM_Q_WIDTH'(c_reg[0][0] - 13'(arith_Q[0]));
-    //     y[1] = MLKEM_Q_WIDTH'(c_reg[0][1] - 13'(arith_Q[1]));
-    // end
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             y <= '0;
