@@ -32,9 +32,11 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_N_bit_mult_two_share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_top.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_core.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_skencode.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv

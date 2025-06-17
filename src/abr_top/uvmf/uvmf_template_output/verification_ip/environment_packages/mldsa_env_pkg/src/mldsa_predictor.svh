@@ -276,6 +276,12 @@ class mldsa_predictor #(
                 reg_addr <= p_mldsa_rm.MLDSA_SIGN_RND[$size(p_mldsa_rm.MLDSA_SIGN_RND)-1].get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_SIGN_RND at address: 0x%x", reg_addr), UVM_HIGH)
         end
+        else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_D[0].get_address(p_mldsa_map) &&
+                 reg_addr <= p_mldsa_rm.MLKEM_SEED_D[$size(p_mldsa_rm.MLKEM_SEED_D)-1].get_address(p_mldsa_map)) begin
+        end
+        else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_Z[0].get_address(p_mldsa_map) &&
+                 reg_addr <= p_mldsa_rm.MLKEM_SEED_Z[$size(p_mldsa_rm.MLKEM_SEED_Z)-1].get_address(p_mldsa_map)) begin
+        end
         else begin
           `uvm_error("PRED_AHB", $sformatf("Unhandled register write at address: 0x%x", reg_addr))
         end
@@ -356,6 +362,9 @@ class mldsa_predictor #(
           //   lock_IP = lock_IP;
           // end
         end
+        else if (reg_addr == p_mldsa_rm.MLKEM_STATUS.get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_STATUS at address: 0x%x", reg_addr), UVM_HIGH)
+        end
         else if (reg_addr >= p_mldsa_rm.ABR_ENTROPY[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.ABR_ENTROPY[$size(p_mldsa_rm.ABR_ENTROPY)-1].get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register ABR_ENTROPY at address: 0x%x", reg_addr), UVM_HIGH)
@@ -371,6 +380,14 @@ class mldsa_predictor #(
         else if (reg_addr >= p_mldsa_rm.MLDSA_MSG[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLDSA_MSG[$size(p_mldsa_rm.MLDSA_MSG)-1].get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLDSA_MSG at address: 0x%x", reg_addr), UVM_HIGH)
+        end
+        else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_D[0].get_address(p_mldsa_map) &&
+                reg_addr <= p_mldsa_rm.MLKEM_SEED_D[$size(p_mldsa_rm.MLKEM_SEED_D)-1].get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_SEED_D at address: 0x%x", reg_addr), UVM_HIGH)
+        end
+        else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_Z[0].get_address(p_mldsa_map) &&
+                reg_addr <= p_mldsa_rm.MLKEM_SEED_Z[$size(p_mldsa_rm.MLKEM_SEED_Z)-1].get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_SEED_Z at address: 0x%x", reg_addr), UVM_HIGH)
         end
         // Add more cases as needed for other registers
         else begin
@@ -663,6 +680,13 @@ class mldsa_predictor #(
       //foreach (p_mldsa_rm.MLDSA_SIGNATURE[i]) begin
       //  p_mldsa_rm.MLDSA_SIGNATURE[i].set(zero_value);
       //end
+      p_mldsa_rm.MLKEM_STATUS.set(zero_value);
+      foreach (p_mldsa_rm.MLKEM_SEED_D[i]) begin
+        p_mldsa_rm.MLKEM_SEED_D[i].set(zero_value);
+      end
+      foreach (p_mldsa_rm.MLKEM_SEED_Z[i]) begin
+        p_mldsa_rm.MLKEM_SEED_Z[i].set(zero_value);
+      end
     end
   endfunction
 
