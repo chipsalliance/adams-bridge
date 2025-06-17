@@ -1,0 +1,8 @@
+---
+# Random seed desired...
+#seed: 1
+plusargs:
+  - '+UVM_TESTNAME=ML_KEM_keygen_KATs_test'
+testname: ML_KEM_keygen_KATs_test
+parameters:
+  dilithium_command: "test_dilithium5"

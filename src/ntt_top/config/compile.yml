@@ -39,6 +39,7 @@ provides: [ntt_top]
 schema_version: 2.4.0
 requires:
   - ntt_pkg
+  - barrett_reduction
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]

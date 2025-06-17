@@ -47,12 +47,14 @@ module abr_ntt_add_sub_mod
     logic [REG_SIZE-1 : 0] opb1;
     logic [REG_SIZE-1 : 0] r0;
     logic [REG_SIZE-1 : 0] r1;
+    logic                  carry0; 
     logic                  carry0_int; 
 
     logic                  sub_n;
     logic [REG_SIZE-1 : 0] r0_reg;
     logic                  carry0_reg;
 
+    logic                  carry1;
     logic                  carry1_int;
     logic [1 : 0]          push_result_reg;
 
