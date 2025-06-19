@@ -181,6 +181,7 @@ module abr_ctrl
   abr_reg__out_t abr_reg_hwif_out;
   logic abr_ready;
   logic mldsa_valid_reg;
+  logic mlkem_valid_reg;
   logic mldsa_privkey_lock;
   logic kv_seed_data_present;
 
@@ -292,7 +293,8 @@ always_comb kv_seed_data_present = '0;
   logic mlkem_encaps_process, mlkem_encaps_process_nxt;
   logic mlkem_keygen_done;
   logic mlkem_encaps_done;
-  logic process_done;
+  logic mldsa_process_done;
+  logic mlkem_process_done;
 
   //assign appropriate data to msg interface
   logic [ABR_OPR_WIDTH-1:0]  sampler_src;
@@ -421,7 +423,7 @@ always_comb kv_seed_data_present = '0;
 
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_waddr, mlkem_api_ek_raddr;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_mem_waddr, mlkem_api_ek_mem_raddr;
-  logic [2:0] mlkem_api_ek_reg_waddr, mlkem_api_ek_reg_raddr;
+  logic [4:0] mlkem_api_ek_reg_waddr, mlkem_api_ek_reg_raddr;
   logic [1:0] mlkem_api_ek_re_bank, mlkem_api_ek_re_bank_f;
 
   logic mlkem_api_ek_mem_wr_dec, mlkem_api_ek_reg_wr_dec;
@@ -675,11 +677,11 @@ always_comb kv_seed_data_present = '0;
   always_comb mlkem_api_ek_reg_rd_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_raddr inside {[MLKEM_EK_MEM_NUM_DWORDS:EK_NUM_DWORDS-1]};
   always_comb mlkem_api_ek_mem_rd_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_raddr inside {[0:MLKEM_EK_MEM_NUM_DWORDS-1]};
 
-  assign mlkem_api_ek_reg_waddr = mlkem_api_ek_waddr[2:0];
-  assign mlkem_api_ek_reg_raddr = mlkem_api_ek_raddr[2:0];
+  assign mlkem_api_ek_reg_waddr = {2'b0,mlkem_api_ek_waddr[2:0]};
+  assign mlkem_api_ek_reg_raddr = {2'b0,mlkem_api_ek_raddr[2:0]};
 
-  assign mlkem_api_ek_mem_waddr = mlkem_api_ek_waddr + MLKEM_DEST_EK_MEM_OFFSET;
-  assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET;;
+  assign mlkem_api_ek_mem_waddr = mlkem_api_ek_waddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
+  assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
 
   always_comb mlkem_api_ciphertext_mem_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & 
                                                 mldsa_valid_reg; //modify the lock for mlkem reads
@@ -691,12 +693,12 @@ always_comb kv_seed_data_present = '0;
 
   always_comb mlkem_api_ciphertext_mem_rd_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ciphertext_raddr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
 
-  assign mlkem_api_ciphertext_mem_waddr = mlkem_api_ciphertext_waddr + MLKEM_DEST_C1_MEM_OFFSET;
-  assign mlkem_api_ciphertext_mem_raddr = mlkem_api_ciphertext_raddr + MLKEM_DEST_C1_MEM_OFFSET;
+  assign mlkem_api_ciphertext_mem_waddr = mlkem_api_ciphertext_waddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
+  assign mlkem_api_ciphertext_mem_raddr = mlkem_api_ciphertext_raddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
 
   always_comb mlkem_api_msg_waddr = {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
-  assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET;
+  assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
 
   always_comb sampler_sk_rd_en = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) & ~msg_hold |
                                  (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) & ~msg_hold;
@@ -1175,7 +1177,7 @@ always_comb kv_seed_data_present = '0;
     end
 
     abr_reg_hwif_in.MLKEM_STATUS.READY.next = abr_ready;
-    abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mldsa_valid_reg;
+    abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mlkem_valid_reg;
   end
 
   //pure-MLDSA assuming 512-bit input msg and empty ctx
@@ -1308,6 +1310,7 @@ always_comb kv_seed_data_present = '0;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       mldsa_valid_reg <= '0;
+      mlkem_valid_reg <= '0;
       signature_valid <= 0;
       verify_valid <= 0;
       mldsa_keygen_process <= 0;
@@ -1319,6 +1322,7 @@ always_comb kv_seed_data_present = '0;
     end
     else if (zeroize) begin
       mldsa_valid_reg <= '0;
+      mlkem_valid_reg <= '0;
       signature_valid <= 0;
       verify_valid <= 0;
       mldsa_keygen_process <= 0;
@@ -1329,34 +1333,36 @@ always_comb kv_seed_data_present = '0;
       mlkem_encaps_process <= 0;
     end
     else begin
-      mldsa_valid_reg <= mldsa_valid_reg | process_done;
+      mldsa_valid_reg <= mldsa_valid_reg | mldsa_process_done;
+      mlkem_valid_reg <= mlkem_valid_reg | mlkem_process_done;
       signature_valid <= set_signature_valid ? 1 :
                          clear_signature_valid ? 0 :
                          signature_valid;
       verify_valid <= set_verify_valid ? 1 :
                       clear_verify_valid ? 0 :
                       verify_valid;
-      mldsa_keygen_process <= process_done ? '0 : mldsa_keygen_process | mldsa_keygen_process_nxt;
-      mldsa_signing_process <= process_done ? '0 : mldsa_signing_process | mldsa_signing_process_nxt;
-      mldsa_verifying_process <= process_done ? '0 : mldsa_verifying_process | mldsa_verifying_process_nxt;
-      mldsa_keygen_signing_process <= process_done ? '0 : mldsa_keygen_signing_process | mldsa_keygen_signing_process_nxt;
-      mlkem_keygen_process <= process_done ? '0 : mlkem_keygen_process | mlkem_keygen_process_nxt;
-      mlkem_encaps_process <= process_done ? '0 : mlkem_encaps_process | mlkem_encaps_process_nxt;
+      mldsa_keygen_process <= mldsa_process_done ? '0 : mldsa_keygen_process | mldsa_keygen_process_nxt;
+      mldsa_signing_process <= mldsa_process_done ? '0 : mldsa_signing_process | mldsa_signing_process_nxt;
+      mldsa_verifying_process <= mldsa_process_done ? '0 : mldsa_verifying_process | mldsa_verifying_process_nxt;
+      mldsa_keygen_signing_process <= mldsa_process_done ? '0 : mldsa_keygen_signing_process | mldsa_keygen_signing_process_nxt;
+      mlkem_keygen_process <= mlkem_process_done ? '0 : mlkem_keygen_process | mlkem_keygen_process_nxt;
+      mlkem_encaps_process <= mlkem_process_done ? '0 : mlkem_encaps_process | mlkem_encaps_process_nxt;
     end
   end
 
-  always_comb process_done = (mldsa_keygen_process & mldsa_keygen_done) |
-                             (mldsa_signing_process & mldsa_signature_done) |
-                             (mldsa_verifying_process & mldsa_verify_done) |
-                             (mlkem_keygen_process & mlkem_keygen_done) |
-                             (mlkem_encaps_process & mlkem_encaps_done);
+  always_comb mldsa_process_done = (mldsa_keygen_process & mldsa_keygen_done) |
+                                   (mldsa_signing_process & mldsa_signature_done) |
+                                   (mldsa_verifying_process & mldsa_verify_done);
+  
+  always_comb mlkem_process_done = (mlkem_keygen_process & mlkem_keygen_done) |
+                                   (mlkem_encaps_process & mlkem_encaps_done);
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
       external_mu_mode <= 0;  
-    else if (zeroize | process_done)
+    else if (zeroize | mldsa_process_done)
       external_mu_mode <= 0;  
-    else if (process_done)
+    else if (mldsa_process_done)
       external_mu_mode <= 0;
     else 
       external_mu_mode <= external_mu_mode | external_mu_mode_nxt;
@@ -1418,6 +1424,7 @@ always_comb kv_seed_data_present = '0;
     mldsa_signature_done = 0;
     mldsa_verify_done = 0;
     mlkem_keygen_process_nxt = 0;
+    mlkem_encaps_process_nxt = 0;
     mlkem_keygen_done = 0;
     mlkem_encaps_done = 0;
     update_kappa = 0;

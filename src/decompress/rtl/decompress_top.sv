@@ -150,10 +150,10 @@ module decompress_top
             api_rd_addr <= '0;
         end
         else if (decompress_enable) begin
-            api_rd_addr <= src_base_addr/2;
+            api_rd_addr <= src_base_addr;
         end 
         else if (api_rd_en) begin
-            api_rd_addr <= api_rd_addr + 'd1;
+            api_rd_addr <= api_rd_addr + 'd2; //Increment by 2 dwords per clock
         end
     end
 
@@ -167,7 +167,7 @@ module decompress_top
         endcase
     end
 
-    always_comb read_done = api_rd_addr == (src_base_addr/2 + (num_poly * d * MLKEM_N)/64);
+    always_comb read_done = api_rd_addr == (src_base_addr + (num_poly * d * MLKEM_N)/64);
 
     //Compute Memory Write Requests
     decompress_ctrl decomp_ctrl_inst (
