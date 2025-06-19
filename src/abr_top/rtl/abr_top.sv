@@ -26,6 +26,7 @@ module abr_top
   import ntt_defines_pkg::*;
   import decompose_defines_pkg::*;
   import compress_defines_pkg::*;
+  import decompress_defines_pkg::*;
   `ifdef CALIPTRA
   import kv_defines_pkg::*; 
   `endif
@@ -195,11 +196,22 @@ module abr_top
   logic compress_enable;
   logic compress_done;
   compress_mode_t compress_mode;
+  logic [2:0] compress_num_poly;
   mem_if_t compress_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] compress_mem_rd_data;
   logic compress_api_wr_en;
   logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_wr_addr;
   logic [DATA_WIDTH-1:0] compress_api_wr_data;
+
+  logic decompress_enable;
+  logic decompress_done;
+  decompress_mode_t decompress_mode;
+  logic [2:0] decompress_num_poly;
+  mem_if_t decompress_mem_wr_req;
+  logic [ABR_MEM_DATA_WIDTH-1:0] decompress_mem_wr_data;
+  logic decompress_api_rd_en;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] decompress_api_rd_addr;
+  logic [1:0][DATA_WIDTH-1:0] decompress_api_rd_data;
 
   logic sigencode_enable, sigencode_done;
   mem_if_t [1:0] sigencode_mem_rd_req;
@@ -434,10 +446,19 @@ abr_ctrl abr_ctrl_inst
 
   .compress_enable_o(compress_enable),
   .compress_mode_o(compress_mode),
+  .compress_num_poly_o(compress_num_poly),
   .compress_done_i(compress_done),
   .compress_api_wr_en_i(compress_api_wr_en),
   .compress_api_wr_addr_i(compress_api_wr_addr),
   .compress_api_wr_data_i(compress_api_wr_data),
+
+  .decompress_enable_o(decompress_enable),
+  .decompress_mode_o(decompress_mode),
+  .decompress_num_poly_o(decompress_num_poly),
+  .decompress_done_i(decompress_done),
+  .decompress_api_rd_en_i(decompress_api_rd_en),
+  .decompress_api_rd_addr_i(decompress_api_rd_addr),
+  .decompress_api_rd_data_o(decompress_api_rd_data),
 
   .lfsr_enable_o(lfsr_enable),
   .lfsr_seed_o(lfsr_seed),
@@ -906,7 +927,7 @@ compress_top_inst
   .zeroize(zeroize_reg),
 
   .mode(compress_mode),
-
+  .num_poly(compress_num_poly),
   .src_base_addr(aux_src0_base_addr[0]),
   .dest_base_addr(aux_dest_base_addr[0]),
 
@@ -919,6 +940,28 @@ compress_top_inst
   .api_wr_en(compress_api_wr_en),
   .api_wr_addr(compress_api_wr_addr),
   .api_wr_data(compress_api_wr_data)
+);
+
+decompress_top
+decompress_top_inst
+(
+  .clk(clk),
+  .reset_n(rst_b),
+  .zeroize(zeroize_reg),
+
+  .mode(decompress_mode),
+  .num_poly(decompress_num_poly),
+  .src_base_addr(aux_src0_base_addr[0]),
+  .dest_base_addr(aux_dest_base_addr[0]),
+
+  .decompress_enable(decompress_enable),
+  .decompress_done(decompress_done),
+
+  .mem_wr_req(decompress_mem_wr_req),
+  .mem_wr_data(decompress_mem_wr_data),
+  .api_rd_en(decompress_api_rd_en),
+  .api_rd_addr(decompress_api_rd_addr),
+  .api_rd_data(decompress_api_rd_data)
 );
 
 abr_prim_lfsr
@@ -1008,6 +1051,7 @@ logic [1:0] pkdecode_mem_we0_bank;
 logic [1:0] sigdecode_z_mem_we0_bank;
 logic [3:1] sigdecode_h_mem_we;
 logic [1:0] sigdecode_h_mem_we0_bank;
+logic [1:0] decompress_mem_we0_bank;
 
 logic [ABR_NUM_NTT-1:0][3:0] ntt_mem_re,ntt_mem_re_f;
 logic [ABR_NUM_NTT-1:0][3:0] pwo_a_mem_re,pwo_a_mem_re_f;
@@ -1079,14 +1123,16 @@ always_comb begin
         skdecode_mem_we0_bank[bank] = (skdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         pkdecode_mem_we0_bank[bank] = (pkdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         sigdecode_z_mem_we0_bank[bank] = (sigdecode_z_mem_wr_req[bank].rd_wr_en == RW_WRITE);
+        decompress_mem_we0_bank[bank] = (decompress_mem_wr_req.rd_wr_en == RW_WRITE) & (decompress_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i[2:0]) & (decompress_mem_wr_req.addr[0] == bank);;
 
-        abr_mem_we0_bank[bank] = sampler_mem_we0_bank[bank] | ntt_mem_we0_bank[bank] | 
+        abr_mem_we0_bank[bank] = sampler_mem_we0_bank[bank] | ntt_mem_we0_bank[bank] | decompress_mem_we0_bank[bank] |
                                    decomp_mem_we0_bank[bank] | skdecode_mem_we0_bank[bank] | pkdecode_mem_we0_bank[bank] |
                                    sigdecode_h_mem_we0_bank[bank] | sigdecode_z_mem_we0_bank[bank] | zeroize_mem_we;
 
         abr_mem_waddr0_bank[bank] = ({ABR_MEM_ADDR_WIDTH-4{sampler_mem_we0_bank[bank]}}     & sampler_mem_addr[ABR_MEM_ADDR_WIDTH-4:1]) |
                                       ({ABR_MEM_ADDR_WIDTH-4{ntt_mem_we0_bank[bank]}}         & ntt_mem_wr_req_mux[0][ABR_MEM_ADDR_WIDTH-4:1]) |
                                       ({ABR_MEM_ADDR_WIDTH-4{decomp_mem_we0_bank[bank]}}      & decomp_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                      ({ABR_MEM_ADDR_WIDTH-4{decompress_mem_we0_bank[bank]}}  & decompress_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-4:1]) |
                                       ({ABR_MEM_ADDR_WIDTH-4{sigdecode_h_mem_we0_bank[bank]}} & sigdecode_h_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-4:1]) |
                                       ({ABR_MEM_ADDR_WIDTH-4{skdecode_mem_we0_bank[bank]}}    & skdecode_mem_wr_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
                                       ({ABR_MEM_ADDR_WIDTH-4{pkdecode_mem_we0_bank[bank]}}    & pkdecode_mem_wr_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
@@ -1096,6 +1142,7 @@ always_comb begin
         abr_mem_wdata0_bank[bank] = ({ABR_MEM_DATA_WIDTH{sampler_mem_we0_bank[bank]}}     & sampler_mem_data) |
                                       ({ABR_MEM_DATA_WIDTH{ntt_mem_we0_bank[bank]}}         & ntt_mem_wr_data_mux[0][ABR_MEM_DATA_WIDTH-1:0]) |
                                       ({ABR_MEM_DATA_WIDTH{decomp_mem_we0_bank[bank]}}      & decomp_mem_wr_data) |
+                                      ({ABR_MEM_DATA_WIDTH{decompress_mem_we0_bank[bank]}}  & decompress_mem_wr_data) |
                                       ({ABR_MEM_DATA_WIDTH{sigdecode_h_mem_we0_bank[bank]}} & sigdecode_h_mem_wr_data) |
                                       ({ABR_MEM_DATA_WIDTH{skdecode_mem_we0_bank[bank]}}    & skdecode_mem_wr_data[bank]) |
                                       ({ABR_MEM_DATA_WIDTH{pkdecode_mem_we0_bank[bank]}}    & pkdecode_mem_wr_data[bank]) |
@@ -1382,10 +1429,10 @@ always_comb pk_mem_if.rdata_o = abr_memory_export.pk_mem_rdata_o;
 `ABR_ASSERT_MUTEX(ERR_MEM_3_RD_ACCESS_MUTEX, {ntt_mem_re_mux[3],pwo_a_mem_re_mux[3],pwo_b_mem_re_mux[3],compress_mem_re[3],
                                               normcheck_mem_re[3], decomp_mem_re[0][3],decomp_mem_re[1][3],makehint_mem_re[3]}, clk, !rst_b)
 
-`ABR_ASSERT_MUTEX(ERR_MEM_0_0_WR_ACCESS_MUTEX, {sampler_mem_we0_bank[0],ntt_mem_we0_bank[0],decomp_mem_we0_bank[0],
+`ABR_ASSERT_MUTEX(ERR_MEM_0_0_WR_ACCESS_MUTEX, {sampler_mem_we0_bank[0],ntt_mem_we0_bank[0],decomp_mem_we0_bank[0],decompress_mem_we0_bank[0],
                                                 skdecode_mem_we0_bank[0], pkdecode_mem_we0_bank[0], sigdecode_h_mem_we0_bank[0],
                                                 sigdecode_z_mem_we0_bank[0]}, clk, !rst_b)
-`ABR_ASSERT_MUTEX(ERR_MEM_0_1_WR_ACCESS_MUTEX, {sampler_mem_we0_bank[1],ntt_mem_we0_bank[1],decomp_mem_we0_bank[1],
+`ABR_ASSERT_MUTEX(ERR_MEM_0_1_WR_ACCESS_MUTEX, {sampler_mem_we0_bank[1],ntt_mem_we0_bank[1],decomp_mem_we0_bank[1],decompress_mem_we0_bank[1],
                                                 skdecode_mem_we0_bank[1], pkdecode_mem_we0_bank[1], sigdecode_h_mem_we0_bank[1],
                                                 sigdecode_z_mem_we0_bank[1]}, clk, !rst_b)
 
