@@ -291,8 +291,10 @@ always_comb kv_seed_data_present = '0;
   logic mldsa_verify_done;
   logic mlkem_keygen_process, mlkem_keygen_process_nxt;
   logic mlkem_encaps_process, mlkem_encaps_process_nxt;
+  logic mlkem_decaps_process, mlkem_decaps_process_nxt;
   logic mlkem_keygen_done;
   logic mlkem_encaps_done;
+  logic mlkem_decaps_done;
   logic mldsa_process_done;
   logic mlkem_process_done;
 
@@ -1319,6 +1321,7 @@ always_comb kv_seed_data_present = '0;
       mldsa_keygen_signing_process <= 0;
       mlkem_keygen_process <= 0;
       mlkem_encaps_process <= 0;
+      mlkem_decaps_process <= 0;
     end
     else if (zeroize) begin
       mldsa_valid_reg <= '0;
@@ -1331,6 +1334,7 @@ always_comb kv_seed_data_present = '0;
       mldsa_keygen_signing_process <= 0;
       mlkem_keygen_process <= 0;
       mlkem_encaps_process <= 0;
+      mlkem_decaps_process <= 0;
     end
     else begin
       mldsa_valid_reg <= mldsa_valid_reg | mldsa_process_done;
@@ -1347,6 +1351,7 @@ always_comb kv_seed_data_present = '0;
       mldsa_keygen_signing_process <= mldsa_process_done ? '0 : mldsa_keygen_signing_process | mldsa_keygen_signing_process_nxt;
       mlkem_keygen_process <= mlkem_process_done ? '0 : mlkem_keygen_process | mlkem_keygen_process_nxt;
       mlkem_encaps_process <= mlkem_process_done ? '0 : mlkem_encaps_process | mlkem_encaps_process_nxt;
+      mlkem_decaps_process <= mlkem_process_done ? '0 : mlkem_decaps_process | mlkem_decaps_process_nxt;
     end
   end
 
@@ -1355,7 +1360,8 @@ always_comb kv_seed_data_present = '0;
                                    (mldsa_verifying_process & mldsa_verify_done);
   
   always_comb mlkem_process_done = (mlkem_keygen_process & mlkem_keygen_done) |
-                                   (mlkem_encaps_process & mlkem_encaps_done);
+                                   (mlkem_encaps_process & mlkem_encaps_done) |
+                                   (mlkem_decaps_process & mlkem_decaps_done);
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b)
@@ -1425,8 +1431,10 @@ always_comb kv_seed_data_present = '0;
     mldsa_verify_done = 0;
     mlkem_keygen_process_nxt = 0;
     mlkem_encaps_process_nxt = 0;
+    mlkem_decaps_process_nxt = 0;
     mlkem_keygen_done = 0;
     mlkem_encaps_done = 0;
+    mlkem_decaps_done = 0;
     update_kappa = 0;
     set_verify_valid = 0;
     set_entropy = 0;
@@ -1468,9 +1476,14 @@ always_comb kv_seed_data_present = '0;
             mlkem_keygen_process_nxt  = 1;
             set_entropy = 1;
           end                    
-          {MLKEM_ENCAPS,MLDSA_NONE} : begin  // MLKEM KEYGEN
+          {MLKEM_ENCAPS,MLDSA_NONE} : begin  // MLKEM ENCAPS
             abr_prog_cntr_nxt = MLKEM_ENCAPS_S;
             mlkem_encaps_process_nxt  = 1;
+            set_entropy = 1;
+          end                  
+          {MLKEM_DECAPS,MLDSA_NONE} : begin  // MLKEM DECAPS
+            abr_prog_cntr_nxt = MLKEM_DECAPS_S;
+            mlkem_decaps_process_nxt  = 1;
             set_entropy = 1;
           end
           default : begin
@@ -1535,7 +1548,12 @@ always_comb kv_seed_data_present = '0;
         mlkem_keygen_done = 1;
       end
       MLKEM_ENCAPS_E : begin // end of encaps
-        mlkem_encaps_done = 1;
+        //Both encaps and encaps end here, set appropriate done
+        mlkem_encaps_done = mlkem_encaps_process; // if encaps is not running, then encaps_done is 0
+        mlkem_decaps_done = mlkem_decaps_process; // if decaps is not running, then decaps_done is 0
+      end
+      MLKEM_DECAPS_E : begin // end of decaps
+        abr_prog_cntr_nxt = MLKEM_ENCAPS_S+1;
       end
       default : begin
         if (clear_verify_valid)

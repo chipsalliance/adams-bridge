@@ -272,6 +272,7 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_MLKEM_PWA        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWM        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM,            masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWMA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM,      masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MLKEM_PWS        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, shuffling_en:1'b0};
 
     //Load Keccak with data but don't run it yet
     localparam abr_opcode_t ABR_UOP_LD_SHAKE256 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, masking_en:1'b0, shuffling_en:1'b0};
@@ -474,6 +475,10 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y2_BASE = MLKEM_Y1_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y3_BASE = MLKEM_Y2_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E_2_BASE = MLKEM_Y3_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP0_BASE = ABR_INST1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP1_BASE = MLKEM_UP0_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP2_BASE = MLKEM_UP1_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP3_BASE = MLKEM_UP2_BASE + MLKEM_COEFF_DEPTH;
 
     //MEMORY INST 2
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-3);
@@ -504,6 +509,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_7_BASE = MLDSA_W0_6_BASE + MLDSA_COEFF_DEPTH;
     //ML-KEM
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_TY_BASE = ABR_INST2_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SU_BASE = ABR_INST2_BASE;
     //TEMP for NTT
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_TEMP2_BASE = MLDSA_W0_7_BASE + MLDSA_COEFF_DEPTH;
 
@@ -563,10 +569,10 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_RESET = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 40;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_KG_E + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_S + 15;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 51;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_ENCAPS_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_S + 40;
 
 
 

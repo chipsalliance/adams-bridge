@@ -76,7 +76,7 @@ module decompress_top
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
         .INPUT_RATES('{64, 64, 64, 64}),
-        .OUTPUT_RATES('{4, 20, 22, 48})
+        .OUTPUT_RATES('{4, 20, 44, 48})
     ) abr_piso_inst (
         .clk(clk),
         .rst_b(reset_n),
