@@ -648,7 +648,7 @@ always_comb kv_seed_data_present = '0;
   assign api_sk_mem_raddr = api_sk_raddr - 'd32;
 
   always_comb mlkem_api_dk_mem_rd_vld = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr & 
-                                        mldsa_valid_reg; //modify the lock for mlkem reads
+                                        mlkem_valid_reg; //modify the lock for mlkem reads
 
   always_comb mlkem_api_dk_waddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
   always_comb mlkem_api_dk_raddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
@@ -666,7 +666,7 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_dk_mem_raddr = mlkem_api_dk_raddr;
 
   always_comb mlkem_api_ek_mem_rd_vld = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr & 
-                                        mldsa_valid_reg; //modify the lock for mlkem reads
+                                        mlkem_valid_reg; //modify the lock for mlkem reads
 
   always_comb mlkem_api_ek_waddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
   always_comb mlkem_api_ek_raddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
@@ -684,7 +684,7 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
 
   always_comb mlkem_api_ciphertext_mem_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & 
-                                                mldsa_valid_reg; //modify the lock for mlkem reads
+                                                mlkem_valid_reg; //modify the lock for mlkem reads
 
   always_comb mlkem_api_ciphertext_waddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
   always_comb mlkem_api_ciphertext_raddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
@@ -1142,13 +1142,13 @@ always_comb kv_seed_data_present = '0;
   always_comb begin
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_ack = ciphertext_rd_ack;
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
-    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = ciphertext_rd_ack & mldsa_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = ciphertext_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_ack = decapskey_rd_ack;
     abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
-    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack & mldsa_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = encapskey_rd_ack;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
-    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = encapskey_rd_ack & mldsa_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = encapskey_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_MSG.rd_ack = abr_reg_hwif_out.MLKEM_MSG.req & ~abr_reg_hwif_out.MLKEM_MSG.req_is_wr;
     abr_reg_hwif_in.MLKEM_MSG.wr_ack = abr_reg_hwif_out.MLKEM_MSG.req & abr_reg_hwif_out.MLKEM_MSG.req_is_wr;
     abr_reg_hwif_in.MLKEM_MSG.rd_data = '0; //FIXME: no read port for MLKEM_MSG, just ack it
