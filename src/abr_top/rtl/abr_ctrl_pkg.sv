@@ -322,10 +322,15 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_K_R_REG_ID   = 'd11;
     // DEST Mem overloaded into SK ram
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_DK_MEM_OFFSET = 'd0;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_DK_MEM_OFFSET = MLKEM_DEST_DK_MEM_OFFSET/2;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_EK_MEM_OFFSET = 'd384;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_EK_MEM_OFFSET = MLKEM_DEST_EK_MEM_OFFSET/2;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_C1_MEM_OFFSET = 'd768;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_C1_MEM_OFFSET = MLKEM_DEST_C1_MEM_OFFSET/2;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_C2_MEM_OFFSET = 'd1120;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_C2_MEM_OFFSET = MLKEM_DEST_C2_MEM_OFFSET/2;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_MSG_MEM_OFFSET  = 'd1160;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_MSG_MEM_OFFSET  = MLKEM_DEST_MSG_MEM_OFFSET/2;
 
     //SRC register IDs
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_MSG_ID         = 'd15;

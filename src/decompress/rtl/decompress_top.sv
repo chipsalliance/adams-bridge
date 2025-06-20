@@ -153,7 +153,7 @@ module decompress_top
             api_rd_addr <= src_base_addr;
         end 
         else if (api_rd_en) begin
-            api_rd_addr <= api_rd_addr + 'd2; //Increment by 2 dwords per clock
+            api_rd_addr <= api_rd_addr + 'd1;
         end
     end
 

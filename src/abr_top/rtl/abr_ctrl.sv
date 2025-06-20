@@ -680,8 +680,8 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_ek_reg_waddr = {2'b0,mlkem_api_ek_waddr[2:0]};
   assign mlkem_api_ek_reg_raddr = {2'b0,mlkem_api_ek_raddr[2:0]};
 
-  assign mlkem_api_ek_mem_waddr = mlkem_api_ek_waddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
-  assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
+  assign mlkem_api_ek_mem_waddr = mlkem_api_ek_waddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
+  assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
   always_comb mlkem_api_ciphertext_mem_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & 
                                                 mlkem_valid_reg; //modify the lock for mlkem reads
@@ -693,12 +693,12 @@ always_comb kv_seed_data_present = '0;
 
   always_comb mlkem_api_ciphertext_mem_rd_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ciphertext_raddr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
 
-  assign mlkem_api_ciphertext_mem_waddr = mlkem_api_ciphertext_waddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
-  assign mlkem_api_ciphertext_mem_raddr = mlkem_api_ciphertext_raddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
+  assign mlkem_api_ciphertext_mem_waddr = mlkem_api_ciphertext_waddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
+  assign mlkem_api_ciphertext_mem_raddr = mlkem_api_ciphertext_raddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
   always_comb mlkem_api_msg_waddr = {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
-  assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W-1:0];
+  assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
   always_comb sampler_sk_rd_en = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) & ~msg_hold |
                                  (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) & ~msg_hold;
