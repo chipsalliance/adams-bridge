@@ -336,7 +336,7 @@ module abr_seq
 
                 //(w1,w0) ←Decompose(w) AND c˜←H(μ||w1Encode(w1),2λ)
                 MLDSA_SIGN_MAKE_W_S+ 64 : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_SIGN_MAKE_W       : data_o_rom <= '{opcode:ABR_UOP_DECOMP, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:ABR_NOP, operand3:MLDSA_W0_0_BASE}; 
+                MLDSA_SIGN_MAKE_W       : data_o_rom <= '{opcode:ABR_UOP_DECOMPOSE, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:ABR_NOP, operand3:MLDSA_W0_0_BASE}; 
 
                 MLDSA_SIGN_MAKE_C       : data_o_rom <= '{opcode:ABR_UOP_RUN_SHAKE256, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_DEST_SIG_C_REG_ID};
                 MLDSA_SIGN_MAKE_C+ 1    : data_o_rom <= '{opcode:ABR_UOP_SIB, imm:'h0000, length:'d64, operand1:MLDSA_SIG_C_REG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
@@ -640,10 +640,81 @@ module abr_seq
                 MLKEM_KG_S + 34: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0302, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_S2_BASE, operand3:MLKEM_AS0_BASE};
                 MLKEM_KG_S + 35: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0303, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_S3_BASE, operand3:MLKEM_AS0_BASE};
                 MLKEM_KG_S + 36: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA,       imm:'h0000, length:'d00, operand1:MLKEM_AS0_BASE, operand2:MLKEM_E3_BASE, operand3:MLKEM_T3_BASE};
-                MLKEM_KG_S + 37: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0003, length:'d00, operand1:MLKEM_T0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_EK_MEM_OFFSET};
-                MLKEM_KG_S + 38: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0003, length:'d00, operand1:MLKEM_S0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_DK_MEM_OFFSET};
+                MLKEM_KG_S + 37: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0403, length:'d00, operand1:MLKEM_T0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_EK_MEM_OFFSET};
+                MLKEM_KG_S + 38: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0403, length:'d00, operand1:MLKEM_S0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_DK_MEM_OFFSET};
                 MLKEM_KG_S + 39: data_o_rom <= '{opcode:ABR_UOP_SHA256, imm:'h0000, length:EK_NUM_BYTES, operand1:MLKEM_EK_REG_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_TR_REG_ID};
                 MLKEM_KG_E : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                //MLKEM Decaps
+                MLKEM_DECAPS_S + 0 : data_o_rom <= '{opcode:ABR_UOP_SHA256, imm:'h0000, length:EK_NUM_BYTES, operand1:MLKEM_EK_REG_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_TR_REG_ID};
+                MLKEM_DECAPS_S + 1 : data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0403, length:'d00, operand1:MLKEM_SRC_DK_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_S0_BASE};
+                MLKEM_DECAPS_S + 2 : data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0402, length:'d00, operand1:MLKEM_SRC_C1_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_U0_BASE};
+                MLKEM_DECAPS_S + 3 : data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0101, length:'d00, operand1:MLKEM_SRC_C2_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_V_BASE};
+                MLKEM_DECAPS_S + 4 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_U0_BASE, operand2:ABR_NOP, operand3:MLKEM_UP0_BASE};
+                MLKEM_DECAPS_S + 5 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_U1_BASE, operand2:ABR_NOP, operand3:MLKEM_UP1_BASE};
+                MLKEM_DECAPS_S + 6 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_U2_BASE, operand2:ABR_NOP, operand3:MLKEM_UP2_BASE};
+                MLKEM_DECAPS_S + 7 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_U3_BASE, operand2:ABR_NOP, operand3:MLKEM_UP3_BASE};
+                MLKEM_DECAPS_S + 8 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWM, imm:'h0000, length:'d00, operand1:MLKEM_S0_BASE, operand2:MLKEM_UP0_BASE, operand3:MLKEM_SU_BASE};
+                MLKEM_DECAPS_S + 9 : data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S1_BASE, operand2:MLKEM_UP1_BASE, operand3:MLKEM_SU_BASE};
+                MLKEM_DECAPS_S + 10: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S2_BASE, operand2:MLKEM_UP2_BASE, operand3:MLKEM_SU_BASE};
+                MLKEM_DECAPS_S + 11: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S3_BASE, operand2:MLKEM_UP3_BASE, operand3:MLKEM_SU_BASE};
+                MLKEM_DECAPS_S + 12: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_SU_BASE, operand2:ABR_NOP, operand3:MLKEM_SU_BASE};
+                MLKEM_DECAPS_S + 13: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWS, imm:'h0000, length:'d34, operand1:MLKEM_SU_BASE, operand2:MLKEM_V_BASE, operand3:MLKEM_V_BASE};
+                MLKEM_DECAPS_S + 14: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_MSG_MEM_OFFSET};
+                MLKEM_DECAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                //MLKEM Encaps
+                MLKEM_ENCAPS_S + 0 : data_o_rom <= '{opcode:ABR_UOP_SHA256, imm:'h0000, length:EK_NUM_BYTES, operand1:MLKEM_EK_REG_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_TR_REG_ID};
+                MLKEM_ENCAPS_S + 1 : data_o_rom <= '{opcode:ABR_UOP_LD_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_MSG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLKEM_ENCAPS_S + 2 : data_o_rom <= '{opcode:ABR_UOP_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_TR_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_K_R_REG_ID};
+                MLKEM_ENCAPS_S + 3 : data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0403, length:'d00, operand1:MLKEM_SRC_EK_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_T0_BASE};
+                MLKEM_ENCAPS_S + 4 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0000, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y0_BASE};
+                MLKEM_ENCAPS_S + 5 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0001, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y1_BASE};
+                MLKEM_ENCAPS_S + 6 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0002, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y2_BASE};
+                MLKEM_ENCAPS_S + 7 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0003, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y3_BASE};
+                MLKEM_ENCAPS_S + 8 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0004, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_E0_BASE};
+                MLKEM_ENCAPS_S + 9 : data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0005, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_E1_BASE};
+                MLKEM_ENCAPS_S + 10: data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0006, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_E2_BASE};
+                MLKEM_ENCAPS_S + 11: data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0007, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_E3_BASE};
+                MLKEM_ENCAPS_S + 12: data_o_rom <= '{opcode:ABR_UOP_CBD, imm:'h0008, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_E_2_BASE};
+                MLKEM_ENCAPS_S + 13: data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_Y0_BASE, operand2:ABR_NOP, operand3:MLKEM_Y0_BASE};
+                MLKEM_ENCAPS_S + 14: data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_Y1_BASE, operand2:ABR_NOP, operand3:MLKEM_Y1_BASE};
+                MLKEM_ENCAPS_S + 15: data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_Y2_BASE, operand2:ABR_NOP, operand3:MLKEM_Y2_BASE};
+                MLKEM_ENCAPS_S + 16: data_o_rom <= '{opcode:ABR_UOP_MLKEM_NTT, imm:'h0000, length:'d00, operand1:MLKEM_Y3_BASE, operand2:ABR_NOP, operand3:MLKEM_Y3_BASE};
+                MLKEM_ENCAPS_S + 17: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWM, imm:'h0000, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y0_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 18: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0100, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y1_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 19: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0200, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y2_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 20: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0300, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y3_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 21: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:ABR_NOP, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 22: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:MLKEM_E0_BASE, operand3:MLKEM_U0_BASE};
+                MLKEM_ENCAPS_S + 23: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWM, imm:'h0001, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y0_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 24: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0101, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y1_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 25: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0201, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y2_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 26: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0301, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y3_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 27: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:ABR_NOP, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 28: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:MLKEM_E1_BASE, operand3:MLKEM_U1_BASE};
+                MLKEM_ENCAPS_S + 29: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWM, imm:'h0002, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y0_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 30: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0102, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y1_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 31: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0202, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y2_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 32: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0302, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y3_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 33: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:ABR_NOP, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 34: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:MLKEM_E2_BASE, operand3:MLKEM_U2_BASE};
+                MLKEM_ENCAPS_S + 35: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWM, imm:'h0003, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y0_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 36: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0103, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y1_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 37: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0203, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y2_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 38: data_o_rom <= '{opcode:ABR_UOP_MLKEM_REJS_PWMA, imm:'h0303, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y3_BASE, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 39: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:ABR_NOP, operand3:MLKEM_AY0_BASE};
+                MLKEM_ENCAPS_S + 40: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:MLKEM_E3_BASE, operand3:MLKEM_U3_BASE};
+                MLKEM_ENCAPS_S + 41: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWM, imm:'h0000, length:'d00, operand1:MLKEM_T0_BASE, operand2:MLKEM_Y0_BASE, operand3:MLKEM_TY_BASE};
+                MLKEM_ENCAPS_S + 42: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_T1_BASE, operand2:MLKEM_Y1_BASE, operand3:MLKEM_TY_BASE};
+                MLKEM_ENCAPS_S + 43: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_T2_BASE, operand2:MLKEM_Y2_BASE, operand3:MLKEM_TY_BASE};
+                MLKEM_ENCAPS_S + 44: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_T3_BASE, operand2:MLKEM_Y3_BASE, operand3:MLKEM_TY_BASE};
+                MLKEM_ENCAPS_S + 45: data_o_rom <= '{opcode:ABR_UOP_MLKEM_INTT, imm:'h0000, length:'d00, operand1:MLKEM_TY_BASE, operand2:ABR_NOP, operand3:MLKEM_V_BASE};
+                MLKEM_ENCAPS_S + 46: data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_SRC_MSG_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_MU_BASE};
+                MLKEM_ENCAPS_S + 47: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_MU_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_E_2_BASE};
+                MLKEM_ENCAPS_S + 48: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_V_BASE};
+                MLKEM_ENCAPS_S + 49: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0402, length:'d04, operand1:MLKEM_U0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C1_MEM_OFFSET};
+                MLKEM_ENCAPS_S + 50: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0101, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C2_MEM_OFFSET};
+                MLKEM_ENCAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+
                 default :              data_o_rom <= '{opcode: ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
             endcase 
     end

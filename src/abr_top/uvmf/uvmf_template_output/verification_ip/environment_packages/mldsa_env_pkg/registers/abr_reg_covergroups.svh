@@ -461,26 +461,6 @@
 
     endgroup
 
-    /*----------------------- ABR_REG__MLKEM_MSG COVERGROUPS -----------------------*/
-    covergroup abr_reg__MLKEM_MSG_bit_cg with function sample(input bit reg_bit);
-        option.per_instance = 1;
-        reg_bit_cp : coverpoint reg_bit {
-            bins value[2] = {0,1};
-        }
-        reg_bit_edge_cp : coverpoint reg_bit {
-            bins rise = (0 => 1);
-            bins fall = (1 => 0);
-        }
-
-    endgroup
-    covergroup abr_reg__MLKEM_MSG_fld_cg with function sample(
-    input bit [32-1:0] MSG
-    );
-        option.per_instance = 1;
-        MSG_cp : coverpoint MSG;
-
-    endgroup
-
     /*----------------------- ABR_REG__MLKEM_SHARED_KEY COVERGROUPS -----------------------*/
     covergroup abr_reg__MLKEM_SHARED_KEY_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;

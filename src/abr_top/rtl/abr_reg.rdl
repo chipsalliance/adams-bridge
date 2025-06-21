@@ -363,7 +363,7 @@ addrmap abr_reg {
     } MLKEM_SEED_D[8];
 
     /* ---- MLKEM Component Input SEED ---- */
-    reg {
+    external reg {
         name = "MLKEM component seed register type definition";
         desc = "8 32-bit registers storing the 256-bit seed for keygen.
                 The seed can be any 256-bit value in [0 : 2^256-1].";
@@ -375,20 +375,6 @@ addrmap abr_reg {
         field {desc = "Input seed z field"; swwe; hwclr;} SEED[32] = 32'b0;
     
     } MLKEM_SEED_Z[8];
-
-    /* ---- MLKEM Component Input Message ---- */
-    reg {
-        name = "MLKEM component message register type definition";
-        desc = "8 32-bit registers storing the message.
-                The message can be a fixed size of 256-bit value in [0 : 2^256-1].";
-
-        default sw = w;
-        default hw = rw;
-        default we = true;
-        default resetsignal = reset_b;
-        field {desc = "Input message field"; swmod; swwe; hwclr;} MSG[32] = 32'b0;
-    
-    } MLKEM_MSG[8];
 
     /* ---- MLKEM Component Shared Key ---- */
     reg {
@@ -402,6 +388,16 @@ addrmap abr_reg {
         field {desc = "Output shared key"; hwclr;} KEY[32] = 32'b0;
     
     } MLKEM_SHARED_KEY[8];
+
+    /* ---- MLKEM Component Input Message ---- */
+    external mem {
+        name = "MLKEM component message register type definition";
+        desc = "256-bit message. The message can be a fixed size of 256-bit value in [0 : 2^256-1].";
+        
+        sw = rw;
+        mementries = 8;
+        memwidth = 32;
+    } MLKEM_MSG;
 
     /* ---- MLKEM Component Decaps Key ---- */
     external mem {

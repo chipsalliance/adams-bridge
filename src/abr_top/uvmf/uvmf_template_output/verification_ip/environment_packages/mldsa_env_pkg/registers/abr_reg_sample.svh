@@ -566,31 +566,6 @@
         end
     endfunction
 
-    /*----------------------- ABR_REG__MLKEM_MSG SAMPLE FUNCTIONS -----------------------*/
-    function void abr_reg__MLKEM_MSG::sample(uvm_reg_data_t  data,
-                                                   uvm_reg_data_t  byte_en,
-                                                   bit             is_read,
-                                                   uvm_reg_map     map);
-        m_current = get();
-        m_data    = data;
-        m_is_read = is_read;
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(MSG_bit_cg[bt]) this.MSG_bit_cg[bt].sample(data[0 + bt]);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( data[31:0]/*MSG*/   );
-        end
-    endfunction
-
-    function void abr_reg__MLKEM_MSG::sample_values();
-        if (get_coverage(UVM_CVR_REG_BITS)) begin
-            foreach(MSG_bit_cg[bt]) this.MSG_bit_cg[bt].sample(MSG.get_mirrored_value() >> bt);
-        end
-        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-            this.fld_cg.sample( MSG.get_mirrored_value()   );
-        end
-    endfunction
-
     /*----------------------- ABR_REG__MLKEM_SHARED_KEY SAMPLE FUNCTIONS -----------------------*/
     function void abr_reg__MLKEM_SHARED_KEY::sample(uvm_reg_data_t  data,
                                                    uvm_reg_data_t  byte_en,

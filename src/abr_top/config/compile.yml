@@ -42,6 +42,7 @@ requires:
   - pkdecode
   - power2round
   - compress
+  - decompress
 targets:
   rtl_lint:
     waiver_files:

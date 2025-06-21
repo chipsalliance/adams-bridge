@@ -28,6 +28,7 @@ module compress_top
 
         input wire compress_enable,
         input compress_mode_t mode,
+        input wire [2:0] num_poly,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
 
@@ -41,11 +42,11 @@ module compress_top
         output logic compress_done
     );
 
-    localparam COMP_DATA_W = COEFF_PER_CLK*MLKEM_Q_WIDTH;
+    localparam COMP_DATA_W = 12; //FIXME magic number
 
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_i, compress_data_o, compress_data;
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] mem_rd_data_stalled;
-    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_valid;
+    logic [11:0] compress_data_valid; //FIXME magic number
     logic read_done;
     logic mem_rd_data_valid;
     logic mem_rd_data_hold,mem_rd_data_hold_f ;
@@ -74,6 +75,7 @@ module compress_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .cmp_enable(compress_enable),
+        .num_poly(num_poly),
         .src_base_addr(src_base_addr),
         .mem_rd_req(mem_rd_req),
         .mem_rd_data_valid(mem_rd_data_valid),
@@ -110,15 +112,15 @@ module compress_top
         unique case (mode)
             compress1: begin
                 compress_data = {44'b0, compress_data_o[3][0:0], compress_data_o[2][0:0], compress_data_o[1][0:0],compress_data_o[0][0:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 44);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 11);
             end
             compress5: begin
                 compress_data = {28'b0, compress_data_o[3][4:0], compress_data_o[2][4:0], compress_data_o[1][4:0],compress_data_o[0][4:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 28);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 7);
             end
             compress11: begin
                 compress_data = {4'b0, compress_data_o[3][10:0], compress_data_o[2][10:0], compress_data_o[1][10:0],compress_data_o[0][10:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 4);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 1);
             end
             compress12: begin
                 compress_data = compress_data_o;
@@ -132,9 +134,9 @@ module compress_top
     end
 
     abr_sample_buffer #(
-        .BUFFER_DATA_W(1),
-        .NUM_WR(48),
-        .NUM_RD(32)
+        .BUFFER_DATA_W(4),
+        .NUM_WR(12),
+        .NUM_RD(8)
     ) compress_sample_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),

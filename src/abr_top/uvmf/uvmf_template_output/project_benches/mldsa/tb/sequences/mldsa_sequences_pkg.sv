@@ -54,6 +54,8 @@ package mldsa_sequences_pkg;
   `include "src/ML_DSA_randomized_KeySign_stream_msg_sequence.svh"
   `include "src/ML_DSA_randomized_verif_stream_msg_sequence.svh"
   `include "src/ML_KEM_keygen_KATs_sequence.svh"
+  `include "src/ML_KEM_encaps_KATs_sequence.svh"
+  `include "src/ML_KEM_decaps_KATs_sequence.svh"
 
   // pragma uvmf custom package_item_additional begin
   // UVMF_CHANGE_ME : When adding new sequences to the src directory

@@ -26,6 +26,7 @@ module compress_ctrl
         input wire zeroize,
 
         input wire cmp_enable,
+        input wire [2:0] num_poly,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
 
         output mem_if_t mem_rd_req,
@@ -78,7 +79,7 @@ module compress_ctrl
 
     //Flags
     always_comb begin
-        last_poly_last_addr_rd = (mem_rd_addr == (src_base_addr + ((MLKEM_K * (MLKEM_N/4))-1)));
+        last_poly_last_addr_rd = (mem_rd_addr == (src_base_addr + ((num_poly * (MLKEM_N/4))-1))) & ~mem_rd_data_hold;
 
         done = read_fsm_state_ps == CMP_RD_IDLE;
         ld_rd_addr = arc_CMP_RD_IDLE_CMP_RD_MEM | arc_CMP_RD_MEM_CMD_RD_IDLE;

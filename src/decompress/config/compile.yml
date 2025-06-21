@@ -1,0 +1,35 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [decompress_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/decompress_defines_pkg.sv
+---
+provides: [decompress]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+  - decompress_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/decompress_top.sv
+      - $COMPILE_ROOT/rtl/decompress.sv
+      - $COMPILE_ROOT/rtl/decompress_ctrl.sv
+      
+    tops: [decompress]
+  rtl_lint:
+    directories: []
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/decompress/config/design_lint/decompress/sglint_waivers
+

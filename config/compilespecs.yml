@@ -12,6 +12,7 @@ files:
   - src/cbd_sampler/config/compile.yml
   - src/decompose/config/compile.yml
   - src/compress/config/compile.yml
+  - src/decompress/config/compile.yml
   - src/sk_encode/config/compile.yml
   - src/sk_decode/config/compile.yml
   - src/makehint/config/compile.yml
