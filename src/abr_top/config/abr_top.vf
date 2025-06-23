@@ -22,6 +22,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/pk_decode/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/power2round/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/compress/rtl
++incdir+${ADAMSBRIDGE_ROOT}/src/decompress/rtl
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
@@ -180,6 +181,10 @@ ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_top.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_defines_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_top.sv
+${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress.sv
+${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_if.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_mem_top.sv
