@@ -122,7 +122,7 @@ class ML_KEM_keygen_KATs_sequence extends mldsa_bench_sequence_base;
         end
         valid = data[1];
       end
-/*
+      
       // Reading MLKEM_ENCAPS_KEY register
       for(int i = 0; i < reg_model.MLKEM_ENCAPS_KEY.m_mem.get_size(); i++) begin
         reg_model.MLKEM_ENCAPS_KEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
@@ -135,7 +135,7 @@ class ML_KEM_keygen_KATs_sequence extends mldsa_bench_sequence_base;
                     i, data, PK[i]));
         end
       end
-*/
+
       // Reading MLKEM_DECAPS_KEY register
       for(int i = 0; i < reg_model.MLKEM_DECAPS_KEY.m_mem.get_size(); i++) begin
         reg_model.MLKEM_DECAPS_KEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);

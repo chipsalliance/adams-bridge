@@ -64,7 +64,7 @@ package abr_ctrl_pkg;
     localparam MLKEM_DK_MEM_NUM_DWORDS = 768;
     localparam MLKEM_CIPHERTEXT_MEM_NUM_DWORDS = 392;
     localparam MLKEM_MSG_MEM_NUM_DWORDS = 8;
-    localparam SCRATCH_REG_NUM_DWORDS = 32;
+    localparam SCRATCH_REG_NUM_DWORDS = 48;
 
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
@@ -97,25 +97,9 @@ package abr_ctrl_pkg;
     localparam PK_RHO_REG_ADDR_W = $clog2(PRIVKEY_REG_RHO_NUM_DWORDS);
     
     typedef struct packed {
-        logic [7:0][63:0] tr;
-        logic [3:0][63:0] K;
-        logic [3:0][63:0] rho;
-    } mldsa_privkey_t;
-
-    typedef union packed {
-        mldsa_privkey_t enc;
-        logic [PRIVKEY_REG_NUM_DWORDS-1:0][31:0] raw;
-    } mldsa_privkey_u;
-
-    typedef struct packed {
-        logic [SIG_Z_MEM_ADDR_W-1:0] addr;
-        logic [SIG_Z_MEM_OFFSET_W-1:0] offset;
-    } mldsa_signature_z_addr_t;
-
-    typedef struct packed {
         logic [SIGNATURE_H_NUM_DWORDS-1:0][31:0] h;
         logic [SIGNATURE_C_NUM_DWORDS-1:0][31:0] c;
-    } mldsa_signature_t;
+    } mldsa_signature_t; //37 dwords
 
     typedef union packed {
         mldsa_signature_t enc;
@@ -123,34 +107,35 @@ package abr_ctrl_pkg;
     } mldsa_signature_u;
 
     typedef struct packed {
+        logic [SIG_Z_MEM_ADDR_W-1:0] addr;
+        logic [SIG_Z_MEM_OFFSET_W-1:0] offset;
+    } mldsa_signature_z_addr_t;
+
+    typedef struct packed {
         logic [PK_MEM_ADDR_W-1:0] addr;
         logic [PK_MEM_OFFSET_W-1:0] offset;
     } mldsa_pubkey_mem_addr_t;
 
     typedef struct packed {
-        logic [7:0][31:0] rho;
-    } mldsa_pubkey_t;
-
-    typedef union packed {
-        mldsa_pubkey_t enc;
-        logic [7:0][31:0] raw;
-    } mldsa_pubkey_u;
-
-    typedef struct packed {
-        logic [3:0][63:0] sigma;
-        logic [7:0][31:0] seed_z;
-        logic [3:0][63:0] tr;
+        logic [7:0][63:0] rho_p;
+        logic [7:0][63:0] tr;
+        logic [3:0][63:0] K;
         logic [3:0][63:0] rho;
-    } mlkem_scratch_reg_t;
+    } mldsa_scratch_reg_t; //48 dwords
 
     typedef struct packed {
-        logic [3:0][63:0] r;
-    } mlkem_encaps_reg_t;
+        logic [7:0][63:0] rsvd;
+        logic [3:0][63:0] sigma; //cbd input randomness
+        logic [7:0][31:0] seed_z;
+        logic [3:0][63:0] tr; //hash of EK
+        logic [3:0][63:0] rho;
+    } mlkem_scratch_reg_t; //48 dwords
 
     typedef union packed {
-        mlkem_scratch_reg_t enc;
+        mlkem_scratch_reg_t mlkem_enc;
+        mldsa_scratch_reg_t mldsa_enc;
         logic [SCRATCH_REG_NUM_DWORDS-1:0][31:0] raw;
-    } mlkem_scratch_reg_u;
+    } abr_scratch_reg_u;
 
     //FSM Controller for streaming msg
     typedef enum logic [2:0] {
