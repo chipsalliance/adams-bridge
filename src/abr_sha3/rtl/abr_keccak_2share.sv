@@ -417,7 +417,7 @@ module abr_keccak_2share
 
   // phase_sel_i shall stay for two cycle after change to 1.
   if (EnMasking) begin : gen_selperiod_chk
-    `ABR_ASSUME(SelStayTwoCycleIfTrue_A,
+    `ABR_ASSERT(SelStayTwoCycleIfTrue_A,
         ($past(phase_sel_i) == MuBi4False) && (phase_sel_i == MuBi4True)
         |=> phase_sel_i == MuBi4True, clk_i, !rst_b)
   end
