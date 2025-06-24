@@ -480,7 +480,9 @@ always_comb kv_seed_data_present = '0;
 
   //Set busy when engine is in progress
   always_comb busy_o = ~abr_ready;
-  always_comb zeroize = abr_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || debugUnlock_or_scan_mode_switch;
+  always_comb zeroize = abr_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || 
+                        abr_reg_hwif_out.MLKEM_CTRL.ZEROIZE.value ||
+                        debugUnlock_or_scan_mode_switch;
 
   always_comb abr_reg_hwif_in.reset_b = rst_b;
   always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
