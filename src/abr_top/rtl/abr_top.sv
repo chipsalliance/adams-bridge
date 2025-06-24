@@ -306,7 +306,7 @@ module abr_top
 );
 
 always_comb abr_reg_err = (abr_reg_rd_ack & abr_reg_read_err) | (abr_reg_wr_ack & abr_reg_write_err);
-always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack); //FIXME can we do this without dv?
+always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack);
 
 abr_reg abr_reg_inst (
   .clk(clk),
