@@ -95,7 +95,7 @@ class ML_KEM_encaps_KATs_sequence extends mldsa_bench_sequence_base;
       for(int j = 0; j < reg_model.MLKEM_ENCAPS_KEY.m_mem.get_size(); j++) begin
         reg_model.MLKEM_ENCAPS_KEY.m_mem.write(status, j, kat_ek[j], UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
-          `uvm_error("REG_WRITE_FAIL", $sformatf("Failed to write MLKEM_ENCAPS_KEY[%0d]", i));
+          `uvm_error("REG_WRITE_FAIL", $sformatf("Failed to write MLKEM_ENCAPS_KEY[%0d]", j));
         end else begin
           `uvm_info("REG_WRITE_PASS", $sformatf("Successfully wrote MLKEM_ENCAPS_KEY[%0d]: %0h", j, kat_ek[j]), UVM_LOW);
         end
