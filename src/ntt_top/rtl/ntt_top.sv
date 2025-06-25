@@ -93,6 +93,7 @@ module ntt_top
     //Masking internal - TODO: remove and merge with mem_wr/rd interface after testing
     mem_if_t share_mem_wr_req, share_mem_rd_req, share_mem_rd_req_reg;
     logic [3:0][1:0][MLDSA_SHARE_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data, share_mem_wr_data_reg, share_mem_wr_data_comb;
+    logic [(MLKEM_NUM_SHARES*COEFF_PER_CLK)-1:0][MLDSA_SHARE_WIDTH-1:0] mlkem_share_mem_rd_data; //Used for mlkem masking
 
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
@@ -200,7 +201,7 @@ module ntt_top
             ct_mode <= (mode == ct);
             gs_mode <= (mode == gs);
             pwo_mode <= (mode inside {pwm, pwa, pws}) | (mlkem & (mode == pairwm));
-            pwm_mode <= (mode == pwm); //TODO: add pairwm here instead?
+            pwm_mode <= (mode == pwm);
             pwa_mode <= (mode == pwa);
             pws_mode <= (mode == pws);
             pairwm_mode <= mlkem & (mode == pairwm);
@@ -216,13 +217,13 @@ module ntt_top
                                         : pwm_wr_data_reg;
 
     //Share mem: TODO: mlkem
-    assign share_mem_wr_req.rd_wr_en = (pwm_mode & masking_en) ? ((accumulate ? pw_wren_reg_d1 : pw_wren_reg) ? RW_WRITE : RW_IDLE) : RW_IDLE;
-    assign share_mem_wr_req.addr     = (pwm_mode & masking_en) ? accumulate ? pwm_wr_addr_c_reg_d2 : pwm_wr_addr_c_reg /*pw_mem_wr_addr_c*/ : 'h0; //TODO: why is d2 required for accumulate case?
-    assign share_mem_rd_req.rd_wr_en = masking_en ? (pwm_mode & accumulate) ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) 
+    assign share_mem_wr_req.rd_wr_en = ((pwm_mode | pairwm_mode) & masking_en) ? ((accumulate ? pw_wren_reg_d1 : pw_wren_reg) ? RW_WRITE : RW_IDLE) : RW_IDLE;
+    assign share_mem_wr_req.addr     = ((pwm_mode | pairwm_mode) & masking_en) ? accumulate ? pwm_wr_addr_c_reg_d2 : pwm_wr_addr_c_reg : 'h0; //TODO: why is d2 required for accumulate case?
+    assign share_mem_rd_req.rd_wr_en = masking_en ? ((pwm_mode | pairwm_mode) & accumulate) ? (pw_rden_dest_mem ? RW_READ : RW_IDLE) 
                                                                             : (gs_mode & masking_en_ctrl) ? (mem_rden ? RW_READ : RW_IDLE)
                                                                                       : RW_IDLE
                                                   : RW_IDLE;
-    assign share_mem_rd_req.addr     = masking_en ? (pwm_mode & accumulate) ? pw_mem_rd_addr_c 
+    assign share_mem_rd_req.addr     = masking_en ? ((pwm_mode | pairwm_mode) & accumulate) ? pw_mem_rd_addr_c 
                                                                             : (gs_mode & masking_en_ctrl) ? mem_rd_addr : 'h0
                                                   : 'h0;
     always_comb begin 
@@ -270,7 +271,15 @@ module ntt_top
     assign mem_rd_req.rd_wr_en = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? (mem_rden ? RW_READ : RW_IDLE) : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.rd_wr_en : (pwm_mode | pairwm_mode) ? masking_en ? share_mem_rd_req.rd_wr_en : (pw_rden_dest_mem ? RW_READ : RW_IDLE) : RW_IDLE;
     assign mem_rd_req.addr     = (ct_mode | (gs_mode & ~masking_en_ctrl)) ? mem_rd_addr : (gs_mode & masking_en_ctrl) ? share_mem_rd_req.addr : (pwm_mode | pairwm_mode) ? masking_en ? share_mem_rd_req.addr : pw_mem_rd_addr_c : 'h0;
     assign pwm_rd_data_c       = ((pwm_mode | pairwm_mode) & accumulate) ? mem_rd_data : 'h0;
-    assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? mem_rd_data : ABR_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
+
+    always_comb begin
+        for (int i = 0; i < 8; i++) begin
+            mlkem_share_mem_rd_data[i] = MLDSA_SHARE_WIDTH'(mem_rd_data[(i*48) +: 23]);
+        end
+    end
+
+    assign share_mem_rd_data   = (gs_mode & masking_en_ctrl) ? (mlkem ? mlkem_share_mem_rd_data : mem_rd_data) 
+                                                             : ABR_MEM_MASKED_DATA_WIDTH'(pwm_rd_data_c);
 
     //pwm rd a - PWO mode - read a operand from mem. NTT/INTT mode, not used
     assign pwm_a_rd_req.rd_wr_en = pwo_mode ? (masking_en & ~shuffle_en) ? (pw_rden_reg ? RW_READ : RW_IDLE) : (pw_rden ? RW_READ : RW_IDLE) : RW_IDLE;
@@ -423,6 +432,7 @@ module ntt_top
         .accumulate(accumulate),
         .bf_shares_uvw_i(bf_shares_uvw_i),
         .mlkem_pairwm_zeta13_i(mlkem_pairwm_zeta13_i),
+        .mlkem_shares_pairwm_zeta13_i(), //TODO: pairwm masking
         .ntt_passthrough(ntt_passthrough),
         .intt_passthrough(intt_passthrough),
         .uv_o(uv_o),
@@ -606,10 +616,10 @@ module ntt_top
             pwm_shares_uvo_reg <= pwm_shares_uvo;
 
             //INTT shares
-            twiddle_factor_shares_reg[0][0] <= MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
+            twiddle_factor_shares_reg[0][0] <= mlkem ? MASKED_WIDTH'(twiddle_factor[MLKEM_Q_WIDTH-1:0]) - rnd_i[2] : MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
             twiddle_factor_shares_reg[0][1] <= rnd_i[2];
 
-            twiddle_factor_shares_reg[1][0] <= MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
+            twiddle_factor_shares_reg[1][0] <= mlkem ? MASKED_WIDTH'(twiddle_factor[(2*MLKEM_Q_WIDTH)-1:MLKEM_Q_WIDTH]) - rnd_i[3] : MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
             twiddle_factor_shares_reg[1][1] <= rnd_i[3];
 
             pw_rden_reg          <= pw_rden;

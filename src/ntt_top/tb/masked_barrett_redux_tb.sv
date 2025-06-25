@@ -85,11 +85,7 @@ module masked_barrett_redux_tb;
                 end
             end
             begin
-<<<<<<< HEAD
-                repeat(/*25*/8) @(posedge clk);
-=======
-                repeat(25) @(posedge clk);
->>>>>>> main
+                repeat(8) @(posedge clk);
                 for (int i = 0; i < 50; i++)  begin
                     $display("x_in_array = %h for index %0d at time %t", x_in_array[i], i, $time);
                     expected = barrett_redux_exp(x_in_array[i]);

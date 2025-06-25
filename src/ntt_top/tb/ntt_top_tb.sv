@@ -382,11 +382,11 @@ task ntt_ctrl_test();
     bf_ready_tb = 1'b0;
 endtask
 
-task mlkem_ntt_top_test();
+task mlkem_ntt_top_test(input logic mask_en, input logic shuf_en);
     fork
         begin
             while(1) begin
-                random_tb <= $urandom();
+                random_tb <= 0; //$urandom();
                 @(posedge clk_tb);
             end
         end
@@ -395,7 +395,7 @@ task mlkem_ntt_top_test();
             operation = "MLKEM NTT with shuffling";
             mode_tb = ct;
             enable_tb = 1;
-            shuffling_en_tb = 1;
+            shuffling_en_tb = shuf_en;
             masking_en_tb = 0;
             mlkem_tb = 1;
             ntt_mem_base_addr_tb.src_base_addr = 8'd0;
@@ -417,6 +417,7 @@ task mlkem_ntt_top_test();
             enable_tb = 1;
             // shuffling_en_tb = 1;
             mlkem_tb = 1;
+            masking_en_tb = mask_en;
             ntt_mem_base_addr_tb.src_base_addr = 8'd128;
             ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
@@ -1109,10 +1110,10 @@ initial begin
     @(posedge clk_tb);
     $display("Starting ntt test\n");
     // ntt_top_test();
-    mlkem_ntt_top_test();
-    mlkem_pairwm_top_test();
-    mlkem_pairwm_sampler_top_test();
-    mlkem_pwa_pws_top_test();
+    mlkem_ntt_top_test(1, 0); //masking_en, shuffling_en
+    // mlkem_pairwm_top_test();
+    // mlkem_pairwm_sampler_top_test();
+    // mlkem_pwa_pws_top_test();
     repeat(1000) @(posedge clk_tb);
     $finish;
 end

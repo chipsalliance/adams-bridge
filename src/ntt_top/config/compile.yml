@@ -58,15 +58,15 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_ctrl.sv
       - $COMPILE_ROOT/rtl/ntt_top.sv
       - $COMPILE_ROOT/rtl/ntt_masked_BFU_add_sub.sv
+      - $COMPILE_ROOT/rtl/ntt_mlkem_masked_BFU_add_sub.sv
       - $COMPILE_ROOT/rtl/ntt_masked_BFU_mult.sv
+      - $COMPILE_ROOT/rtl/ntt_mlkem_masked_BFU_mult.sv
       - $COMPILE_ROOT/rtl/ntt_masked_gs_butterfly.sv
+      - $COMPILE_ROOT/rtl/ntt_mlkem_masked_gs_butterfly.sv
       - $COMPILE_ROOT/rtl/ntt_masked_pwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_butterfly1x2.sv
+      - $COMPILE_ROOT/rtl/ntt_mlkem_masked_butterfly1x2.sv
       - $COMPILE_ROOT/rtl/ntt_hybrid_butterfly_2x2.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/barrett_reduction.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_if_cond.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_if_cond_v2.sv
-      - $COMPILE_ROOT/../barrett_reduction/rtl/masked_barrett_reduction.sv
       - $COMPILE_ROOT/rtl/ntt_karatsuba_pairwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_pairwm.sv
   # tb:
@@ -145,6 +145,18 @@ targets:
     files:
       - $COMPILE_ROOT/tb/masked_barrett_redux_tb.sv
     tops: [masked_barrett_redux_tb]
+
+---
+provides: [mlkem_masked_gs_butterfly_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/mlkem_masked_gs_butterfly_tb.sv
+    tops: [mlkem_masked_gs_butterfly_tb]
 
 ---
 provides: [ntt_utb]  

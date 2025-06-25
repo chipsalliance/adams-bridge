@@ -49,6 +49,9 @@ package abr_params_pkg;
 
   parameter MLDSA_NUM_SHARES = 2; //set this to 1 if masking disabled
   parameter MLDSA_SHARE_WIDTH = MLDSA_Q_WIDTH * MLDSA_NUM_SHARES;
+  
+  parameter MLKEM_NUM_SHARES = 2; //set this to 1 if masking disabled
+  parameter MLKEM_SHARE_WIDTH = MLKEM_Q_WIDTH * MLKEM_NUM_SHARES;
 
   //Can be 1 or 2 only
   parameter ABR_NUM_NTT = 1;

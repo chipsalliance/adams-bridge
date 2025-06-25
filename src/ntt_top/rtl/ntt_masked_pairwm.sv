@@ -40,7 +40,7 @@ module ntt_masked_pairwm
     input wire [1:0][MASKED_WIDTH-1:0] v1,
     input wire [1:0][MASKED_WIDTH-1:0] w1,
     input wire [1:0][MASKED_WIDTH-1:0] zeta,
-    input wire [4:0][13:0] rnd, //TODO: how many bits?
+    input wire [4:0][13:0] rnd,
     output logic [1:0][MASKED_WIDTH-1:0] res0,
     output logic [1:0][MASKED_WIDTH-1:0] res1
 );
@@ -51,19 +51,21 @@ logic [1:0] u0v1 [MASKED_WIDTH-1:0];
 logic [1:0] u1v0 [MASKED_WIDTH-1:0];
 logic [1:0] zeta_v1 [MASKED_WIDTH-1:0];
 logic [1:0] u1v1 [MASKED_WIDTH-1:0];
-logic [1:0] zeta_v1_reduced_unpacked [MASKED_WIDTH-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v0_packed, u0v1_packed, u1v0_packed, zeta_v1_packed, u1v1_packed;
 
 //Reduction results
-logic [1:0][MLKEM_Q_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced;
-logic [1:0][MASKED_WIDTH:0] uv0, uv1; //TODO: check width
-logic [1:0][MASKED_WIDTH:0] uvw0, uvw1; //TODO: check width
+logic [1:0][MLKEM_Q_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced; //TODO: convert to 24-bit shares
+logic [1:0][MASKED_WIDTH-1:0] uv0, uv1;
+logic [1:0][MASKED_WIDTH-1:0] uvw0, uvw1;
 
 //Delay regs
 logic [1:0][MASKED_WIDTH-1:0] u1_reg           [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v1_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u1v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
+
+//Accumulation results
+logic [1:0][MASKED_WIDTH-1:0] res0_acc, res1_acc;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -97,10 +99,10 @@ abr_masked_N_bit_mult_two_share #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .random(rnd[0]),
+    .random(MASKED_WIDTH'(rnd[1:0])),
     .x(u0),
     .y(v0),
-    .res(u0v0)
+    .z(u0v0)
 );
 
 always_comb begin
@@ -120,7 +122,7 @@ masked_barrett_reduction masked_u0v0_redux_inst (
     .rnd_14bit(rnd[1][13:0]),
     .rnd_for_Boolean0(rnd[2][13:0]),
     .rnd_for_Boolean1(rnd[3][13:0]),
-    .rnd_1bit(rnd[4][0]),
+    .rnd_1bit(rnd[0][12]),
     .y(u0v0_reduced)
 );
 
@@ -132,10 +134,10 @@ abr_masked_N_bit_mult_two_share #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .random(rnd[1]),
+    .random(MASKED_WIDTH'(rnd[2:1])),
     .x(u0),
     .y(v1),
-    .res(u0v1)
+    .z(u0v1)
 );
 
 always_comb begin
@@ -154,7 +156,7 @@ masked_barrett_reduction masked_u0v1_redux_inst (
     .rnd_14bit(rnd[2][13:0]),
     .rnd_for_Boolean0(rnd[3][13:0]),
     .rnd_for_Boolean1(rnd[4][13:0]),
-    .rnd_1bit(rnd[0][0]),
+    .rnd_1bit(rnd[0][13]),
     .y(u0v1_reduced)
 );
 
@@ -166,10 +168,10 @@ abr_masked_N_bit_mult_two_share #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .random(rnd[2]),
+    .random(MASKED_WIDTH'(rnd[3:2])),
     .x(u1),
     .y(v0),
-    .res(u1v0)
+    .z(u1v0)
 );
 
 always_comb begin
@@ -200,10 +202,10 @@ abr_masked_N_bit_mult_two_share #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .random(rnd[3]),
+    .random(MASKED_WIDTH'(rnd[4:3])),
     .x(zeta),
     .y(v1),
-    .res(zeta_v1)
+    .z(zeta_v1)
 );
 
 always_comb begin
@@ -226,13 +228,6 @@ masked_barrett_reduction masked_zeta_v1_redux_inst (
     .y(zeta_v1_reduced)
 );
 
-always_comb begin
-    for (int i = 0; i < MASKED_WIDTH; i++) begin
-        zeta_v1_reduced_unpacked[i][0] = zeta_v1_reduced[0][i];
-        zeta_v1_reduced_unpacked[i][1] = zeta_v1_reduced[1][i];
-    end
-end
-
 //--------------------------------------
 //u1 * (zeta * v1)
 abr_masked_N_bit_mult_two_share #(
@@ -241,10 +236,10 @@ abr_masked_N_bit_mult_two_share #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .random(rnd[4]),
+    .random(MASKED_WIDTH'(rnd[1:0])),
     .x(u1_reg[0]), //delayed by 25 clks
-    .y(zeta_v1_reduced_unpacked),
-    .res(u1v1)
+    .y(zeta_v1_reduced),
+    .z(u1v1)
 );
 
 always_comb begin
