@@ -63,9 +63,6 @@ module abr_sampler_top
   logic                    sha3_process;
   logic                    sha3_run;
 
-  abr_prim_mubi_pkg::mubi4_t    sha3_done;
-  abr_prim_mubi_pkg::mubi4_t    sha3_absorbed;
-
   logic sha3_squeezing;
 
   logic sha3_block_processed;
@@ -315,7 +312,6 @@ always_comb begin : sampler_fsm_out_comb
     sampler_fsm_ns = sampler_fsm_ps;
     sha3_process = 0;
     sha3_run = 0;
-    sha3_done = abr_prim_mubi_pkg::MuBi4False;
 
     unique case (sampler_fsm_ps)
       ABR_SAMPLER_IDLE: begin
@@ -345,10 +341,6 @@ always_comb begin : sampler_fsm_out_comb
         end
       end
       ABR_SAMPLER_DONE: begin
-        //drive done
-        if (sha3_fsm == abr_sha3_pkg::StSqueeze) begin
-          sha3_done = abr_prim_mubi_pkg::MuBi4True;
-        end
         //Go to IDLE when sha3 resets
         if (~sha3_squeezing) begin 
           sampler_fsm_ns = ABR_SAMPLER_IDLE;
@@ -406,9 +398,8 @@ end
     .start_i    (sha3_start_i),
     .process_i  (sha3_process),
     .run_i      (sha3_run), // For squeeze
-    .done_i     (sha3_done),
 
-    .absorbed_o (sha3_absorbed),
+    .absorbed_o (),
     .squeezing_o (sha3_squeezing),
 
     .block_processed_o (sha3_block_processed),

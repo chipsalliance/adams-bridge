@@ -147,26 +147,13 @@ class ML_KEM_decaps_KATs_sequence extends mldsa_bench_sequence_base;
           `uvm_info("VALIDATION_PASS", $sformatf("SHARED KEY match for KAT %0d at index %0d: %h", i, j, data), UVM_LOW);
         end
       end
-      /*
-      // Reading MLKEM_CIPHERTEXT register
-      for(int j = 0; j < reg_model.MLKEM_CIPHERTEXT.m_mem.get_size(); j++) begin
-        reg_model.MLKEM_CIPHERTEXT.m_mem.read(status, j, data, UVM_FRONTDOOR, reg_model.default_map, this);
-        if (status != UVM_IS_OK) begin
-          `uvm_error("REG_READ", $sformatf("Failed to read MLKEM_CIPHERTEXT[%0d]", j));
-        end else begin
-          `uvm_info("REG_READ", $sformatf("MLKEM_CIPHERTEXT[%0d]: %0h", j, data), UVM_LOW);
-          if (kat_ciphertext[j] != data)
-          `uvm_error("REG_READ", $sformatf("MLKEM_CIPHERTEXT[%0d] mismatch: actual=0x%08h, expected=0x%08h",
-                    j, data, kat_ciphertext[j]));
-        end
-      end
-      */
+
       data = 'h0000_0008; // Perform zeorization operation
-      reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_CTRL"));
+        `uvm_error("REG_WRITE", $sformatf("Failed to write MLKEM_CTRL"));
       end else begin
-        `uvm_info("REG_WRITE", $sformatf("MLDSA_CTRL written with %0h and zeroized", data), UVM_LOW);
+        `uvm_info("REG_WRITE", $sformatf("MLKEM_CTRL written with %0h and zeroized", data), UVM_LOW);
       end
     end
 

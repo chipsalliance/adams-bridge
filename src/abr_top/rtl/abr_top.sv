@@ -130,7 +130,6 @@ module abr_top
   logic [3:0][ABR_MEM_ADDR_WIDTH-1:0] pwm_b_rd_req_mux;
   logic [ABR_NUM_NTT-1:0][ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data;
   logic [ABR_NUM_NTT-1:0][ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data;
-  logic [ABR_NUM_NTT-1:0] ntt_done;
   logic [ABR_NUM_NTT-1:0] ntt_busy;
   logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
@@ -188,7 +187,6 @@ module abr_top
   logic normcheck_enable;
   logic normcheck_done;
   logic [1:0] normcheck_mode;
-  logic [ABR_MEM_ADDR_WIDTH-1:0] normcheck_src_addr;
   logic normcheck_invalid;
   mem_if_t normcheck_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data;
@@ -308,7 +306,7 @@ module abr_top
 );
 
 always_comb abr_reg_err = (abr_reg_rd_ack & abr_reg_read_err) | (abr_reg_wr_ack & abr_reg_write_err);
-always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack); //FIXME can we do this without dv?
+always_comb abr_reg_hold = abr_reg_dv & ~(abr_reg_rd_ack | abr_reg_wr_ack);
 
 abr_reg abr_reg_inst (
   .clk(clk),
@@ -662,7 +660,7 @@ generate
     .pwm_a_rd_data(pwm_a_rd_data[g_inst]),
     .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? sampler_ntt_data : pwm_b_rd_data[g_inst]),
     .ntt_busy(ntt_busy[g_inst]),
-    .ntt_done(ntt_done[g_inst])
+    .ntt_done()
   );
   end
 endgenerate
@@ -1123,7 +1121,7 @@ always_comb begin
         skdecode_mem_we0_bank[bank] = (skdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         pkdecode_mem_we0_bank[bank] = (pkdecode_mem_wr_req[bank].rd_wr_en == RW_WRITE);
         sigdecode_z_mem_we0_bank[bank] = (sigdecode_z_mem_wr_req[bank].rd_wr_en == RW_WRITE);
-        decompress_mem_we0_bank[bank] = (decompress_mem_wr_req.rd_wr_en == RW_WRITE) & (decompress_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i[2:0]) & (decompress_mem_wr_req.addr[0] == bank);;
+        decompress_mem_we0_bank[bank] = (decompress_mem_wr_req.rd_wr_en == RW_WRITE) & (decompress_mem_wr_req.addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i[2:0]) & (decompress_mem_wr_req.addr[0] == bank);
 
         abr_mem_we0_bank[bank] = sampler_mem_we0_bank[bank] | ntt_mem_we0_bank[bank] | decompress_mem_we0_bank[bank] |
                                    decomp_mem_we0_bank[bank] | skdecode_mem_we0_bank[bank] | pkdecode_mem_we0_bank[bank] |

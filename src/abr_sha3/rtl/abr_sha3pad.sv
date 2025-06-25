@@ -55,8 +55,7 @@ module abr_sha3pad
   input process_i,
 
   // Indication of the Keccak Sponge Absorbing is complete, it is time for SW to
-  // control the Keccak-round if it needs more digest, or complete by asserting
-  // `done_i`
+  // control the Keccak-round if it needs more digest
   output abr_prim_mubi_pkg::mubi4_t absorbed_o,
 
   // Indication that there was a fault in the sparse encoding
@@ -688,7 +687,6 @@ module abr_sha3pad
     end
   end
 
-    //TODO Fix hardcoded mux for masking
   if (EnMasking) begin : gen_funcpad_data_masked
     always_comb begin
       unique case (msg_strb)
@@ -787,9 +785,6 @@ module abr_sha3pad
     serial_buffer_d = serial_buffer;
     for (int j = 0 ; j < Share ; j++) begin
       for (int unsigned i = 0 ; i < MsgEntries ; i++) begin
-        // TODO: handle If Width is not integer divisable by MsgWidth
-        // Currently it is not allowed to have partial write
-        // Please see the Assertion `WidthDivisableByMsgWidth_A`
         if (serial_buffer_wraddr == i[MsgAddrW-1:0]) begin
           serial_buffer_d[j][i] = serial_buffer_wrdata[j];
         end else begin
@@ -814,8 +809,8 @@ module abr_sha3pad
   //`ABR_ASSERT_INIT(MsgWidthidth_A, MsgWidth == 64)
 
   // Assume pulse signals: start, process, done
-  `ABR_ASSUME(StartPulse_A, start_i |=> !start_i)
-  `ABR_ASSUME(ProcessPulse_A, process_i |=> !process_i)
+  `ABR_ASSERT(StartPulse_A, start_i |=> !start_i)
+  `ABR_ASSERT(ProcessPulse_A, process_i |=> !process_i)
 
   // ABR_ASSERT output pulse signals: absorbed_o, keccak_run_o
   `ABR_ASSERT(AbsorbedPulse_A,
@@ -824,7 +819,7 @@ module abr_sha3pad
   `ABR_ASSERT(KeccakRunPulse_A, keccak_run_o |=> !keccak_run_o)
 
   // start_i, process_i cannot set high at the same time
-  `ABR_ASSUME(StartProcessMutex_a,
+  `ABR_ASSERT(StartProcessMutex_a,
     $onehot0({
       start_i,
       process_i
@@ -861,19 +856,19 @@ module abr_sha3pad
   end
 
   // Message can be fed in between start_i and process_i.
-  `ABR_ASSUME(MessageCondition_M, msg_valid_i && msg_ready_o |-> process_valid && !process_i)
+  `ABR_ASSERT(MessageCondition_M, msg_valid_i && msg_ready_o |-> process_valid && !process_i)
 
   // Message ready should be asserted only in between start_i and process_i
   `ABR_ASSERT(MsgReadyCondition_A, msg_ready_o |-> process_valid && !process_i)
 
-  `ABR_ASSUME(ProcessCondition_M, process_i |-> process_valid)
-  `ABR_ASSUME(StartCondition_M, start_i |-> start_valid)
+  `ABR_ASSERT(ProcessCondition_M, process_i |-> process_valid)
+  `ABR_ASSERT(StartCondition_M, start_i |-> start_valid)
 
   // Assume mode_i and strength_i are stable during the operation
   // This will be guarded at the kmac top level
-  `ABR_ASSUME(ModeStableDuringOp_M,
+  `ABR_ASSERT(ModeStableDuringOp_M,
     $changed(mode_i) |-> start_valid)
-  `ABR_ASSUME(StrengthStableDuringOp_M,
+  `ABR_ASSERT(StrengthStableDuringOp_M,
     $changed(strength_i) |-> start_valid)
 
 `endif // SYNTHESIS
@@ -889,7 +884,7 @@ module abr_sha3pad
   // Assumption of input mode_i and strength_i
   // SHA3 variants: SHA3-224, SHA3-256, SHA3-384, SHA3-512
   // SHAKE, cSHAKE variants: SHAKE128, SHAKE256, cSHAKE128, cSHAKE256
-  `ABR_ASSUME_FPV(ModeStrengthCombinations_M,
+  `ABR_ASSERT(ModeStrengthCombinations_M,
     start_i |->
       (mode_i == Sha3 && (strength_i inside {L224, L256, L384, L512})) ||
       ((mode_i == Shake || mode_i == CShake) && (strength_i inside {L128, L256})),
@@ -897,23 +892,23 @@ module abr_sha3pad
 
   // Keccak control interface
   // Keccak run triggered -> completion should come
-  `ABR_ASSUME(RunThenComplete_M,
+  `ABR_ASSERT(RunThenComplete_M,
     keccak_run_o |-> strong(##[24*Share:$] keccak_complete_i),
     clk_i, !rst_b)
 
   // No partial write is allowed for Message FIFO interface
-  `ABR_ASSUME(NoPartialMsgFifo_M,
+  `ABR_ASSERT(NoPartialMsgFifo_M,
     update_serial_buffer && (sel_mux == MuxFifo) |-> (&msg_strb_i) == 1'b1,
     clk_i, !rst_b)
 
   // When transaction is stored into msg_buf, it shall be partial write.
-  `ABR_ASSUME(AlwaysPartialMsgBuf_M,
+  `ABR_ASSERT(AlwaysPartialMsgBuf_M,
     en_msgbuf |-> msg_valid_i && (msg_strb_i[MsgStrbW-1] == 1'b0),
     clk_i, !rst_b)
 
   // if partial write comes and is acked, then no more msg_valid_i until
   // next message
-  `ABR_ASSUME(PartialEndOfMsg_M,
+  `ABR_ASSERT(PartialEndOfMsg_M,
     msg_valid_i && msg_ready_o && msg_partial |=>
       !msg_valid_i ##[1:$] $stable(msg_valid_i) ##1 start_i,
     clk_i, !rst_b)
@@ -929,7 +924,7 @@ module abr_sha3pad
     clk_i, !rst_b)
 
   // NS data shall be stable during the operation.
-  //`ABR_ASSUME(NsStableInProcess_A,
+  //`ABR_ASSERT(NsStableInProcess_A,
   //  $stable(ns_data_i) throughout(start_i ##[1:$] process_i ##[1:$] absorbed_o),
   //  clk_i, !rst_b)
 

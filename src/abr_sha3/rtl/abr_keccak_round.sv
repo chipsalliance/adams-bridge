@@ -482,10 +482,10 @@ module abr_keccak_round
   //`ABR_ASSERT(RunResultComplete_A, run_i ##[MaxRound:] complete_o, clk_i, !rst_b)
 
   // run_i only asserted in Idle state
-  `ABR_ASSUME(ValidRunAssertStIdle_A, run_i |-> keccak_st == StIdle, clk_i, !rst_b)
+  `ABR_ASSERT(ValidRunAssertStIdle_A, run_i |-> keccak_st == StIdle, clk_i, !rst_b)
 
   // clear_i is assumed to be asserted in Idle state
-  `ABR_ASSUME(ClearAssertStIdle_A,
+  `ABR_ASSERT(ClearAssertStIdle_A,
     abr_prim_mubi_pkg::mubi4_test_true_strict(clear_i)
      |-> keccak_st == StIdle, clk_i, !rst_b)
 
@@ -497,12 +497,5 @@ module abr_keccak_round
         inside {StPhase1, StPhase2Cycle1, StPhase2Cycle2, StPhase2Cycle3}),
         clk_i, !rst_b)
   end
-
-  // If message is fed, it shall start from 0
-  // TODO: Handle the case `addr_i` changes prior to `valid_i`
-  //`ABR_ASSUME(MsgStartFrom0_A, valid_i |->
-  //                                  (addr_i == 0) || (addr_i == $past(addr_i) + 1),
-  //                 clk_i,!rst_b)
-
 
 endmodule
