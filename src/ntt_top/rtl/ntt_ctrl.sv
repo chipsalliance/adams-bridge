@@ -406,7 +406,8 @@ always_comb begin
                                                    :  pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]);
     end
     else if (pairwm_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]);
+        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1])
+                                                   : pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]);
     end
     else if (pwa_mode | pws_mode) begin
         shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7]);
