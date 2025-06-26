@@ -444,7 +444,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         incr_pw_wr_addr_reg <= '0;
         incr_pw_rd_addr_reg_d1 <= '0;
     end
-    else if (masking_en & pwm_mode) begin
+    else if (masking_en & (pwm_mode | pairwm_mode)) begin
         incr_pw_rd_addr_reg <= {incr_pw_rd_addr, incr_pw_rd_addr_reg[MASKED_PWM_LATENCY:1]};
         incr_pw_wr_addr_reg <= {incr_pw_wr_addr, incr_pw_wr_addr_reg[MASKED_PWM_LATENCY:1]};
         incr_pw_rd_addr_reg_d1 <= incr_pw_rd_addr_reg[0];
@@ -485,7 +485,7 @@ always_ff @(posedge clk or negedge reset_n) begin
 
         //accumulate
         if ((pwm_mode | pairwm_mode) & accumulate) begin
-            if ((masking_en & incr_pw_rd_addr_reg[0]) | (~masking_en & incr_pw_rd_addr)) begin
+            if ((masking_en & (mlkem ? incr_pw_rd_addr_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : incr_pw_rd_addr_reg[0])) | (~masking_en & incr_pw_rd_addr)) begin //-6 to remove reduction latency, +1 because incr reg has n+1 entries not n
                 pw_mem_rd_addr_c <= pw_mem_rd_addr_c_nxt;
             end
         end
@@ -1084,7 +1084,7 @@ always_comb begin
         mem_rd_en = mem_rd_en_fsm;
         twiddle_addr = twiddle_addr_int;
         pw_rden  = pw_rden_fsm;
-        pw_share_mem_rden = accumulate ? masking_en ? pw_rden_fsm_reg[0] : pw_rden_fsm : '0;
+        pw_share_mem_rden = accumulate ? masking_en ? mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : pw_rden_fsm_reg[0] : pw_rden_fsm : '0; //-6 to remove reduction latency since reduction happens at the end
         pw_wren = pw_wren_fsm;
     end
 end

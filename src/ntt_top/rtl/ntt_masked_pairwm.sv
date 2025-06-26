@@ -20,7 +20,7 @@
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
 // latency with accumulate: 24 clks
-// latency without accumulate: 17 clks
+// latency without accumulate: 23 clks
 
 module ntt_masked_pairwm
     import abr_params_pkg::*;
@@ -54,7 +54,7 @@ logic [1:0] u1v1 [MASKED_WIDTH-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v0_packed, u0v1_packed, u1v0_packed, zeta_v1_packed, u1v1_packed;
 
 //Reduction results
-logic [1:0][MLKEM_Q_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced; //TODO: convert to 24-bit shares
+logic [1:0][MLKEM_Q_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced, uv0_reduced, uv1_reduced; //TODO: convert to 24-bit shares
 logic [1:0][MASKED_WIDTH-1:0] uv0, uv1;
 logic [1:0][MASKED_WIDTH-1:0] uvw0, uvw1;
 
@@ -63,9 +63,6 @@ logic [1:0][MASKED_WIDTH-1:0] u1_reg           [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v1_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u1v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
-
-//Accumulation results
-logic [1:0][MASKED_WIDTH-1:0] res0_acc, res1_acc;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -287,7 +284,7 @@ abr_masked_N_bit_Arith_adder #(
 );
 
 //--------------------------------------
-//Accumulate - 1 clk
+//Accumulation - 1 clk
 abr_masked_N_bit_Arith_adder #(
     .WIDTH(MASKED_WIDTH)
 ) masked_uv0w0_acc_adder_inst (
@@ -295,7 +292,7 @@ abr_masked_N_bit_Arith_adder #(
     .rst_n(reset_n),
     .zeroize(zeroize),
     .x(uv0),
-    .y(w0), //TODO: make sure w0 is delayed to match latency of uv0
+    .y(w0),
     .s(uvw0)
 );
 
@@ -304,13 +301,13 @@ masked_barrett_reduction masked_uvw0_redux_inst (
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .x(uvw0),
+    .x(accumulate ? uvw0 : uv0),
     .rnd_12bit(rnd[0][11:0]),
     .rnd_14bit(rnd[1][13:0]),
     .rnd_for_Boolean0(rnd[2][13:0]),
     .rnd_for_Boolean1(rnd[3][13:0]),
     .rnd_1bit(rnd[4][0]),
-    .y(res0_acc)
+    .y(res0)
 );
 
 abr_masked_N_bit_Arith_adder #(
@@ -320,7 +317,7 @@ abr_masked_N_bit_Arith_adder #(
     .rst_n(reset_n),
     .zeroize(zeroize),
     .x(uv1),
-    .y(w1), //TODO: make sure w1 is delayed to match latency of uv0
+    .y(w1),
     .s(uvw1)
 );
 
@@ -328,18 +325,13 @@ masked_barrett_reduction masked_uvw1_redux_inst (
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .x(uvw1),
+    .x(accumulate ? uvw1 : uv1),
     .rnd_12bit(rnd[1][11:0]),
     .rnd_14bit(rnd[2][13:0]),
     .rnd_for_Boolean0(rnd[3][13:0]),
     .rnd_for_Boolean1(rnd[4][13:0]),
     .rnd_1bit(rnd[0][0]),
-    .y(res1_acc)
+    .y(res1)
 );
-
-always_comb begin
-    res0 = accumulate ? res0_acc : uv0;
-    res1 = accumulate ? res1_acc : uv1;
-end
 
 endmodule
