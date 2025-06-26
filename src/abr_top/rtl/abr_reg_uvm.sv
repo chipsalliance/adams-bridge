@@ -763,36 +763,6 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_SEED_Z
 
-    // Reg - abr_reg::MLKEM_MSG
-    class abr_reg__MLKEM_MSG extends uvm_reg;
-        protected uvm_reg_data_t m_current;
-        protected uvm_reg_data_t m_data;
-        protected bit            m_is_read;
-
-        abr_reg__MLKEM_MSG_bit_cg MSG_bit_cg[32];
-        abr_reg__MLKEM_MSG_fld_cg fld_cg;
-        rand uvm_reg_field MSG;
-
-        function new(string name = "abr_reg__MLKEM_MSG");
-            super.new(name, 32, build_coverage(UVM_CVR_ALL));
-        endfunction : new
-        extern virtual function void sample_values();
-        extern protected virtual function void sample(uvm_reg_data_t  data,
-                                                      uvm_reg_data_t  byte_en,
-                                                      bit             is_read,
-                                                      uvm_reg_map     map);
-
-        virtual function void build();
-            this.MSG = new("MSG");
-            this.MSG.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
-            if (has_coverage(UVM_CVR_REG_BITS)) begin
-                foreach(MSG_bit_cg[bt]) MSG_bit_cg[bt] = new();
-            end
-            if (has_coverage(UVM_CVR_FIELD_VALS))
-                fld_cg = new();
-        endfunction : build
-    endclass : abr_reg__MLKEM_MSG
-
     // Reg - abr_reg::MLKEM_SHARED_KEY
     class abr_reg__MLKEM_SHARED_KEY extends uvm_reg;
         protected uvm_reg_data_t m_current;
@@ -822,6 +792,22 @@ package abr_reg_uvm;
                 fld_cg = new();
         endfunction : build
     endclass : abr_reg__MLKEM_SHARED_KEY
+
+    // Mem - abr_reg::MLKEM_MSG
+    class abr_reg__MLKEM_MSG extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_MSG");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 8, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_MSG
 
     // Mem - abr_reg::MLKEM_DECAPS_KEY
     class abr_reg__MLKEM_DECAPS_KEY extends uvm_reg_block;
@@ -1383,8 +1369,8 @@ package abr_reg_uvm;
         rand abr_reg__MLKEM_STATUS MLKEM_STATUS;
         rand abr_reg__MLKEM_SEED_D MLKEM_SEED_D[8];
         rand abr_reg__MLKEM_SEED_Z MLKEM_SEED_Z[8];
-        rand abr_reg__MLKEM_MSG MLKEM_MSG[8];
         rand abr_reg__MLKEM_SHARED_KEY MLKEM_SHARED_KEY[8];
+        rand abr_reg__MLKEM_MSG MLKEM_MSG;
         rand abr_reg__MLKEM_DECAPS_KEY MLKEM_DECAPS_KEY;
         rand abr_reg__MLKEM_ENCAPS_KEY MLKEM_ENCAPS_KEY;
         rand abr_reg__MLKEM_CIPHERTEXT MLKEM_CIPHERTEXT;
@@ -1543,20 +1529,17 @@ package abr_reg_uvm;
                 this.MLKEM_SEED_Z[i0].build();
                 this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h8038 + i0*'h4);
             end
-            foreach(this.MLKEM_MSG[i0]) begin
-                this.MLKEM_MSG[i0] = new($sformatf("MLKEM_MSG[%0d]", i0));
-                this.MLKEM_MSG[i0].configure(this);
-                
-                this.MLKEM_MSG[i0].build();
-                this.default_map.add_reg(this.MLKEM_MSG[i0], 'h8058 + i0*'h4);
-            end
             foreach(this.MLKEM_SHARED_KEY[i0]) begin
                 this.MLKEM_SHARED_KEY[i0] = new($sformatf("MLKEM_SHARED_KEY[%0d]", i0));
                 this.MLKEM_SHARED_KEY[i0].configure(this);
                 
                 this.MLKEM_SHARED_KEY[i0].build();
-                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8078 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8058 + i0*'h4);
             end
+            this.MLKEM_MSG = new("MLKEM_MSG");
+            this.MLKEM_MSG.configure(this);
+            this.MLKEM_MSG.build();
+            this.default_map.add_submap(this.MLKEM_MSG.default_map, 'h8080);
             this.MLKEM_DECAPS_KEY = new("MLKEM_DECAPS_KEY");
             this.MLKEM_DECAPS_KEY.configure(this);
             this.MLKEM_DECAPS_KEY.build();

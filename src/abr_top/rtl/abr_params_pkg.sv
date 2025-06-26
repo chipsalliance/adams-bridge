@@ -94,8 +94,8 @@ package abr_params_pkg;
   typedef enum logic [2:0] {
     MLKEM_NONE        = 3'b000,
     MLKEM_KEYGEN      = 3'b001,
-    MLKEM_ENC         = 3'b010,
-    MLKEM_DEC         = 3'b011,
+    MLKEM_ENCAPS      = 3'b010,
+    MLKEM_DECAPS      = 3'b011,
     MLKEM_KEYGEN_DEC  = 3'b100
   } mlkem_cmd_e;
 

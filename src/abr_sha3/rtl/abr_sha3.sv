@@ -51,7 +51,6 @@ module abr_sha3
   // It is used to run additional keccak_f after sponge absorbing is completed.
   // See `keccak_run` signal
   input logic                       run_i,
-  input abr_prim_mubi_pkg::mubi4_t  done_i,    // see abr_sha3pad for details
 
   output abr_prim_mubi_pkg::mubi4_t absorbed_o,
   output logic                      squeezing_o,
@@ -107,7 +106,7 @@ module abr_sha3
 
   // absorbed is a pulse signal that indicates sponge absorbing is done.
   // After this, sha3 core allows software to manually run until squeezing
-  // is completed, which is the `done_i` pulse signal.
+  // is completed
   abr_prim_mubi_pkg::mubi4_t absorbed;
 
   // `squeezing` is a status indicator that SHA3 core is in sponge squeezing
@@ -211,7 +210,7 @@ module abr_sha3
   // Mainly the FSM controls the input signal access
   // StIdle:    only start_i signal is allowed
   // StAbsorb:  only process_i signal is allowed
-  // StSqueeze: only run_i, done_i signal is allowed
+  // StSqueeze: only run_i is allowed
 
   always_comb begin
     st_d = st;
@@ -257,10 +256,6 @@ module abr_sha3
           st_d = StManualRun_sparse;
 
           sw_keccak_run = 1'b 1;
-        end else if (abr_prim_mubi_pkg::mubi4_test_true_strict(done_i)) begin
-          st_d = StFlush_sparse;
-
-          keccak_done = done_i;
         end else begin
           st_d = StSqueeze_sparse;
         end
@@ -273,10 +268,6 @@ module abr_sha3
         end else begin
           st_d = StManualRun_sparse;
         end
-      end
-
-      StFlush_sparse: begin
-        st_d = StIdle_sparse;
       end
 
       StTerminalError_sparse: begin
@@ -319,31 +310,28 @@ module abr_sha3
   //   info[ 0]: start_i set
   //   info[ 1]: process_i set
   //   info[ 2]: run_i set
-  //   info[ 3]: done_i set
-  //  - Sw set process_i, run_i, done_i without start_i
+  //  - Sw set process_i, run_i, without start_i
 
   always_comb begin
     error_o = '{valid: 1'b0, code: ErrNone, info: '0};
 
     unique case (st)
       StIdle_sparse: begin
-        if (process_i || run_i ||
-          abr_prim_mubi_pkg::mubi4_test_true_loose(done_i)) begin
+        if (process_i || run_i) begin
           error_o = '{
             valid: 1'b 1,
             code: ErrSha3SwControl,
-            info: 24'({done_i, run_i, process_i, start_i})
+            info: 24'({run_i, process_i, start_i})
           };
         end
       end
 
       StAbsorb_sparse: begin
-        if (start_i || run_i || abr_prim_mubi_pkg::mubi4_test_true_loose(done_i)
-          || (process_i && processing)) begin
+        if (start_i || run_i || (process_i && processing)) begin
           error_o = '{
             valid: 1'b 1,
             code: ErrSha3SwControl,
-            info: 24'({done_i, run_i, process_i, start_i})
+            info: 24'({run_i, process_i, start_i})
           };
         end
       end
@@ -353,29 +341,17 @@ module abr_sha3
           error_o = '{
             valid: 1'b 1,
             code: ErrSha3SwControl,
-            info: 24'({done_i, run_i, process_i, start_i})
+            info: 24'({run_i, process_i, start_i})
           };
         end
       end
 
       StManualRun_sparse: begin
-        if (start_i || process_i || run_i ||
-          abr_prim_mubi_pkg::mubi4_test_true_loose(done_i)) begin
+        if (start_i || process_i || run_i) begin
           error_o = '{
             valid: 1'b 1,
             code: ErrSha3SwControl,
-            info: 24'({done_i, run_i, process_i, start_i})
-          };
-        end
-      end
-
-      StFlush_sparse: begin
-        if (start_i || process_i || run_i ||
-          abr_prim_mubi_pkg::mubi4_test_true_loose(done_i)) begin
-          error_o = '{
-            valid: 1'b 1,
-            code: ErrSha3SwControl,
-            info: 24'({done_i, run_i, process_i, start_i})
+            info: 24'({run_i, process_i, start_i})
           };
         end
       end
@@ -465,7 +441,7 @@ module abr_sha3
   // Unknown check for case statement
   `ABR_ASSERT(MuxSelKnown_A, mux_sel inside {MuxGuard, MuxRelease})
   `ABR_ASSERT(FsmKnown_A, st inside {StIdle_sparse, StAbsorb_sparse, StSqueeze_sparse,
-                                 StManualRun_sparse, StFlush_sparse, StTerminalError_sparse})
+                                     StManualRun_sparse, StTerminalError_sparse})
 
   // `state` shall be 0 in invalid
   if (EnMasking) begin: gen_chk_digest_masked
@@ -480,11 +456,11 @@ module abr_sha3
   // skip the msg interface assertions as they are in abr_sha3pad.sv
 
   // Software run signal happens in Squeezing stage
-  `ABR_ASSUME(SwRunInSqueezing_a, run_i |-> error_o.valid || (st == StSqueeze_sparse))
+  `ABR_ASSERT(SwRunInSqueezing_a, run_i |-> error_o.valid || (st == StSqueeze_sparse))
 
   // If control received but not propagated into submodules, it is error condition
   `ABR_ASSERT(ErrDetection_A, error_o.valid
-    |-> {start_i,      process_i,      run_i,         done_i}
-     != {keccak_start, keccak_process, sw_keccak_run, keccak_done})
+    |-> {start_i,      process_i,      run_i}
+     != {keccak_start, keccak_process, sw_keccak_run})
 
 endmodule
