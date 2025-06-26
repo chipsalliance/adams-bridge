@@ -713,6 +713,8 @@ module abr_seq
                 MLKEM_ENCAPS_S + 48: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_V_BASE};
                 MLKEM_ENCAPS_S + 49: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0402, length:'d04, operand1:MLKEM_U0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C1_MEM_OFFSET};
                 MLKEM_ENCAPS_S + 50: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0101, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C2_MEM_OFFSET};
+                MLKEM_ENCAPS_S + 51: data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256,  imm:'h0000, length:'d32, operand1:MLKEM_SEED_Z_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLKEM_ENCAPS_S + 52: data_o_rom <= '{opcode:ABR_UOP_SHAKE256,  imm:'h0000, length:CT_NUM_BYTES, operand1:MLKEM_CIPHERTEXT_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_K_REG_ID};
                 MLKEM_ENCAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
 
                 default :              data_o_rom <= '{opcode: ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
