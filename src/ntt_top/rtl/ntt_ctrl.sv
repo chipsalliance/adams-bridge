@@ -425,14 +425,14 @@ always_comb begin
     shuffled_pw_mem_rd_addr_c_nxt_accumulate = pw_base_addr_c + ((4*chunk_count)+(PWO_READ_ADDR_STEP*mem_rd_index_ofst));
     masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MASKED_PWM_ACC_LATENCY-MASKED_PWM_LATENCY])) : 'h0;
 
-    mlkem_masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pairwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY])) : 'h0;
+    mlkem_masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pairwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[(MLKEM_MASKED_PAIRWM_ACC_LATENCY+3)-(MLKEM_MASKED_PAIRWM_LATENCY-6)]/*+3-1*//*[MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY]*/) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6)]/*-1*/)) : 'h0; //+3 to account for flop delay in chunk count reg, -6 to remove reduction, //-1 in buf_rdptr because there are n+1 entries in the reg
 
     if ((pwm_mode | pairwm_mode) & accumulate) begin
         unique case({masking_en, shuffle_en})
             2'b00: pw_mem_rd_addr_c_nxt = pw_mem_rd_addr_c + PWO_READ_ADDR_STEP;
             2'b01: pw_mem_rd_addr_c_nxt = shuffled_pw_mem_rd_addr_c_nxt_accumulate;
             2'b10: pw_mem_rd_addr_c_nxt = pw_mem_rd_addr_c + PWO_READ_ADDR_STEP;
-            2'b11: pw_mem_rd_addr_c_nxt = masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate;
+            2'b11: pw_mem_rd_addr_c_nxt = mlkem ? mlkem_masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate : masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate;
             default: pw_mem_rd_addr_c_nxt = 'h0;
         endcase
     end
@@ -1094,7 +1094,7 @@ always_comb begin
         mem_rd_en        = gs_mode ? mem_rd_en_reg : mem_rd_en_fsm;
         twiddle_addr     = (gs_mode | pairwm_mode) ? twiddle_addr_reg_d3 : twiddle_addr_int;
         pw_rden          = pw_rden_reg;
-        pw_share_mem_rden= accumulate ? masking_en ? shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
+        pw_share_mem_rden= accumulate ? masking_en ? mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
         pw_wren          = pw_wren_reg;
     end
     else begin
@@ -1175,7 +1175,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else begin
         pw_rden_fsm_reg <= {pw_rden_fsm, pw_rden_fsm_reg[MASKED_PWM_LATENCY:1]};
         pw_wren_fsm_reg <= pw_wren_fsm;
-        shuffled_pw_rden_fsm_reg <= pw_rden_fsm_reg[0];
+        shuffled_pw_rden_fsm_reg <= mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : pw_rden_fsm_reg[0];
     end
 end
 
