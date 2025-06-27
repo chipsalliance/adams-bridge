@@ -747,7 +747,7 @@ always_comb kv_seed_data_present = '0;
 
   always_comb sampler_sk_rd_offset = (sampler_src == MLKEM_EK_REG_ID) ? MLKEM_DEST_EK_MEM_OFFSET/2 :
                                      (sampler_src == MLKEM_MSG_ID) ? MLKEM_DEST_MSG_MEM_OFFSET/2 :
-                                     (sampler_src == MLKEM_MSG_ID) ? MLKEM_DEST_C1_MEM_OFFSET/2 : 'd0;
+                                     (sampler_src == MLKEM_CIPHERTEXT_ID) ? MLKEM_DEST_C1_MEM_OFFSET/2 : 'd0;
 
   //Secret Key Write Interface
   always_comb begin
