@@ -43,6 +43,9 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 | message                     | Input           | Sign/Verify     | 64            |
 | verification result         | Output          | Verify          | 64            |
 | External_Mu                 | Input           | Sign/Verify     | 64            |
+| message strobe              | Input           | Sign/Verify     | 1             |
+| ctx size                    | Input           | Sign/Verify     | 1             |
+| ctx                         | Input           | Sign/Verify     | 255 (+1)      |
 | pk                          | Input/Output    | Keygen/Verify   | 2592          |
 | signature                   | Input/Output    | Sign/Verify     | 4627 (+1)     |
 | sk\_out (software only)     | Output          | Keygen          | 4896          |
@@ -65,7 +68,8 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 
 | Bits     | Identifier  | Access | Reset | Decoded | Name |
 | :------- | :---------- | :----- | :---- | :------ | :--- |
-| \[31:6\] | \-          | \-     | \-    |         | \-   |
+| \[31:7\] | \-          | \-     | \-    |         | \-   |
+| \[6\]    | STREAM_MSG  | w      | 0x0   |         | \-   |
 | \[5\]    | EXTERNAL_MU | w      | 0x0   |         | \-   |
 | \[4\]    | PCR_SIGN    | w      | 0x0   |         | \-   |
 | \[3\]    | ZEROIZE     | w      | 0x0   |         | \-   |
@@ -106,8 +110,21 @@ Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
 
 ### EXTERNAL_MU 
 
-Enable ExternalMu Mode.
-(this mode is hard turned off for now.)
+Enable External_Mu Mode. (this mode is hard turned off for now.)
+The External_mu variant of ML-DSA modifies the standard signing and verifying process by allowing the precomputed mu to be externally provided instead of being internally derived from the message and public key. In this variant, the signing procedure accepts mu as an explicit input, making it suitable for environments where mu is generated offline for efficiency. While the core signing and verifying algorithm remains unchanged, the message input register is ignored in this mode.
+
+### STREAM_MSG 
+
+Enable streaming message mode.
+
+In this mode, the controller will wait until it requires the message data and will assert the MSG_STREAM_READY bit in the status register. Once MSG_STREAM_READY is observed, the user should first set MSG_STROBE to 0xF.
+
+The user can then write the message, one dword at a time, by writing to dword 0 of the message register. If the last dword is partial, the user must set the MSG_STROBE register to appropriately indicate the valid bytes. If the message is dword-aligned, a value of 0x0 must be written to the MSG_STROBE register to indicate the last dword, followed by a dummy write to the message register.
+
+The flow must be terminated by writing to the message register after setting the MSG_STROBE to a non 0xF value.
+No partial dwords are allowed before the last dword indication.
+MSG_STROBE only needs to be programmed before the stream of full dwords, and before the final dword.
+Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b0000.
 
 ## status 
 
@@ -115,9 +132,10 @@ Enable ExternalMu Mode.
 
 | Bits     | Identifier | Access | Reset | Decoded | Name |
 | :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:2\] | \-         | \-     | \-    |         | \-   |
-| \[1\]    | VALID      | r      | 0x0   |         | \-   |
-| \[0\]    | READY      | r      | 0x0   |         | \-   |
+| \[31:3\] | \-                | \-     | \-    |         | \-   |
+| \[2\]    | MSG_STREAM_READY  | r      | 0x0   |         | \-   |
+| \[1\]    | VALID             | r      | 0x0   |         | \-   |
+| \[0\]    | READY             | r      | 0x0   |         | \-   |
 
 ### READY 
 
@@ -127,15 +145,19 @@ Enable ExternalMu Mode.
 
 ​Indicates if the process is computed and the output is valid. 
 
+### MSG_STREAM_READY
+
+​Indicates if the core is ready to process the message.
+
 ## entropy
 
 Entropy is required for SCA countermeasures to randomize the inputs with no change in the outputs. The entropy can be any 512-bit value in \[0 : 2^512-1\]. 
 
-The ML-DSA-87 countermeasure requires several random vectors to randomize the interMLDASte values. An internal mechanism is considered to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
+The ML-DSA-87 countermeasure requires several random vectors to randomize the intermediate values. An internal mechanism is considered to take one random vector of 512-bit (i.e., entropy register) and generate the required random vectors for different countermeasures.
 
 ## seed
 
-Adams Bridge component seed register type definition 8 32-bit registers storing the 256-bit seed for keygen in big-endian representation. The seed can be any 256-bit value in \[0 : 2^256-1\].
+Adams Bridge component seed register type definition 8 32-bit registers storing the 256-bit seed for keygen. The seed can be any 256-bit value in \[0 : 2^256-1\].
 
 ## sign\_rnd
 
@@ -146,18 +168,35 @@ This register is used to support both deterministic and hedge variants of ML-DSA
 
 ## message
 
-This architecture supports PureML-DSA defined by NIST with an empty ctx.
-However, the current architecture only supports the message size of 512 bits. This restrection will be removed
+When not in streaming message mode, this architecture supports PureML-DSA defined by NIST with an empty ctx.
+When streaming message mode is enabled, this field is ignored except for dword 0 which is used to stream in the message.
 
 ## verification result
 
 To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a certain segment of signature (segment c\~), and if they are equal the signature is valid.
 
+A verification result of all 0s indicates a failed verification attempt. Firmware should reject any signature with an all 0 value for it's c segment.
+
+## msg strobe
+
+A 4-bit indication of enabled bytes in the next dword of the streamed message.
+Users must first program this to 0xF after observing MSG_STREAM_READY, unless the message is less than 1 dword.
+If the final dword is partial, MSG_STROBE must be programmed appropriately before writing the final bytes. 
+Dword aligned messages must program MSG_STROBE to 0x0 to indicate the message is done being streamed.
+
+## ctx size
+
+A 8-bit indication of the size in bytes of the ctx to be used.
+
+## ctx
+
+This register stores the ctx field. It is applied only during streaming message mode.
+
 ## sk\_out
 
-This register stores the private key for keygen if seed is given by software. This register is read by ML-DSA user, i.e., software, after keygen operation.
+This register stores the private key for keygen if seed is given by software. This register can be read by ML-DSA user, i.e., software, after keygen operation.
 
-If seed comes from key vault, this register will not contain the private key to avoid exposing secret assets to software.
+If seed comes from the key vault, this register will not contain the private key to avoid exposing secret assets to software.
 
 ## sk\_in
 
@@ -165,11 +204,11 @@ This register stores the private key for signing. This register should be set be
 
 ## pk
 
-ML-DSA component public key register type definition storing the public key in big-endian representation. These registers is read by Adams Bridge user after keygen operation, or be set before verifying operation. 
+ML-DSA component public key register type definition storing the public key. This register can be read by Adams Bridge user after keygen operation, or be set before verifying operation. 
 
 ## signature
 
-ML-DSA component signature register type definition storing the signature of the message in big-endian representation. These registers is read by Adams Bridge user after signing operation, or be set before verifying operation. 
+ML-DSA component signature register type definition storing the signature of the message. This register is read by Adams Bridge user after signing operation, or be set before verifying operation. 
 
 # ​Pseudocode 
 
@@ -385,6 +424,9 @@ The following table shows the required memory instances for ML-DSA-87:
 | mldsa_top.mldsa_ram_inst3                    | 128   | 96         |              |
 | mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
 | mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
+
+All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
+See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
 
 ### Signing perofrmance
 
@@ -2392,7 +2434,7 @@ High-Level controller works as a sequencer to perform a specific sequence of ope
 
 As an example, an NTT operation needs to take three base addresses as follows:
 
-NTT(initialvalue\_base\_address, interMLDAStevalue\_base\_address, result\_base\_address)
+NTT(initialvalue\_base\_address, intermediatevalue\_base\_address, result\_base\_address)
 
 So, for performing a=NTT(b), the sequencer needs to be:
 
