@@ -200,6 +200,7 @@ module abr_reg (
         end
         for(int i0=0; i0<8; i0++) begin
             decoded_reg_strb.MLKEM_SHARED_KEY[i0] = cpuif_req_masked & (cpuif_addr == 16'h8058 + i0*16'h4);
+            is_external |= cpuif_req_masked & (cpuif_addr == 16'h8058 + i0*16'h4) & !cpuif_req_is_wr;
         end
         decoded_reg_strb.MLKEM_MSG = cpuif_req_masked & (cpuif_addr >= 16'h8080) & (cpuif_addr <= 16'h8080 + 16'h1f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h8080) & (cpuif_addr <= 16'h8080 + 16'h1f);
@@ -354,12 +355,6 @@ module abr_reg (
                 logic load_next;
             } SEED;
         } [8-1:0]MLKEM_SEED_D;
-        struct packed{
-            struct packed{
-                logic [31:0] next;
-                logic load_next;
-            } KEY;
-        } [8-1:0]MLKEM_SHARED_KEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -550,11 +545,6 @@ module abr_reg (
                 logic [31:0] value;
             } SEED;
         } [8-1:0]MLKEM_SEED_D;
-        struct packed{
-            struct packed{
-                logic [31:0] value;
-            } KEY;
-        } [8-1:0]MLKEM_SHARED_KEY;
         struct packed{
             struct packed{
                 struct packed{
@@ -1203,30 +1193,9 @@ module abr_reg (
         assign hwif_out.MLKEM_SEED_Z[i0].wr_biten = decoded_wr_biten;
     end
     for(genvar i0=0; i0<8; i0++) begin
-        // Field: abr_reg.MLKEM_SHARED_KEY[].KEY
-        always_comb begin
-            automatic logic [31:0] next_c;
-            automatic logic load_next_c;
-            next_c = field_storage.MLKEM_SHARED_KEY[i0].KEY.value;
-            load_next_c = '0;
-            if(hwif_in.MLKEM_SHARED_KEY[i0].KEY.we) begin // HW Write - we
-                next_c = hwif_in.MLKEM_SHARED_KEY[i0].KEY.next;
-                load_next_c = '1;
-            end else if(hwif_in.MLKEM_SHARED_KEY[i0].KEY.hwclr) begin // HW Clear
-                next_c = '0;
-                load_next_c = '1;
-            end
-            field_combo.MLKEM_SHARED_KEY[i0].KEY.next = next_c;
-            field_combo.MLKEM_SHARED_KEY[i0].KEY.load_next = load_next_c;
-        end
-        always_ff @(posedge clk or negedge hwif_in.reset_b) begin
-            if(~hwif_in.reset_b) begin
-                field_storage.MLKEM_SHARED_KEY[i0].KEY.value <= 32'h0;
-            end else if(field_combo.MLKEM_SHARED_KEY[i0].KEY.load_next) begin
-                field_storage.MLKEM_SHARED_KEY[i0].KEY.value <= field_combo.MLKEM_SHARED_KEY[i0].KEY.next;
-            end
-        end
-        assign hwif_out.MLKEM_SHARED_KEY[i0].KEY.value = field_storage.MLKEM_SHARED_KEY[i0].KEY.value;
+
+        assign hwif_out.MLKEM_SHARED_KEY[i0].req = !decoded_req_is_wr ? decoded_reg_strb.MLKEM_SHARED_KEY[i0] : '0;
+        assign hwif_out.MLKEM_SHARED_KEY[i0].req_is_wr = decoded_req_is_wr;
     end
     assign hwif_out.MLKEM_MSG.req = decoded_reg_strb.MLKEM_MSG;
     assign hwif_out.MLKEM_MSG.addr = decoded_addr[5:0];
@@ -1639,6 +1608,9 @@ module abr_reg (
         rd_ack |= hwif_in.MLDSA_SIGNATURE.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_OUT.rd_ack;
         rd_ack |= hwif_in.MLDSA_PRIVKEY_IN.rd_ack;
+        for(int i0=0; i0<8; i0++) begin
+            rd_ack |= hwif_in.MLKEM_SHARED_KEY[i0].rd_ack;
+        end
         rd_ack |= hwif_in.MLKEM_MSG.rd_ack;
         rd_ack |= hwif_in.MLKEM_DECAPS_KEY.rd_ack;
         rd_ack |= hwif_in.MLKEM_ENCAPS_KEY.rd_ack;
@@ -1691,7 +1663,7 @@ module abr_reg (
     assign readback_array[31][1:1] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.VALID.next : '0;
     assign readback_array[31][31:2] = '0;
     for(genvar i0=0; i0<8; i0++) begin
-        assign readback_array[i0*1 + 32][31:0] = (decoded_reg_strb.MLKEM_SHARED_KEY[i0] && !decoded_req_is_wr) ? field_storage.MLKEM_SHARED_KEY[i0].KEY.value : '0;
+        assign readback_array[i0*1 + 32] = hwif_in.MLKEM_SHARED_KEY[i0].rd_ack ? hwif_in.MLKEM_SHARED_KEY[i0].rd_data : '0;
     end
     assign readback_array[40] = hwif_in.MLKEM_MSG.rd_ack ? hwif_in.MLKEM_MSG.rd_data : '0;
     assign readback_array[41] = hwif_in.MLKEM_DECAPS_KEY.rd_ack ? hwif_in.MLKEM_DECAPS_KEY.rd_data : '0;

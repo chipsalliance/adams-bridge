@@ -16,7 +16,9 @@
 // compress_top.sv
 // --------
 // This module processes 4 coeffs/clk and is fully pipelined. 
-// Each command trigger will compute compression over 4 polynomials and produces a done signal at the end of the last polynomial.
+// Each command trigger will compute compression over num_polynomials and produces a done signal at the end of the last polynomial.
+// Compare mode is used to compare encaps resulting ciphertext with the ciphertext from decaps step
+// Instead of writing to the API memory, reads are made and the data is compared against the compressed data
 
 module compress_top
     import abr_params_pkg::*;
@@ -28,6 +30,7 @@ module compress_top
 
         input wire compress_enable,
         input compress_mode_t mode,
+        input logic compare_mode,
         input wire [2:0] num_poly,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
@@ -35,10 +38,11 @@ module compress_top
         output mem_if_t mem_rd_req,
         input wire [COEFF_PER_CLK-1:0][REG_SIZE-1:0] mem_rd_data,
 
-        output logic api_wr_en,
-        output logic [ABR_MEM_ADDR_WIDTH-1:0] api_wr_addr,
+        output logic [1:0] api_rw_en,
+        output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rw_addr,
         output logic [DATA_WIDTH-1:0] api_wr_data,
-
+        input  logic [DATA_WIDTH-1:0] api_rd_data,
+        output logic compare_failed,
         output logic compress_done
     );
 
@@ -50,9 +54,11 @@ module compress_top
     logic read_done;
     logic mem_rd_data_valid;
     logic mem_rd_data_hold,mem_rd_data_hold_f ;
+    logic buffer_valid, buffer_valid_f;
+    logic [DATA_WIDTH-1:0] buffer_data, buffer_data_f;
     logic compress_busy;
 
-    always_comb compress_done = compress_busy & read_done & ~api_wr_en;
+    always_comb compress_done = compress_busy & read_done & ~(|api_rw_en) & ~buffer_valid_f;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -144,23 +150,44 @@ module compress_top
         .data_i(compress_data),
         .data_valid_i(compress_data_valid),
         .buffer_full_o(mem_rd_data_hold),
-        .data_valid_o(api_wr_en),
-        .data_o(api_wr_data)
+        .data_valid_o(buffer_valid),
+        .data_o(buffer_data)
     );
 
     //Compute API write address
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            api_wr_addr <= '0;
+            api_rw_addr <= '0;
         end
         else if (zeroize) begin
-            api_wr_addr <= '0;
+            api_rw_addr <= '0;
         end
         else if (compress_enable) begin
-            api_wr_addr <= dest_base_addr;
+            api_rw_addr <= dest_base_addr;
         end 
-        else if (api_wr_en) begin
-            api_wr_addr <= api_wr_addr + 'd1;
+        else if (|api_rw_en) begin
+            api_rw_addr <= api_rw_addr + 'd1;
+        end
+    end
+    //api write interface
+    always_comb api_rw_en[0] = buffer_valid & ~compare_mode;
+    always_comb api_wr_data = buffer_data;
+    //api read interface for compare mode
+    always_comb api_rw_en[1] = buffer_valid & compare_mode;
+    always_comb compare_failed = compare_mode & buffer_valid_f & (buffer_data_f != api_rd_data);
+
+    always_ff@(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            buffer_valid_f <= '0;
+            buffer_data_f <= '0;
+        end
+        else if (zeroize) begin
+            buffer_valid_f <= '0;
+            buffer_data_f <= '0;
+        end
+        else begin
+            buffer_valid_f <= buffer_valid;
+            buffer_data_f <= buffer_valid ? buffer_data : buffer_data_f;
         end
     end
 
