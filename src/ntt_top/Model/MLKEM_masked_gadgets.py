@@ -181,12 +181,22 @@ def barret_if_cond_mask(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0
     
     return Arith_Q0, Arith_Q1
 
-def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness = 0):
+def masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=0, turn_off_randomness = 0):
     # Perform the masked equivalent of the given unmasked C code
+    # Step 3: t = t >> K
+    carry = ((x0 & 0x1FFFFFF) + (x1 & 0x1FFFFFF)) >> 24
     if debug:
-        print(f"x0: {x0}, x1: {x1} and x: {(x0+x1) & ((1 << 37)-1)}")
+        print(f"x0: {x0}, x1: {x1} and x: {(x0+x1) & ((1 << 24)-1)} and carry : {carry}")
     t0 = (x0 << 12) + (x0 << 9) + (x0 << 8) + (x0 << 7) + (x0 << 5) + (x0 << 3) + (x0 << 2) + (x0 << 1) + x0
     t1 = (x1 << 12) + (x1 << 9) + (x1 << 8) + (x1 << 7) + (x1 << 5) + (x1 << 3) + (x1 << 2) + (x1 << 1) + x1
+
+    carry = carry << 24
+    correction0 = (carry << 5) + (carry << 3) + (carry << 2) + (carry << 1) + carry
+    correction1 = (carry << 12) + (carry << 9) + (carry << 8) + (carry << 7)
+    if debug:
+        print(f"correction0: {correction0}, correction1: {correction1} and correction: {(correction0+correction0) & ((1 << 37)-1)}")
+    t0 = (t0 - correction0) & 0x1FFFFFFFFF  # Mask to 37 bits
+    t1 = (t1 - correction1) & 0x1FFFFFFFFF  # Mask to 37 bits
     # t0, t1 = one_share_mult_with_37(x0, x1, 5039)
     if debug:
         print(f"t0: {t0}, t1: {t1} and t: {(t0+t1) & ((1 << 37)-1)}")
@@ -248,6 +258,15 @@ def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness
     if debug:
         print(f"Arith_Q0: {Arith_Q0}, Arith_Q1: {Arith_Q1} and Q: {(Arith_Q0+Arith_Q1) & ((1 << 13)-1)}")
         print(f"Final t0: {t0}, Final t1: {t1} and t: {(t0+t1) & ((1 << 13)-1)}")
+
+    t0 = t0 & 0xFFF  # Just get the 12-bit since q is 12-bit
+    t1 = t1 & 0xFFF  # Just get the 12-bit since q is 12-bit
+    carry = (t0 + t1) >> 12
+    carry = carry << 12
+
+    t0 = (t0 - r_24_bit - carry) & 0xFFFFFF  # Mask to 24 bits
+    t1 = (t1 + r_24_bit) & 0xFFFFFF  # Mask to 24 bits
+
     
     return t0, t1
 
