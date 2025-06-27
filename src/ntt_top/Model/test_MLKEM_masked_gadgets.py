@@ -32,24 +32,26 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             c = x-t*MLKEM_Q
             if c >= MLKEM_Q:
                 c -= MLKEM_Q
-            randomness = CustomUnsignedInteger(0, 0, (2**37)-1)
+            randomness = CustomUnsignedInteger(0, 0, (2**24)-1)
             randomness.generate_random()
             r1 = int(randomness.value) #optional
-            x0 = int(x-r1) % (2**37)
-            x1 = int(r1) % (2**37)
-            print(f"merged x is {(x0+x1)%(2**37)}")
+            x0 = int(x-r1) % (2**24)
+            x1 = int(r1) % (2**24)
+            print(f"merged x is {(x0+x1)%(2**24)}")
+            randomness.generate_random()
+            r_24_bit = int(randomness.value)
             
             randomness = CustomUnsignedInteger(0, 0, (2**12)-1)
             randomness.generate_random()
             r_12_bit = int(randomness.value)
-            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, turn_off_randomness=0)
+            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
             actual_t = ((t0 + t1) & 0x1FFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
                 print("Running masked_barret_with_vuln_shift with debug=1")
-                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=1, turn_off_randomness=0)
+                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=1, turn_off_randomness=0)
                 print(f"Debug output: t0_debug={t0_debug}, t1_debug={t1_debug}")
                 self.fail(f"Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
             else:
@@ -63,24 +65,26 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             c = x - t * self.MLKEM_Q
             if c >= self.MLKEM_Q:
                 c -= self.MLKEM_Q
-            randomness = CustomUnsignedInteger(0, 0, (2**37)-1)
+            randomness = CustomUnsignedInteger(0, 0, (2**24)-1)
             randomness.generate_random()
             r1 = int(randomness.value)
-            x0 = int(x - r1) % (2**37)
-            x1 = int(r1) % (2**37)
-            print(f"merged x is {(x0 + x1) % (2**37)}")
+            x0 = int(x - r1) % (2**24)
+            x1 = int(r1) % (2**24)
+            print(f"merged x is {(x0 + x1) % (2**24)}")
+            randomness.generate_random()
+            r_24_bit = int(randomness.value)
 
             randomness = CustomUnsignedInteger(0, 0, (2**12)-1)
             randomness.generate_random()
             r_12_bit = int(randomness.value)
-            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, turn_off_randomness=0)
+            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
             actual_t = ((t0 + t1) & 0x1FFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
                 print("Running masked_barret_with_vuln_shift with debug=1")
-                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=1, turn_off_randomness=0)
+                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=1, turn_off_randomness=0)
                 print(f"Debug output: t0_debug={t0_debug}, t1_debug={t1_debug}")
                 self.fail(f"Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
             else:
@@ -95,24 +99,26 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             c = x - t * self.MLKEM_Q
             if c >= self.MLKEM_Q:
                 c -= self.MLKEM_Q
-            randomness = CustomUnsignedInteger(0, 0, (2**37)-1)
+            randomness = CustomUnsignedInteger(0, 0, (2**24)-1)
             randomness.generate_random()
             r1 = int(randomness.value)
-            x0 = int(x - r1) % (2**37)
-            x1 = int(r1) % (2**37)
-            print(f"merged x is {(x0 + x1) % (2**37)}")
+            x0 = int(x - r1) % (2**24)
+            x1 = int(r1) % (2**24)
+            print(f"merged x is {(x0 + x1) % (2**24)}")
+            randomness.generate_random()
+            r_24_bit = int(randomness.value)
 
             randomness = CustomUnsignedInteger(0, 0, (2**12)-1)
             randomness.generate_random()
             r_12_bit = int(randomness.value)
-            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, turn_off_randomness=0)
+            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
             actual_t = ((t0 + t1) & 0x1FFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
                 print("Running masked_barret_with_vuln_shift with debug=1")
-                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=1, turn_off_randomness=0)
+                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=1, turn_off_randomness=0)
                 print(f"Debug output: t0_debug={t0_debug}, t1_debug={t1_debug}")
                 self.fail(f"Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
             else:
@@ -121,31 +127,33 @@ class TestMaskedBarrettReduction(unittest.TestCase):
     def test_masked_barret_with_vuln_shift_random_values(self):
         # Test case 4: Random values
         Q_squared = self.MLKEM_Q ** 2
-        for _ in range(50000):  # Run 500 random tests
+        for _ in range(500000):  # Run 500 random tests
             x = random.randint(0, Q_squared - 1)
             cm = x * 5039
             t = cm >> 24
             c = x - t * self.MLKEM_Q
             if c >= self.MLKEM_Q:
                 c -= self.MLKEM_Q
-            randomness = CustomUnsignedInteger(0, 0, (2**37)-1)
+            randomness = CustomUnsignedInteger(0, 0, (2**24)-1)
             randomness.generate_random()
             r1 = int(randomness.value)
-            x0 = int(x - r1) % (2**37)
-            x1 = int(r1) % (2**37)
-            # print(f"merged x is {(x0 + x1) % (2**37)}")
+            x0 = int(x - r1) % (2**24)
+            x1 = int(r1) % (2**24)
+            randomness.generate_random()
+            r_24_bit = int(randomness.value)
+            # print(f"merged x is {(x0 + x1) % (2**24)}")
 
             randomness = CustomUnsignedInteger(0, 0, (2**12)-1)
             randomness.generate_random()
             r_12_bit = int(randomness.value)
-            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, turn_off_randomness=0)
+            t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
             actual_t = ((t0 + t1) & 0x1FFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
                 print("Running masked_barret_with_vuln_shift with debug=1")
-                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=1, turn_off_randomness=0)
+                t0_debug, t1_debug = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=1, turn_off_randomness=0)
                 print(f"Debug output: t0_debug={t0_debug}, t1_debug={t1_debug}")
                 self.fail(f"Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
             # else:
