@@ -559,9 +559,10 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 40;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_S + 15;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_E + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 15;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 53;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_CHK = MLKEM_ENCAPS_E + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_CHK + 2;
 
 
 

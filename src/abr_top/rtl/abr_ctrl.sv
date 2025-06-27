@@ -1484,12 +1484,18 @@ always_comb kv_seed_data_present = '0;
         end
       end
       MLKEM_ENCAPS_E : begin // end of encaps
-        //Both encaps and encaps end here, set appropriate done
-        mlkem_encaps_done = mlkem_encaps_process; // if encaps is not running, then encaps_done is 0
-        mlkem_decaps_done = mlkem_keygen_decaps_process | mlkem_decaps_process; // if decaps is not running, then decaps_done is 0
+        //Both encaps and encaps come here
+        //if encaps, mark done
+        if (mlkem_encaps_process) begin
+          mlkem_encaps_done = 1;
+        end
+        //else, keep running
+        else begin
+            abr_prog_cntr_nxt = MLKEM_DECAPS_CHK;
+        end
       end
       MLKEM_DECAPS_E : begin // end of decaps
-        abr_prog_cntr_nxt = MLKEM_ENCAPS_S+1;
+        mlkem_decaps_done = 1; 
       end
       default : begin
         if (clear_verify_valid)
