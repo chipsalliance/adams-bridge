@@ -29,7 +29,7 @@
 //      high level controller issues the last round with padding and enables Keccak.
 
 module decompose_w1_encode
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     (
         input wire clk,
         input wire reset_n,

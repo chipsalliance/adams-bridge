@@ -1,0 +1,94 @@
+document:
+  schema: 1.0
+
+contents:
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_key_gen_and_sign_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_keygen_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_keygen_signing_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_verif_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_keygen_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_encaps_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_decaps_KATs_test
+  - generator:
+      tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
+      path: ""
+      weight: 100
+      generations: 1
+      formats: 
+        generate: "reseed {template}.yml -seed 1"
+        path: "{template_basename}__1.yml"
+      templates:
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_keygen_decaps_self_check_test

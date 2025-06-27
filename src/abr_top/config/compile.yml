@@ -1,0 +1,110 @@
+---
+provides: [abr_defines]
+schema_version: 2.4.0
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_config_defines.svh
+      - $COMPILE_ROOT/rtl/abr_params_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_config_defines.svh
+      - $COMPILE_ROOT/rtl/abr_params_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_reg_pkg.sv
+---
+provides: [abr_uvm_pkg]
+schema_version: 2.4.0
+requires: []
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_reg_uvm.sv
+---
+provides: [abr_top]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_libs
+  - abr_sampler_top
+  - ntt_top
+  - decompose
+  - skencode
+  - skdecode
+  - makehint
+  - norm_check
+  - sigencode_z
+  - sigdecode_h
+  - sigdecode_z
+  - pkdecode
+  - power2round
+  - compress
+  - decompress
+targets:
+  rtl_lint:
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/adamsbridge_top/config/design_lint/sglint_waivers
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
+      - $COMPILE_ROOT/rtl/abr_mem_if.sv
+      - $COMPILE_ROOT/rtl/abr_mem_top.sv
+      - $COMPILE_ROOT/rtl/abr_seq.sv
+      - $COMPILE_ROOT/rtl/abr_ctrl.sv
+      - $COMPILE_ROOT/rtl/abr_top.sv
+      - $COMPILE_ROOT/rtl/abr_reg.sv
+    tops: [abr_top]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+---
+provides: [abr_top_tb]
+schema_version: 2.4.0
+requires:
+  - abr_top
+  - abr_defines
+  - abr_libs
+  - abr_sampler_top
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/abr_top_tb.sv
+    tops: [abr_top_tb]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
+---
+provides: [abr_coverage]  
+schema_version: 2.4.0
+requires: 
+  - abr_top
+targets:
+  tb:
+    directories: 
+      - $COMPILE_ROOT/coverage
+    files:
+      - $COMPILE_ROOT/coverage/abr_top_cov_if.sv
+      - $COMPILE_ROOT/coverage/abr_top_cov_bind.sv
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        #- '-v2k_generate'
+        #- '-timescale=1ns/1ps'
+        - '-noinherit_timescale=1ns/1ps'
+        #- '-ucli -i dump.ucli'
+      #sim:
+        #- '-ucli -i dump.ucli'        

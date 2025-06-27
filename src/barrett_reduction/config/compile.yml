@@ -1,0 +1,21 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+# Go here for details on compile.yml syntax:
+# https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
+
+---
+provides: [barrett_reduction]
+schema_version: 2.4.0
+requires: []
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/barrett_reduction.sv
+      - $COMPILE_ROOT/rtl/masked_barrett_if_cond.sv
+      - $COMPILE_ROOT/rtl/masked_barrett_reduction.sv
+    tops: [barrett_reduction]
+  rtl_lint:
+    directories: []
+    waiver_files: []
+      

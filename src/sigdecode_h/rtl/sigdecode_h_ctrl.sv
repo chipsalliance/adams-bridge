@@ -19,7 +19,7 @@
 // Keeps track of indices and polynomial count
 
 module sigdecode_h_ctrl
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
     import sigdecode_h_defines_pkg::*;
     #(
         parameter MLDSA_N = 256,
@@ -31,7 +31,7 @@ module sigdecode_h_ctrl
         input wire zeroize,
 
         input wire sigdecode_h_enable,
-        input wire [MLDSA_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [7:0] hintsum_i, //points to hintsum of i_th poly shown by poly_count
         input wire sigdecode_h_error,
 
@@ -45,7 +45,7 @@ module sigdecode_h_ctrl
         output logic hint_rd_en
     );
 
-    logic [MLDSA_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_nxt;
     logic incr_wr_addr, rst_wr_addr;
     logic last_poly_last_addr_wr, last_poly;
     logic incr_poly;

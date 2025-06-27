@@ -21,7 +21,7 @@
 
 module ntt_wrapper
     import ntt_defines_pkg::*;
-    import mldsa_params_pkg::*;
+    import abr_params_pkg::*;
 #(
     parameter REG_SIZE = 24,
     parameter RADIX = 23,
@@ -37,6 +37,7 @@ module ntt_wrapper
 
     input mode_t mode,
     input wire ntt_enable,
+    input wire mlkem,
     input wire shuffle_en,
     input wire masking_en,
     input wire [5:0] random,
@@ -60,15 +61,15 @@ module ntt_wrapper
     //NTT, PWM C memory IF
     mem_if_t mem_wr_req;
     mem_if_t mem_rd_req;
-    logic [MEM_DATA_WIDTH-1:0] mem_wr_data;
-    logic [MEM_DATA_WIDTH-1:0] mem_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data;
 
 
     //PWM A/B, PWA/S memory IF
     mem_if_t pwm_a_rd_req;
     mem_if_t pwm_b_rd_req;
-    logic [MEM_DATA_WIDTH-1:0] pwm_a_rd_data;
-    logic [MEM_DATA_WIDTH-1:0] pwm_b_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data;
 
     //NTT/PWM muxes
     logic ntt_mem_wren, ntt_mem_rden;
@@ -95,9 +96,6 @@ module ntt_wrapper
     //NTT mem
     assign ntt_mem_wren = (mem_wr_req.rd_wr_en == RW_WRITE);
     assign ntt_mem_rden = (mem_rd_req.rd_wr_en == RW_READ);
-    // assign ntt_mem_wr_addr = (ct_mode | gs_mode) ? mem_wr_req.addr : pwm_mem_c_wr_addr;
-    // assign ntt_mem_rd_addr = (ct_mode | gs_mode) ? mem_rd_req.addr : pwm_mem_c_rd_addr;
-    // assign ntt_mem_wr_data = (ct_mode | gs_mode) ? mem_wr_data : pwm_mem_c_wr_data;
     
     //PWM mem
     assign pwm_mem_a_rden = (pwm_a_rd_req.rd_wr_en == RW_READ);
@@ -105,7 +103,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(4*REG_SIZE)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) ntt_mem (
         .clk(clk),
         .reset_n(reset_n),
@@ -126,7 +124,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(4*REG_SIZE)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) pwm_mem_a (
         .clk(clk),
         .reset_n(reset_n),
@@ -147,7 +145,7 @@ module ntt_wrapper
 
     ntt_ram_tdp_file #(
         .ADDR_WIDTH(MEM_ADDR_WIDTH),
-        .DATA_WIDTH(4*REG_SIZE)
+        .DATA_WIDTH(ABR_MEM_MASKED_DATA_WIDTH)
     ) pwm_mem_b (
         .clk(clk),
         .reset_n(reset_n),
@@ -178,6 +176,7 @@ module ntt_wrapper
         .zeroize(zeroize),
         .mode(mode),
         .ntt_enable(ntt_enable),
+        .mlkem(mlkem),
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
         .accumulate(accumulate),

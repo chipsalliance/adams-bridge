@@ -15,7 +15,7 @@
 
 module sample_in_ball_ctrl
   import sib_pkg::*;
-  import mldsa_params_pkg::*;
+  import abr_params_pkg::*;
   #(
    parameter SIB_NUM_SAMPLERS = 4
   ,parameter SIB_SAMPLE_W     = 8
@@ -85,7 +85,7 @@ module sample_in_ball_ctrl
           if (last_sample)  sib_fsm_ns = SIB_DONE;
         end
         SIB_DONE: begin
-                            sib_fsm_ns = sib_fsm_ps;
+                            sib_fsm_ns = SIB_IDLE;
         end
         //ERROR
         default: begin

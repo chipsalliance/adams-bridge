@@ -2,7 +2,7 @@
 provides: [abr_libs]
 schema_version: 2.4.0
 requires:
-  - mldsa_defines
+  - abr_defines
 targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
@@ -15,9 +15,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
-      - $COMPILE_ROOT/rtl/abr_piso_4.sv
+      - $COMPILE_ROOT/rtl/abr_piso_multi.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_msg_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
@@ -33,6 +34,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -44,9 +47,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ram_regout.sv
       - $COMPILE_ROOT/rtl/abr_icg.sv
       - $COMPILE_ROOT/rtl/abr_2ff_sync.sv
-      - $COMPILE_ROOT/rtl/abr_piso_4.sv
+      - $COMPILE_ROOT/rtl/abr_piso_multi.sv
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_msg_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv
@@ -63,6 +67,8 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
 ---
 provides: [masking_tb]
 schema_version: 2.4.0
@@ -81,6 +87,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
       - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
+      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
   tb:
     directories: [$COMPILE_ROOT/tb]
     files:
@@ -89,8 +96,9 @@ targets:
       - $COMPILE_ROOT/tb/abr_masked_B2A_conv_tb.sv
       - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_tb.sv
       - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_two_share_tb.sv
+      - $COMPILE_ROOT/tb/abr_masked_OR_tb.sv
       
-    tops: [abr_masked_N_bit_mult_two_share_tb]
+    tops: [abr_masked_OR_tb]
 ---
 provides: [mldsa_uvm_lib]
 schema_version: 2.4.0

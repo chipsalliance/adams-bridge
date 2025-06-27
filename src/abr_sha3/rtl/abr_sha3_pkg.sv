@@ -130,14 +130,6 @@ package abr_sha3_pkg;
     // completed. The main indicator is `absorbed` signal.
     StAbsorb_sparse = 6'b100001,
 
-    // TODO: Implement StAbort later after context-switching discussion.
-    // Abort stage can be moved from StAbsorb stage. It basically holds the
-    // keccak round operation and opens up the internal state variable to the
-    // software. This stage is for the software to pause current operation and
-    // store the internal state elsewhere then initiates new KMAC/SHA3 process.
-    // StAbort only can be moved to _StFlush_.
-    //StAbort_sparse = 6'b011101,
-
     // Squeeze stage allows the software to read the internal state.
     // If `EnMasking`, it opens the read permission of two share of the state.
     // The squeezing in SHA3 specification describes the software to read up to
@@ -149,10 +141,6 @@ package abr_sha3_pkg;
     // This state is moved from Squeeze state by writing 1 to manual_run CSR.
     // When keccak round is completed, it goes back to Squeeze state.
     StManualRun_sparse = 6'b010000,
-
-    // Flush stage, the core clears out the internal variables and also
-    // submodules' variables too. Then moves back to Idle state.
-    StFlush_sparse =  6'b000110,
 
     StTerminalError_sparse = 6'b111010
   } sha3_st_sparse_e;
@@ -175,7 +163,6 @@ package abr_sha3_pkg;
       //StAbort_sparse   : return StAbort;
       StSqueeze_sparse   : return StSqueeze;
       StManualRun_sparse : return StManualRun;
-      StFlush_sparse     : return StFlush;
       default            : return StError;
     endcase
   endfunction : sparse2logic

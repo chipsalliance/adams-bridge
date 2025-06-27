@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 import ntt_defines_pkg::*;
-import mldsa_params_pkg::*;
+import abr_params_pkg::*;
 
 interface ntt_if(input bit clk);
 
