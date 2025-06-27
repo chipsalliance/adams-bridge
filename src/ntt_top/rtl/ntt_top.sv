@@ -406,8 +406,8 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i = twiddle_factor_shares_reg_d2[0]; //TODO: justify
-                mlkem_shares_pairwm_zeta13_i.z1_i = twiddle_factor_shares_reg_d2[1]; 
+                mlkem_shares_pairwm_zeta13_i.z0_i = shuffle_en ? twiddle_factor_shares_reg_d1[0] : twiddle_factor_shares_reg_d2[0]; //TODO: justify
+                mlkem_shares_pairwm_zeta13_i.z1_i = shuffle_en ? twiddle_factor_shares_reg_d1[1] : twiddle_factor_shares_reg_d2[1]; 
                 mlkem_pairwm_zeta13_i = '0;
             end
             else begin

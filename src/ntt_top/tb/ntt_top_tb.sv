@@ -1097,8 +1097,9 @@ initial begin
     @(posedge clk_tb);
     $display("Starting ntt test\n");
     // ntt_top_test();
-    mlkem_ntt_top_test(1, 1); //masking_en, shuffling_en
-    // mlkem_pairwm_top_test(1, 0, 0); //masking_en, shuffling_en, accumulate_en
+    // mlkem_ntt_top_test(1, 1); //masking_en, shuffling_en
+    mlkem_pairwm_top_test(1, 1, 0); //masking_en, shuffling_en, accumulate_en
+    mlkem_pairwm_top_test(0, 0, 0); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(1, 0, 1);
     // mlkem_pairwm_sampler_top_test(1,0,0);
     // mlkem_pairwm_sampler_top_test(1,0,1);
