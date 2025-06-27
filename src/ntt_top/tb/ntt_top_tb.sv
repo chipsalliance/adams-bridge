@@ -397,7 +397,7 @@ task mlkem_ntt_top_test(input logic mask_en, input logic shuf_en);
     fork
         begin
             while(1) begin
-                random_tb <= 0; //$urandom();
+                random_tb <= $urandom();
                 @(posedge clk_tb);
             end
         end

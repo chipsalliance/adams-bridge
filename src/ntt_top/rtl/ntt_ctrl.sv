@@ -281,7 +281,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_wrptr_reg_d1 <= '0;
     end
     else begin
-        buf_wrptr_reg_d1 <= buf_wrptr_reg[0];
+        buf_wrptr_reg_d1 <= mlkem ? buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-MLKEM_MASKED_INTT_WRBUF_LATENCY] : buf_wrptr_reg[0];
     end
 end
 

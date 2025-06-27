@@ -71,6 +71,7 @@ parameter MLKEM_MASKED_MULT_LATENCY = 2 + 6; //23; //2 for two-share mult, /*23*
 parameter MLKEM_MASKED_ADD_SUB_LATENCY = 1+6; //internal flops + A2B + B2A conv
 parameter MLKEM_MASKED_BF_STAGE1_LATENCY = 16;
 parameter MLKEM_MASKED_INTT_LATENCY = MLKEM_MASKED_BF_STAGE1_LATENCY+1; //+1 for input flop //+ MLKEM_UNMASKED_BF_STAGE1_LATENCY; //masked INTT latency - in MLKEM, passthrough is applicable for masked layer, so no need for unmasked latency
+parameter MLKEM_MASKED_INTT_WRBUF_LATENCY = MLKEM_MASKED_INTT_LATENCY + 3; //masked INTT latency + mem latency for shuffled reads to begin
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
 //TODO: tb has issue with enums in top level ports. For now, using this workaround
 //Need to try something like bundling enable and mode into a struct to support enum.
