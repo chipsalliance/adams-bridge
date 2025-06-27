@@ -125,7 +125,8 @@ package abr_ctrl_pkg;
     } mldsa_scratch_reg_t; //48 dwords
 
     typedef struct packed {
-        logic [7:0][63:0] rsvd;
+        logic [3:0][63:0] rsvd;
+        logic [7:0][31:0] shared_key;
         logic [3:0][63:0] sigma; //cbd input randomness
         logic [7:0][31:0] seed_z;
         logic [3:0][63:0] tr; //hash of EK

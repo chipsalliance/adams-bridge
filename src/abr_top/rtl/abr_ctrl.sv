@@ -605,10 +605,8 @@ always_comb kv_seed_data_present = '0;
     end
 
     for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.hwclr = zeroize;
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.next = sampler_state_data_i[0][dword*DATA_WIDTH +: DATA_WIDTH];
-      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].KEY.we = (sampler_state_dv_i & (abr_instr.operand3 == MLKEM_DEST_K_R_REG_ID)) |
-                                                       (sampler_state_dv_i & (abr_instr.operand3 == MLKEM_DEST_K_REG_ID) & ~decaps_valid & mlkem_decaps_process);
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_ack = abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req & ~abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req_is_wr;
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_data = mlkem_valid_reg ? abr_scratch_reg.mlkem_enc.shared_key[dword] : '0;
     end
   end
 
@@ -1157,7 +1155,12 @@ always_comb kv_seed_data_present = '0;
           abr_scratch_reg.mlkem_enc.tr <= sampler_state_data_i[0][255:0];
         end
         MLKEM_DEST_K_R_REG_ID: begin
+          abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[0][255:0];
           abr_scratch_reg.mlkem_enc.sigma <= sampler_state_data_i[0][511:256];
+        end
+        MLKEM_DEST_K_REG_ID: begin
+          if (~decaps_valid & mlkem_decaps_process) //implicit rejection for shared key
+            abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[0][255:0];
         end
         default: begin
           //default case does nothing, just to avoid linter warnings
