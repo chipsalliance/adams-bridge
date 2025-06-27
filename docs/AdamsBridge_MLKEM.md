@@ -872,7 +872,7 @@ Input data \= ρ | j | i
 
 Where  is seed with 256-bits, i and j are nonce that describes the row and column number of corresponding polynomial A such that:
 
-Ai,j=Rejection\_sampling(Keccak( | j | i))
+Ai,j=Rejection\_sampling(Keccak(ρ | j | i))
 
 Since each 12-bit is used for one coefficient, each round of Keccak output provides 1344/12=112 coefficients. There are two paths for Keccak input. While the input can be set by controller for each new polynomial, the loop path is used to rerun Keccak for completing the previous polynomial. Rejection sampler cannot take all 1344-bit output parallelly since it makes hardware architecture too costly and complex, and also there is no other input from Keccak for the next 12 cycles. Therefore, we propose a parallel-input serial-output (PISO) unit in between to store the Keccak output and feed rejection unit sequentially.
 
@@ -906,34 +906,34 @@ The failure probability for different N as shown below:
 | 9                    | 0.002               |
 | 10                   | 0.0005              |
 
-To balance the hardware resource utilization while improving the performance, we chose to have 8 input samples. Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
+To balance the hardware resource utilization while improving the performance, we chose to have 10 input samples. Adding a FIFO to rejection sampling unit can store the remaining unused coefficients and increase the probability of having 4 appropriate coefficients to match polynomial multiplication throughput. The architecture is as follows:
 
 ![](./images/MLKEM/image9.png)
 
-There are 8 rejection sampler circuits corresponding to each 12-bit input. The controller checks if each of these coefficients should be rejected or not. The valid input coefficients can be stored into the FIFO. While maximum 8 coefficients can be fed into FIFO, there are three more entries for the remaining coefficients from the previous cycle. There are several scenarios for the proposed balanced throughput architecture:
+There are 10 rejection sampler circuits corresponding to each 12-bit input. The controller checks if each of these coefficients should be rejected or not. The valid input coefficients can be stored into the FIFO. While a maximum of 10 coefficients can be fed into FIFO, there are three more entries for the remaining coefficients from the previous cycle. There are several scenarios for the proposed balanced throughput architecture:
 
-1) At the very first cycle, or whenever the FIFO is empty, rejection sampling unit may not provide all 4 coefficients for polynomial multiplication unit. We reduce the failure probability of this scenario by feeding 8 coefficients, however, it may happen. So, for designing efficient architecture, instead of reducing the failure probability by adding more hardware cost, we use a VALID output that stops polynomial multiplier until all 4 required coefficients are sampled.  
-2) If all 8 inputs are valid, they are going to be stored into FIFO. The first 4 coefficients will be sent to polynomial multiplication unit, while the remaining coefficients will be shifted to head of FIFO and be used for the next cycle.  
-3) The maximum depth of FIFO is 11 entries. If at least 4 FIFO entries are full, the rejection sampling unit can provide the required output for the next cycles too. Hence, it does not accept a new input from Keccak core by raising FULL flag.
+1) At the very first cycle, or whenever the FIFO is empty, rejection sampling unit may not provide all 4 coefficients for the polynomial multiplication unit. We reduce the failure probability of this scenario by feeding 10 coefficients, however, it may happen. So, for designing efficient architecture, instead of reducing the failure probability by adding more hardware cost, we use a VALID output that stops the polynomial multiplier until all 4 required coefficients are sampled.  
+2) If all 10 inputs are valid, they are going to be stored into FIFO. The first 4 coefficients will be sent to the polynomial multiplication unit, while the remaining coefficients will be shifted to the head of FIFO and be used for the next cycle.  
+3) The maximum depth of FIFO is 14 entries. If at least 4 FIFO entries are full, the rejection sampling unit can provide the required output for the next cycles too. Hence, it does not accept a new input from the Keccak core by raising the FULL flag.
 
 | Cycle count | Input from PISO | FIFO valid entries from previous cycle | Total valid samples | output | FIFO remaining for the next cycle |
 | :---------- | :-------------- | :------------------------------------- | :------------------ | :----- | :-------------------------------- |
-| 0           | 8               | 0                                      | 8                   | 4      | 4 (FULL)                          |
-| 1           | 0               | 4                                      | 4                   | 4      | 0                                 |
-| 2           | 8               | 0                                      | 7                   | 4      | 3                                 |
-| 3           | 8               | 3                                      | 11                  | 4      | 7 (FULL)                          |
-| 4           | 0               | 7                                      | 7                   | 4      | 3                                 |
-| 5           | 8               | 3                                      | 5                   | 4      | 1                                 |
-| 6           | 8               | 1                                      | 6                   | 4      | 2                                 |
+| 0           | 10              | 0                                      | 10                  | 4      | 6 (FULL)                          |
+| 1           | 0               | 6                                      | 6                   | 4      | 2                                 |
+| 2           | 10              | 2                                      | 12                  | 4      | 8 (FULL)                          |
+| 3           | 0               | 8                                      | 8                   | 4      | 4                                 |
+| 4           | 10              | 4                                      | 14                  | 4      | 10 (FULL)                         |
+| 5           | 0               | 10                                     | 10                  | 4      | 6                                 |
+| 6           | 10              | 6                                      | 13                  | 4      | 9 (FULL)                          |
 
-4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 14 cycles. This would match with Keccak throughput that generates 112 coefficients per 12 cycles.  
+4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 11 cycles. This would match with Keccak throughput that generates 112 coefficients per 12 cycles.  
 5) The maximum number of FULL conditions is when there are no rejected coefficients for all 112 inputs. In this case, after every cycle with 8 coefficients, there is one FULL condition. It takes 28 cycles to process all PISO contents. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, the Keccak output will be stored into PISO when all PISO contents are processed by rejection sampler.
 
 ![](./images/MLKEM/image10.png)
 
 # CBD sampler
 
-ML-KEM ML-KEM, a lattice-based key encapsulation mechanism (KEM), relies on binomial sampling to generate small polynomials with coefficients following a centered binomial distribution (CBD). This distribution is crucial for ensuring cryptographic security while maintaining efficiency in polynomial arithmetic. In ML-KEM, the binomial parameter η varies depending on the security level, where η \= 2 for ML-KEM-512 and η \= 3 for ML-KEM-768 and ML-KEM-1024. 
+ML-KEM ML-KEM, a lattice-based key encapsulation mechanism (KEM), relies on binomial sampling to generate small polynomials with coefficients following a centered binomial distribution (CBD). This distribution is crucial for ensuring cryptographic security while maintaining efficiency in polynomial arithmetic. In ML-KEM, the binomial parameter η varies depending on the security level, where η \= 3 for ML-KEM-512 and η \= 2 for ML-KEM-768 and ML-KEM-1024. 
 
 ML-KEM ML-KEM relies on a specialized distribution, D(Rq), to generate polynomials with small coefficients, commonly referred to as "errors" or "noise". This distribution is parameterized by an integer η. To generate a polynomial from D(Rq), each coefficient is sampled independently from a centered binomial distribution (CBD) over . The sampling process follows the following equation, which produces polynomial coefficient arrays based on an input stream of uniformly random bytes. Let   be the Keccak output, the coefficients are computed as follows:
 
@@ -957,7 +957,7 @@ The configurable design reduces hardware redundancy by allowing a single samplin
 
 # Compress/Decompress 
 
-The compression stage in ML-KEM takes full 12-bit polynomial coefficients and reduces them to a smaller representation of d bits, where d varies depending on the compression level. For ML-KEM, at least three different d values must be supported. This compression is a lossy operation that approximates a division by q \= 3329, mapping each coefficient in Zq to a smaller domain suitable for compact ciphertext encoding. In hardware, this typically requires multiplication by a scaling factor, followed by division and rounding operations that are expensive in terms of logic and latency.
+The compression stage in ML-KEM takes full 12-bit polynomial coefficients and reduces them to a smaller representation of d bits, where d varies depending on the compression level. This design explicitly supports d values of 1, 5, 11, and 12. The value d = 12 is used to implement the byte encode and byte decode functions of the ML-KEM algorithm. This compression is a lossy operation that approximates a division by q \= 3329, mapping each coefficient in Zq to a smaller domain suitable for compact ciphertext encoding. In hardware, this typically requires multiplication by a scaling factor, followed by division and rounding operations that are expensive in terms of logic and latency.
 
 ![](./images/MLKEM/image13.png)
 
@@ -1015,7 +1015,7 @@ High-Level controller works as a sequencer to perform a specific sequence of ope
 
 As an example, an NTT operation needs to take three base addresses as follows:
 
-NTT(initialvalue\_base\_address, interMLDAStevalue\_base\_address, result\_base\_address)
+NTT(initialvalue\_base\_address, intermediatevalue\_base\_address, result\_base\_address)
 
 So, for performing a=NTT(b), the sequencer needs to be:
 
