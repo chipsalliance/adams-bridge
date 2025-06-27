@@ -1007,7 +1007,7 @@ To execute the required instructions, a high-level controller acts as a sequence
 
 The high-level architecture of Adams Bridge controller is illustrated as follows:
 
-![A diagram of a diagramDescription automatically generated](./images/MLDAS/image3.png)
+![](./images/MLDSA/image3.png)
 
 ## Sequencer
 
