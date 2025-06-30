@@ -181,57 +181,22 @@ def barret_if_cond_mask(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0
     
     return Arith_Q0, Arith_Q1
 
- 
-def barret_if_cond_mask_with_vuln(rolled_y0, rolled_y1, r0, turn_off_randomness=0, debug=0):
-    # Perform A2B conversion
-    carry = rolled_y0 + rolled_y1
-    first_check = (carry >> 12) & 1
-    second_check = (carry >> 13) & 1
-    final_check = first_check | second_check
-    if debug:
-        print(f"y_carry combined: {final_check}")
-    #TODO: VERY VERY Important to not use the same randomness (r0) for both y_carry and Q
-    y_carry0 = final_check ^ r0
-    y_carry1 = r0
-
-    # Step 6.7: randomize Q with a 12-bit random number
-    Q0 = MLKEM_Q ^ r0
-    Q1 = r0
-    if debug:
-        print(f"Random r0: {r0}, Q0: {Q0}, Q1: {Q1} and combined: {(Q0^Q1)}")
-    # Step 6.8: OR Q with the y_carries
-    Boelan_y0 =  np.zeros(12, dtype=np.uint8)
-    Boelan_y1 =  np.zeros(12, dtype=np.uint8)
-    for i in range(12):
-        Q0_bit = (Q0 >> i) & 1
-        Q1_bit = (Q1 >> i) & 1
-        # Do not register the lines between 189 and 204 until you reach this AND gate
-        Boelan_y0[i], Boelan_y1[i] = AND_DOM(y_carry0, y_carry1, Q0_bit, Q1_bit)
-        if turn_off_randomness:
-            Boelan_y0[i] = Boelan_y0[i] ^ Boelan_y1[i]
-            Boelan_y1[i] = 0
-
-    # Convert Boelan_y0 and Boelan_y1 from boolean arrays to integers
-    Boolean0 = 0
-    Boolean1 = 0
-    for i in range(12):  # Iterate from 0 to 11
-        Boolean0 = (Boolean0 << 1) | int(Boelan_y0[11-i])
-        Boolean1 = (Boolean1 << 1) | int(Boelan_y1[11-i])
-    Arith_Q0, Arith_Q1 = B2AConv_wth_param(int(Boolean0), int(Boolean1), 2**14, turn_off_randomness)
-    if debug:
-        print(f"Q0: {int(Boolean0)}, Q1: {int(Boolean1)} and combined: {int(Boolean0)^int(Boolean1)}")
-        print("==============================================")
-    Arith_Q0 = Arith_Q0 & 0x1FFF  # Mask to 13 bits
-    Arith_Q1 = Arith_Q1 & 0x1FFF  # Mask to 13 bits
-    return Arith_Q0, Arith_Q1
- 
-
-def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness = 0):
+def masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, debug=0, turn_off_randomness = 0):
     # Perform the masked equivalent of the given unmasked C code
+    # Step 3: t = t >> K
+    carry = ((x0 & 0x1FFFFFF) + (x1 & 0x1FFFFFF)) >> 24
     if debug:
-        print(f"x0: {x0}, x1: {x1} and x: {(x0+x1) & ((1 << 37)-1)}")
+        print(f"x0: {x0}, x1: {x1} and x: {(x0+x1) & ((1 << 24)-1)} and carry : {carry}")
     t0 = (x0 << 12) + (x0 << 9) + (x0 << 8) + (x0 << 7) + (x0 << 5) + (x0 << 3) + (x0 << 2) + (x0 << 1) + x0
     t1 = (x1 << 12) + (x1 << 9) + (x1 << 8) + (x1 << 7) + (x1 << 5) + (x1 << 3) + (x1 << 2) + (x1 << 1) + x1
+
+    carry = carry << 24
+    correction0 = (carry << 5) + (carry << 3) + (carry << 2) + (carry << 1) + carry
+    correction1 = (carry << 12) + (carry << 9) + (carry << 8) + (carry << 7)
+    if debug:
+        print(f"correction0: {correction0}, correction1: {correction1} and correction: {(correction0+correction0) & ((1 << 37)-1)}")
+    t0 = (t0 - correction0) & 0x1FFFFFFFFF  # Mask to 37 bits
+    t1 = (t1 - correction1) & 0x1FFFFFFFFF  # Mask to 37 bits
     # t0, t1 = one_share_mult_with_37(x0, x1, 5039)
     if debug:
         print(f"t0: {t0}, t1: {t1} and t: {(t0+t1) & ((1 << 37)-1)}")
@@ -293,6 +258,15 @@ def masked_barret_with_vuln_shift(x0, x1, r_12_bit, debug=0, turn_off_randomness
     if debug:
         print(f"Arith_Q0: {Arith_Q0}, Arith_Q1: {Arith_Q1} and Q: {(Arith_Q0+Arith_Q1) & ((1 << 13)-1)}")
         print(f"Final t0: {t0}, Final t1: {t1} and t: {(t0+t1) & ((1 << 13)-1)}")
+
+    t0 = t0 & 0xFFF  # Just get the 12-bit since q is 12-bit
+    t1 = t1 & 0xFFF  # Just get the 12-bit since q is 12-bit
+    carry = (t0 + t1) >> 12
+    carry = carry << 12
+
+    t0 = (t0 - r_24_bit - carry) & 0xFFFFFF  # Mask to 24 bits
+    t1 = (t1 + r_24_bit) & 0xFFFFFF  # Mask to 24 bits
+
     
     return t0, t1
 
