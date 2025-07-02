@@ -32,6 +32,7 @@ module ntt_mlkem_masked_BFU_mult
     input wire [1:0][WIDTH-1:0] u,
     input wire [1:0][WIDTH-1:0] v,
     input wire [4:0][13:0] rnd,
+    input wire [WIDTH-1:0] rnd_24bit,
     output logic [1:0][WIDTH-1:0] res
 );
 
@@ -69,6 +70,7 @@ module ntt_mlkem_masked_BFU_mult
         .x({mul_res1, mul_res0}),
         .rnd_12bit(rnd[1][11:0]),
         .rnd_14bit(rnd[2]),
+        .rnd_24bit(rnd_24bit),
         .rnd_for_Boolean0(rnd[3]),
         .rnd_for_Boolean1(rnd[4]),
         .rnd_1bit(rnd[0][0]),

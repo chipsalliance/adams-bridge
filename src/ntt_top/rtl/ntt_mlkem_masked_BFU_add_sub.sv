@@ -32,6 +32,7 @@ module ntt_mlkem_masked_BFU_add_sub
     input wire [1:0][WIDTH-1:0] u,
     input wire [1:0][WIDTH-1:0] v,
     input wire [3:0][13:0] rnd,
+    input wire [WIDTH-1:0] rnd_24bit,
     output logic [1:0][WIDTH-1:0] res
 );
 
@@ -71,6 +72,7 @@ module ntt_mlkem_masked_BFU_add_sub
         .x(add_res),
         .rnd_12bit(rnd[0][11:0]),
         .rnd_14bit(rnd[1]),
+        .rnd_24bit(rnd_24bit),
         .rnd_for_Boolean0(rnd[2]),
         .rnd_for_Boolean1(rnd[3]),
         .rnd_1bit(rnd[0][12]),

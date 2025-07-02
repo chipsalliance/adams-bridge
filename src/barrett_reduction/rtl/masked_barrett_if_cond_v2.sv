@@ -84,7 +84,7 @@ module masked_barrett_if_cond_v2
                 .zeroize(zeroize),
                 .x(c_carry),
                 .y({q_share[1][i_AND], q_share[0][i_AND]}),
-                .rnd(rnd_12bit[i_AND]),
+                .rnd(rnd_14bit[i_AND]),
                 .c(boolean_y_unpacked[i_AND])
             );
         end
@@ -98,7 +98,7 @@ module masked_barrett_if_cond_v2
         .rst_n(rst_n),
         .zeroize(zeroize),
         .x_boolean(boolean_y_unpacked),
-        .rnd(rnd_12bit),
+        .rnd(rnd_14bit[MLKEM_Q_WIDTH-1:0]),
         .x_arith(arith_Q_unpacked)
     );
 

@@ -561,6 +561,7 @@ ntt_masked_pairwm mlkem_masked_pawm_inst0 (
     .w1({w01_share[1][MLKEM_MASKED_WIDTH-1:0], w01_share[0][MLKEM_MASKED_WIDTH-1:0]}),
     .zeta(z0_share),
     .rnd({rnd_i[4][13:0], rnd_i[3][13:0], rnd_i[2][13:0], rnd_i[1][13:0], rnd_i[0][13:0]}),
+    .rnd_24bit({rnd_i[0][37:14]}),
     .res0(mlkem_uv0_share),
     .res1(mlkem_uv1_share)
 );
@@ -578,6 +579,7 @@ ntt_masked_pairwm mlkem_masked_pawm_inst1 (
     .w1({w11_share[1][MLKEM_MASKED_WIDTH-1:0], w11_share[0][MLKEM_MASKED_WIDTH-1:0]}),
     .zeta(z1_share),
     .rnd({rnd_i[0][13:0], rnd_i[4][13:0], rnd_i[3][13:0], rnd_i[2][13:0], rnd_i[1][13:0]}),
+    .rnd_24bit({rnd_i[1][37:14]}),
     .res0(mlkem_uv2_share),
     .res1(mlkem_uv3_share)
 );

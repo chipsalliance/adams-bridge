@@ -60,6 +60,7 @@ module ntt_mlkem_masked_gs_butterfly
         .u(opu_i),
         .v(opv_i),
         .rnd(rnd_i[3:0]),
+        .rnd_24bit({rnd_i[0][9:0], rnd_i[4]}),
         .res(add_res)
     );
 
@@ -101,6 +102,7 @@ module ntt_mlkem_masked_gs_butterfly
         .u(opu_i),
         .v(opv_i),
         .rnd(rnd_i[4:1]), //Different rand order
+        .rnd_24bit({rnd_i[1][9:0], rnd_i[0]}),
         .res(sub_res) //u-v
     );
 
@@ -131,6 +133,7 @@ module ntt_mlkem_masked_gs_butterfly
         .u(sub_res),
         .v(w_reg[0]),
         .rnd({rnd_i[0], rnd_i[1], rnd_i[2], rnd_i[3], rnd_i[4]}),
+        .rnd_24bit({rnd_i[4][9:0], rnd_i[0]}),
         .res(mul_res)
     );
 

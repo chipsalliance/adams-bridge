@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //======================================================================
-// masked_barrett_reduction.sv
+// masked_barrett_if_cond.sv
 // -----------
 // Performs masked Barrett reduction on a given input x.
 // Latency: 20 cycles //TODO
