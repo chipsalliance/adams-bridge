@@ -20,3 +20,6 @@ contents:
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_two_verif_on_fail_test   : { weight 10 }
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_verif_stream_msg_test   : { weight 40 }
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_KeySign_stream_msg_test   : { weight 40 }
+        $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_keygen_test   : { weight 40 }
+        $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_encap_test   : { weight 40 }
+        $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_decap_test   : { weight 40 }
