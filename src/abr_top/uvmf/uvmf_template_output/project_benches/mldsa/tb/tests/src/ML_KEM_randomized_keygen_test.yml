@@ -1,6 +1,6 @@
 ---
 # Random seed desired...
-seed: 11516
+# seed: 11516
 plusargs:
   - '+UVM_TESTNAME=ML_KEM_randomized_keygen_test'
 testname: ML_KEM_randomized_keygen_test
