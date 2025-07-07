@@ -250,14 +250,9 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_SEED_Z__external__in_t;
 
     typedef struct packed{
-        logic [31:0] next;
-        logic we;
-        logic hwclr;
-    } abr_reg__MLKEM_SHARED_KEY__KEY__in_t;
-
-    typedef struct packed{
-        abr_reg__MLKEM_SHARED_KEY__KEY__in_t KEY;
-    } abr_reg__MLKEM_SHARED_KEY__in_t;
+        logic rd_ack;
+        logic [31:0] rd_data;
+    } abr_reg__MLKEM_SHARED_KEY__external__in_t;
 
     typedef struct packed{
         logic rd_ack;
@@ -333,7 +328,7 @@ package abr_reg_pkg;
         abr_reg__MLKEM_STATUS__in_t MLKEM_STATUS;
         abr_reg__MLKEM_SEED_D__in_t [8-1:0]MLKEM_SEED_D;
         abr_reg__MLKEM_SEED_Z__external__in_t [8-1:0]MLKEM_SEED_Z;
-        abr_reg__MLKEM_SHARED_KEY__in_t [8-1:0]MLKEM_SHARED_KEY;
+        abr_reg__MLKEM_SHARED_KEY__external__in_t [8-1:0]MLKEM_SHARED_KEY;
         abr_reg__MLKEM_MSG__external__in_t MLKEM_MSG;
         abr_reg__MLKEM_DECAPS_KEY__external__in_t MLKEM_DECAPS_KEY;
         abr_reg__MLKEM_ENCAPS_KEY__external__in_t MLKEM_ENCAPS_KEY;
@@ -526,12 +521,9 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_SEED_Z__external__out_t;
 
     typedef struct packed{
-        logic [31:0] value;
-    } abr_reg__MLKEM_SHARED_KEY__KEY__out_t;
-
-    typedef struct packed{
-        abr_reg__MLKEM_SHARED_KEY__KEY__out_t KEY;
-    } abr_reg__MLKEM_SHARED_KEY__out_t;
+        logic req;
+        logic req_is_wr;
+    } abr_reg__MLKEM_SHARED_KEY__external__out_t;
 
     typedef struct packed{
         logic req;
@@ -607,7 +599,7 @@ package abr_reg_pkg;
         abr_reg__MLKEM_CTRL__out_t MLKEM_CTRL;
         abr_reg__MLKEM_SEED_D__out_t [8-1:0]MLKEM_SEED_D;
         abr_reg__MLKEM_SEED_Z__external__out_t [8-1:0]MLKEM_SEED_Z;
-        abr_reg__MLKEM_SHARED_KEY__out_t [8-1:0]MLKEM_SHARED_KEY;
+        abr_reg__MLKEM_SHARED_KEY__external__out_t [8-1:0]MLKEM_SHARED_KEY;
         abr_reg__MLKEM_MSG__external__out_t MLKEM_MSG;
         abr_reg__MLKEM_DECAPS_KEY__external__out_t MLKEM_DECAPS_KEY;
         abr_reg__MLKEM_ENCAPS_KEY__external__out_t MLKEM_ENCAPS_KEY;

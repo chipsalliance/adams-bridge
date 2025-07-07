@@ -377,7 +377,7 @@ addrmap abr_reg {
     } MLKEM_SEED_Z[8];
 
     /* ---- MLKEM Component Shared Key ---- */
-    reg {
+    external reg {
         name = "MLKEM component shared key register type definition";
         desc = "8 32-bit registers storing the shared key.";
 
