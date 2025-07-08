@@ -63,6 +63,7 @@ package abr_ctrl_pkg;
     localparam MLKEM_EK_MEM_NUM_DWORDS = 384;
     localparam MLKEM_DK_MEM_NUM_DWORDS = 768;
     localparam MLKEM_CIPHERTEXT_MEM_NUM_DWORDS = 392;
+    localparam CT_NUM_BYTES = MLKEM_CIPHERTEXT_MEM_NUM_DWORDS*4;
     localparam MLKEM_MSG_MEM_NUM_DWORDS = 8;
     localparam SCRATCH_REG_NUM_DWORDS = 48;
 
@@ -124,7 +125,8 @@ package abr_ctrl_pkg;
     } mldsa_scratch_reg_t; //48 dwords
 
     typedef struct packed {
-        logic [7:0][63:0] rsvd;
+        logic [3:0][63:0] rsvd;
+        logic [7:0][31:0] shared_key;
         logic [3:0][63:0] sigma; //cbd input randomness
         logic [7:0][31:0] seed_z;
         logic [3:0][63:0] tr; //hash of EK
@@ -309,6 +311,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_RHO_SIGMA_REG_ID = 'd9;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_TR_REG_ID    = 'd10;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_K_R_REG_ID   = 'd11;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_K_REG_ID   = 'd12;
     // DEST Mem overloaded into SK ram
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_DK_MEM_OFFSET = 'd0;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_DK_MEM_OFFSET = MLKEM_DEST_DK_MEM_OFFSET/2;
@@ -342,6 +345,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_TR_ID          = 'd32;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_MSG_ID         = 'd33;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_R_ID           = 'd34;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SEED_Z_ID      = 'd35;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_CIPHERTEXT_ID  = 'd36;
     
     //SK offsets in dwords
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_SK_S1_OFFSET = 'd32;
@@ -560,9 +565,10 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 40;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_S + 15;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 51;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 15;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 53;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_CHK = MLKEM_ENCAPS_E + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_CHK + 2;
 
 
 
