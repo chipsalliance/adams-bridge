@@ -32,6 +32,7 @@ module abr_top
   `endif
   #(
   //top level params
+    parameter bit MASKING_EN = 1,
     parameter AHB_ADDR_WIDTH = 32,
     parameter AHB_DATA_WIDTH = 64,
     parameter CLIENT_DATA_WIDTH = 32
@@ -46,7 +47,6 @@ module abr_top
   output wire PWA_trigger,
   output wire INTT_trigger,
 `endif
-
 
   //ahb input
   input logic  [AHB_ADDR_WIDTH-1:0] haddr_i,
@@ -136,7 +136,7 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] ntt_busy;
   logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
-  logic [ABR_NUM_NTT-1:0] ntt_masking_en;
+  logic [ABR_NUM_NTT-1:0] ntt_masking_en,ntt_masking_en_q;
 
   mem_if_t w1_mem_wr_req;
   logic [ABR_MEM_W1_DATA_W-1:0] w1_mem_wr_data;
@@ -274,11 +274,7 @@ module abr_top
   abr_sram_be_if #(.ADDR_W(SIG_Z_MEM_ADDR_W), .DATA_W(SIG_Z_MEM_DATA_W)) sig_z_mem_if();
   abr_sram_be_if #(.ADDR_W(PK_MEM_ADDR_W), .DATA_W(PK_MEM_DATA_W)) pk_mem_if();
 
-  `ifdef MLDSA_MASKING
-    assign ntt_rand_bits = rand_bits[RND_W-1:6];
-  `else
-    assign ntt_rand_bits = (RND_W-6)'(0);
-  `endif
+  assign ntt_rand_bits = MASKING_EN ? rand_bits[RND_W-1:6] : (RND_W-6)'(0);
 
   abr_ahb_slv_sif #(
     .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
@@ -642,6 +638,8 @@ generate
       
     end
 
+  assign ntt_masking_en_q[g_inst] = ntt_masking_en[g_inst] & MASKING_EN;
+
   ntt_top #(
     .REG_SIZE(REG_SIZE),
     .MLDSA_Q(MLDSA_Q),
@@ -662,7 +660,7 @@ generate
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
     .random(rand_bits[5:0]),
-    .masking_en(ntt_masking_en[g_inst]),
+    .masking_en(ntt_masking_en_q[g_inst]),
     .rnd_i(ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)), //(ntt_rand_bits & {(RND_W-6){ntt_random_en[g_inst]}}),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
