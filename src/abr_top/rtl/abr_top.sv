@@ -193,13 +193,16 @@ module abr_top
 
   logic compress_enable;
   logic compress_done;
+  logic compress_compare_failed;
   compress_mode_t compress_mode;
+  logic compress_compare_mode;
   logic [2:0] compress_num_poly;
   mem_if_t compress_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] compress_mem_rd_data;
-  logic compress_api_wr_en;
-  logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_wr_addr;
+  logic [1:0] compress_api_rw_en;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_rw_addr;
   logic [DATA_WIDTH-1:0] compress_api_wr_data;
+  logic [DATA_WIDTH-1:0] compress_api_rd_data;
 
   logic decompress_enable;
   logic decompress_done;
@@ -445,10 +448,13 @@ abr_ctrl abr_ctrl_inst
   .compress_enable_o(compress_enable),
   .compress_mode_o(compress_mode),
   .compress_num_poly_o(compress_num_poly),
+  .compress_compare_mode_o(compress_compare_mode),
   .compress_done_i(compress_done),
-  .compress_api_wr_en_i(compress_api_wr_en),
-  .compress_api_wr_addr_i(compress_api_wr_addr),
+  .compress_compare_failed_i(compress_compare_failed),
+  .compress_api_rw_en_i(compress_api_rw_en),
+  .compress_api_rw_addr_i(compress_api_rw_addr),
   .compress_api_wr_data_i(compress_api_wr_data),
+  .compress_api_rd_data_o(compress_api_rd_data),
 
   .decompress_enable_o(decompress_enable),
   .decompress_mode_o(decompress_mode),
@@ -925,19 +931,22 @@ compress_top_inst
   .zeroize(zeroize_reg),
 
   .mode(compress_mode),
+  .compare_mode(compress_compare_mode),
   .num_poly(compress_num_poly),
   .src_base_addr(aux_src0_base_addr[0]),
   .dest_base_addr(aux_dest_base_addr[0]),
 
   .compress_enable(compress_enable),
   .compress_done(compress_done),
+  .compare_failed(compress_compare_failed),
 
   .mem_rd_req(compress_mem_rd_req),
   .mem_rd_data(compress_mem_rd_data),
 
-  .api_wr_en(compress_api_wr_en),
-  .api_wr_addr(compress_api_wr_addr),
-  .api_wr_data(compress_api_wr_data)
+  .api_rw_en(compress_api_rw_en),
+  .api_rw_addr(compress_api_rw_addr),
+  .api_wr_data(compress_api_wr_data),
+  .api_rd_data(compress_api_rd_data)
 );
 
 decompress_top
