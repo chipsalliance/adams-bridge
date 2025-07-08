@@ -31,7 +31,8 @@ targets:
     pre_exec: 'echo "[PRE-EXEC] Copying C executable vector generator to $PWD"
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
-                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .'
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
+                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .'
 global:
   tool:
     vcs:
