@@ -48,11 +48,10 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   bit [31:0] expected_shared_key [];
   bit [31:0] actual_shared_key   [];
 
-
   bit ready;
   bit valid;
   int value;
-  
+
   function new(string name = "");
     super.new(name);
     seed_d = new[8];
@@ -237,14 +236,14 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize SEED_D data");
       end
       seed_d[i] = data;
-      `uvm_info("RND_GEN", $sformatf("andomize SEED_D[%0d]: %0h", i, seed_d[i]), UVM_LOW);
+      `uvm_info("RND_GEN", $sformatf("randomize SEED_D[%0d]: %0h", i, seed_d[i]), UVM_LOW);
     end
     foreach (seed_z[i]) begin
       if (!this.randomize(data)) begin
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize SEED_Z data");
       end
       seed_z[i] = data;
-      `uvm_info("RND_GEN", $sformatf("andomize SEED_Z[%0d]: %0h", i, seed_z[i]), UVM_LOW);
+      `uvm_info("RND_GEN", $sformatf("randomize SEED_Z[%0d]: %0h", i, seed_z[i]), UVM_LOW);
     end
   
     // 2) write the python‐readable input file
@@ -316,11 +315,25 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   endtask
 
 
-  task run_model_for_encap_with_rand_val();
+  task run_model_for_encap_with_rand_val(bit decaps_rej = 0);
     run_model_for_keygen_with_rand_val();
-    foreach (expected_ek[i]) begin
-      ek[i] = expected_ek[i];
+
+    if (decaps_rej) begin
+      `uvm_info("DECAPS_REJ", $sformatf("Decaps flow will reject due to wrong ek used"), UVM_LOW);
+      //use expected ek as the "wrong" ek for decaps failure
+      foreach (expected_ek[i]) begin
+        ek[i] = expected_ek[i];
+      end
+      //generate new keys, but we won't use the new ek
+      run_model_for_keygen_with_rand_val();
+    end else begin
+      `uvm_info("DECAPS_REJ", $sformatf("Decaps flow will not reject"), UVM_LOW);
+      //just use the ek from the keygen flow
+      foreach (expected_ek[i]) begin
+        ek[i] = expected_ek[i];
+      end
     end
+
     // 1) randomize seeds
     foreach (msg[i]) begin
       if (!this.randomize(data)) begin
@@ -399,8 +412,8 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_decap_with_rand_val();
-    run_model_for_encap_with_rand_val();
+  task run_model_for_decap_with_rand_val(bit decaps_rej = 0);
+    run_model_for_encap_with_rand_val(decaps_rej);
     foreach (expected_dk[i]) begin
       dk[i] = expected_dk[i];
     end
