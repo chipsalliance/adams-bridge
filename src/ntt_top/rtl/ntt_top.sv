@@ -86,7 +86,8 @@ module ntt_top
     input wire [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data,
 
     output logic ntt_busy,
-    output logic ntt_done
+    output logic ntt_done,
+    output logic masking_en_ctrl
 
 );
     //NTT mem signals
@@ -173,7 +174,7 @@ module ntt_top
     logic pwm_mode, pwa_mode, pws_mode;
     logic pairwm_mode;
     mode_t opcode;
-    logic masking_en_ctrl;
+    //logic masking_en_ctrl;
 
     logic ntt_passthrough, intt_passthrough;
 
