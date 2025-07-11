@@ -102,8 +102,7 @@ Software write generates only a single-cycle pulse on the hardware interface and
 
 | Bits     | Identifier     | Access | Reset | Decoded | Name |
 | :------- | :------------- | :----- | :---- | :------ | :--- |
-| \[31:3\] | \-             | \-     | \-    |         | \-   |
-| \[2\]    | DECAPS_FAILURE | r      | 0x0   |         | \-   |
+| \[31:2\] | \-             | \-     | \-    |         | \-   |
 | \[1\]    | VALID          | r      | 0x0   |         | \-   |
 | \[0\]    | READY          | r      | 0x0   |         | \-   |
 
@@ -114,10 +113,6 @@ Software write generates only a single-cycle pulse on the hardware interface and
 ### ​VALID 
 
 ​Indicates if the process is computed and the output is valid. 
-
-### DECAPS_FAILURE
-
-​Indicates if the decapsulation process is failed and the shared_key output is invalid. 
 
 ## entropy
 
@@ -245,7 +240,6 @@ Input:
 
 Output:
     shared_key
-    decaps_failure
 
 // Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
 read_data = 0;
@@ -267,12 +261,11 @@ while (read_data == 0) {
     read_data = read(ADDR_STATUS);
 }
 
-// Reading the outputs
-decaps_failure = read(ADDR_STATUS) & DECAPS_FAILURE_MASK;
+// Reading the output
 shared_key = read(ADDR_SHAREDKEY);
 
 // Return the output
-return shared_key, decaps_failure;
+return shared_key;
 ```
 
 ## Keygen \+ Decapsulation
@@ -288,7 +281,6 @@ Input:
 
 Output:
     shared_key
-    decaps_failure
 
 // Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
 read_data = 0
@@ -309,12 +301,11 @@ read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
 
-// Reading the outputs
-decaps_failure = read(ADDR_STATUS) & DECAPS_FAILURE_MASK;
+// Reading the output
 shared_key = read(ADDR_SHAREDKEY);
 
 // Return the outputs
-return shared_key, decaps_failure;
+return shared_key;
 ```
 ​ 
 # Performance and Area Results
