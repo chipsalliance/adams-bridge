@@ -56,7 +56,8 @@ module ntt_special_mem #(
     input logic ntt_done,
     output logic [AHB_DATA_WIDTH-1:0] ctrl_data,
     output logic [AHB_DATA_WIDTH-1:0] enable_data,
-    output logic [AHB_DATA_WIDTH-1:0] base_addr_data
+    output logic [AHB_DATA_WIDTH-1:0] base_addr_data,
+    output logic [NTT_DATA_WIDTH-1:0] sampler_data
 );
 
 localparam DEPTH = 2**ADDR_WIDTH;
@@ -70,6 +71,8 @@ always_comb begin
     enable_data = mem[DEPTH-2];
     masking_en = ctrl_data[5];
     pwm_mode = (ctrl_data[2:0] == 3'h2);
+
+    sampler_data = {48'h0, mem[DEPTH-8], 48'h0, mem[DEPTH-7], 48'h0, mem[DEPTH-6], 48'h0, mem[DEPTH-5]}; //TODO: shares
 end
 
 always_ff @(posedge clk or negedge reset_n) begin: reading_memory

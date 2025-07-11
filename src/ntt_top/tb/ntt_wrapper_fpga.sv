@@ -168,7 +168,8 @@ module ntt_wrapper_fpga
         .ctrl_data(ctrl_data),
         .enable_data(enable_data),
         .base_addr_data(base_addr_data),
-        .masking_en_ctrl(masking_en_ctrl)
+        .masking_en_ctrl(masking_en_ctrl),
+        .sampler_data(sampler_data)
     );
 
     logic ct_mode, gs_mode;
