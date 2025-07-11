@@ -956,7 +956,7 @@ To optimize this process, we propose a hardware-efficient compression architectu
 
 To accurately implement the compression formula in hardware, we adopt the following formula:
 
-data11:0≪d+q2/q
+((data[11:0] << d) + q/2) / q
 
 where data is a 12-bit coefficient and d is the target compressed bit-width. The term q2​ is added prior to division to address the rounding behavior of hardware right shifts. In hardware implementations, division is implemented using right shifts, which inherently perform truncation (i.e., rounding down). This creates a systematic bias in the compressed output. By adding q2​ before the division, we effectively round the result to the nearest integer rather than always rounding down. This adjustment is critical for maintaining the fidelity of the compression process and ensures that the mapping from Zq​ to the reduced d-bit representation is as accurate as possible, without introducing additional complexity to the hardware. The approach is both efficient and hardware-friendly, requiring only a simple addition and no costly division circuitry.
 
@@ -980,7 +980,7 @@ Following compression, decompression performs the inverse operation by expanding
 
 Our architecture handles four such compressed coefficients per clock cycle using four parallel multipliers. Each compressed coefficient is scaled and shifted based on its original encoding formula to recover the approximate 12-bit representation. The decompression path supports multiple d values via a configurable datapath, enabling seamless integration into systems supporting different compression profiles for ML-KEM using the following equation. 
 
-datad-1:0\* q+ 2d-1≫ d
+((data[d-1:0] * q) + (2^(d-1))) >> d
 
 The addition of  2d-1 serves the same rounding purpose as q2​ in the compression path. Since right shifts truncate in hardware, adding  2d-1 ensures the result is rounded to the nearest integer instead of being consistently biased downward. As with compression, the technique is hardware-friendly and avoids complex division or floating-point logic, while delivering improved accuracy through a simple constant addition and shift. The proposed architecture for decompression is shown as follows:
 
