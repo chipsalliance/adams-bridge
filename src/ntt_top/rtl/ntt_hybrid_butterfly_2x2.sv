@@ -261,11 +261,11 @@ always_ff @(posedge clk or negedge reset_n) begin
         uv11_share_reg <= bf_shares_uvw_i.v01_i;
 
         //In passthrough mode, 1st stage is used instead of bypassed and 2nd stage is bypassed. Swap twiddles to ensure correct output
-        twiddle_w00_share[0] <= intt_passthrough ? (bf_shares_uvw_i.w10_i - rnd_i[0]) : bf_shares_uvw_i.w00_i[0];
-        twiddle_w00_share[1] <= intt_passthrough ? rnd_i[0] : bf_shares_uvw_i.w00_i[1];
+        twiddle_w00_share[0] <= intt_passthrough ? WIDTH'(bf_shares_uvw_i.w10_i - rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w00_i[0];
+        twiddle_w00_share[1] <= intt_passthrough ? WIDTH'(rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w00_i[1];
 
-        twiddle_w01_share[0] <= intt_passthrough ? (bf_shares_uvw_i.w11_i - rnd_i[0]) : bf_shares_uvw_i.w01_i[0];
-        twiddle_w01_share[1] <= intt_passthrough ? rnd_i[0] : bf_shares_uvw_i.w01_i[1];
+        twiddle_w01_share[0] <= intt_passthrough ? WIDTH'(bf_shares_uvw_i.w11_i - rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w01_i[0];
+        twiddle_w01_share[1] <= intt_passthrough ? WIDTH'(rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w01_i[1];
     end
 end
 
@@ -291,9 +291,8 @@ ntt_masked_butterfly1x2 #(
 //MLKEM Masked BFU stage 1 - Used in MLKEM masked INTT mode only - 16 clks
 //TODO: check input/output widths
 //----------------------------------------------------
-ntt_mlkem_masked_butterfly1x2 #(
-    .WIDTH(WIDTH)
-) mlkem_masked_bf_1x2_inst0 (
+ntt_mlkem_masked_butterfly1x2 mlkem_masked_bf_1x2_inst0 
+(
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
@@ -427,8 +426,8 @@ always_comb begin
             bf_opw11 = w11;
         end
         else if (mlkem) begin
-            bf_opw10 = mlkem_w10_reg[0];
-            bf_opw11 = mlkem_w11_reg[0];
+            bf_opw10 = HALF_WIDTH'(mlkem_w10_reg[0]);
+            bf_opw11 = HALF_WIDTH'(mlkem_w11_reg[0]);
         end
         else begin
             bf_opw10 = mldsa_w10_reg[0];
@@ -586,10 +585,10 @@ ntt_masked_pairwm mlkem_masked_pawm_inst1 (
 
 //Assign PWM output
 always_comb begin
-    pwm_shares_uvo.uv0 = pairwm_mode ? mlkem_uv0_share : mldsa_uv0_share;
-    pwm_shares_uvo.uv1 = pairwm_mode ? mlkem_uv1_share : mldsa_uv1_share;
-    pwm_shares_uvo.uv2 = pairwm_mode ? mlkem_uv2_share : bf_pwm_shares_uvo.uv2;
-    pwm_shares_uvo.uv3 = pairwm_mode ? mlkem_uv3_share : bf_pwm_shares_uvo.uv3;
+    pwm_shares_uvo.uv0 = pairwm_mode ? {WIDTH'(mlkem_uv0_share[1]), WIDTH'(mlkem_uv0_share[0])} : mldsa_uv0_share;
+    pwm_shares_uvo.uv1 = pairwm_mode ? {WIDTH'(mlkem_uv1_share[1]), WIDTH'(mlkem_uv1_share[0])} : mldsa_uv1_share;
+    pwm_shares_uvo.uv2 = pairwm_mode ? {WIDTH'(mlkem_uv2_share[1]), WIDTH'(mlkem_uv2_share[0])} : bf_pwm_shares_uvo.uv2;
+    pwm_shares_uvo.uv3 = pairwm_mode ? {WIDTH'(mlkem_uv3_share[1]), WIDTH'(mlkem_uv3_share[0])} : bf_pwm_shares_uvo.uv3;
 end
 
 //----------------------------------------------------

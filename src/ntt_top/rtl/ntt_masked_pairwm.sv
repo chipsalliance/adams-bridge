@@ -55,15 +55,15 @@ logic [1:0] u1v1 [MASKED_WIDTH-1:0];
 logic [1:0][MASKED_WIDTH-1:0] u0v0_packed, u0v1_packed, u1v0_packed, zeta_v1_packed, u1v1_packed;
 
 //Reduction results
-logic [1:0][MLKEM_Q_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced, uv0_reduced, uv1_reduced; //TODO: convert to 24-bit shares
+logic [1:0][MASKED_WIDTH-1:0] u0v0_reduced, u0v1_reduced, u1v0_reduced, zeta_v1_reduced, u1v1_reduced, uv0_reduced, uv1_reduced;
 logic [1:0][MASKED_WIDTH-1:0] uv0, uv1;
 logic [1:0][MASKED_WIDTH-1:0] uvw0, uvw1;
 
 //Delay regs
-logic [1:0][MASKED_WIDTH-1:0] u1_reg           [MLKEM_MASKED_MULT_LATENCY-1:0];
-logic [1:0][MASKED_WIDTH-1:0] u0v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
-logic [1:0][MASKED_WIDTH-1:0] u0v1_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
-logic [1:0][MASKED_WIDTH-1:0] u1v0_reduced_reg [MLKEM_MASKED_MULT_LATENCY-1:0];
+logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u1_reg;
+logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u0v0_reduced_reg;
+logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u0v1_reduced_reg;
+logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u1v0_reduced_reg;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin

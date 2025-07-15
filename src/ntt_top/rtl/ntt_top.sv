@@ -275,7 +275,7 @@ module ntt_top
 
     always_comb begin
         for (int i = 0; i < 8; i++) begin
-            mlkem_share_mem_rd_data[i] = MLDSA_SHARE_WIDTH'(mem_rd_data[(i*48) +: 23]);
+            mlkem_share_mem_rd_data[i] = MLDSA_SHARE_WIDTH'(mem_rd_data[(i*48) +: 47]);
         end
     end
 
@@ -406,8 +406,12 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i = shuffle_en ? twiddle_factor_shares_reg_d1[0] : twiddle_factor_shares_reg_d2[0]; //TODO: justify
-                mlkem_shares_pairwm_zeta13_i.z1_i = shuffle_en ? twiddle_factor_shares_reg_d1[1] : twiddle_factor_shares_reg_d2[1]; 
+                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][0]); //TODO: justify
+                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][1]); //TODO: justify
+                
+                mlkem_shares_pairwm_zeta13_i.z1_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][0]);
+                mlkem_shares_pairwm_zeta13_i.z1_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][1]); 
+                
                 mlkem_pairwm_zeta13_i = '0;
             end
             else begin
@@ -628,11 +632,11 @@ module ntt_top
             pwm_shares_uvo_reg <= pwm_shares_uvo;
 
             //INTT shares
-            twiddle_factor_shares_reg[0][0] <= mlkem ? MASKED_WIDTH'(twiddle_factor[(2*MLKEM_Q_WIDTH)-1:MLKEM_Q_WIDTH]) - rnd_i[2] : MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
-            twiddle_factor_shares_reg[0][1] <= rnd_i[2];
+            twiddle_factor_shares_reg[0][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(2*MLKEM_Q_WIDTH)-1:MLKEM_Q_WIDTH]) - (rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
+            twiddle_factor_shares_reg[0][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[2];
 
-            twiddle_factor_shares_reg[1][0] <= mlkem ? MASKED_WIDTH'(twiddle_factor[(3*MLKEM_Q_WIDTH)-1:(2*MLKEM_Q_WIDTH)]) - rnd_i[3] : MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
-            twiddle_factor_shares_reg[1][1] <= rnd_i[3];
+            twiddle_factor_shares_reg[1][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(3*MLKEM_Q_WIDTH)-1:(2*MLKEM_Q_WIDTH)]) - (rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
+            twiddle_factor_shares_reg[1][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[3];
 
             pw_rden_reg          <= pw_rden;
             pw_mem_rd_addr_a_reg <= pw_mem_rd_addr_a;
@@ -796,10 +800,10 @@ module ntt_top
                     pwm_shares_uvw_i.w2_i = accumulate ? pairwm_mode ? share_mem_rd_data_reg[2] : share_mem_rd_data_reg_d1[2] : '0;
                     pwm_shares_uvw_i.w3_i = accumulate ? pairwm_mode ? share_mem_rd_data_reg[3] : share_mem_rd_data_reg_d1[3] : '0;
 
-                    pwm_shares_uvw_i.v0_i = pairwm_mode ? pwm_rd_data_b_shares_reg[0] /*TODO: why not d1?*/ : pwm_rd_data_b_shares_reg_d1[0];
-                    pwm_shares_uvw_i.v1_i = pairwm_mode ? pwm_rd_data_b_shares_reg[1] : pwm_rd_data_b_shares_reg_d1[1]; 
-                    pwm_shares_uvw_i.v2_i = pairwm_mode ? pwm_rd_data_b_shares_reg[2] : pwm_rd_data_b_shares_reg_d1[2]; 
-                    pwm_shares_uvw_i.v3_i = pairwm_mode ? pwm_rd_data_b_shares_reg[3] : pwm_rd_data_b_shares_reg_d1[3];
+                    pwm_shares_uvw_i.v0_i = pwm_rd_data_b_shares_reg_d1[0];
+                    pwm_shares_uvw_i.v1_i = pwm_rd_data_b_shares_reg_d1[1]; 
+                    pwm_shares_uvw_i.v2_i = pwm_rd_data_b_shares_reg_d1[2]; 
+                    pwm_shares_uvw_i.v3_i = pwm_rd_data_b_shares_reg_d1[3];
                 end
                 
 

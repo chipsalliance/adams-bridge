@@ -58,7 +58,7 @@ module ntt_mlkem_masked_butterfly1x2
 
     //15
     ntt_mlkem_masked_gs_butterfly #(
-        .MLKEM_SHARE_WIDTH(MLKEM_SHARE_WIDTH)
+        .WIDTH(MLKEM_SHARE_WIDTH)
     ) mlkem_masked_bf_inst00 (
         .clk(clk),
         .reset_n(reset_n),
@@ -72,7 +72,7 @@ module ntt_mlkem_masked_butterfly1x2
     );
 
     ntt_mlkem_masked_gs_butterfly #(
-        .MLKEM_SHARE_WIDTH(MLKEM_SHARE_WIDTH)
+        .WIDTH(MLKEM_SHARE_WIDTH)
     ) mlkem_masked_bf_inst01 (
         .clk(clk),
         .reset_n(reset_n),

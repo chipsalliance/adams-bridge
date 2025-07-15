@@ -139,20 +139,13 @@ module ntt_mlkem_masked_gs_butterfly
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            for (int i = 0; i < WIDTH; i++) begin
-                u_o_reg[i] <= 2'b0;
-                // v_o_reg[i] <= 2'b0;
-            end
+            u_o_reg <= 'h0;
         end
         else if (zeroize) begin
-            for (int i = 0; i < WIDTH; i++) begin
-                u_o_reg[i] <= 2'b0;
-                // v_o_reg[i] <= 2'b0;
-            end
+            u_o_reg <= 'h0;
         end
         else begin
             u_o_reg <= add_res_reg;
-            // v_o_reg <= mul_res;
         end
     end
 

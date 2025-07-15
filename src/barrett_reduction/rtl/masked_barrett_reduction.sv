@@ -48,8 +48,8 @@ module masked_barrett_reduction
     logic [1:0][MASKED_REG_SIZE:0] qt;
     logic [1:0][MASKED_REG_SIZE-1:0] x_reg;
     logic [1:0][11:0] arith_Q;
-    logic [1:0][12:0] c_reg [2:0];
-    logic [12:0] carry_t_int;
+    logic [2:0][1:0][12:0] c_reg ;
+    logic [13:0] carry_t_int;
 
     logic [1:0][MASKED_REG_SIZE+13-1:0] correction;
     logic [MASKED_REG_SIZE:0] carry_x_ext;
@@ -67,8 +67,8 @@ module masked_barrett_reduction
         carry_x_ext = {carry_x, {(MASKED_REG_SIZE){1'b0}}};
 
         //Calculate correction
-        correction[0] = (carry_x_ext << 5) + (carry_x_ext << 3) + (carry_x_ext << 2) + (carry_x_ext << 1) + carry_x_ext;
-        correction[1] = (carry_x_ext << 12) + (carry_x_ext << 9) + (carry_x_ext << 8) + (carry_x_ext << 7);
+        correction[0] = 37'((carry_x_ext << 5) + (carry_x_ext << 3) + (carry_x_ext << 2) + (carry_x_ext << 1) + carry_x_ext);
+        correction[1] = 37'((carry_x_ext << 12) + (carry_x_ext << 9) + (carry_x_ext << 8) + (carry_x_ext << 7));
 
         // x*mu
         tmp[0] = (x[0] << 12) + (x[0] << 9) + (x[0] << 8) + (x[0] << 7) + (x[0] << 5) + (x[0] << 3) + (x[0] << 2) + (x[0] << 1) + x[0];
@@ -112,7 +112,7 @@ module masked_barrett_reduction
             t[1] <= t_int[1];
             x_reg <= x;
             c <= c_int;
-            c_reg <= {{c[1], c[0]}, c_reg[2:1]};
+            c_reg <= {c, c_reg[2:1]};
         end
     end
 
@@ -122,18 +122,18 @@ module masked_barrett_reduction
         carry_t = t0_plus_t1[13];
         carry_t_int = carry_t ? 'h2000 : 'h0;
         qt[0] = ((t[0] << 11) + (t[0] << 10) + (t[0] << 8) + t[0] - carry_t_int - (carry_t_int << 10));
-        qt[1] = ((t[1] << 11) + (t[1] << 10) + (t[1] << 8) + t[1] - (carry_t_int << 8) - (carry_t_int << 11));
+        qt[1] = 25'(((t[1] << 11) + (t[1] << 10) + (t[1] << 8) + t[1] - (carry_t_int << 8))) - (carry_t_int << 11);
 
         //Calculate c = x-t; - 13-bits
-        c_int[0] = 25'(x_reg[0]) - qt[0];
-        c_int[1] = 25'(x_reg[1]) - qt[1];
+        c_int[0] = 13'(25'(x_reg[0]) - qt[0]);
+        c_int[1] = 13'(25'(x_reg[1]) - qt[1]);
 
         //Use registered version of c0 and c1 to calculate carry_c and add roller
         c0_plus_c1 = (c[0] + c[1]);
         carry_c = c0_plus_c1[13];
 
         c_rolled[0] = c[0] + (ROLLER-(carry_c ? 'h2000 : 'h0));
-        c_rolled[1] = c[1];
+        c_rolled[1] = {1'b0, c[1]};
     end
 
     //Barrett if condition masked instance - 3 cycles
@@ -157,7 +157,7 @@ module masked_barrett_reduction
         y_int[1] = MLKEM_Q_WIDTH'(c_reg[0][1] - 13'(arith_Q[1]));
 
         y_int_comb = y_int[0] + y_int[1];
-        carry_y_int = y_int_comb[MLKEM_Q_WIDTH]; //(y_int[0] + y_int[1]) >> MLKEM_Q_WIDTH;
+        carry_y_int = y_int_comb[MLKEM_Q_WIDTH];
         carry_y_int_ext = {carry_y_int, {(MLKEM_Q_WIDTH){1'b0}}};
     end
 
@@ -169,8 +169,8 @@ module masked_barrett_reduction
             y <= '0;
         end
         else begin
-            y[0] <= {{MLKEM_Q_WIDTH{1'b0}}, y_int[0]} - rnd_24bit - {{(MLKEM_Q_WIDTH-1){1'b0}}, carry_y_int_ext}; //(c_reg[0][0] - 13'(arith_Q[0]));
-            y[1] <= {{MLKEM_Q_WIDTH{1'b0}}, y_int[1]} + rnd_24bit; //(c_reg[0][1] - 13'(arith_Q[1]));
+            y[0] <= MASKED_REG_SIZE'(MASKED_REG_SIZE'(y_int[0]) - rnd_24bit - MASKED_REG_SIZE'(carry_y_int_ext));
+            y[1] <= MASKED_REG_SIZE'(MASKED_REG_SIZE'(y_int[1]) + rnd_24bit);
         end
     end
 

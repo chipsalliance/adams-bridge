@@ -492,7 +492,7 @@ always_ff @(posedge clk or negedge reset_n) begin
 
         //accumulate
         if ((pwm_mode | pairwm_mode) & accumulate) begin
-            if ((masking_en & (mlkem ? incr_pw_rd_addr_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : incr_pw_rd_addr_reg[0])) | (~masking_en & incr_pw_rd_addr)) begin //-6 to remove reduction latency, +1 because incr reg has n+1 entries not n
+            if ((masking_en & (mlkem ? (shuffle_en ? incr_pw_rd_addr_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6)] : incr_pw_rd_addr_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)]) : incr_pw_rd_addr_reg[0])) | (~masking_en & incr_pw_rd_addr)) begin //-6 to remove reduction latency, +1 because incr reg has n+1 entries not n
                 pw_mem_rd_addr_c <= pw_mem_rd_addr_c_nxt;
             end
         end
@@ -758,7 +758,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[MASKED_INTT_WRBUF_LATENCY-3:1]};
     end
     else if ((pairwm_mode & masking_en & masked_pwm_exec_in_progress)) begin
-        chunk_count_reg <= accumulate ? {chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY+3:1]} : {chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_LATENCY+3:1]}; //TODO: justify
+        chunk_count_reg <= accumulate ? {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_ACC_LATENCY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY+3:1]} : {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_LATENCY+3:1]}; //TODO: justify
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin
         chunk_count_reg <= {{(MASKED_BF_STAGE1_LATENCY+1-UNMASKED_BF_LATENCY){4'h0}}, chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
