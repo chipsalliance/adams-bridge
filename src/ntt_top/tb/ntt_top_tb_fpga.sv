@@ -643,7 +643,7 @@ initial begin
     // $display("------------------------");
     pwm_test(1,1,0,0);
     // $display("------------------------");
-    // pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
+    pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
     gs_test(0,1,0); //shuf, mask, check
     // $display("------------------------");
 
