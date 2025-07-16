@@ -73,12 +73,15 @@ module ntt_wrapper_fpga
 
     logic ntt_enable, ntt_accumulate, ntt_sampler_valid, ntt_masking_en, ntt_shuffling_en;
     mode_t ntt_mode;
+    logic zeroize;
+    logic sampler_mode;
 
     //NTT signals
     mem_if_t ntt_mem_wr_req, ntt_mem_rd_req, pwm_a_rd_req, pwm_b_rd_req, gen_mem_rd_req, gen_mem_wr_req;
     logic ntt_done;
     logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data;
     logic masking_en_ctrl;
+    logic accumulate;
 
     //AHB slv interface
     abr_ahb_slv_sif #(
@@ -131,6 +134,8 @@ module ntt_wrapper_fpga
         .ntt_sampler_valid_o(ntt_sampler_valid),
         .ntt_masking_en_o(ntt_masking_en),
         .ntt_shuffle_en_o(ntt_shuffling_en),
+        .zeroize_o(zeroize),
+        .sampler_mode(sampler_mode),
         .ahb_ena(ahb_ena),
         .ahb_wea(ahb_wea),
         .ahb_addr(ahb_addr),
@@ -139,7 +144,7 @@ module ntt_wrapper_fpga
     );
 
     //NTT special mem inst
-    //TODO: confirm: reuse same mem for NTT and PWM modes?
+    //Reusing same mem for NTT and PWM modes. In accumulate, it will use same operands to accumulate over instead of dest values to avoid another instance of mem (since this mem only has 1 R and 1 W port)
     always_comb begin
         gen_mem_rd_req = (ntt_mode inside {ct, gs}) ? ntt_mem_rd_req : pwm_a_rd_req;
         gen_mem_wr_req = ntt_mem_wr_req;
@@ -152,7 +157,7 @@ module ntt_wrapper_fpga
     ) special_mem_inst (
         .clk(hclk),
         .reset_n(hreset_n),
-        .zeroize(),
+        .zeroize(zeroize),
         .ahb_ena(ahb_ena),
         .ahb_wea(ahb_wea),
         .ahb_addr(ahb_addr),
@@ -184,7 +189,7 @@ module ntt_wrapper_fpga
     ) ntt_top_inst0 (
         .clk(hclk),
         .reset_n(hreset_n),
-        .zeroize(),
+        .zeroize(zeroize),
         .mode(ntt_mode),
         .ntt_enable(ntt_enable),
         .mlkem(1'b0),
@@ -203,7 +208,7 @@ module ntt_wrapper_fpga
         .pwm_a_rd_req(pwm_a_rd_req), //TODO: separate mem or same?
         .pwm_b_rd_req(pwm_b_rd_req),
         .pwm_a_rd_data(ntt_mem_rd_data),
-        .pwm_b_rd_data(sampler_data),
+        .pwm_b_rd_data(sampler_mode ? sampler_data : ntt_mem_rd_data),
         .ntt_done(ntt_done),
         .ntt_busy(),
         .masking_en_ctrl(masking_en_ctrl)

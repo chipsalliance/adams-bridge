@@ -64,6 +64,8 @@ module ntt_ahb_mem_adapter
     output logic ntt_sampler_valid_o,
     output logic ntt_masking_en_o,
     output logic ntt_shuffle_en_o,
+    output logic zeroize_o,
+    output logic sampler_mode,
     //TODO: random bits inputs
 
     //Memory interface
@@ -99,11 +101,14 @@ end
 //Ctrl and enable data processing
 always_comb begin
     ntt_en_o = mem_enable_data_i[0]; // Enable NTT
+
     ntt_mode_o = mem_ctrl_data_i[2:0]; // Mode of operation
     ntt_accumulate_o = mem_ctrl_data_i[3]; // Accumulate results
     ntt_sampler_valid_o = mem_ctrl_data_i[4]; // Sampler valid
     ntt_masking_en_o = mem_ctrl_data_i[5]; // Masking enabled
     ntt_shuffle_en_o = mem_ctrl_data_i[6]; // Shuffle enabled
+    zeroize_o = mem_ctrl_data_i[7]; // Zeroize operation
+    sampler_mode = mem_ctrl_data_i[8]; // Sampler mode
 end
 
 endmodule
