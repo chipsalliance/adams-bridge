@@ -45,10 +45,10 @@ module ntt_wrapper_fpga
 
         output logic hresp_o,
         output logic hreadyout_o,
-        output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
+        output logic [AHB_DATA_WIDTH-1:0] hrdata_o //,
 
-        input wire [5:0] random,
-        input wire [4:0][MASKED_WIDTH-1:0] rnd_i
+        // input wire [5:0] random,
+        // input wire [4:0][MASKED_WIDTH-1:0] rnd_i
     );
 
     logic dv, hld, err, write;
@@ -68,6 +68,8 @@ module ntt_wrapper_fpga
     logic [MASKED_MEM_DATA_WIDTH-1:0] ntt_data_out;
 
     logic [AHB_DATA_WIDTH-1:0] ctrl_data;
+    logic [5:0] random_data;
+    logic [4:0][45:0]rnd_i_data;
     logic [AHB_DATA_WIDTH-1:0] enable_data;
     logic [AHB_DATA_WIDTH-1:0] base_addr_data;
 
@@ -174,7 +176,9 @@ module ntt_wrapper_fpga
         .enable_data(enable_data),
         .base_addr_data(base_addr_data),
         .masking_en_ctrl(masking_en_ctrl),
-        .sampler_data(sampler_data)
+        .sampler_data(sampler_data),
+        .random_data(random_data),
+        .rnd_i_data(rnd_i_data)
     );
 
     logic ct_mode, gs_mode;
@@ -199,8 +203,8 @@ module ntt_wrapper_fpga
         .sampler_valid(ntt_sampler_valid),
         .shuffle_en(ntt_shuffling_en),
         .masking_en(ntt_masking_en),
-        .random(random),
-        .rnd_i(rnd_i),
+        .random(random_data),
+        .rnd_i(rnd_i_data),
         .mem_wr_req(ntt_mem_wr_req),
         .mem_rd_req(ntt_mem_rd_req),
         .mem_wr_data(ntt_mem_wr_data),

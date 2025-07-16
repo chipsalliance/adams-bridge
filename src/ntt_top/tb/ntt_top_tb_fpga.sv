@@ -137,9 +137,9 @@ dut (
     .hsize_i(hsize_i_tb),
     .hresp_o(hresp_o_tb),
     .hreadyout_o(hreadyout_o_tb),
-    .hrdata_o(hrdata_o_tb),
-    .random(random_tb),
-    .rnd_i(rnd_tb)
+    .hrdata_o(hrdata_o_tb) //,
+    // .random(random_tb),
+    // .rnd_i(rnd_tb)
 );
 
 
@@ -154,9 +154,9 @@ begin : clk_gen
   clk_tb = !clk_tb;
 
   //Starting random num gen
-    random_tb <= 'h0; //$urandom();
+    random_tb <= $urandom();
     for (int i = 0; i < 5; i++)
-        rnd_tb[i] <= 'h0; //$urandom();
+        rnd_tb[i] <= $urandom();
 end // clk_gen
 
 //----------------------------------------------------------------
@@ -393,10 +393,22 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en);
     hsel_i_tb = 0;
 
     fork
-        #(2*CLK_PERIOD);
-        $display("Waiting for GS to complete at time %0t", $time);
-        wait_ready();
-        $display("GS done, reading output at time %0t", $time);
+        begin
+            #(2*CLK_PERIOD);
+            $display("Waiting for GS to complete at time %0t", $time);
+            wait_ready();
+            $display("GS done, reading output at time %0t", $time);
+        end
+        begin
+            for (int k = 0; k < 256; k++) begin
+                write_single_word(MEM_DEPTH-9,  random_tb);
+                write_single_word(MEM_DEPTH-10, rnd_tb[0]);
+                write_single_word(MEM_DEPTH-11, rnd_tb[1]);
+                write_single_word(MEM_DEPTH-12, rnd_tb[2]);
+                write_single_word(MEM_DEPTH-13, rnd_tb[3]);
+                write_single_word(MEM_DEPTH-14, rnd_tb[4]);
+            end
+        end
     join
 
     #CLK_PERIOD;
@@ -629,16 +641,16 @@ initial begin
     // $display("----------Masking----------");
     // // ct_test(0);
     // $display("------------------------");
-    // pwm_test(1,1,1,0);
+    pwm_test(1,1,0,0);
     // $display("------------------------");
     // pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
-    // gs_test(0,1,0); //shuf, mask, check
+    gs_test(0,1,0); //shuf, mask, check
     // $display("------------------------");
 
     //Sampler mode
-    pwm_sampler_test(0,0,0);
-    $display("------------------------");
-    pwm_sampler_test(0,0,1);
+    // pwm_sampler_test(1,1,0);
+    // $display("------------------------");
+    // pwm_sampler_test(1,1,0);
 
     
     $display("End of ntt_top_tb_fpga");

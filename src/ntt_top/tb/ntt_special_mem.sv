@@ -57,7 +57,9 @@ module ntt_special_mem #(
     output logic [AHB_DATA_WIDTH-1:0] ctrl_data,
     output logic [AHB_DATA_WIDTH-1:0] enable_data,
     output logic [AHB_DATA_WIDTH-1:0] base_addr_data,
-    output logic [NTT_DATA_WIDTH-1:0] sampler_data
+    output logic [NTT_DATA_WIDTH-1:0] sampler_data,
+    output logic [5:0] random_data,
+    output logic [4:0][45:0] rnd_i_data
 );
 
 localparam DEPTH = 2**ADDR_WIDTH;
@@ -72,8 +74,10 @@ always_comb begin
     masking_en = ctrl_data[5];
     pwm_mode = (ctrl_data[2:0] == 3'h2);
 
-    sampler_data = masking_en ? {48'h0, mem[DEPTH-8][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-7][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-6][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-5][MASKED_REG_SIZE-1:0]}
-                             : {288'h0, mem[DEPTH-8][REG_SIZE-1:0], mem[DEPTH-7][REG_SIZE-1:0], mem[DEPTH-6][REG_SIZE-1:0], mem[DEPTH-5][REG_SIZE-1:0]};
+    sampler_data = {288'h0, mem[DEPTH-8][REG_SIZE-1:0], mem[DEPTH-7][REG_SIZE-1:0], mem[DEPTH-6][REG_SIZE-1:0], mem[DEPTH-5][REG_SIZE-1:0]};
+
+    random_data = mem[DEPTH-9][5:0];
+    rnd_i_data = {mem[DEPTH-14][45:0], mem[DEPTH-13][45:0], mem[DEPTH-12][45:0], mem[DEPTH-11][45:0], mem[DEPTH-10][45:0]};
 end
 
 always_ff @(posedge clk or negedge reset_n) begin: reading_memory
