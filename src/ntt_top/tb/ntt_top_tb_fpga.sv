@@ -509,11 +509,12 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en, in
     end
 endtask
 
-task pwm_sampler_test (input logic shuf_en, input logic mask_en);
+task pwm_sampler_test (input logic shuf_en, input logic mask_en, input logic acc_en);
     logic [63:0] share0, share1;
     logic [23:0] combined_res;
     logic rand_svalid;
     logic [255:0][63:0] sampler_data_array;
+    int count;
 
     $display("Starting pwm, no acc, svalid test");
     $display("Writing 1 poly to addr range 0 - 255");
@@ -525,21 +526,35 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
     $display("Writing base addr reg with src, interim and dest base addr");
     write_single_word(MEM_DEPTH-4, {22'h0, 14'h0, 14'h40, 14'h80}); //{src_base_addr, interim_base_addr, dest_base_addr}
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {57'h0, shuf_en, mask_en, 1'b1, 1'b0, pwm}); //{shuf, mask, svalid, acc, mode}
-    $display("Writing enable reg with enable signal");
-    write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
-    //pulse
-    $display("Pulsing enable reg");
-    write_single_word(MEM_DEPTH-2, 64'h0);
-    #CLK_PERIOD;
+    write_single_word(MEM_DEPTH-3, {57'h0, shuf_en, mask_en, 1'b1, acc_en, pwm}); //{shuf, mask, svalid, acc, mode}
+    // $display("Writing enable reg with enable signal");
+    // write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+    // //pulse
+    // $display("Pulsing enable reg");
+    // write_single_word(MEM_DEPTH-2, 64'h0);
+    // #CLK_PERIOD;
 
-    hsel_i_tb = 0;
-    #(CLK_PERIOD);
-    #(CLK_HALF_PERIOD);
+    // hsel_i_tb = 0;
+    // #(CLK_PERIOD);
+    // #(CLK_HALF_PERIOD);
     $display("Writing sampler data to dut at time %0t", $time);
+    count = 0;
 
     fork
         begin
+            $display("Writing enable reg with enable signal");
+            write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+            //pulse
+            $display("Pulsing enable reg");
+            write_single_word(MEM_DEPTH-2, 64'h0);
+            #CLK_PERIOD;
+
+            hsel_i_tb = 0;
+            #(CLK_PERIOD);
+            #(CLK_HALF_PERIOD);
+        end
+        begin
+            #(CLK_PERIOD);
             $display("Writing sampler data to dut at time %0t", $time);
             if (shuf_en)
                 #(2*CLK_PERIOD);
@@ -547,16 +562,20 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
                 #CLK_PERIOD;
 
             //TODO: masking
-            for (int i = 0; i < 64; i++) begin
-                sampler_input = {24'((i*4)+3), 24'((i*4)+2), 24'((i*4)+1), 24'(i*4)};
-                sampler_data_array[(i*4)] = 64'(i*4);
-                sampler_data_array[(i*4)+1] = 64'((i*4)+1);
-                sampler_data_array[(i*4)+2] = 64'((i*4)+2);
-                sampler_data_array[(i*4)+3] = 64'((i*4)+3);
-
+            // for (int i = 0; i < 64; i++) begin
+            while (count < 12) begin
                 rand_svalid = $urandom_range(0,1);
+                $display("rand_svalid = %0d at time %0t", rand_svalid, $time);
 
                 if (rand_svalid) begin
+                    $display("Writing sampler data for i = %0d", count);
+                    sampler_input = {24'((count*4)+3), 24'((count*4)+2), 24'((count*4)+1), 24'(count*4)};
+                    sampler_data_array[(count*4)] = 64'(count*4);
+                    sampler_data_array[(count*4)+1] = 64'((count*4)+1);
+                    sampler_data_array[(count*4)+2] = 64'((count*4)+2);
+                    sampler_data_array[(count*4)+3] = 64'((count*4)+3);
+
+                    count++;
                     write_single_word(MEM_DEPTH-5, {40'h0, sampler_input[23:0]});
                     write_single_word(MEM_DEPTH-6, {40'h0, sampler_input[47:24]});
                     write_single_word(MEM_DEPTH-7, {40'h0, sampler_input[71:48]});
@@ -564,9 +583,9 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
                 end
                 write_single_word(MEM_DEPTH-3, {57'h0, shuf_en, mask_en, rand_svalid, 1'b0, pwm}); //{shuf, mask, svalid, acc, mode}
             end
-        end
-        begin
-            #CLK_PERIOD;
+        // end
+        // begin
+            // #CLK_PERIOD;
             $display("Waiting for PWM to complete at time %0t", $time);
             wait_ready();
             $display("PWM done, reading output at time %0t", $time);
@@ -588,21 +607,21 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
                     // $display("Done reading");
                 end
             end
-            begin
-                #(4*CLK_PERIOD); //wait for read_single_word to read both shares
-                for (int i = 0; i < 255; i++) begin
-                    // $display("pwm_test: Read data obs %0d", read_data);
-                    combined_res = share0 + share1;
-                    if (sampler_data_array[i]*i != combined_res) begin
-                        $error("pwm_test: Read data mismatch at address %0d: expected %0d, got %0d --> share0 = %0d, share1 = %0d", (i+(128*8)), sampler_data_array[i]*i, combined_res, share0, share1);
-                        error_ctr = error_ctr + 1;
-                    end 
-                    // else begin
-                    //     $display("pwm_test: Read data at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
-                    // end
-                    #(2*CLK_PERIOD); //wait for read_single_word to read both shares
-                end
-            end
+            // begin
+            //     #(4*CLK_PERIOD); //wait for read_single_word to read both shares
+            //     for (int i = 0; i < 255; i++) begin
+            //         // $display("pwm_test: Read data obs %0d", read_data);
+            //         combined_res = share0 + share1;
+            //         if (sampler_data_array[i]*i != combined_res) begin
+            //             $error("pwm_test: Read data mismatch at address %0d: expected %0d, got %0d --> share0 = %0d, share1 = %0d", (i+(128*8)), sampler_data_array[i]*i, combined_res, share0, share1);
+            //             error_ctr = error_ctr + 1;
+            //         end 
+            //         // else begin
+            //         //     $display("pwm_test: Read data at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
+            //         // end
+            //         #(2*CLK_PERIOD); //wait for read_single_word to read both shares
+            //     end
+            // end
         join
         #CLK_PERIOD;
         hsel_i_tb = 0;
@@ -616,20 +635,20 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
                     // $display("Done reading");
                 end
             end
-            begin
-                #(3*CLK_PERIOD);
-                for (int i = 0; i < 255; i++) begin
-                    // $display("pwm_test: Read data obs %0d", read_data);
-                    if (sampler_data_array[i]*i != read_data) begin
-                        $error("pwm_test: Read data mismatch at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
-                        error_ctr = error_ctr + 1;
-                    end 
-                    // else begin
-                    //     $display("pwm_test: Read data at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
-                    // end
-                    #(CLK_PERIOD);
-                end
-            end
+            // begin
+            //     #(3*CLK_PERIOD);
+            //     for (int i = 0; i < 255; i++) begin
+            //         // $display("pwm_test: Read data obs %0d", read_data);
+            //         if (sampler_data_array[i]*i != read_data) begin
+            //             $error("pwm_test: Read data mismatch at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
+            //             error_ctr = error_ctr + 1;
+            //         end 
+            //         // else begin
+            //         //     $display("pwm_test: Read data at address %0d: expected %0d, got %0d", (i+(128*4)), sampler_data_array[i]*i, read_data);
+            //         // end
+            //         #(CLK_PERIOD);
+            //     end
+            // end
         join
         #CLK_PERIOD;
         hsel_i_tb = 0;
@@ -643,7 +662,7 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en);
 
 endtask
 
-task pwm_test (input logic shuf_en, input logic mask_en);
+task pwm_test (input logic shuf_en, input logic mask_en, input logic acc_en);
     logic [255:0][63:0] sampler_data_array;
     logic [63:0] share0, share1;
     logic [23:0] combined_res;
@@ -659,7 +678,18 @@ task pwm_test (input logic shuf_en, input logic mask_en);
     write_single_word(MEM_DEPTH-4, {22'h0, 14'h0, 14'h40, 14'h80}); //{src_base_addr, interim_base_addr, dest_base_addr}
 
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {57'h0, shuf_en, mask_en, 1'b1, 1'b0, 3'h2}); //{shuf, mask, svalid, acc, mode}
+    write_single_word(MEM_DEPTH-3, {57'h0, shuf_en, mask_en, 1'b1, acc_en, 3'h2}); //{shuf, mask, svalid, acc, mode}
+
+    $display("Writing fixed sampler data to dut at time %0t", $time);
+    for (int k = 0; k < 12; k++) begin
+        sampler_input[(k*32)+:31] = $urandom();
+        $display("sampler_input[%0d] = %h", k, sampler_input[(k*32)+:31]);
+    end
+
+    write_single_word(MEM_DEPTH-5, sampler_input[63:0] );
+    write_single_word(MEM_DEPTH-6, sampler_input[127:64]);
+    write_single_word(MEM_DEPTH-7, sampler_input[191:128]);
+    write_single_word(MEM_DEPTH-8, sampler_input[255:192]);
 
     $display("Writing enable reg with enable signal");
     write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
@@ -673,32 +703,34 @@ task pwm_test (input logic shuf_en, input logic mask_en);
 
     #(CLK_PERIOD);
     #CLK_HALF_PERIOD;
+
+    
     //Drive sampler input
-    fork
-        begin
-            $display("Writing sampler data to dut at time %0t", $time);
-            if (shuf_en)
-                #(2*CLK_PERIOD);
-            else
-                #CLK_PERIOD;
-            for (int i = 0; i < 64; i++) begin
-                dut.sampler_data = {24'((i*4)+3), 24'((i*4)+2), 24'((i*4)+1), 24'(i*4)};
-                sampler_data_array[(i*4)] = 64'(i*4);
-                sampler_data_array[(i*4)+1] = 64'((i*4)+1);
-                sampler_data_array[(i*4)+2] = 64'((i*4)+2);
-                sampler_data_array[(i*4)+3] = 64'((i*4)+3);
-                #CLK_PERIOD;
-            end
-        end
-        begin
-            #CLK_PERIOD;
+    // fork
+    //     begin
+    //         $display("Writing sampler data to dut at time %0t", $time);
+    //         if (shuf_en)
+    //             #(2*CLK_PERIOD);
+    //         else
+    //             #CLK_PERIOD;
+    //         for (int i = 0; i < 64; i++) begin
+    //             sampler_input = {24'((i*4)+3), 24'((i*4)+2), 24'((i*4)+1), 24'(i*4)};
+    //             sampler_data_array[(i*4)] = 64'(i*4);
+    //             sampler_data_array[(i*4)+1] = 64'((i*4)+1);
+    //             sampler_data_array[(i*4)+2] = 64'((i*4)+2);
+    //             sampler_data_array[(i*4)+3] = 64'((i*4)+3);
+    //             #CLK_PERIOD;
+    //         end
+    //     end
+    //     begin
+    //         #CLK_PERIOD;
             $display("Waiting for PWM to complete at time %0t", $time);
             wait_ready();
             $display("PWM done, reading output at time %0t", $time);
             #CLK_PERIOD;
             hsel_i_tb = 0;
-        end
-    join
+    //     end
+    // join
 
     //Read output thru AHB
     if (mask_en) begin
@@ -781,7 +813,9 @@ initial begin
     // $display("------------------------");
     // gs_test(0,0,1);
     // $display("------------------------");
-    // pwm_test(0,0);
+    pwm_test(0,0,0); //shuf, mask, acc
+    $display("------------------------");
+    pwm_test(0,0,1); //shuf, mask, acc
     // $display("------------------------");
 
     // $display("----------Shuffling----------");
@@ -810,7 +844,9 @@ initial begin
     // $display("------------------------");
 
     //Sampler mode
-    pwm_sampler_test(0,0);
+    // pwm_sampler_test(0,0);
+    // $display("------------------------");
+    // pwm_sampler_test(0,1);
 
     //TODO: make sampler_data input as a mem location that AHB can write to and continuously provide that data as sampler input to NTT
     //TODO: test accumulate

@@ -72,7 +72,8 @@ always_comb begin
     masking_en = ctrl_data[5];
     pwm_mode = (ctrl_data[2:0] == 3'h2);
 
-    sampler_data = {48'h0, mem[DEPTH-8], 48'h0, mem[DEPTH-7], 48'h0, mem[DEPTH-6], 48'h0, mem[DEPTH-5]}; //TODO: shares
+    sampler_data = masking_en ? {48'h0, mem[DEPTH-8][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-7][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-6][MASKED_REG_SIZE-1:0], 48'h0, mem[DEPTH-5][MASKED_REG_SIZE-1:0]}
+                             : {288'h0, mem[DEPTH-8][REG_SIZE-1:0], mem[DEPTH-7][REG_SIZE-1:0], mem[DEPTH-6][REG_SIZE-1:0], mem[DEPTH-5][REG_SIZE-1:0]};
 end
 
 always_ff @(posedge clk or negedge reset_n) begin: reading_memory

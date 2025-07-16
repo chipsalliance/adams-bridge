@@ -188,8 +188,8 @@ module ntt_wrapper_fpga
         .mode(ntt_mode),
         .ntt_enable(ntt_enable),
         .mlkem(1'b0),
-        .ntt_mem_base_addr(base_addr_data), //(ct_mode ? {14'h0, 14'h40, 14'h80} : {14'h80, 14'h40, 14'h80}), // Base address for NTT memory
-        .pwo_mem_base_addr(base_addr_data), //({14'h0, 14'h40, 14'h80}), // Base address for PWO memory
+        .ntt_mem_base_addr(base_addr_data[41:0]), 
+        .pwo_mem_base_addr(base_addr_data[41:0]),
         .accumulate(ntt_accumulate),
         .sampler_valid(ntt_sampler_valid),
         .shuffle_en(ntt_shuffling_en),
