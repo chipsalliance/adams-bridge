@@ -334,6 +334,16 @@ task pgm_base_addr(input logic [13:0] src, input logic [13:0] interim, input log
     hsel_i_tb = 0;
 endtask
 
+task start_lfsr();
+    $display("Writing LFSR seed and enabling LFSR");
+    write_single_word(MEM_DEPTH-11, {$urandom(), $urandom()}); //LFSR seed 0
+    write_single_word(MEM_DEPTH-10, {$urandom(), $urandom()}); //LFSR seed 0
+    write_single_word(MEM_DEPTH-13, {$urandom(), $urandom()}); //LFSR seed 1
+    write_single_word(MEM_DEPTH-12, {$urandom(), $urandom()}); //LFSR seed 1
+    write_single_word(MEM_DEPTH-9, 64'h1); //enable LFSR
+    write_single_word(MEM_DEPTH-9, 64'h0); //enable LFSR
+endtask
+
 task ct_test (input logic shuf_en);
 
     $display("Starting ct test");
@@ -392,24 +402,24 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en);
     #CLK_PERIOD;
     hsel_i_tb = 0;
 
-    fork
-        begin
+    // fork
+    //     begin
             #(2*CLK_PERIOD);
             $display("Waiting for GS to complete at time %0t", $time);
             wait_ready();
             $display("GS done, reading output at time %0t", $time);
-        end
-        begin
-            for (int k = 0; k < 256; k++) begin
-                write_single_word(MEM_DEPTH-9,  random_tb);
-                write_single_word(MEM_DEPTH-10, rnd_tb[0]);
-                write_single_word(MEM_DEPTH-11, rnd_tb[1]);
-                write_single_word(MEM_DEPTH-12, rnd_tb[2]);
-                write_single_word(MEM_DEPTH-13, rnd_tb[3]);
-                write_single_word(MEM_DEPTH-14, rnd_tb[4]);
-            end
-        end
-    join
+        // end
+        // begin
+        //     for (int k = 0; k < 256; k++) begin
+        //         write_single_word(MEM_DEPTH-9,  random_tb);
+        //         write_single_word(MEM_DEPTH-10, rnd_tb[0]);
+        //         write_single_word(MEM_DEPTH-11, rnd_tb[1]);
+        //         write_single_word(MEM_DEPTH-12, rnd_tb[2]);
+        //         write_single_word(MEM_DEPTH-13, rnd_tb[3]);
+        //         write_single_word(MEM_DEPTH-14, rnd_tb[4]);
+        //     end
+        // end
+    // join
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -608,6 +618,8 @@ initial begin
     pgm_base_addr(14'h0, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
     #CLK_PERIOD;
 
+    start_lfsr();
+
     // ct_test(0);
     // $display("------------------------");
     // pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
@@ -641,7 +653,7 @@ initial begin
     // $display("----------Masking----------");
     // // ct_test(0);
     // $display("------------------------");
-    pwm_test(1,1,0,0);
+    pwm_test(0,1,0,0);
     // $display("------------------------");
     pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
     gs_test(0,1,0); //shuf, mask, check

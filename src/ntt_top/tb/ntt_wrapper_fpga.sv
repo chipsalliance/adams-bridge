@@ -30,7 +30,9 @@ module ntt_wrapper_fpga
         parameter MEM_DATA_WIDTH = 96,
         parameter MASKED_MEM_DATA_WIDTH = 384, // Memory data width for masking
         parameter AHB_ADDR_WIDTH = 14,
-        parameter AHB_DATA_WIDTH = 64 // AHB data width
+        parameter AHB_DATA_WIDTH = 64, // AHB data width
+        parameter RND_W = 236, //5*46 + 6
+        parameter LFSR_W = RND_W / 2
     )
     (
         input wire hclk,
@@ -84,6 +86,11 @@ module ntt_wrapper_fpga
     logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data;
     logic masking_en_ctrl;
     logic accumulate;
+
+    //LFSR signals
+    logic lfsr_enable;
+    logic [1:0][LFSR_W-1:0] lfsr_seed; //2 * 118 bits of seed ==> 4 mem locations
+    logic [RND_W-1:0] rand_bits;
 
     //AHB slv interface
     abr_ahb_slv_sif #(
@@ -177,8 +184,10 @@ module ntt_wrapper_fpga
         .base_addr_data(base_addr_data),
         .masking_en_ctrl(masking_en_ctrl),
         .sampler_data(sampler_data),
-        .random_data(random_data),
-        .rnd_i_data(rnd_i_data)
+        .lfsr_enable(lfsr_enable),
+        .lfsr_seed(lfsr_seed)
+        // .random_data(random_data),
+        // .rnd_i_data(rnd_i_data)
     );
 
     logic ct_mode, gs_mode;
@@ -187,6 +196,38 @@ module ntt_wrapper_fpga
         ct_mode = (ntt_mode == ct);
         gs_mode = (ntt_mode == gs);
     end
+
+abr_prim_lfsr
+#(
+  .LfsrType("FIB_XNOR"),
+  .LfsrDw(LFSR_W),
+  .StateOutDw(LFSR_W)
+) abr_prim_lfsr_inst0 
+(
+  .clk_i(hclk),
+  .rst_b(hreset_n),
+  .seed_en_i(lfsr_enable),
+  .seed_i(lfsr_seed[0]),
+  .lfsr_en_i(1'b1),
+  .entropy_i('0),
+  .state_o(rand_bits[LFSR_W-1:0])
+);
+
+abr_prim_lfsr
+#(
+  .LfsrType("FIB_XNOR"),
+  .LfsrDw(LFSR_W),
+  .StateOutDw(LFSR_W)
+) abr_prim_lfsr_inst1 
+(
+  .clk_i(hclk),
+  .rst_b(hreset_n),
+  .seed_en_i(lfsr_enable),
+  .seed_i(lfsr_seed[1]),
+  .lfsr_en_i(1'b1),
+  .entropy_i('0),
+  .state_o(rand_bits[RND_W-1 : LFSR_W])
+);
 
     ntt_top #(
         .MEM_ADDR_WIDTH(AHB_ADDR_WIDTH)
@@ -203,8 +244,8 @@ module ntt_wrapper_fpga
         .sampler_valid(ntt_sampler_valid),
         .shuffle_en(ntt_shuffling_en),
         .masking_en(ntt_masking_en),
-        .random(random_data),
-        .rnd_i(rnd_i_data),
+        .random(rand_bits[5:0]), //(random_data),
+        .rnd_i(rand_bits[RND_W-1:6]), //(rnd_i_data),
         .mem_wr_req(ntt_mem_wr_req),
         .mem_rd_req(ntt_mem_rd_req),
         .mem_wr_data(ntt_mem_wr_data),

@@ -23,13 +23,16 @@
 // 3. NTT mem wr req sends 64 addresses of 384-bits each. This interface splits them and writes to 4 addresses in the same cycle
 //======================================================================
 
-module ntt_special_mem #(
+module ntt_special_mem 
+#(
     parameter ADDR_WIDTH = 12, //1024 + 3 regs
     parameter AHB_DATA_WIDTH = 64,
     // parameter NTT_ADDR_WIDTH = 15,
     parameter REG_SIZE = 24, // 24 bits per coeff
     parameter MASKED_REG_SIZE = 24*2,
-    parameter NTT_DATA_WIDTH = MASKED_REG_SIZE*8
+    parameter NTT_DATA_WIDTH = MASKED_REG_SIZE*8,
+    parameter RND_W = 236, //5*46 + 6
+    parameter LFSR_W = RND_W / 2
 )
 (
     input wire clk,
@@ -58,8 +61,10 @@ module ntt_special_mem #(
     output logic [AHB_DATA_WIDTH-1:0] enable_data,
     output logic [AHB_DATA_WIDTH-1:0] base_addr_data,
     output logic [NTT_DATA_WIDTH-1:0] sampler_data,
-    output logic [5:0] random_data,
-    output logic [4:0][45:0] rnd_i_data
+    output logic lfsr_enable,
+    output logic [1:0][LFSR_W-1:0] lfsr_seed
+    // output logic [5:0] random_data,
+    // output logic [4:0][45:0] rnd_i_data
 );
 
 localparam DEPTH = 2**ADDR_WIDTH;
@@ -76,8 +81,11 @@ always_comb begin
 
     sampler_data = {288'h0, mem[DEPTH-8][REG_SIZE-1:0], mem[DEPTH-7][REG_SIZE-1:0], mem[DEPTH-6][REG_SIZE-1:0], mem[DEPTH-5][REG_SIZE-1:0]};
 
-    random_data = mem[DEPTH-9][5:0];
-    rnd_i_data = {mem[DEPTH-14][45:0], mem[DEPTH-13][45:0], mem[DEPTH-12][45:0], mem[DEPTH-11][45:0], mem[DEPTH-10][45:0]};
+    // random_data = mem[DEPTH-9][5:0];
+    // rnd_i_data = {mem[DEPTH-14][45:0], mem[DEPTH-13][45:0], mem[DEPTH-12][45:0], mem[DEPTH-11][45:0], mem[DEPTH-10][45:0]};
+    lfsr_enable = mem[DEPTH-9][0];
+    lfsr_seed[0] = LFSR_W'({mem[DEPTH-11], mem[DEPTH-10]});
+    lfsr_seed[1] = LFSR_W'({mem[DEPTH-13], mem[DEPTH-12]});
 end
 
 always_ff @(posedge clk or negedge reset_n) begin: reading_memory
