@@ -87,6 +87,7 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/tb]
     files:
+      - $COMPILE_ROOT/tb/ntt_wrapper_pkg.sv
       - $COMPILE_ROOT/tb/ntt_top_tb.sv
       - $COMPILE_ROOT/tb/ntt_top_tb_fpga.sv
       - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv

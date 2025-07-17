@@ -29,7 +29,7 @@ module ntt_wrapper_fpga
         parameter MEM_ADDR_WIDTH = 14,
         parameter MEM_DATA_WIDTH = 96,
         parameter MASKED_MEM_DATA_WIDTH = 384, // Memory data width for masking
-        parameter AHB_ADDR_WIDTH = 14,
+        parameter AHB_ADDR_WIDTH = 12,
         parameter AHB_DATA_WIDTH = 64, // AHB data width
         parameter RND_W = 236, //5*46 + 6
         parameter LFSR_W = RND_W / 2
@@ -174,8 +174,8 @@ module ntt_wrapper_fpga
         .ahb_data_out(ahb_rdata),
         .ntt_enb(gen_mem_rd_req.rd_wr_en == RW_READ ? 1'b1 : 1'b0),
         .ntt_web(ntt_mem_wr_req.rd_wr_en == RW_WRITE ? 1'b1 : 1'b0),
-        .ntt_rd_addr(11'(gen_mem_rd_req.addr)),
-        .ntt_wr_addr(11'(ntt_mem_wr_req.addr)),
+        .ntt_rd_addr(9'(gen_mem_rd_req.addr)),
+        .ntt_wr_addr(9'(ntt_mem_wr_req.addr)),
         .ntt_data_in(ntt_mem_wr_data),
         .ntt_data_out(ntt_mem_rd_data),
         .ntt_done(ntt_done),
@@ -229,33 +229,33 @@ abr_prim_lfsr
   .state_o(rand_bits[RND_W-1 : LFSR_W])
 );
 
-    ntt_top #(
-        .MEM_ADDR_WIDTH(AHB_ADDR_WIDTH)
-    ) ntt_top_inst0 (
-        .clk(hclk),
-        .reset_n(hreset_n),
-        .zeroize(zeroize),
-        .mode(ntt_mode),
-        .ntt_enable(ntt_enable),
-        .mlkem(1'b0),
-        .ntt_mem_base_addr(base_addr_data[41:0]), 
-        .pwo_mem_base_addr(base_addr_data[41:0]),
-        .accumulate(ntt_accumulate),
-        .sampler_valid(ntt_sampler_valid),
-        .shuffle_en(ntt_shuffling_en),
-        .masking_en(ntt_masking_en),
-        .random(rand_bits[5:0]), //(random_data),
-        .rnd_i(rand_bits[RND_W-1:6]), //(rnd_i_data),
-        .mem_wr_req(ntt_mem_wr_req),
-        .mem_rd_req(ntt_mem_rd_req),
-        .mem_wr_data(ntt_mem_wr_data),
-        .mem_rd_data(ntt_mem_rd_data), //ct, gs, or acc input for pwm
-        .pwm_a_rd_req(pwm_a_rd_req), //TODO: separate mem or same?
-        .pwm_b_rd_req(pwm_b_rd_req),
-        .pwm_a_rd_data(ntt_mem_rd_data),
-        .pwm_b_rd_data(sampler_mode ? sampler_data : ntt_mem_rd_data),
-        .ntt_done(ntt_done),
-        .ntt_busy(),
-        .masking_en_ctrl(masking_en_ctrl)
-    );
+ntt_top #(
+    .MEM_ADDR_WIDTH(AHB_ADDR_WIDTH)
+) ntt_top_inst0 (
+    .clk(hclk),
+    .reset_n(hreset_n),
+    .zeroize(zeroize),
+    .mode(ntt_mode),
+    .ntt_enable(ntt_enable),
+    .mlkem(1'b0),
+    .ntt_mem_base_addr(base_addr_data[41:0]), 
+    .pwo_mem_base_addr(base_addr_data[41:0]),
+    .accumulate(ntt_accumulate),
+    .sampler_valid(ntt_sampler_valid),
+    .shuffle_en(ntt_shuffling_en),
+    .masking_en(ntt_masking_en),
+    .random(rand_bits[5:0]), //(random_data),
+    .rnd_i(rand_bits[RND_W-1:6]), //(rnd_i_data),
+    .mem_wr_req(ntt_mem_wr_req),
+    .mem_rd_req(ntt_mem_rd_req),
+    .mem_wr_data(ntt_mem_wr_data),
+    .mem_rd_data(ntt_mem_rd_data), //ct, gs, or acc input for pwm
+    .pwm_a_rd_req(pwm_a_rd_req), //TODO: separate mem or same?
+    .pwm_b_rd_req(pwm_b_rd_req),
+    .pwm_a_rd_data(ntt_mem_rd_data),
+    .pwm_b_rd_data(sampler_mode ? sampler_data : ntt_mem_rd_data),
+    .ntt_done(ntt_done),
+    .ntt_busy(),
+    .masking_en_ctrl(masking_en_ctrl)
+);
 endmodule

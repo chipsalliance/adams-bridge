@@ -24,6 +24,7 @@
 //======================================================================
 
 module ntt_special_mem 
+    import ntt_wrapper_pkg::*;
 #(
     parameter ADDR_WIDTH = 12, //1024 + 3 regs
     parameter AHB_DATA_WIDTH = 64,
@@ -73,19 +74,17 @@ logic masking_en;
 logic pwm_mode;
 
 always_comb begin
-    base_addr_data = mem[DEPTH-4];
-    ctrl_data = mem[DEPTH-3];
-    enable_data = mem[DEPTH-2];
+    base_addr_data = mem[BASE_ADDR_REG];
+    ctrl_data = mem[CTRL_REG];
+    enable_data = mem[ENABLE_REG];
     masking_en = ctrl_data[5];
     pwm_mode = (ctrl_data[2:0] == 3'h2);
 
-    sampler_data = {288'h0, mem[DEPTH-8][REG_SIZE-1:0], mem[DEPTH-7][REG_SIZE-1:0], mem[DEPTH-6][REG_SIZE-1:0], mem[DEPTH-5][REG_SIZE-1:0]};
+    sampler_data = {288'h0, mem[SAMPLER_INPUT_3_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_2_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_1_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_0_REG][REG_SIZE-1:0]};
 
-    // random_data = mem[DEPTH-9][5:0];
-    // rnd_i_data = {mem[DEPTH-14][45:0], mem[DEPTH-13][45:0], mem[DEPTH-12][45:0], mem[DEPTH-11][45:0], mem[DEPTH-10][45:0]};
-    lfsr_enable = mem[DEPTH-9][0];
-    lfsr_seed[0] = LFSR_W'({mem[DEPTH-11], mem[DEPTH-10]});
-    lfsr_seed[1] = LFSR_W'({mem[DEPTH-13], mem[DEPTH-12]});
+    lfsr_enable = mem[LFSR_EN_REG][0];
+    lfsr_seed[0] = LFSR_W'({mem[LFSR_SEED0_1_REG], mem[LFSR_SEED0_0_REG]});
+    lfsr_seed[1] = LFSR_W'({mem[LFSR_SEED1_1_REG], mem[LFSR_SEED1_0_REG]});
 end
 
 always_ff @(posedge clk or negedge reset_n) begin: reading_memory
@@ -148,7 +147,7 @@ always_ff @(posedge clk or negedge reset_n) begin: writing_memory
             end
         end
 
-        mem[DEPTH-1] <= {{(AHB_DATA_WIDTH-1){1'b0}},ntt_done};
+        mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},ntt_done};
     end
 end
 

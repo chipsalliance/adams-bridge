@@ -38,7 +38,7 @@ module ntt_ahb_mem_adapter
     parameter MEM_ADDR_WIDTH = 14, // Memory address width
     parameter MEM_DATA_WIDTH = 96, // Memory data width
     parameter MASKED_MEM_DATA_WIDTH = 384, // Memory data width for masking
-    parameter AHB_ADDR_WIDTH = 14, // AHB address width
+    parameter AHB_ADDR_WIDTH = 12, // AHB address width
     parameter AHB_DATA_WIDTH = 64 // AHB data width
 )
 (

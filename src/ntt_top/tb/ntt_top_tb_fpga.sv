@@ -27,7 +27,7 @@ module ntt_top_tb_fpga
 
     import ntt_defines_pkg::*;
     import abr_params_pkg::*;
-    
+    import ntt_wrapper_pkg::*;
 #(
     parameter   TEST_VECTOR_NUM = 10,
     parameter   PRIME     = 23'd8380417,
@@ -44,10 +44,6 @@ parameter AHB_HTRANS_IDLE     = 0;
   parameter AHB_HTRANS_BUSY     = 1;
   parameter AHB_HTRANS_NONSEQ   = 2;
   parameter AHB_HTRANS_SEQ      = 3;
-
-  parameter AHB_ADDR_WIDTH = 14;
-  parameter AHB_DATA_WIDTH = 64;
-  parameter MEM_DEPTH = (2**AHB_ADDR_WIDTH);
 
 
 //----------------------------------------------------------------
@@ -137,9 +133,7 @@ dut (
     .hsize_i(hsize_i_tb),
     .hresp_o(hresp_o_tb),
     .hreadyout_o(hreadyout_o_tb),
-    .hrdata_o(hrdata_o_tb) //,
-    // .random(random_tb),
-    // .rnd_i(rnd_tb)
+    .hrdata_o(hrdata_o_tb)
 );
 
 
@@ -237,7 +231,7 @@ begin
 
     while (read_data == 0)
         begin
-        read_single_word(MEM_DEPTH-1); //read the last word, which is the ready flag
+        read_single_word(STATUS_REG); //read the last word, which is the ready flag
         end
     end
 endtask
@@ -262,29 +256,6 @@ task write_single_word(input [31 : 0]  address,
     hwdata_i_tb     <= dword;
     hwrite_i_tb     <= 0;
     htrans_i_tb     <= AHB_HTRANS_IDLE;
-    end
-endtask // write_single_word
-
-//----------------------------------------------------------------
-// write_single_word_blocking()
-//
-// Write the given word to the DUT using the DUT interface.
-//----------------------------------------------------------------
-task write_single_word_blocking(input [31 : 0]  address,
-    input [63 : 0] dword);
-    begin
-    hsel_i_tb       = 1;
-    haddr_i_tb      = address;
-    hwrite_i_tb     = 1;
-    hready_i_tb     = 1;
-    htrans_i_tb     = AHB_HTRANS_NONSEQ;
-    hsize_i_tb      = 3'b011;
-    #(CLK_PERIOD);
-
-    haddr_i_tb      = 'Z;
-    hwdata_i_tb     = dword;
-    hwrite_i_tb     = 0;
-    htrans_i_tb     = AHB_HTRANS_IDLE;
     end
 endtask // write_single_word
 
@@ -328,7 +299,7 @@ endtask
 
 task pgm_base_addr(input logic [13:0] src, input logic [13:0] interim, input logic [13:0] dest);
     $display("Writing base addr reg with src, interim and dest base addr");
-    write_single_word(MEM_DEPTH-4, {22'h0, src, interim, dest}); //{src_base_addr, interim_base_addr, dest_base_addr}
+    write_single_word(BASE_ADDR_REG, {22'h0, src, interim, dest});
 
     #(2*CLK_PERIOD);
     hsel_i_tb = 0;
@@ -336,12 +307,12 @@ endtask
 
 task start_lfsr();
     $display("Writing LFSR seed and enabling LFSR");
-    write_single_word(MEM_DEPTH-11, {$urandom(), $urandom()}); //LFSR seed 0
-    write_single_word(MEM_DEPTH-10, {$urandom(), $urandom()}); //LFSR seed 0
-    write_single_word(MEM_DEPTH-13, {$urandom(), $urandom()}); //LFSR seed 1
-    write_single_word(MEM_DEPTH-12, {$urandom(), $urandom()}); //LFSR seed 1
-    write_single_word(MEM_DEPTH-9, 64'h1); //enable LFSR
-    write_single_word(MEM_DEPTH-9, 64'h0); //enable LFSR
+    write_single_word(LFSR_SEED0_1_REG, {$urandom(), $urandom()}); //LFSR seed 0
+    write_single_word(LFSR_SEED0_0_REG, {$urandom(), $urandom()}); //LFSR seed 0
+    write_single_word(LFSR_SEED1_1_REG, {$urandom(), $urandom()}); //LFSR seed 1
+    write_single_word(LFSR_SEED1_0_REG, {$urandom(), $urandom()}); //LFSR seed 1
+    write_single_word(LFSR_EN_REG, 64'h1); //enable LFSR
+    write_single_word(LFSR_EN_REG, 64'h0); //enable LFSR
 endtask
 
 task ct_test (input logic shuf_en);
@@ -353,18 +324,15 @@ task ct_test (input logic shuf_en);
         write_single_word(i, i);
     end
 
-    // $display("Writing base addr reg with src, interim and dest base addr");
-    // write_single_word(MEM_DEPTH-4, {22'h0, 14'h0, 14'h40, 14'h80}); //src_base_addr, interim_base_addr, dest_base_addr
-
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {56'h0, 1'b0, shuf_en, 1'b0, 1'b1, 1'b0, 3'h0}); //{zeroize, shuf, mask, svalid, acc, mode}
+    write_single_word(CTRL_REG, {56'h0, 1'b0, shuf_en, 1'b0, 1'b1, 1'b0, 3'h0}); //{zeroize, shuf, mask, svalid, acc, mode}
 
     $display("Writing enable reg with enable signal");
-    write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+    write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
 
     //pulse
     $display("Pulsing enable reg");
-    write_single_word(MEM_DEPTH-2, 64'h0);
+    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -391,35 +359,21 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en);
     // end
 
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {56'h0, 1'b0, shuf_en, mask_en, 1'b1, 1'b0, 3'h1}); //{zeroize, shuf, mask, svalid, acc, mode}
+    write_single_word(CTRL_REG, {55'h0, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, 1'b0, 3'h1}); //{sampler mode, zeroize, shuf, mask, svalid, acc, mode}
 
     $display("Writing enable reg with enable signal");
-    write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+    write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
 
     //pulse
-    write_single_word(MEM_DEPTH-2, 64'h0);
+    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
 
-    // fork
-    //     begin
-            #(2*CLK_PERIOD);
-            $display("Waiting for GS to complete at time %0t", $time);
-            wait_ready();
-            $display("GS done, reading output at time %0t", $time);
-        // end
-        // begin
-        //     for (int k = 0; k < 256; k++) begin
-        //         write_single_word(MEM_DEPTH-9,  random_tb);
-        //         write_single_word(MEM_DEPTH-10, rnd_tb[0]);
-        //         write_single_word(MEM_DEPTH-11, rnd_tb[1]);
-        //         write_single_word(MEM_DEPTH-12, rnd_tb[2]);
-        //         write_single_word(MEM_DEPTH-13, rnd_tb[3]);
-        //         write_single_word(MEM_DEPTH-14, rnd_tb[4]);
-        //     end
-        // end
-    // join
+    #(2*CLK_PERIOD);
+    $display("Waiting for GS to complete at time %0t", $time);
+    wait_ready();
+    $display("GS done, reading output at time %0t", $time);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -470,17 +424,17 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en, input logic acc
     end
 
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {55'h0, 1'b1, 1'b0, shuf_en, mask_en, 1'b0, acc_en, pwm}); //{shuf, mask, svalid, acc, mode}
+    write_single_word(CTRL_REG, {55'h0, 1'b1, 1'b0, shuf_en, mask_en, 1'b0, acc_en, pwm}); //{sampler mode, zeroize, shuf, mask, svalid, acc, mode}
     
     count = 0;
 
     fork
         begin
             $display("Writing enable reg with enable signal");
-            write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+            write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
             //pulse
             $display("Pulsing enable reg");
-            write_single_word(MEM_DEPTH-2, 64'h0);
+            write_single_word(ENABLE_REG, 64'h0);
             #CLK_PERIOD;
 
             hsel_i_tb = 0;
@@ -508,12 +462,12 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en, input logic acc
                     sampler_data_array[(count*4)+3] = 64'((count*4)+3);
 
                     count++;
-                    write_single_word(MEM_DEPTH-5, {40'h0, sampler_input[23:0]});
-                    write_single_word(MEM_DEPTH-6, {40'h0, sampler_input[47:24]});
-                    write_single_word(MEM_DEPTH-7, {40'h0, sampler_input[71:48]});
-                    write_single_word(MEM_DEPTH-8, {40'h0, sampler_input[95:72]});
+                    write_single_word(SAMPLER_INPUT_0_REG, {40'h0, sampler_input[23:0]});
+                    write_single_word(SAMPLER_INPUT_1_REG, {40'h0, sampler_input[47:24]});
+                    write_single_word(SAMPLER_INPUT_2_REG, {40'h0, sampler_input[71:48]});
+                    write_single_word(SAMPLER_INPUT_3_REG, {40'h0, sampler_input[95:72]});
                 end
-                write_single_word(MEM_DEPTH-3, {55'h0, 1'b1, 1'b0, shuf_en, mask_en, rand_svalid, acc_en, pwm}); //{shuf, mask, svalid, acc, mode}
+                write_single_word(CTRL_REG, {55'h0, 1'b1, 1'b0, shuf_en, mask_en, rand_svalid, acc_en, pwm}); //{sampler mode, zeroize, shuf, mask, svalid, acc, mode}
             end
         
             $display("Waiting for PWM to complete at time %0t", $time);
@@ -539,14 +493,14 @@ task pwm_test (input logic shuf_en, input logic mask_en, input logic acc_en, inp
     end
 
     $display("Writing ctrl reg with mode and other ctrl signals");
-    write_single_word(MEM_DEPTH-3, {55'h0, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, 3'h2}); //{sampler_mode,zeroize,shuf, mask, svalid, acc, mode}
+    write_single_word(CTRL_REG, {55'h0, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, 3'h2}); //{sampler_mode,zeroize,shuf, mask, svalid, acc, mode}
 
     $display("Writing enable reg with enable signal");
-    write_single_word(MEM_DEPTH-2, {63'h0, 1'b1}); //enable
+    write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
 
     //pulse
     $display("Pulsing enable reg");
-    write_single_word(MEM_DEPTH-2, 64'h0);
+    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -600,7 +554,7 @@ task pwm_test (input logic shuf_en, input logic mask_en, input logic acc_en, inp
 endtask
 
 task zeroize_dut;
-    write_single_word(MEM_DEPTH-3, {56'h0, 1'b1, 7'h0}); //zeroize ctrl reg
+    write_single_word(CTRL_REG, {56'h0, 1'b1, 7'h0}); //zeroize ctrl reg
 endtask
 
 initial begin
