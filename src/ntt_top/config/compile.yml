@@ -91,6 +91,7 @@ targets:
       - $COMPILE_ROOT/tb/ntt_top_tb_fpga.sv
       - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
       - $COMPILE_ROOT/tb/ntt_wrapper.sv
+      - $COMPILE_ROOT/tb/ntt_ahb_slv_sif.sv
       - $COMPILE_ROOT/tb/ntt_special_mem.sv
       - $COMPILE_ROOT/tb/ntt_ahb_mem_adapter.sv
       - $COMPILE_ROOT/tb/ntt_wrapper_fpga.sv

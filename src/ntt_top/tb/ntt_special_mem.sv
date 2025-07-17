@@ -108,7 +108,7 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
         if (ntt_enb) begin
             ntt_data_out <= (masking_en & masking_en_ctrl & !pwm_mode) ? {mem[(ntt_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
                              mem[(ntt_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[ntt_rd_addr*8][MASKED_REG_SIZE-1:0]}
-                           :{mem[(ntt_rd_addr*4) + 3][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 2][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 1][REG_SIZE-1:0], mem[ntt_rd_addr*4][REG_SIZE-1:0]};
+                                                                        : NTT_DATA_WIDTH'({mem[(ntt_rd_addr*4) + 3][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 2][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 1][REG_SIZE-1:0], mem[ntt_rd_addr*4][REG_SIZE-1:0]});
         end
     end
 end

@@ -93,7 +93,7 @@ module ntt_wrapper_fpga
     logic [RND_W-1:0] rand_bits;
 
     //AHB slv interface
-    abr_ahb_slv_sif #(
+    ntt_ahb_slv_sif #(
         .AHB_DATA_WIDTH(AHB_DATA_WIDTH),
         .CLIENT_DATA_WIDTH(AHB_DATA_WIDTH),
         .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
