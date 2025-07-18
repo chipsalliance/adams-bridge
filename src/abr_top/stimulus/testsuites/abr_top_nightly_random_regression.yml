@@ -23,3 +23,4 @@ contents:
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_keygen_test   : { weight 40 }
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_encap_test   : { weight 40 }
         $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_decap_test   : { weight 40 }
+        $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_KEM_randomized_keygen_decap_test   : { weight 40 }
