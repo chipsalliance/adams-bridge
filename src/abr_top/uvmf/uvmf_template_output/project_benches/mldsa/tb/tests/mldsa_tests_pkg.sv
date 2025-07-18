@@ -64,6 +64,8 @@ package mldsa_tests_pkg;
    `include "src/ML_KEM_randomized_keygen_test.svh"
    `include "src/ML_KEM_randomized_encap_test.svh"
    `include "src/ML_KEM_randomized_decap_test.svh"
+   `include "src/ML_KEM_randomized_keygen_decap_test.svh"
+   `include "src/ML_KEM_randomized_all_test.svh"
 
   // pragma uvmf custom package_item_additional begin
   // UVMF_CHANGE_ME : When adding new tests to the src directory

@@ -32,7 +32,8 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
-                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .'
+                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .
+                && mkdir ml-kem/tv'
 global:
   tool:
     vcs:
