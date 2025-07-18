@@ -312,7 +312,6 @@ task start_lfsr();
     write_single_word(LFSR_SEED1_1_REG, {$urandom(), $urandom()}); //LFSR seed 1
     write_single_word(LFSR_SEED1_0_REG, {$urandom(), $urandom()}); //LFSR seed 1
     write_single_word(LFSR_EN_REG, 64'h1); //enable LFSR
-    write_single_word(LFSR_EN_REG, 64'h0); //enable LFSR
 endtask
 
 task ct_test (input logic shuf_en);
@@ -329,10 +328,6 @@ task ct_test (input logic shuf_en);
 
     $display("Writing enable reg with enable signal");
     write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
-
-    //pulse
-    $display("Pulsing enable reg");
-    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -363,9 +358,6 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en);
 
     $display("Writing enable reg with enable signal");
     write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
-
-    //pulse
-    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -432,9 +424,6 @@ task pwm_sampler_test (input logic shuf_en, input logic mask_en, input logic acc
         begin
             $display("Writing enable reg with enable signal");
             write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
-            //pulse
-            $display("Pulsing enable reg");
-            write_single_word(ENABLE_REG, 64'h0);
             #CLK_PERIOD;
 
             hsel_i_tb = 0;
@@ -497,10 +486,6 @@ task pwm_test (input logic shuf_en, input logic mask_en, input logic acc_en, inp
 
     $display("Writing enable reg with enable signal");
     write_single_word(ENABLE_REG, {63'h0, 1'b1}); //enable
-
-    //pulse
-    $display("Pulsing enable reg");
-    write_single_word(ENABLE_REG, 64'h0);
 
     #CLK_PERIOD;
     hsel_i_tb = 0;
@@ -607,10 +592,10 @@ initial begin
     // $display("----------Masking----------");
     // // ct_test(0);
     // $display("------------------------");
-    pwm_test(0,1,0,0);
+    pwm_test(0,1,1,0);
     // $display("------------------------");
-    pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
-    gs_test(0,1,0); //shuf, mask, check
+    // pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr
+    // gs_test(0,1,0); //shuf, mask, check
     // $display("------------------------");
 
     //Sampler mode

@@ -57,6 +57,7 @@ module ntt_ahb_mem_adapter
     //NTT trig interface
     input logic [AHB_DATA_WIDTH-1:0] mem_ctrl_data_i, //ctrl reg
     input logic [AHB_DATA_WIDTH-1:0] mem_enable_data_i, //enable reg
+    input logic lfsr_enable_data_i,
 
     output logic ntt_en_o,
     output mode_t ntt_mode_o,
@@ -65,6 +66,7 @@ module ntt_ahb_mem_adapter
     output logic ntt_masking_en_o,
     output logic ntt_shuffle_en_o,
     output logic zeroize_o,
+    output logic lfsr_enable_o,
     output logic sampler_mode,
     //TODO: random bits inputs
 
@@ -77,6 +79,8 @@ module ntt_ahb_mem_adapter
 );
 
 logic rd_ack, wr_ack;
+logic ntt_en_int, ntt_en_int_f;
+logic lfsr_en_int, lfsr_en_int_f;
 
 //Assign hold
 always_comb begin
@@ -100,7 +104,11 @@ end
 
 //Ctrl and enable data processing
 always_comb begin
-    ntt_en_o = mem_enable_data_i[0]; // Enable NTT
+    ntt_en_int = mem_enable_data_i[0];
+    ntt_en_o = ntt_en_int & ~ntt_en_int_f; // Trigger on rising edge of ntt_en_int
+
+    lfsr_en_int = lfsr_enable_data_i;
+    lfsr_enable_o = lfsr_en_int & ~lfsr_en_int_f; // Trigger on rising edge of lfsr_en_int
 
     ntt_mode_o = mem_ctrl_data_i[2:0]; // Mode of operation
     ntt_accumulate_o = mem_ctrl_data_i[3]; // Accumulate results
@@ -109,6 +117,16 @@ always_comb begin
     ntt_shuffle_en_o = mem_ctrl_data_i[6]; // Shuffle enabled
     zeroize_o = mem_ctrl_data_i[7]; // Zeroize operation
     sampler_mode = mem_ctrl_data_i[8]; // Sampler mode
+end
+
+always_ff @(posedge clk or negedge rst) begin
+    if (!rst) begin
+        ntt_en_int_f <= 1'b0;
+        lfsr_en_int_f <= 1'b0;
+    end else begin
+        ntt_en_int_f <= ntt_en_int;
+        lfsr_en_int_f <= lfsr_en_int;
+    end
 end
 
 endmodule

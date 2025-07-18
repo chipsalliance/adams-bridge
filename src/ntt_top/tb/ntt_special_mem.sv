@@ -62,7 +62,7 @@ module ntt_special_mem
     output logic [AHB_DATA_WIDTH-1:0] enable_data,
     output logic [AHB_DATA_WIDTH-1:0] base_addr_data,
     output logic [NTT_DATA_WIDTH-1:0] sampler_data,
-    output logic lfsr_enable,
+    output logic lfsr_enable_data,
     output logic [1:0][LFSR_W-1:0] lfsr_seed
     // output logic [5:0] random_data,
     // output logic [4:0][45:0] rnd_i_data
@@ -82,7 +82,7 @@ always_comb begin
 
     sampler_data = {288'h0, mem[SAMPLER_INPUT_3_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_2_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_1_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_0_REG][REG_SIZE-1:0]};
 
-    lfsr_enable = mem[LFSR_EN_REG][0];
+    lfsr_enable_data = mem[LFSR_EN_REG][0];
     lfsr_seed[0] = LFSR_W'({mem[LFSR_SEED0_1_REG], mem[LFSR_SEED0_0_REG]});
     lfsr_seed[1] = LFSR_W'({mem[LFSR_SEED1_1_REG], mem[LFSR_SEED1_0_REG]});
 end

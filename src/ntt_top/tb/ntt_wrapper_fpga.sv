@@ -73,6 +73,7 @@ module ntt_wrapper_fpga
     logic [5:0] random_data;
     logic [4:0][45:0]rnd_i_data;
     logic [AHB_DATA_WIDTH-1:0] enable_data;
+    logic lfsr_enable_data;
     logic [AHB_DATA_WIDTH-1:0] base_addr_data;
 
     logic ntt_enable, ntt_accumulate, ntt_sampler_valid, ntt_masking_en, ntt_shuffling_en;
@@ -137,12 +138,14 @@ module ntt_wrapper_fpga
         .err(err),
         .mem_ctrl_data_i(ctrl_data),
         .mem_enable_data_i(enable_data),
+        .lfsr_enable_data_i(lfsr_enable_data),
         .ntt_en_o(ntt_enable),
         .ntt_mode_o(ntt_mode),
         .ntt_accumulate_o(ntt_accumulate),
         .ntt_sampler_valid_o(ntt_sampler_valid),
         .ntt_masking_en_o(ntt_masking_en),
         .ntt_shuffle_en_o(ntt_shuffling_en),
+        .lfsr_enable_o(lfsr_enable),
         .zeroize_o(zeroize),
         .sampler_mode(sampler_mode),
         .ahb_ena(ahb_ena),
@@ -184,7 +187,7 @@ module ntt_wrapper_fpga
         .base_addr_data(base_addr_data),
         .masking_en_ctrl(masking_en_ctrl),
         .sampler_data(sampler_data),
-        .lfsr_enable(lfsr_enable),
+        .lfsr_enable_data(lfsr_enable_data),
         .lfsr_seed(lfsr_seed)
         // .random_data(random_data),
         // .rnd_i_data(rnd_i_data)
