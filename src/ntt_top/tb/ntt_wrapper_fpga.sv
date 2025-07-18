@@ -47,7 +47,10 @@ module ntt_wrapper_fpga
 
         output logic hresp_o,
         output logic hreadyout_o,
-        output logic [AHB_DATA_WIDTH-1:0] hrdata_o
+        output logic [AHB_DATA_WIDTH-1:0] hrdata_o,
+
+        //Trigger interface
+        output logic ntt_trigger_o
     );
 
     logic dv, hld, err, write;
@@ -157,6 +160,8 @@ module ntt_wrapper_fpga
     always_comb begin
         gen_mem_rd_req = (ntt_mode inside {ct, gs}) ? ntt_mem_rd_req : pwm_a_rd_req;
         gen_mem_wr_req = ntt_mem_wr_req;
+
+        ntt_trigger_o = ntt_enable;
     end
 
     //Used by NTT in ct, gs. Also is pwm A mem and pwm wr back mem

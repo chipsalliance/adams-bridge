@@ -133,7 +133,8 @@ dut (
     .hsize_i(hsize_i_tb),
     .hresp_o(hresp_o_tb),
     .hreadyout_o(hreadyout_o_tb),
-    .hrdata_o(hrdata_o_tb)
+    .hrdata_o(hrdata_o_tb),
+    .ntt_trigger_o()
 );
 
 
