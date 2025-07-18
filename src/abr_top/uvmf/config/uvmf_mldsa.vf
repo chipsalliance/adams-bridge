@@ -147,6 +147,7 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond_v2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mult_dsp.sv
@@ -161,10 +162,14 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_twiddle_lookup.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_top.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_BFU_add_sub.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_BFU_add_sub.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_BFU_mult.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_BFU_mult.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_gs_butterfly.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_gs_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_butterfly1x2.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
@@ -259,7 +264,6 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/qvip_ahb_lite
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/hdl_qvip_ahb_lite_slave.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_clk_gen.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_uvm.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/coverage/abr_top_cov_if.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/coverage/abr_top_cov_bind.sv

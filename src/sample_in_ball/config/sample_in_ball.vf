@@ -39,5 +39,4 @@ ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sib_mem.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball_shuffler.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sample_in_ball.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/sample_in_ball/rtl/sib_mem.sv

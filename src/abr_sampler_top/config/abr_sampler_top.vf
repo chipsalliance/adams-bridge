@@ -102,5 +102,4 @@ ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_keccak_2share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3pad.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_top.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
