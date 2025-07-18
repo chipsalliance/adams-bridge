@@ -592,6 +592,7 @@ initial begin
     // $display("----------Masking----------");
     // // ct_test(0);
     // $display("------------------------");
+    pwm_test(0,1,0,0);
     pwm_test(0,1,1,0);
     // $display("------------------------");
     // pgm_base_addr(14'h80, 14'h40, 14'h80); //src_base_addr, interim_base_addr, dest_base_addr

@@ -47,10 +47,7 @@ module ntt_wrapper_fpga
 
         output logic hresp_o,
         output logic hreadyout_o,
-        output logic [AHB_DATA_WIDTH-1:0] hrdata_o //,
-
-        // input wire [5:0] random,
-        // input wire [4:0][MASKED_WIDTH-1:0] rnd_i
+        output logic [AHB_DATA_WIDTH-1:0] hrdata_o
     );
 
     logic dv, hld, err, write;
@@ -84,7 +81,7 @@ module ntt_wrapper_fpga
     //NTT signals
     mem_if_t ntt_mem_wr_req, ntt_mem_rd_req, pwm_a_rd_req, pwm_b_rd_req, gen_mem_rd_req, gen_mem_wr_req;
     logic ntt_done;
-    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data, acc_rd_data;
     logic masking_en_ctrl;
     logic accumulate;
 
@@ -175,12 +172,15 @@ module ntt_wrapper_fpga
         .ahb_addr(ahb_addr),
         .ahb_data_in(ahb_wdata),
         .ahb_data_out(ahb_rdata),
-        .ntt_enb(gen_mem_rd_req.rd_wr_en == RW_READ ? 1'b1 : 1'b0),
-        .ntt_web(ntt_mem_wr_req.rd_wr_en == RW_WRITE ? 1'b1 : 1'b0),
+        .ntt_enb(gen_mem_rd_req.rd_wr_en == RW_READ),
+        .ntt_web(ntt_mem_wr_req.rd_wr_en == RW_WRITE),
         .ntt_rd_addr(9'(gen_mem_rd_req.addr)),
         .ntt_wr_addr(9'(ntt_mem_wr_req.addr)),
         .ntt_data_in(ntt_mem_wr_data),
         .ntt_data_out(ntt_mem_rd_data),
+        .acc_enc((ntt_mem_rd_req.rd_wr_en == RW_READ) && ntt_accumulate),
+        .acc_rd_addr(9'(ntt_mem_rd_req.addr)),
+        .acc_data_out(acc_rd_data),
         .ntt_done(ntt_done),
         .ctrl_data(ctrl_data),
         .enable_data(enable_data),
@@ -189,8 +189,6 @@ module ntt_wrapper_fpga
         .sampler_data(sampler_data),
         .lfsr_enable_data(lfsr_enable_data),
         .lfsr_seed(lfsr_seed)
-        // .random_data(random_data),
-        // .rnd_i_data(rnd_i_data)
     );
 
     logic ct_mode, gs_mode;
@@ -247,12 +245,12 @@ ntt_top #(
     .sampler_valid(ntt_sampler_valid),
     .shuffle_en(ntt_shuffling_en),
     .masking_en(ntt_masking_en),
-    .random(rand_bits[5:0]), //(random_data),
-    .rnd_i(rand_bits[RND_W-1:6]), //(rnd_i_data),
+    .random(rand_bits[5:0]),
+    .rnd_i(rand_bits[RND_W-1:6]),
     .mem_wr_req(ntt_mem_wr_req),
     .mem_rd_req(ntt_mem_rd_req),
     .mem_wr_data(ntt_mem_wr_data),
-    .mem_rd_data(ntt_mem_rd_data), //ct, gs, or acc input for pwm
+    .mem_rd_data(ntt_accumulate ? acc_rd_data : ntt_mem_rd_data), //ct, gs, or acc input for pwm
     .pwm_a_rd_req(pwm_a_rd_req), //TODO: separate mem or same?
     .pwm_b_rd_req(pwm_b_rd_req),
     .pwm_a_rd_data(ntt_mem_rd_data),

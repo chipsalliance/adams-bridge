@@ -56,6 +56,11 @@ module ntt_special_mem
     output logic [NTT_DATA_WIDTH-1:0] ntt_data_out,
     input logic masking_en_ctrl,
 
+    // Accumulate interface
+    input wire acc_enc,
+    input wire [ADDR_WIDTH-4:0] acc_rd_addr,
+    output logic [NTT_DATA_WIDTH-1:0] acc_data_out,
+
     // reg interface
     input logic ntt_done,
     output logic [AHB_DATA_WIDTH-1:0] ctrl_data,
@@ -64,8 +69,6 @@ module ntt_special_mem
     output logic [NTT_DATA_WIDTH-1:0] sampler_data,
     output logic lfsr_enable_data,
     output logic [1:0][LFSR_W-1:0] lfsr_seed
-    // output logic [5:0] random_data,
-    // output logic [4:0][45:0] rnd_i_data
 );
 
 localparam DEPTH = 2**ADDR_WIDTH;
@@ -91,10 +94,12 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
     if (!reset_n) begin
         ahb_data_out <= '0;
         ntt_data_out <= '0;
+        acc_data_out <= '0;
     end
     else if (zeroize) begin
         ahb_data_out <= '0;
         ntt_data_out <= '0;
+        acc_data_out <= '0;
     end
     else begin
         if (ahb_ena) begin
@@ -108,6 +113,12 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
             ntt_data_out <= (masking_en & masking_en_ctrl & !pwm_mode) ? {mem[(ntt_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
                              mem[(ntt_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[ntt_rd_addr*8][MASKED_REG_SIZE-1:0]}
                                                                         : NTT_DATA_WIDTH'({mem[(ntt_rd_addr*4) + 3][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 2][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 1][REG_SIZE-1:0], mem[ntt_rd_addr*4][REG_SIZE-1:0]});
+        end
+
+        if (acc_enc) begin
+            acc_data_out <= (masking_en & pwm_mode) ? {mem[(acc_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
+                             mem[(acc_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[acc_rd_addr*8][MASKED_REG_SIZE-1:0]}
+                                                                        : NTT_DATA_WIDTH'({mem[(acc_rd_addr*4) + 3][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 2][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 1][REG_SIZE-1:0], mem[acc_rd_addr*4][REG_SIZE-1:0]});
         end
     end
 end
@@ -126,6 +137,9 @@ always_ff @(posedge clk or negedge reset_n) begin: writing_memory
     else begin
         if (/*ahb_ena &&*/ ahb_wea) begin
             mem[ahb_addr] <= ahb_data_in;
+            if ((ahb_addr == ENABLE_REG) & ahb_data_in[0]) begin
+                mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Reset status to not done upon new ntt enable
+            end
         end
 
         if (/*ntt_enb &*/ ntt_web) begin
@@ -147,7 +161,10 @@ always_ff @(posedge clk or negedge reset_n) begin: writing_memory
             end
         end
 
-        mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},ntt_done};
+        if (ntt_done) begin
+            mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b1}; // Set status to done
+            mem[ENABLE_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Disable NTT after completion
+        end
     end
 end
 

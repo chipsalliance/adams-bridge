@@ -68,7 +68,6 @@ module ntt_ahb_mem_adapter
     output logic zeroize_o,
     output logic lfsr_enable_o,
     output logic sampler_mode,
-    //TODO: random bits inputs
 
     //Memory interface
     output logic ahb_ena,
