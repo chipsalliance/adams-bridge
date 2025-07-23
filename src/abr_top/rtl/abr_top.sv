@@ -66,8 +66,10 @@ module abr_top
 
   `ifdef CALIPTRA
   // KV interface
-  output kv_read_t kv_read,
-  input kv_rd_resp_t kv_rd_resp,
+  output kv_read_t [2:0] kv_read,
+  input kv_rd_resp_t [2:0] kv_rd_resp,
+  output kv_write_t kv_write,
+  input kv_wr_resp_t kv_wr_resp,
   //PCR Signing
   input pcr_signing_t pcr_signing_data,
   `endif
@@ -353,6 +355,8 @@ abr_ctrl abr_ctrl_inst
 `ifdef CALIPTRA
   .kv_read(kv_read),
   .kv_rd_resp(kv_rd_resp),
+  .kv_write(kv_write),
+  .kv_wr_resp(kv_wr_resp),
   .pcr_signing_data(pcr_signing_data),
 `endif
 
