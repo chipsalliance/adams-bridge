@@ -26,10 +26,11 @@ interface mldsa_top_cov_if
     logic [2 : 0] mldsa_sw_cmd;
     logic zeroize;
     logic pcr_sign_mode;
+    logic pcr_process;
     logic ready;
     logic valid;
 
-    logic mldsa_privkey_lock;
+    logic kv_seed_data_present;
 
     logic error_flag;
     logic pcr_sign_input_invalid;
@@ -41,7 +42,7 @@ interface mldsa_top_cov_if
 
     logic verify_failure;
     logic normcheck_failure;
-    logic [2 : 0] normcheck_mode_failure;
+    logic [2 : 0] normcheck_mode;
     logic makehint_failure;
     logic invalid_hint;
 
@@ -61,9 +62,9 @@ interface mldsa_top_cov_if
         end
     end
 
-    assign mldsa_privkey_lock = mldsa_top.mldsa_ctrl_inst.mldsa_privkey_lock;
+    assign kv_seed_data_present = mldsa_top.mldsa_ctrl_inst.kv_seed_data_present;
 
-    assign error_flag = mldsa_top.mldsa_ctrl_inst.error_flag;
+    assign error_flag = mldsa_top.mldsa_ctrl_inst.error_flag | mldsa_top.mldsa_ctrl_inst.error_flag_reg;
     assign pcr_sign_input_invalid = mldsa_top.mldsa_ctrl_inst.pcr_sign_input_invalid;
     assign skdecode_error = mldsa_top.mldsa_ctrl_inst.skdecode_error_i;
 
@@ -74,57 +75,81 @@ interface mldsa_top_cov_if
 
     assign verify_failure = mldsa_top.mldsa_ctrl_inst.clear_verify_valid;
     assign normcheck_failure = mldsa_top.mldsa_ctrl_inst.normcheck_done_i & mldsa_top.mldsa_ctrl_inst.normcheck_invalid_i;
-    assign normcheck_mode_failure[0] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b00);
-    assign normcheck_mode_failure[1] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b01);
-    assign normcheck_mode_failure[2] = normcheck_failure & (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b10);
+    assign normcheck_mode[0] = (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b00);
+    assign normcheck_mode[1] = (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b01);
+    assign normcheck_mode[2] = (mldsa_top.mldsa_ctrl_inst.normcheck_mode_o == 2'b10);
     assign makehint_failure = mldsa_top.mldsa_ctrl_inst.makehint_done_i & mldsa_top.mldsa_ctrl_inst.makehint_invalid_i;
     assign invalid_hint = mldsa_top.mldsa_ctrl_inst.sigdecode_h_invalid_i;
+
+    always_ff @(posedge clk) begin
+        if (!rst_b) begin
+            pcr_process <= '0;
+        end
+        else if (pcr_sign_mode) begin
+            pcr_process <= '1;
+        end
+        else if (!signing_process & !keygen_signing_process) begin
+            pcr_process <= '0;
+        end
+    end
 
     covergroup mldsa_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
         debugUnlock_or_scan_mode_switch_cp: coverpoint debugUnlock_or_scan_mode_switch;
 
-        mldsa_cmd_cp: coverpoint mldsa_cmd;
+        mldsa_cmd_cp: coverpoint mldsa_cmd {
+            illegal_bins illegal_values = {5, 6, 7};
+        }
         pcr_sign_cp: coverpoint pcr_sign_mode;
         zeroize_cp: coverpoint zeroize;
         ready_cp: coverpoint ready;
         valid_cp: coverpoint valid;
 
-        mldsa_privkey_lock_cp: coverpoint mldsa_privkey_lock;
+        kv_seed_data_present_cp: coverpoint kv_seed_data_present;
 
         error_flag_cp: coverpoint error_flag;
         pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
         skdecode_error_cp: coverpoint skdecode_error;
         verify_failure_cp: coverpoint verify_failure;
-        normcheck_mode_failure_sign_cp: coverpoint normcheck_mode_failure {
+        normcheck_mode_sign_cp: coverpoint normcheck_mode {
             bins mode_0 = {0};
             bins mode_1 = {1};
             bins mode_2 = {2};
         }
-        normcheck_mode_failure_verify_cp: coverpoint normcheck_mode_failure {
+        normcheck_mode_verify_cp: coverpoint normcheck_mode {
             bins mode_0 = {0};
+            illegal_bins unsupported_modes = {1, 2};
         }
         makehint_failure_cp: coverpoint makehint_failure;
         invalid_hint_cp: coverpoint invalid_hint;
+        normcheck_failure_cp: coverpoint normcheck_failure;
 
-        cmd_ready_cp: cross mldsa_sw_cmd, ready;
-        cmd_kv_cp: cross mldsa_cmd, mldsa_privkey_lock;
+        cmd_ready_cp: cross mldsa_sw_cmd, ready{
+            ignore_bins illegal_sw_cmd = binsof(mldsa_sw_cmd) intersect {5, 6, 7};
+        }
+        keygen_kv_cp: cross keygen_process, kv_seed_data_present;
         pcr_ready_cp: cross ready, pcr_sign_mode;
-        pcr_cmd_cp: cross pcr_sign_mode, mldsa_cmd;
+        pcr_cmd_cp: cross pcr_sign_mode, mldsa_cmd_cp{
+            ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
+        }
         zeroize_pcr_cp: cross zeroize, pcr_sign_mode;
-        zeroize_cmd_cp: cross zeroize, mldsa_cmd;
+        zeroize_cmd_cp: cross zeroize, mldsa_cmd_cp{
+            ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
+        }
         zeroize_error_cp: cross zeroize, error_flag;
         zeroize_ready_cp: cross ready, zeroize;
-        pcr_sign_input_invalid_cmd_cp: cross error_flag, mldsa_cmd;
+        pcr_sign_input_invalid_cmd_cp: cross error_flag, mldsa_cmd_cp{
+            ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
+        }
         error_keygen_cp: cross error_flag, keygen_process;
         error_signing_cp: cross error_flag, signing_process;
         error_verifying_cp: cross error_flag, verifying_process;
         error_keygen_signing_cp: cross error_flag, keygen_signing_process;
 
-        normcheck_signing_failure_cp: cross normcheck_mode_failure_sign_cp, signing_process;
-        normcheck_verifying_failure_cp: cross normcheck_mode_failure_verify_cp, verifying_process;
-        normcheck_pcr_failure_cp: cross normcheck_mode_failure_sign_cp, pcr_sign_mode;
-        makehint_pcr_failure_cp: cross makehint_failure, pcr_sign_mode;
+        normcheck_signing_failure_cp: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (signing_process);
+        normcheck_verifying_failure_cp: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (verifying_process);
+        normcheck_pcr_failure_cp: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (pcr_process);
+        makehint_pcr_failure_cp: cross makehint_failure_cp, pcr_process;
 
     endgroup
 
