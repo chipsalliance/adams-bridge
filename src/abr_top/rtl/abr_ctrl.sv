@@ -167,8 +167,10 @@ module abr_ctrl
 
   `ifdef CALIPTRA
   // KV interface
-  output kv_read_t kv_read,
-  input kv_rd_resp_t kv_rd_resp,
+  output kv_read_t [2:0] kv_read,
+  input kv_rd_resp_t [2:0] kv_rd_resp,
+  output kv_write_t kv_write,
+  input kv_wr_resp_t kv_wr_resp,
   //PCR Signing
   input pcr_signing_t pcr_signing_data,
   `endif
@@ -184,99 +186,216 @@ module abr_ctrl
 
   abr_reg__in_t abr_reg_hwif_in;
   abr_reg__out_t abr_reg_hwif_out;
+  abr_scratch_reg_u abr_scratch_reg;
   logic abr_ready;
   logic mldsa_valid_reg;
   logic mlkem_valid_reg;
-  logic mldsa_privkey_lock;
-  logic kv_seed_data_present;
+  logic mldsa_privkey_lock, mlkem_dk_lock;
+  logic kv_mldsa_seed_data_present, kv_mlkem_seed_data_present, kv_mlkem_msg_data_present;
+  logic kv_mlkem_msg_write_en;
+  logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset;
+  logic [DATA_WIDTH-1:0] kv_mlkem_msg_write_data;
 
   logic external_mu;
   logic external_mu_mode, external_mu_mode_nxt;
 
   `ifdef CALIPTRA
-//Custom keyvault logic for Caliptra
-
-  logic kv_seed_write_en;
-  logic [$clog2(SEED_NUM_DWORDS)-1:0] kv_seed_write_offset;
-  logic [DATA_WIDTH-1:0] kv_seed_write_data;
-  kv_read_ctrl_reg_t kv_seed_read_ctrl_reg;
-  kv_error_code_e kv_seed_error;
-  logic kv_seed_ready, kv_seed_done;
-  //KV Seed Data Present
-  logic kv_seed_data_present_set, kv_seed_data_present_reset;
+  //Custom keyvault logic for Caliptra
+  logic kv_mldsa_seed_write_en;
+  logic [$clog2(SEED_NUM_DWORDS)-1:0] kv_mldsa_seed_write_offset;
+  logic [DATA_WIDTH-1:0] kv_mldsa_seed_write_data;
+  logic kv_mlkem_seed_write_en;
+  logic [$clog2(2*SEED_NUM_DWORDS)-1:0] kv_mlkem_seed_write_offset;
+  logic [DATA_WIDTH-1:0] kv_mlkem_seed_write_data;
+  kv_read_ctrl_reg_t kv_mldsa_seed_read_ctrl_reg;
+  kv_read_ctrl_reg_t kv_mlkem_seed_read_ctrl_reg;
+  kv_read_ctrl_reg_t kv_mlkem_msg_read_ctrl_reg;
+  kv_write_ctrl_reg_t kv_mlkem_sharedkey_write_ctrl_reg;
+  kv_error_code_e kv_mldsa_seed_error;
+  kv_error_code_e kv_mlkem_seed_error;
+  kv_error_code_e kv_mlkem_msg_error;
+  kv_error_code_e kv_mlkem_sharedkey_error;
+  logic kv_mldsa_seed_ready, kv_mldsa_seed_done;
+  logic kv_mlkem_seed_ready, kv_mlkem_seed_done;
+  logic kv_mlkem_msg_ready, kv_mlkem_msg_done;
+  logic kv_mlkem_sharedkey_ready, kv_mlkem_sharedkey_done;
+  logic kv_mldsa_seed_data_present_set;
+  logic kv_mlkem_seed_data_present_set;
+  logic kv_mlkem_msg_data_present_set;
+  logic kv_data_present_reset;
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
+  logic dest_keyvault;
+  logic kv_dest_data_avail;
 
-  always_comb begin: mldsa_kv_ctrl_reg
-    //ready when fsm is not busy
-    abr_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
-    //ready when fsm is not busy
-    abr_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
-    //set valid when fsm is done
-    abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
-    //clear valid when new request is made
-    abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
-    //clear enable when busy
-    abr_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
-  end
+  logic [SHAREDKEY_NUM_DWORDS-1:0][3:0][7:0] mlkem_sharedkey_data;
 
-  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, abr_reg_hwif_out)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mldsa_seed, abr_reg_hwif_in)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_seed, abr_reg_hwif_in)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_msg, abr_reg_hwif_in)
+  `CALIPTRA_KV_WRITE_STATUS_ASSIGN(kv_mlkem_sharedkey, abr_reg_hwif_in)
+  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mldsa_seed_read_ctrl_reg, kv_mldsa_seed_rd_ctrl, abr_reg_hwif_out)
+  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_seed_read_ctrl_reg, kv_mlkem_seed_rd_ctrl, abr_reg_hwif_out)
+  `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_msg_read_ctrl_reg,  kv_mlkem_msg_rd_ctrl, abr_reg_hwif_out)
+  `CALIPTRA_KV_WRITE_CTRL_REG2STRUCT(kv_mlkem_sharedkey_write_ctrl_reg,  kv_mlkem_sharedkey_wr_ctrl, abr_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
-  always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
-  always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
+  always_comb kv_mldsa_seed_data_present_set = kv_mldsa_seed_read_ctrl_reg.read_en | pcr_sign_mode;
+  always_comb kv_mlkem_seed_data_present_set = kv_mlkem_seed_read_ctrl_reg.read_en;
+  always_comb kv_mlkem_msg_data_present_set = kv_mlkem_msg_read_ctrl_reg.read_en;
+  always_comb kv_data_present_reset = mldsa_valid_reg;
 
-  //Read SEED
+  //Read ML-DSA SEED
   kv_read_client #(
     .DATA_WIDTH(SEED_NUM_DWORDS*32),
     .PAD(0)
   )
-  mldsa_seed_kv_read
+  kv_mldsa_seed_read_inst
   (
     .clk(clk),
     .rst_b(rst_b),
     .zeroize(zeroize),
 
     //client control register
-    .read_ctrl_reg(kv_seed_read_ctrl_reg),
+    .read_ctrl_reg(kv_mldsa_seed_read_ctrl_reg),
 
     //interface with kv
-    .kv_read(kv_read),
-    .kv_resp(kv_rd_resp),
+    .kv_read(kv_read[0]),
+    .kv_resp(kv_rd_resp[0]),
 
     //interface with client
-    .write_en(kv_seed_write_en),
-    .write_offset(kv_seed_write_offset),
-    .write_data(kv_seed_write_data),
+    .write_en(kv_mldsa_seed_write_en),
+    .write_offset(kv_mldsa_seed_write_offset),
+    .write_data(kv_mldsa_seed_write_data),
 
-    .error_code(kv_seed_error),
-    .kv_ready(kv_seed_ready),
-    .read_done(kv_seed_done)
+    .error_code(kv_mldsa_seed_error),
+    .kv_ready(kv_mldsa_seed_ready),
+    .read_done(kv_mldsa_seed_done)
+  );
+
+  //Read ML-KEM SEED
+  kv_read_client #(
+    .DATA_WIDTH(2*SEED_NUM_DWORDS*32),
+    .PAD(0)
+  )
+  kv_mlkem_seed_read_inst
+  (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize),
+
+    //client control register
+    .read_ctrl_reg(kv_mlkem_seed_read_ctrl_reg),
+
+    //interface with kv
+    .kv_read(kv_read[1]),
+    .kv_resp(kv_rd_resp[1]),
+
+    //interface with client
+    .write_en(kv_mlkem_seed_write_en),
+    .write_offset(kv_mlkem_seed_write_offset),
+    .write_data(kv_mlkem_seed_write_data),
+
+    .error_code(kv_mlkem_seed_error),
+    .kv_ready(kv_mlkem_seed_ready),
+    .read_done(kv_mlkem_seed_done)
+  );
+
+  //Read ML-KEM SEED
+  kv_read_client #(
+    .DATA_WIDTH(MLKEM_MSG_MEM_NUM_DWORDS*32),
+    .PAD(0)
+  )
+  kv_mlkem_msg_read_inst
+  (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize),
+
+    //client control register
+    .read_ctrl_reg(kv_mlkem_msg_read_ctrl_reg),
+
+    //interface with kv
+    .kv_read(kv_read[2]),
+    .kv_resp(kv_rd_resp[2]),
+
+    //interface with client
+    .write_en(kv_mlkem_msg_write_en),
+    .write_offset(kv_mlkem_msg_write_offset),
+    .write_data(kv_mlkem_msg_write_data),
+
+    .error_code(kv_mlkem_msg_error),
+    .kv_ready(kv_mlkem_msg_ready),
+    .read_done(kv_mlkem_msg_done)
+  );
+
+kv_write_client #(
+  .DATA_WIDTH(SHAREDKEY_NUM_DWORDS*32),
+  .KV_WRITE_SWAP_DWORDS(0)
+)
+kv_mlkem_sharedkey_write_inst
+(
+  .clk(clk),
+  .rst_b(rst_b),
+  .zeroize(zeroize),
+
+  //client control register
+  .write_ctrl_reg(kv_mlkem_sharedkey_write_ctrl_reg),
+  .num_dwords(SHAREDKEY_NUM_DWORDS[3:0]), 
+
+  //interface with kv
+  .kv_write(kv_write),
+  .kv_resp(kv_wr_resp),
+
+  //interface with client
+  .dest_keyvault(dest_keyvault),
+  .dest_data_avail(kv_dest_data_avail),
+  .dest_data(mlkem_sharedkey_data),
+
+  .error_code(kv_mlkem_sharedkey_error),
+  .kv_ready(kv_mlkem_sharedkey_ready),
+  .dest_done(kv_mlkem_sharedkey_done)
 );
+//Swizzle the data to match KV endianness
+always_comb begin
+  for(int d = 0; d < SHAREDKEY_NUM_DWORDS; d++) begin
+    for(int b = 0; b < 4; b++) begin
+      mlkem_sharedkey_data[d][b] = abr_scratch_reg.mlkem_enc.shared_key[d][31-(b*8) -: 8];
+    end
+  end
+end
 
-always_ff @(posedge clk or negedge rst_b) begin : mldsa_kv_reg
-  if (!rst_b)
-    kv_seed_data_present <= '0;
-  else if (zeroize)
-    kv_seed_data_present <= '0;
-  else begin
-    kv_seed_data_present <= kv_seed_data_present_set ? '1 :
-                            kv_seed_data_present_reset ? '0 : kv_seed_data_present;
+always_ff @(posedge clk or negedge rst_b) begin : abr_kv_reg
+  if (!rst_b) begin
+    kv_mldsa_seed_data_present <= '0;
+    kv_mlkem_seed_data_present <= '0;
+    kv_mlkem_msg_data_present <= '0;
+  end else if (zeroize | kv_data_present_reset) begin
+    kv_mldsa_seed_data_present <= '0;
+    kv_mlkem_seed_data_present <= '0;
+    kv_mlkem_msg_data_present <= '0;
+  end else begin
+    kv_mldsa_seed_data_present <=  kv_mldsa_seed_data_present_set ? '1 : kv_mldsa_seed_data_present;
+    kv_mlkem_seed_data_present <=  kv_mlkem_seed_data_present_set ? '1 : kv_mlkem_seed_data_present;
+    kv_mlkem_msg_data_present  <=  kv_mlkem_msg_data_present_set ? '1 : kv_mlkem_msg_data_present;
   end
 end
 
 always_comb pcr_sign_mode = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 
 `else
-always_comb begin: mldsa_kv_ctrl_reg
-  abr_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = '0;
-  abr_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = '0;
-  abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = '0;
-  abr_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = '0;
-  abr_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
-end
+  `CALIPTRA_KV_RD_TIEOFF(kv_mldsa_seed, abr_reg_hwif_in)
+  `CALIPTRA_KV_RD_TIEOFF(kv_mlkem_seed, abr_reg_hwif_in)
+  `CALIPTRA_KV_RD_TIEOFF(kv_mlkem_msg, abr_reg_hwif_in)
+  `CALIPTRA_KV_WR_TIEOFF(kv_mlkem_sharedkey, abr_reg_hwif_in)
 
-always_comb kv_seed_data_present = '0;
+always_comb kv_mldsa_seed_data_present = '0;
+always_comb kv_mlkem_seed_data_present = '0;
+always_comb kv_mlkem_msg_data_present = '0;
+
+always_comb kv_mlkem_msg_write_en = '0;
+always_comb kv_mlkem_msg_write_offset = '0;
+always_comb kv_mlkem_msg_write_data = '0;
 `endif
 
   mldsa_cmd_e mldsa_cmd_reg;
@@ -356,7 +475,6 @@ always_comb kv_seed_data_present = '0;
   logic msg_valid;
 
   mldsa_signature_u signature_reg;
-  abr_scratch_reg_u abr_scratch_reg;
 
   //signature and verify validity checks
   logic signature_valid, set_signature_valid, clear_signature_valid;
@@ -370,7 +488,7 @@ always_comb kv_seed_data_present = '0;
   logic [ABR_NUM_NTT-1:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
-  logic mldsa_status_done_d, mldsa_status_done_p;
+  logic abr_status_done;
 
   logic set_entropy;
   logic [7:0][63:0] lfsr_entropy_reg;
@@ -389,6 +507,7 @@ always_comb kv_seed_data_present = '0;
 
   logic [1:0] skencode_keymem_we_bank, pwr2rnd_keymem_we_bank, api_keymem_we_bank;
   logic [1:0] mlkem_api_dk_we_bank, mlkem_api_ek_we_bank, mlkem_api_ct_we_bank, mlkem_api_msg_we_bank;
+  logic [DATA_WIDTH-1:0] mlkem_msg_wdata;
   logic [1:0] compress_keymem_we_bank, compress_keymem_re_bank;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_waddr, api_sk_raddr;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_mem_waddr, api_sk_mem_raddr;
@@ -473,7 +592,20 @@ always_comb kv_seed_data_present = '0;
   assign abr_reg_hwif_in_o = abr_reg_hwif_in;
   assign abr_reg_hwif_out = abr_reg_hwif_out_i;
 
+  //ABR Ready allows writes to api registers
+  //No writes allowed during operation or when keyvault reads are in progress
+  `ifdef CALIPTRA
+  always_comb abr_ready = (abr_prog_cntr == MLDSA_RESET) & 
+                          ~kv_mlkem_seed_write_en &
+                          ~kv_mlkem_msg_write_en &
+                          ~kv_mldsa_seed_write_en;
+
+  always_comb kv_dest_data_avail = dest_keyvault & 
+                                   ((mlkem_encaps_process & mlkem_encaps_done) |
+                                    (mlkem_decaps_process & mlkem_decaps_done));   
+  `else
   always_comb abr_ready = (abr_prog_cntr == MLDSA_RESET);
+  `endif
 
   //without zeroize to make it more complex
   always_ff @(posedge clk or negedge rst_b) begin
@@ -507,10 +639,10 @@ always_comb kv_seed_data_present = '0;
 
   always_comb begin : ABR_REG_HWIF_IN_ASSIGN
     //MLDSA
-    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
-    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
-    abr_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
-    abr_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = '0;
+    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = MLDSA_CORE_NAME[31:0];
+    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = MLDSA_CORE_NAME[63:32];
+    abr_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = MLDSA_CORE_VERSION[31:0];
+    abr_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = MLDSA_CORE_VERSION[63:32];
 
     abr_reg_hwif_in.MLDSA_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
@@ -528,11 +660,11 @@ always_comb kv_seed_data_present = '0;
       mldsa_seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_seed_write_en & (kv_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_mldsa_seed_write_en & (kv_mldsa_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
-                                                      kv_seed_write_data;
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_seed_data_present_reset | (kv_seed_error == KV_READ_FAIL);
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = abr_ready & ~kv_seed_data_present;
+                                                      kv_mldsa_seed_write_data;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_data_present_reset | (kv_mldsa_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = abr_ready & ~kv_mldsa_seed_data_present;
       `else
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = '0;
@@ -584,20 +716,28 @@ always_comb kv_seed_data_present = '0;
     abr_reg_hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr = zeroize;
 
     //MLKEM
-    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = '0; //FIXME need this?
-    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = '0; //FIXME need this?
-    abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = '0; //FIXME need this?
-    abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = '0; //FIXME need this?
+    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = MLKEM_CORE_NAME[31:0];
+    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = MLKEM_CORE_NAME[63:32];
+    abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = MLKEM_CORE_VERSION[31:0];
+    abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = MLKEM_CORE_VERSION[63:32];
 
     abr_reg_hwif_in.MLKEM_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mlkem_valid_reg;
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
+      `ifdef CALIPTRA
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == dword))) & ~zeroize;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = kv_mlkem_seed_write_data;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | kv_data_present_reset | (kv_mlkem_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready & ~kv_mlkem_seed_data_present;
+      `else
+      mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = '0;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = '0;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready;
+      `endif
     end
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
@@ -606,7 +746,12 @@ always_comb kv_seed_data_present = '0;
 
     for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
       abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_ack = abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req & ~abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req_is_wr;
+      `ifdef CALIPTRA
+      abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_data = mlkem_valid_reg & ~dest_keyvault & ~kv_mlkem_seed_data_present & ~kv_mlkem_msg_data_present ? 
+                                                        abr_scratch_reg.mlkem_enc.shared_key[dword] : '0;
+      `else
       abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_data = mlkem_valid_reg ? abr_scratch_reg.mlkem_enc.shared_key[dword] : '0;
+      `endif
     end
   end
 
@@ -630,7 +775,7 @@ always_comb kv_seed_data_present = '0;
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = ciphertext_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_ack = decapskey_rd_ack;
     abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
-    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack & mlkem_valid_reg & ~mlkem_dk_lock ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = encapskey_rd_ack;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = encapskey_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
@@ -640,34 +785,30 @@ always_comb kv_seed_data_present = '0;
   end
 
   //Generate a pulse to trig the interrupt after finishing the operation
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b)
-      mldsa_status_done_d <= 1'b0;
-    else if (zeroize)
-      mldsa_status_done_d <= 1'b0;
-    else
-      mldsa_status_done_d <= abr_reg_hwif_in.MLDSA_STATUS.VALID.next;
-  end
-
-  always_comb mldsa_status_done_p = abr_reg_hwif_in.MLDSA_STATUS.VALID.next & !mldsa_status_done_d;
+  always_comb abr_status_done = (abr_reg_hwif_in.MLDSA_STATUS.VALID.next & ~abr_reg_hwif_out.MLDSA_STATUS.VALID.value) || 
+                                (abr_reg_hwif_in.MLKEM_STATUS.VALID.next & ~abr_reg_hwif_out.MLKEM_STATUS.VALID.value);
 
   assign error_intr = abr_reg_hwif_out.intr_block_rf.error_global_intr_r.intr;
   assign notif_intr = abr_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
 
   always_comb begin
     abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
-    abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = mldsa_status_done_p;
+    abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = abr_status_done;
   end
 
   //Private Key and Decaps Key External Memory
   always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
-    if (!rst_b)
+    if (!rst_b) begin
       mldsa_privkey_lock <= '1;
-    else if (zeroize)
+      mlkem_dk_lock <= '1;
+    end else if (zeroize) begin
       mldsa_privkey_lock <= '1;
+      mlkem_dk_lock <= '1;
+    end else begin
     //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
-    else if (~kv_seed_data_present & (mldsa_keygen_process & mldsa_keygen_done))
-      mldsa_privkey_lock <= '0;
+      if (~kv_mldsa_seed_data_present & (mldsa_keygen_process & mldsa_keygen_done)) mldsa_privkey_lock <= '0;
+      if (~kv_mlkem_seed_data_present & (mlkem_keygen_process & mlkem_keygen_done)) mlkem_dk_lock <= '0;
+    end
   end
   
   always_comb api_keymem_rd_vld = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
@@ -689,7 +830,7 @@ always_comb kv_seed_data_present = '0;
   assign api_sk_mem_raddr = api_sk_raddr - 'd32;
 
   always_comb mlkem_api_dk_mem_rd_vld = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr & 
-                                        mlkem_valid_reg; //modify the lock for mlkem reads
+                                        mlkem_valid_reg & ~mlkem_dk_lock;
 
   always_comb mlkem_api_dk_waddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
   always_comb mlkem_api_dk_raddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
@@ -707,7 +848,7 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_dk_mem_raddr = mlkem_api_dk_raddr;
 
   always_comb mlkem_api_ek_mem_rd_vld = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr & 
-                                        mlkem_valid_reg; //modify the lock for mlkem reads
+                                        mlkem_valid_reg;
 
   always_comb mlkem_api_ek_waddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
   always_comb mlkem_api_ek_raddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
@@ -725,7 +866,7 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
   always_comb mlkem_api_ct_mem_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & 
-                                                mlkem_valid_reg; //modify the lock for mlkem reads
+                                        mlkem_valid_reg;
 
   always_comb mlkem_api_ct_waddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
   always_comb mlkem_api_ct_raddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
@@ -737,10 +878,11 @@ always_comb kv_seed_data_present = '0;
   assign mlkem_api_ct_mem_waddr = mlkem_api_ct_waddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   assign mlkem_api_ct_mem_raddr = mlkem_api_ct_raddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
-  always_comb mlkem_api_msg_waddr = {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
-  always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
+  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,kv_mlkem_msg_write_offset} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
+  always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & ~kv_mlkem_msg_data_present & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
-
+  always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
+  
   always_comb sampler_sk_rd_en = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) & ~msg_hold |
                                  (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) & ~msg_hold |
                                  (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]}) & ~msg_hold;
@@ -758,11 +900,11 @@ always_comb kv_seed_data_present = '0;
       mlkem_api_dk_we_bank[i] = abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack & abr_ready & mlkem_api_dk_mem_wr_dec & (mlkem_api_dk_mem_waddr[0] == i);
       mlkem_api_ek_we_bank[i] = abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack & abr_ready & mlkem_api_ek_mem_wr_dec & (mlkem_api_ek_mem_waddr[0] == i);
       mlkem_api_ct_we_bank[i] = abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack & abr_ready & mlkem_api_ct_mem_wr_dec & (mlkem_api_ct_mem_waddr[0] == i);
-      mlkem_api_msg_we_bank[i] = abr_reg_hwif_in.MLKEM_MSG.wr_ack & abr_ready & mlkem_api_msg_mem_wr_dec & (mlkem_api_msg_waddr[0] == i);
+      mlkem_api_msg_we_bank[i] = ((abr_reg_hwif_in.MLKEM_MSG.wr_ack & abr_ready & mlkem_api_msg_mem_wr_dec) | kv_mlkem_msg_write_en) & (mlkem_api_msg_waddr[0] == i);
       compress_keymem_we_bank[i] = compress_api_rw_en_i[0] & (compress_api_rw_addr_i[0] == i);
 
       sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | compress_keymem_we_bank[i] |api_keymem_we_bank[i] |
-                           mlkem_api_dk_we_bank[i] | mlkem_api_ek_we_bank[i] | mlkem_api_ct_we_bank[i] | mlkem_api_msg_we_bank[i] | zeroize_mem_we;
+                          mlkem_api_dk_we_bank[i] | mlkem_api_ek_we_bank[i] | mlkem_api_ct_we_bank[i] | mlkem_api_msg_we_bank[i] | zeroize_mem_we;
 
       sk_ram_waddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:1] ) |
@@ -781,7 +923,7 @@ always_comb kv_seed_data_present = '0;
                         ({DATA_WIDTH{mlkem_api_dk_we_bank[i]}} & abr_reg_hwif_out.MLKEM_DECAPS_KEY.wr_data) |
                         ({DATA_WIDTH{mlkem_api_ek_we_bank[i]}} & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.wr_data) |
                         ({DATA_WIDTH{mlkem_api_ct_we_bank[i]}} & abr_reg_hwif_out.MLKEM_CIPHERTEXT.wr_data) |
-                        ({DATA_WIDTH{mlkem_api_msg_we_bank[i]}} & abr_reg_hwif_out.MLKEM_MSG.wr_data);         
+                        ({DATA_WIDTH{mlkem_api_msg_we_bank[i]}} & mlkem_msg_wdata);         
     end
   end     
   
@@ -856,14 +998,11 @@ always_comb kv_seed_data_present = '0;
     end else if (zeroize) begin
       api_reg_rdata <= '0;
     end else begin
-      unique case (1'b1)
-        (api_keymem_rd_vld & api_sk_reg_rd_dec):             api_reg_rdata <= abr_scratch_reg.raw[api_sk_reg_raddr];
-        (mlkem_api_dk_mem_rd_vld & mlkem_api_dk_reg_rd_dec): api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_dk_reg_raddr];
-        (mlkem_api_ek_mem_rd_vld & mlkem_api_ek_reg_rd_dec): api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_raddr];    
-        (mldsa_valid_reg & api_pubkey_rho_dec):              api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
-        (mldsa_valid_reg & api_sig_reg_re):                  api_reg_rdata <= signature_reg_rdata;
-        default:                                             api_reg_rdata <= '0;
-      endcase
+      if (api_keymem_rd_vld & api_sk_reg_rd_dec)             api_reg_rdata <= abr_scratch_reg.raw[api_sk_reg_raddr];
+      if (mlkem_api_dk_mem_rd_vld & mlkem_api_dk_reg_rd_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_dk_reg_raddr];
+      if (mlkem_api_ek_mem_rd_vld & mlkem_api_ek_reg_rd_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_raddr];    
+      if (mldsa_valid_reg & api_pubkey_rho_dec)              api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
+      if (mldsa_valid_reg & api_sig_reg_re)                  api_reg_rdata <= signature_reg_rdata;
     end
   end
 
@@ -1182,9 +1321,14 @@ always_comb kv_seed_data_present = '0;
     end
     else begin
       for (int i = 0; i < SEED_NUM_DWORDS; i++) begin
-        if (abr_reg_hwif_out.MLKEM_SEED_Z[i].req & abr_reg_hwif_out.MLKEM_SEED_Z[i].req_is_wr & abr_ready) begin
+        if (abr_reg_hwif_out.MLKEM_SEED_Z[i].req & abr_reg_hwif_out.MLKEM_SEED_Z[i].req_is_wr & abr_ready & ~kv_mlkem_seed_data_present) begin
           abr_scratch_reg.mlkem_enc.seed_z[i] <= abr_reg_hwif_out.MLKEM_SEED_Z[i].wr_data;
         end
+        `ifdef CALIPTRA
+        if (kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == (SEED_NUM_DWORDS + i))) begin
+          abr_scratch_reg.mlkem_enc.seed_z[i] <= kv_mlkem_seed_write_data;
+        end
+        `endif
       end
     end
   end
@@ -1386,6 +1530,7 @@ always_comb kv_seed_data_present = '0;
           {MLKEM_NONE,MLDSA_SIGN} : begin  // signing
             abr_prog_cntr_nxt = MLDSA_SIGN_S;
             mldsa_signing_process_nxt  = 1;
+            set_signature_valid = 1;
             set_entropy = 1;
             external_mu_mode_nxt = external_mu;
           end
@@ -1630,6 +1775,8 @@ always_comb begin
     MLDSA_MSG_DONE: begin
       stream_msg_done = 1;
       stream_msg_fsm_ns = MLDSA_MSG_IDLE;
+    end
+    default: begin
     end
   endcase
 end

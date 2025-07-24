@@ -857,6 +857,86 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_CIPHERTEXT
 
+    // Reg - kv_write_ctrl_reg
+    class kv_write_ctrl_reg extends uvm_reg;
+        protected uvm_reg_data_t m_current;
+        protected uvm_reg_data_t m_data;
+        protected bit            m_is_read;
+
+        kv_write_ctrl_reg_bit_cg write_en_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg write_entry_bit_cg[5];
+        kv_write_ctrl_reg_bit_cg hmac_key_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg hmac_block_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg mldsa_seed_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg ecc_pkey_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg ecc_seed_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg aes_key_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg mlkem_seed_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg mlkem_msg_dest_valid_bit_cg[1];
+        kv_write_ctrl_reg_bit_cg rsvd_bit_cg[18];
+        kv_write_ctrl_reg_fld_cg fld_cg;
+        rand uvm_reg_field write_en;
+        rand uvm_reg_field write_entry;
+        rand uvm_reg_field hmac_key_dest_valid;
+        rand uvm_reg_field hmac_block_dest_valid;
+        rand uvm_reg_field mldsa_seed_dest_valid;
+        rand uvm_reg_field ecc_pkey_dest_valid;
+        rand uvm_reg_field ecc_seed_dest_valid;
+        rand uvm_reg_field aes_key_dest_valid;
+        rand uvm_reg_field mlkem_seed_dest_valid;
+        rand uvm_reg_field mlkem_msg_dest_valid;
+        rand uvm_reg_field rsvd;
+
+        function new(string name = "kv_write_ctrl_reg");
+            super.new(name, 32, build_coverage(UVM_CVR_ALL));
+        endfunction : new
+        extern virtual function void sample_values();
+        extern protected virtual function void sample(uvm_reg_data_t  data,
+                                                      uvm_reg_data_t  byte_en,
+                                                      bit             is_read,
+                                                      uvm_reg_map     map);
+
+        virtual function void build();
+            this.write_en = new("write_en");
+            this.write_en.configure(this, 1, 0, "RW", 1, 'h0, 1, 1, 0);
+            this.write_entry = new("write_entry");
+            this.write_entry.configure(this, 5, 1, "RW", 0, 'h0, 1, 1, 0);
+            this.hmac_key_dest_valid = new("hmac_key_dest_valid");
+            this.hmac_key_dest_valid.configure(this, 1, 6, "RW", 0, 'h0, 1, 1, 0);
+            this.hmac_block_dest_valid = new("hmac_block_dest_valid");
+            this.hmac_block_dest_valid.configure(this, 1, 7, "RW", 0, 'h0, 1, 1, 0);
+            this.mldsa_seed_dest_valid = new("mldsa_seed_dest_valid");
+            this.mldsa_seed_dest_valid.configure(this, 1, 8, "RW", 0, 'h0, 1, 1, 0);
+            this.ecc_pkey_dest_valid = new("ecc_pkey_dest_valid");
+            this.ecc_pkey_dest_valid.configure(this, 1, 9, "RW", 0, 'h0, 1, 1, 0);
+            this.ecc_seed_dest_valid = new("ecc_seed_dest_valid");
+            this.ecc_seed_dest_valid.configure(this, 1, 10, "RW", 0, 'h0, 1, 1, 0);
+            this.aes_key_dest_valid = new("aes_key_dest_valid");
+            this.aes_key_dest_valid.configure(this, 1, 11, "RW", 0, 'h0, 1, 1, 0);
+            this.mlkem_seed_dest_valid = new("mlkem_seed_dest_valid");
+            this.mlkem_seed_dest_valid.configure(this, 1, 12, "RW", 0, 'h0, 1, 1, 0);
+            this.mlkem_msg_dest_valid = new("mlkem_msg_dest_valid");
+            this.mlkem_msg_dest_valid.configure(this, 1, 13, "RW", 0, 'h0, 1, 1, 0);
+            this.rsvd = new("rsvd");
+            this.rsvd.configure(this, 18, 14, "RW", 0, 'h0, 1, 1, 0);
+            if (has_coverage(UVM_CVR_REG_BITS)) begin
+                foreach(write_en_bit_cg[bt]) write_en_bit_cg[bt] = new();
+                foreach(write_entry_bit_cg[bt]) write_entry_bit_cg[bt] = new();
+                foreach(hmac_key_dest_valid_bit_cg[bt]) hmac_key_dest_valid_bit_cg[bt] = new();
+                foreach(hmac_block_dest_valid_bit_cg[bt]) hmac_block_dest_valid_bit_cg[bt] = new();
+                foreach(mldsa_seed_dest_valid_bit_cg[bt]) mldsa_seed_dest_valid_bit_cg[bt] = new();
+                foreach(ecc_pkey_dest_valid_bit_cg[bt]) ecc_pkey_dest_valid_bit_cg[bt] = new();
+                foreach(ecc_seed_dest_valid_bit_cg[bt]) ecc_seed_dest_valid_bit_cg[bt] = new();
+                foreach(aes_key_dest_valid_bit_cg[bt]) aes_key_dest_valid_bit_cg[bt] = new();
+                foreach(mlkem_seed_dest_valid_bit_cg[bt]) mlkem_seed_dest_valid_bit_cg[bt] = new();
+                foreach(mlkem_msg_dest_valid_bit_cg[bt]) mlkem_msg_dest_valid_bit_cg[bt] = new();
+                foreach(rsvd_bit_cg[bt]) rsvd_bit_cg[bt] = new();
+            end
+            if (has_coverage(UVM_CVR_FIELD_VALS))
+                fld_cg = new();
+        endfunction : build
+    endclass : kv_write_ctrl_reg
+
     // Reg - abr_reg::intr_block_t::global_intr_en_t
     class abr_reg__intr_block_t__global_intr_en_t extends uvm_reg;
         protected uvm_reg_data_t m_current;
@@ -1361,8 +1441,8 @@ package abr_reg_uvm;
         rand abr_reg__MLDSA_SIGNATURE MLDSA_SIGNATURE;
         rand abr_reg__MLDSA_PRIVKEY_OUT MLDSA_PRIVKEY_OUT;
         rand abr_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
-        rand kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
-        rand kv_status_reg mldsa_kv_rd_seed_status;
+        rand kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl;
+        rand kv_status_reg kv_mldsa_seed_rd_status;
         rand abr_reg__MLKEM_NAME MLKEM_NAME[2];
         rand abr_reg__MLKEM_VERSION MLKEM_VERSION[2];
         rand abr_reg__MLKEM_CTRL MLKEM_CTRL;
@@ -1374,6 +1454,12 @@ package abr_reg_uvm;
         rand abr_reg__MLKEM_DECAPS_KEY MLKEM_DECAPS_KEY;
         rand abr_reg__MLKEM_ENCAPS_KEY MLKEM_ENCAPS_KEY;
         rand abr_reg__MLKEM_CIPHERTEXT MLKEM_CIPHERTEXT;
+        rand kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl;
+        rand kv_status_reg kv_mlkem_seed_rd_status;
+        rand kv_read_ctrl_reg kv_mlkem_msg_rd_ctrl;
+        rand kv_status_reg kv_mlkem_msg_rd_status;
+        rand kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl;
+        rand kv_status_reg kv_mlkem_sharedkey_wr_status;
         rand abr_reg__intr_block_t intr_block_rf;
 
         function new(string name = "abr_reg");
@@ -1481,16 +1567,16 @@ package abr_reg_uvm;
             this.MLDSA_PRIVKEY_IN.configure(this);
             this.MLDSA_PRIVKEY_IN.build();
             this.default_map.add_submap(this.MLDSA_PRIVKEY_IN.default_map, 'h6000);
-            this.mldsa_kv_rd_seed_ctrl = new("mldsa_kv_rd_seed_ctrl");
-            this.mldsa_kv_rd_seed_ctrl.configure(this);
+            this.kv_mldsa_seed_rd_ctrl = new("kv_mldsa_seed_rd_ctrl");
+            this.kv_mldsa_seed_rd_ctrl.configure(this);
 
-            this.mldsa_kv_rd_seed_ctrl.build();
-            this.default_map.add_reg(this.mldsa_kv_rd_seed_ctrl, 'h7320);
-            this.mldsa_kv_rd_seed_status = new("mldsa_kv_rd_seed_status");
-            this.mldsa_kv_rd_seed_status.configure(this);
+            this.kv_mldsa_seed_rd_ctrl.build();
+            this.default_map.add_reg(this.kv_mldsa_seed_rd_ctrl, 'h7320);
+            this.kv_mldsa_seed_rd_status = new("kv_mldsa_seed_rd_status");
+            this.kv_mldsa_seed_rd_status.configure(this);
 
-            this.mldsa_kv_rd_seed_status.build();
-            this.default_map.add_reg(this.mldsa_kv_rd_seed_status, 'h7324);
+            this.kv_mldsa_seed_rd_status.build();
+            this.default_map.add_reg(this.kv_mldsa_seed_rd_status, 'h7324);
             foreach(this.MLKEM_NAME[i0]) begin
                 this.MLKEM_NAME[i0] = new($sformatf("MLKEM_NAME[%0d]", i0));
                 this.MLKEM_NAME[i0].configure(this);
@@ -1552,6 +1638,36 @@ package abr_reg_uvm;
             this.MLKEM_CIPHERTEXT.configure(this);
             this.MLKEM_CIPHERTEXT.build();
             this.default_map.add_submap(this.MLKEM_CIPHERTEXT.default_map, 'ha800);
+            this.kv_mlkem_seed_rd_ctrl = new("kv_mlkem_seed_rd_ctrl");
+            this.kv_mlkem_seed_rd_ctrl.configure(this);
+
+            this.kv_mlkem_seed_rd_ctrl.build();
+            this.default_map.add_reg(this.kv_mlkem_seed_rd_ctrl, 'hae20);
+            this.kv_mlkem_seed_rd_status = new("kv_mlkem_seed_rd_status");
+            this.kv_mlkem_seed_rd_status.configure(this);
+
+            this.kv_mlkem_seed_rd_status.build();
+            this.default_map.add_reg(this.kv_mlkem_seed_rd_status, 'hae24);
+            this.kv_mlkem_msg_rd_ctrl = new("kv_mlkem_msg_rd_ctrl");
+            this.kv_mlkem_msg_rd_ctrl.configure(this);
+
+            this.kv_mlkem_msg_rd_ctrl.build();
+            this.default_map.add_reg(this.kv_mlkem_msg_rd_ctrl, 'hae28);
+            this.kv_mlkem_msg_rd_status = new("kv_mlkem_msg_rd_status");
+            this.kv_mlkem_msg_rd_status.configure(this);
+
+            this.kv_mlkem_msg_rd_status.build();
+            this.default_map.add_reg(this.kv_mlkem_msg_rd_status, 'hae2c);
+            this.kv_mlkem_sharedkey_wr_ctrl = new("kv_mlkem_sharedkey_wr_ctrl");
+            this.kv_mlkem_sharedkey_wr_ctrl.configure(this);
+
+            this.kv_mlkem_sharedkey_wr_ctrl.build();
+            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_ctrl, 'hae30);
+            this.kv_mlkem_sharedkey_wr_status = new("kv_mlkem_sharedkey_wr_status");
+            this.kv_mlkem_sharedkey_wr_status.configure(this);
+
+            this.kv_mlkem_sharedkey_wr_status.build();
+            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_status, 'hae34);
             this.intr_block_rf = new("intr_block_rf");
             this.intr_block_rf.configure(this);
             this.intr_block_rf.build();
