@@ -86,7 +86,7 @@ interface abr_top_cov_if
     assign makehint_failure = abr_top.abr_ctrl_inst.makehint_done_i & abr_top.abr_ctrl_inst.makehint_invalid_i;
     assign invalid_hint = abr_top.abr_ctrl_inst.sigdecode_h_invalid_i;
 
-    covergroup mldsa_top_cov_grp @(posedge clk);
+    covergroup abr_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
         debugUnlock_or_scan_mode_switch_cp: coverpoint debugUnlock_or_scan_mode_switch;
 
@@ -241,7 +241,7 @@ interface abr_top_cov_if
     mldsa_skencode_agg_cg mldsa_skencode_agg_cov = new();
     mldsa_sign_z_enc_agg_cg mldsa_sign_z_enc_agg_cov_grp1 = new();
 
-    mldsa_top_cov_grp mldsa_top_cov_grp1 = new();
+    abr_top_cov_grp abr_top_cov_grp1 = new();
 
 endinterface
 
