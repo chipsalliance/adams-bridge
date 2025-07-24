@@ -160,7 +160,7 @@ interface abr_top_cov_if
         }
         zeroizeXpcr_sign: cross zeroize_cp, pcr_sign_cp;
 
-        normcheck_fail_signXpcr_sign: cross normcheck_mode_failure_sign_cp, pcr_sign_cp;
+        normcheck_fail_signXpcr_sign: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (pcr_process);
         makehint_failXpcr_sign: cross makehint_failure_cp, pcr_sign_cp;
         `endif
 
