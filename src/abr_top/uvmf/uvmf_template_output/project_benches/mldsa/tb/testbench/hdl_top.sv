@@ -156,6 +156,9 @@ import kv_defines_pkg::*;
     assign uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl.ahb_lite_slave_0_HEXOKAY   = 1'b0;
 
 
+
+    abr_top_cov_bind i_abr_top_cov_bind();
+    
   initial begin
     import uvm_pkg::uvm_config_db;
   end

@@ -481,6 +481,40 @@
 
     endgroup
 
+    /*----------------------- KV_WRITE_CTRL_REG COVERGROUPS -----------------------*/
+    covergroup kv_write_ctrl_reg_bit_cg with function sample(input bit reg_bit);
+        option.per_instance = 1;
+        reg_bit_cp : coverpoint reg_bit {
+            bins value[2] = {0,1};
+        }
+        reg_bit_edge_cp : coverpoint reg_bit {
+            bins rise = (0 => 1);
+            bins fall = (1 => 0);
+        }
+
+    endgroup
+    covergroup kv_write_ctrl_reg_fld_cg with function sample(
+    input bit [1-1:0] write_en,
+    input bit [5-1:0] write_entry,
+    input bit [1-1:0] hmac_key_dest_valid,
+    input bit [1-1:0] hmac_block_dest_valid,
+    input bit [1-1:0] mldsa_seed_dest_valid,
+    input bit [1-1:0] ecc_pkey_dest_valid,
+    input bit [1-1:0] ecc_seed_dest_valid,
+    input bit [21-1:0] rsvd
+    );
+        option.per_instance = 1;
+        write_en_cp : coverpoint write_en;
+        write_entry_cp : coverpoint write_entry;
+        hmac_key_dest_valid_cp : coverpoint hmac_key_dest_valid;
+        hmac_block_dest_valid_cp : coverpoint hmac_block_dest_valid;
+        mldsa_seed_dest_valid_cp : coverpoint mldsa_seed_dest_valid;
+        ecc_pkey_dest_valid_cp : coverpoint ecc_pkey_dest_valid;
+        ecc_seed_dest_valid_cp : coverpoint ecc_seed_dest_valid;
+        rsvd_cp : coverpoint rsvd;
+
+    endgroup
+
     /*----------------------- ABR_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T COVERGROUPS -----------------------*/
     covergroup abr_reg__intr_block_t__global_intr_en_t_bit_cg with function sample(input bit reg_bit);
         option.per_instance = 1;

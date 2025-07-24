@@ -279,6 +279,14 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_CIPHERTEXT__external__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } kv_write_ctrl_reg__write_en__in_t;
+
+    typedef struct packed{
+        kv_write_ctrl_reg__write_en__in_t write_en;
+    } kv_write_ctrl_reg__in_t;
+
+    typedef struct packed{
         logic hwset;
     } abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02__error_internal_sts_enable_d33001bb_next_52b75ffa_resetsignal_0d7eaa27__in_t;
 
@@ -320,8 +328,8 @@ package abr_reg_pkg;
         abr_reg__MLDSA_SIGNATURE__external__in_t MLDSA_SIGNATURE;
         abr_reg__MLDSA_PRIVKEY_OUT__external__in_t MLDSA_PRIVKEY_OUT;
         abr_reg__MLDSA_PRIVKEY_IN__external__in_t MLDSA_PRIVKEY_IN;
-        kv_read_ctrl_reg__in_t mldsa_kv_rd_seed_ctrl;
-        kv_status_reg__in_t mldsa_kv_rd_seed_status;
+        kv_read_ctrl_reg__in_t kv_mldsa_seed_rd_ctrl;
+        kv_status_reg__in_t kv_mldsa_seed_rd_status;
         abr_reg__MLKEM_NAME__in_t [2-1:0]MLKEM_NAME;
         abr_reg__MLKEM_VERSION__in_t [2-1:0]MLKEM_VERSION;
         abr_reg__MLKEM_CTRL__in_t MLKEM_CTRL;
@@ -333,6 +341,12 @@ package abr_reg_pkg;
         abr_reg__MLKEM_DECAPS_KEY__external__in_t MLKEM_DECAPS_KEY;
         abr_reg__MLKEM_ENCAPS_KEY__external__in_t MLKEM_ENCAPS_KEY;
         abr_reg__MLKEM_CIPHERTEXT__external__in_t MLKEM_CIPHERTEXT;
+        kv_read_ctrl_reg__in_t kv_mlkem_seed_rd_ctrl;
+        kv_status_reg__in_t kv_mlkem_seed_rd_status;
+        kv_read_ctrl_reg__in_t kv_mlkem_msg_rd_ctrl;
+        kv_status_reg__in_t kv_mlkem_msg_rd_status;
+        kv_write_ctrl_reg__in_t kv_mlkem_sharedkey_wr_ctrl;
+        kv_status_reg__in_t kv_mlkem_sharedkey_wr_status;
         abr_reg__intr_block_t__in_t intr_block_rf;
     } abr_reg__in_t;
 
@@ -363,6 +377,14 @@ package abr_reg_pkg;
         abr_reg__MLDSA_CTRL__EXTERNAL_MU__out_t EXTERNAL_MU;
         abr_reg__MLDSA_CTRL__STREAM_MSG__out_t STREAM_MSG;
     } abr_reg__MLDSA_CTRL__out_t;
+
+    typedef struct packed{
+        logic value;
+    } abr_reg__MLDSA_STATUS__VALID__out_t;
+
+    typedef struct packed{
+        abr_reg__MLDSA_STATUS__VALID__out_t VALID;
+    } abr_reg__MLDSA_STATUS__out_t;
 
     typedef struct packed{
         logic [31:0] value;
@@ -506,6 +528,14 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_CTRL__out_t;
 
     typedef struct packed{
+        logic value;
+    } abr_reg__MLKEM_STATUS__VALID__out_t;
+
+    typedef struct packed{
+        abr_reg__MLKEM_STATUS__VALID__out_t VALID;
+    } abr_reg__MLKEM_STATUS__out_t;
+
+    typedef struct packed{
         logic [31:0] value;
     } abr_reg__MLKEM_SEED_D__SEED__out_t;
 
@@ -558,6 +588,64 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_CIPHERTEXT__external__out_t;
 
     typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__write_en__out_t;
+
+    typedef struct packed{
+        logic [4:0] value;
+    } kv_write_ctrl_reg__write_entry__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__hmac_key_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__hmac_block_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__mldsa_seed_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__ecc_pkey_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__ecc_seed_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__aes_key_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__mlkem_seed_dest_valid__out_t;
+
+    typedef struct packed{
+        logic value;
+    } kv_write_ctrl_reg__mlkem_msg_dest_valid__out_t;
+
+    typedef struct packed{
+        logic [17:0] value;
+    } kv_write_ctrl_reg__rsvd__out_t;
+
+    typedef struct packed{
+        kv_write_ctrl_reg__write_en__out_t write_en;
+        kv_write_ctrl_reg__write_entry__out_t write_entry;
+        kv_write_ctrl_reg__hmac_key_dest_valid__out_t hmac_key_dest_valid;
+        kv_write_ctrl_reg__hmac_block_dest_valid__out_t hmac_block_dest_valid;
+        kv_write_ctrl_reg__mldsa_seed_dest_valid__out_t mldsa_seed_dest_valid;
+        kv_write_ctrl_reg__ecc_pkey_dest_valid__out_t ecc_pkey_dest_valid;
+        kv_write_ctrl_reg__ecc_seed_dest_valid__out_t ecc_seed_dest_valid;
+        kv_write_ctrl_reg__aes_key_dest_valid__out_t aes_key_dest_valid;
+        kv_write_ctrl_reg__mlkem_seed_dest_valid__out_t mlkem_seed_dest_valid;
+        kv_write_ctrl_reg__mlkem_msg_dest_valid__out_t mlkem_msg_dest_valid;
+        kv_write_ctrl_reg__rsvd__out_t rsvd;
+    } kv_write_ctrl_reg__out_t;
+
+    typedef struct packed{
         logic intr;
     } abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a__out_t;
 
@@ -582,6 +670,7 @@ package abr_reg_pkg;
 
     typedef struct packed{
         abr_reg__MLDSA_CTRL__out_t MLDSA_CTRL;
+        abr_reg__MLDSA_STATUS__out_t MLDSA_STATUS;
         abr_reg__ABR_ENTROPY__out_t [16-1:0]ABR_ENTROPY;
         abr_reg__MLDSA_SEED__out_t [8-1:0]MLDSA_SEED;
         abr_reg__MLDSA_SIGN_RND__out_t [8-1:0]MLDSA_SIGN_RND;
@@ -595,8 +684,9 @@ package abr_reg_pkg;
         abr_reg__MLDSA_SIGNATURE__external__out_t MLDSA_SIGNATURE;
         abr_reg__MLDSA_PRIVKEY_OUT__external__out_t MLDSA_PRIVKEY_OUT;
         abr_reg__MLDSA_PRIVKEY_IN__external__out_t MLDSA_PRIVKEY_IN;
-        kv_read_ctrl_reg__out_t mldsa_kv_rd_seed_ctrl;
+        kv_read_ctrl_reg__out_t kv_mldsa_seed_rd_ctrl;
         abr_reg__MLKEM_CTRL__out_t MLKEM_CTRL;
+        abr_reg__MLKEM_STATUS__out_t MLKEM_STATUS;
         abr_reg__MLKEM_SEED_D__out_t [8-1:0]MLKEM_SEED_D;
         abr_reg__MLKEM_SEED_Z__external__out_t [8-1:0]MLKEM_SEED_Z;
         abr_reg__MLKEM_SHARED_KEY__external__out_t [8-1:0]MLKEM_SHARED_KEY;
@@ -604,6 +694,9 @@ package abr_reg_pkg;
         abr_reg__MLKEM_DECAPS_KEY__external__out_t MLKEM_DECAPS_KEY;
         abr_reg__MLKEM_ENCAPS_KEY__external__out_t MLKEM_ENCAPS_KEY;
         abr_reg__MLKEM_CIPHERTEXT__external__out_t MLKEM_CIPHERTEXT;
+        kv_read_ctrl_reg__out_t kv_mlkem_seed_rd_ctrl;
+        kv_read_ctrl_reg__out_t kv_mlkem_msg_rd_ctrl;
+        kv_write_ctrl_reg__out_t kv_mlkem_sharedkey_wr_ctrl;
         abr_reg__intr_block_t__out_t intr_block_rf;
     } abr_reg__out_t;
 

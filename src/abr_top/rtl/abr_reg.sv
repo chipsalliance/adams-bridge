@@ -100,8 +100,8 @@ module abr_reg (
         logic MLDSA_SIGNATURE;
         logic MLDSA_PRIVKEY_OUT;
         logic MLDSA_PRIVKEY_IN;
-        logic mldsa_kv_rd_seed_ctrl;
-        logic mldsa_kv_rd_seed_status;
+        logic kv_mldsa_seed_rd_ctrl;
+        logic kv_mldsa_seed_rd_status;
         logic [2-1:0]MLKEM_NAME;
         logic [2-1:0]MLKEM_VERSION;
         logic MLKEM_CTRL;
@@ -113,6 +113,12 @@ module abr_reg (
         logic MLKEM_DECAPS_KEY;
         logic MLKEM_ENCAPS_KEY;
         logic MLKEM_CIPHERTEXT;
+        logic kv_mlkem_seed_rd_ctrl;
+        logic kv_mlkem_seed_rd_status;
+        logic kv_mlkem_msg_rd_ctrl;
+        logic kv_mlkem_msg_rd_status;
+        logic kv_mlkem_sharedkey_wr_ctrl;
+        logic kv_mlkem_sharedkey_wr_status;
         struct packed{
             logic global_intr_en_r;
             logic error_intr_en_r;
@@ -181,8 +187,8 @@ module abr_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
         decoded_reg_strb.MLDSA_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
-        decoded_reg_strb.mldsa_kv_rd_seed_ctrl = cpuif_req_masked & (cpuif_addr == 16'h7320);
-        decoded_reg_strb.mldsa_kv_rd_seed_status = cpuif_req_masked & (cpuif_addr == 16'h7324);
+        decoded_reg_strb.kv_mldsa_seed_rd_ctrl = cpuif_req_masked & (cpuif_addr == 16'h7320);
+        decoded_reg_strb.kv_mldsa_seed_rd_status = cpuif_req_masked & (cpuif_addr == 16'h7324);
         for(int i0=0; i0<2; i0++) begin
             decoded_reg_strb.MLKEM_NAME[i0] = cpuif_req_masked & (cpuif_addr == 16'h8000 + i0*16'h4);
         end
@@ -210,6 +216,12 @@ module abr_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'ha000) & (cpuif_addr <= 16'ha000 + 16'h61f);
         decoded_reg_strb.MLKEM_CIPHERTEXT = cpuif_req_masked & (cpuif_addr >= 16'ha800) & (cpuif_addr <= 16'ha800 + 16'h61f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'ha800) & (cpuif_addr <= 16'ha800 + 16'h61f);
+        decoded_reg_strb.kv_mlkem_seed_rd_ctrl = cpuif_req_masked & (cpuif_addr == 16'hae20);
+        decoded_reg_strb.kv_mlkem_seed_rd_status = cpuif_req_masked & (cpuif_addr == 16'hae24);
+        decoded_reg_strb.kv_mlkem_msg_rd_ctrl = cpuif_req_masked & (cpuif_addr == 16'hae28);
+        decoded_reg_strb.kv_mlkem_msg_rd_status = cpuif_req_masked & (cpuif_addr == 16'hae2c);
+        decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl = cpuif_req_masked & (cpuif_addr == 16'hae30);
+        decoded_reg_strb.kv_mlkem_sharedkey_wr_status = cpuif_req_masked & (cpuif_addr == 16'hae34);
         decoded_reg_strb.intr_block_rf.global_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb000);
         decoded_reg_strb.intr_block_rf.error_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb004);
         decoded_reg_strb.intr_block_rf.notif_intr_en_r = cpuif_req_masked & (cpuif_addr == 16'hb008);
@@ -261,6 +273,12 @@ module abr_reg (
                 logic load_next;
             } STREAM_MSG;
         } MLDSA_CTRL;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } VALID;
+        } MLDSA_STATUS;
         struct packed{
             struct packed{
                 logic [31:0] next;
@@ -332,13 +350,13 @@ module abr_reg (
                 logic [24:0] next;
                 logic load_next;
             } rsvd;
-        } mldsa_kv_rd_seed_ctrl;
+        } kv_mldsa_seed_rd_ctrl;
         struct packed{
             struct packed{
                 logic next;
                 logic load_next;
             } VALID;
-        } mldsa_kv_rd_seed_status;
+        } kv_mldsa_seed_rd_status;
         struct packed{
             struct packed{
                 logic [2:0] next;
@@ -351,10 +369,116 @@ module abr_reg (
         } MLKEM_CTRL;
         struct packed{
             struct packed{
+                logic next;
+                logic load_next;
+            } VALID;
+        } MLKEM_STATUS;
+        struct packed{
+            struct packed{
                 logic [31:0] next;
                 logic load_next;
             } SEED;
         } [8-1:0]MLKEM_SEED_D;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } read_en;
+            struct packed{
+                logic [4:0] next;
+                logic load_next;
+            } read_entry;
+            struct packed{
+                logic next;
+                logic load_next;
+            } pcr_hash_extend;
+            struct packed{
+                logic [24:0] next;
+                logic load_next;
+            } rsvd;
+        } kv_mlkem_seed_rd_ctrl;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } VALID;
+        } kv_mlkem_seed_rd_status;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } read_en;
+            struct packed{
+                logic [4:0] next;
+                logic load_next;
+            } read_entry;
+            struct packed{
+                logic next;
+                logic load_next;
+            } pcr_hash_extend;
+            struct packed{
+                logic [24:0] next;
+                logic load_next;
+            } rsvd;
+        } kv_mlkem_msg_rd_ctrl;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } VALID;
+        } kv_mlkem_msg_rd_status;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } write_en;
+            struct packed{
+                logic [4:0] next;
+                logic load_next;
+            } write_entry;
+            struct packed{
+                logic next;
+                logic load_next;
+            } hmac_key_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } hmac_block_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } mldsa_seed_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } ecc_pkey_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } ecc_seed_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } aes_key_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } mlkem_seed_dest_valid;
+            struct packed{
+                logic next;
+                logic load_next;
+            } mlkem_msg_dest_valid;
+            struct packed{
+                logic [17:0] next;
+                logic load_next;
+            } rsvd;
+        } kv_mlkem_sharedkey_wr_ctrl;
+        struct packed{
+            struct packed{
+                logic next;
+                logic load_next;
+            } VALID;
+        } kv_mlkem_sharedkey_wr_status;
         struct packed{
             struct packed{
                 struct packed{
@@ -470,6 +594,11 @@ module abr_reg (
         } MLDSA_CTRL;
         struct packed{
             struct packed{
+                logic value;
+            } VALID;
+        } MLDSA_STATUS;
+        struct packed{
+            struct packed{
                 logic [31:0] value;
             } ENTROPY;
         } [16-1:0]ABR_ENTROPY;
@@ -526,12 +655,12 @@ module abr_reg (
             struct packed{
                 logic [24:0] value;
             } rsvd;
-        } mldsa_kv_rd_seed_ctrl;
+        } kv_mldsa_seed_rd_ctrl;
         struct packed{
             struct packed{
                 logic value;
             } VALID;
-        } mldsa_kv_rd_seed_status;
+        } kv_mldsa_seed_rd_status;
         struct packed{
             struct packed{
                 logic [2:0] value;
@@ -542,9 +671,92 @@ module abr_reg (
         } MLKEM_CTRL;
         struct packed{
             struct packed{
+                logic value;
+            } VALID;
+        } MLKEM_STATUS;
+        struct packed{
+            struct packed{
                 logic [31:0] value;
             } SEED;
         } [8-1:0]MLKEM_SEED_D;
+        struct packed{
+            struct packed{
+                logic value;
+            } read_en;
+            struct packed{
+                logic [4:0] value;
+            } read_entry;
+            struct packed{
+                logic value;
+            } pcr_hash_extend;
+            struct packed{
+                logic [24:0] value;
+            } rsvd;
+        } kv_mlkem_seed_rd_ctrl;
+        struct packed{
+            struct packed{
+                logic value;
+            } VALID;
+        } kv_mlkem_seed_rd_status;
+        struct packed{
+            struct packed{
+                logic value;
+            } read_en;
+            struct packed{
+                logic [4:0] value;
+            } read_entry;
+            struct packed{
+                logic value;
+            } pcr_hash_extend;
+            struct packed{
+                logic [24:0] value;
+            } rsvd;
+        } kv_mlkem_msg_rd_ctrl;
+        struct packed{
+            struct packed{
+                logic value;
+            } VALID;
+        } kv_mlkem_msg_rd_status;
+        struct packed{
+            struct packed{
+                logic value;
+            } write_en;
+            struct packed{
+                logic [4:0] value;
+            } write_entry;
+            struct packed{
+                logic value;
+            } hmac_key_dest_valid;
+            struct packed{
+                logic value;
+            } hmac_block_dest_valid;
+            struct packed{
+                logic value;
+            } mldsa_seed_dest_valid;
+            struct packed{
+                logic value;
+            } ecc_pkey_dest_valid;
+            struct packed{
+                logic value;
+            } ecc_seed_dest_valid;
+            struct packed{
+                logic value;
+            } aes_key_dest_valid;
+            struct packed{
+                logic value;
+            } mlkem_seed_dest_valid;
+            struct packed{
+                logic value;
+            } mlkem_msg_dest_valid;
+            struct packed{
+                logic [17:0] value;
+            } rsvd;
+        } kv_mlkem_sharedkey_wr_ctrl;
+        struct packed{
+            struct packed{
+                logic value;
+            } VALID;
+        } kv_mlkem_sharedkey_wr_status;
         struct packed{
             struct packed{
                 struct packed{
@@ -738,6 +950,27 @@ module abr_reg (
         end
     end
     assign hwif_out.MLDSA_CTRL.STREAM_MSG.value = field_storage.MLDSA_CTRL.STREAM_MSG.value;
+    // Field: abr_reg.MLDSA_STATUS.VALID
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_STATUS.VALID.value;
+        load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.MLDSA_STATUS.VALID.next;
+        load_next_c = '1;
+        field_combo.MLDSA_STATUS.VALID.next = next_c;
+        field_combo.MLDSA_STATUS.VALID.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_STATUS.VALID.value <= 1'h0;
+        end else if(field_combo.MLDSA_STATUS.VALID.load_next) begin
+            field_storage.MLDSA_STATUS.VALID.value <= field_combo.MLDSA_STATUS.VALID.next;
+        end
+    end
+    assign hwif_out.MLDSA_STATUS.VALID.value = field_storage.MLDSA_STATUS.VALID.value;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: abr_reg.ABR_ENTROPY[].ENTROPY
         always_comb begin
@@ -998,114 +1231,114 @@ module abr_reg (
     assign hwif_out.MLDSA_PRIVKEY_IN.req_is_wr = decoded_req_is_wr;
     assign hwif_out.MLDSA_PRIVKEY_IN.wr_data = decoded_wr_data;
     assign hwif_out.MLDSA_PRIVKEY_IN.wr_biten = decoded_wr_biten;
-    // Field: abr_reg.mldsa_kv_rd_seed_ctrl.read_en
+    // Field: abr_reg.kv_mldsa_seed_rd_ctrl.read_en
     always_comb begin
         automatic logic [0:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mldsa_kv_rd_seed_ctrl.read_en.value;
+        next_c = field_storage.kv_mldsa_seed_rd_ctrl.read_en.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mldsa_kv_rd_seed_ctrl.read_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+        if(decoded_reg_strb.kv_mldsa_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mldsa_seed_rd_ctrl.read_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
-        end else if(hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr) begin // HW Clear
+        end else if(hwif_in.kv_mldsa_seed_rd_ctrl.read_en.hwclr) begin // HW Clear
             next_c = '0;
             load_next_c = '1;
         end
-        field_combo.mldsa_kv_rd_seed_ctrl.read_en.next = next_c;
-        field_combo.mldsa_kv_rd_seed_ctrl.read_en.load_next = load_next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.read_en.next = next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.read_en.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.read_en.value <= 1'h0;
-        end else if(field_combo.mldsa_kv_rd_seed_ctrl.read_en.load_next) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.read_en.value <= field_combo.mldsa_kv_rd_seed_ctrl.read_en.next;
+            field_storage.kv_mldsa_seed_rd_ctrl.read_en.value <= 1'h0;
+        end else if(field_combo.kv_mldsa_seed_rd_ctrl.read_en.load_next) begin
+            field_storage.kv_mldsa_seed_rd_ctrl.read_en.value <= field_combo.kv_mldsa_seed_rd_ctrl.read_en.next;
         end
     end
-    assign hwif_out.mldsa_kv_rd_seed_ctrl.read_en.value = field_storage.mldsa_kv_rd_seed_ctrl.read_en.value;
-    // Field: abr_reg.mldsa_kv_rd_seed_ctrl.read_entry
+    assign hwif_out.kv_mldsa_seed_rd_ctrl.read_en.value = field_storage.kv_mldsa_seed_rd_ctrl.read_en.value;
+    // Field: abr_reg.kv_mldsa_seed_rd_ctrl.read_entry
     always_comb begin
         automatic logic [4:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value;
+        next_c = field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
+        if(decoded_reg_strb.kv_mldsa_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
             load_next_c = '1;
         end
-        field_combo.mldsa_kv_rd_seed_ctrl.read_entry.next = next_c;
-        field_combo.mldsa_kv_rd_seed_ctrl.read_entry.load_next = load_next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.read_entry.next = next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.read_entry.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value <= 5'h0;
-        end else if(field_combo.mldsa_kv_rd_seed_ctrl.read_entry.load_next) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value <= field_combo.mldsa_kv_rd_seed_ctrl.read_entry.next;
+            field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value <= 5'h0;
+        end else if(field_combo.kv_mldsa_seed_rd_ctrl.read_entry.load_next) begin
+            field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value <= field_combo.kv_mldsa_seed_rd_ctrl.read_entry.next;
         end
     end
-    assign hwif_out.mldsa_kv_rd_seed_ctrl.read_entry.value = field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value;
-    // Field: abr_reg.mldsa_kv_rd_seed_ctrl.pcr_hash_extend
+    assign hwif_out.kv_mldsa_seed_rd_ctrl.read_entry.value = field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value;
+    // Field: abr_reg.kv_mldsa_seed_rd_ctrl.pcr_hash_extend
     always_comb begin
         automatic logic [0:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value;
+        next_c = field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+        if(decoded_reg_strb.kv_mldsa_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
             load_next_c = '1;
         end
-        field_combo.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.next = next_c;
-        field_combo.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.load_next = load_next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.next = next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value <= 1'h0;
-        end else if(field_combo.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.load_next) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value <= field_combo.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.next;
+            field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value <= 1'h0;
+        end else if(field_combo.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.load_next) begin
+            field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value <= field_combo.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.next;
         end
     end
-    assign hwif_out.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value = field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value;
-    // Field: abr_reg.mldsa_kv_rd_seed_ctrl.rsvd
+    assign hwif_out.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value = field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value;
+    // Field: abr_reg.kv_mldsa_seed_rd_ctrl.rsvd
     always_comb begin
         automatic logic [24:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value;
+        next_c = field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value & ~decoded_wr_biten[31:7]) | (decoded_wr_data[31:7] & decoded_wr_biten[31:7]);
+        if(decoded_reg_strb.kv_mldsa_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value & ~decoded_wr_biten[31:7]) | (decoded_wr_data[31:7] & decoded_wr_biten[31:7]);
             load_next_c = '1;
         end
-        field_combo.mldsa_kv_rd_seed_ctrl.rsvd.next = next_c;
-        field_combo.mldsa_kv_rd_seed_ctrl.rsvd.load_next = load_next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.rsvd.next = next_c;
+        field_combo.kv_mldsa_seed_rd_ctrl.rsvd.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value <= 25'h0;
-        end else if(field_combo.mldsa_kv_rd_seed_ctrl.rsvd.load_next) begin
-            field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value <= field_combo.mldsa_kv_rd_seed_ctrl.rsvd.next;
+            field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value <= 25'h0;
+        end else if(field_combo.kv_mldsa_seed_rd_ctrl.rsvd.load_next) begin
+            field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value <= field_combo.kv_mldsa_seed_rd_ctrl.rsvd.next;
         end
     end
-    assign hwif_out.mldsa_kv_rd_seed_ctrl.rsvd.value = field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value;
-    // Field: abr_reg.mldsa_kv_rd_seed_status.VALID
+    assign hwif_out.kv_mldsa_seed_rd_ctrl.rsvd.value = field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value;
+    // Field: abr_reg.kv_mldsa_seed_rd_status.VALID
     always_comb begin
         automatic logic [0:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mldsa_kv_rd_seed_status.VALID.value;
+        next_c = field_storage.kv_mldsa_seed_rd_status.VALID.value;
         load_next_c = '0;
-        if(hwif_in.mldsa_kv_rd_seed_status.VALID.hwset) begin // HW Set
+        if(hwif_in.kv_mldsa_seed_rd_status.VALID.hwset) begin // HW Set
             next_c = '1;
             load_next_c = '1;
-        end else if(hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr) begin // HW Clear
+        end else if(hwif_in.kv_mldsa_seed_rd_status.VALID.hwclr) begin // HW Clear
             next_c = '0;
             load_next_c = '1;
         end
-        field_combo.mldsa_kv_rd_seed_status.VALID.next = next_c;
-        field_combo.mldsa_kv_rd_seed_status.VALID.load_next = load_next_c;
+        field_combo.kv_mldsa_seed_rd_status.VALID.next = next_c;
+        field_combo.kv_mldsa_seed_rd_status.VALID.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge hwif_in.reset_b) begin
         if(~hwif_in.reset_b) begin
-            field_storage.mldsa_kv_rd_seed_status.VALID.value <= 1'h0;
-        end else if(field_combo.mldsa_kv_rd_seed_status.VALID.load_next) begin
-            field_storage.mldsa_kv_rd_seed_status.VALID.value <= field_combo.mldsa_kv_rd_seed_status.VALID.next;
+            field_storage.kv_mldsa_seed_rd_status.VALID.value <= 1'h0;
+        end else if(field_combo.kv_mldsa_seed_rd_status.VALID.load_next) begin
+            field_storage.kv_mldsa_seed_rd_status.VALID.value <= field_combo.kv_mldsa_seed_rd_status.VALID.next;
         end
     end
     // Field: abr_reg.MLKEM_CTRL.CTRL
@@ -1156,6 +1389,27 @@ module abr_reg (
         end
     end
     assign hwif_out.MLKEM_CTRL.ZEROIZE.value = field_storage.MLKEM_CTRL.ZEROIZE.value;
+    // Field: abr_reg.MLKEM_STATUS.VALID
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLKEM_STATUS.VALID.value;
+        load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.MLKEM_STATUS.VALID.next;
+        load_next_c = '1;
+        field_combo.MLKEM_STATUS.VALID.next = next_c;
+        field_combo.MLKEM_STATUS.VALID.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLKEM_STATUS.VALID.value <= 1'h0;
+        end else if(field_combo.MLKEM_STATUS.VALID.load_next) begin
+            field_storage.MLKEM_STATUS.VALID.value <= field_combo.MLKEM_STATUS.VALID.next;
+        end
+    end
+    assign hwif_out.MLKEM_STATUS.VALID.value = field_storage.MLKEM_STATUS.VALID.value;
     for(genvar i0=0; i0<8; i0++) begin
         // Field: abr_reg.MLKEM_SEED_D[].SEED
         always_comb begin
@@ -1217,6 +1471,483 @@ module abr_reg (
     assign hwif_out.MLKEM_CIPHERTEXT.req_is_wr = decoded_req_is_wr;
     assign hwif_out.MLKEM_CIPHERTEXT.wr_data = decoded_wr_data;
     assign hwif_out.MLKEM_CIPHERTEXT.wr_biten = decoded_wr_biten;
+    // Field: abr_reg.kv_mlkem_seed_rd_ctrl.read_en
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_seed_rd_ctrl.read_en.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_seed_rd_ctrl.read_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_seed_rd_ctrl.read_en.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_seed_rd_ctrl.read_en.next = next_c;
+        field_combo.kv_mlkem_seed_rd_ctrl.read_en.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.read_en.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_seed_rd_ctrl.read_en.load_next) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.read_en.value <= field_combo.kv_mlkem_seed_rd_ctrl.read_en.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_seed_rd_ctrl.read_en.value = field_storage.kv_mlkem_seed_rd_ctrl.read_en.value;
+    // Field: abr_reg.kv_mlkem_seed_rd_ctrl.read_entry
+    always_comb begin
+        automatic logic [4:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_seed_rd_ctrl.read_entry.next = next_c;
+        field_combo.kv_mlkem_seed_rd_ctrl.read_entry.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value <= 5'h0;
+        end else if(field_combo.kv_mlkem_seed_rd_ctrl.read_entry.load_next) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value <= field_combo.kv_mlkem_seed_rd_ctrl.read_entry.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_seed_rd_ctrl.read_entry.value = field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value;
+    // Field: abr_reg.kv_mlkem_seed_rd_ctrl.pcr_hash_extend
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.next = next_c;
+        field_combo.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.load_next) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value <= field_combo.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value = field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value;
+    // Field: abr_reg.kv_mlkem_seed_rd_ctrl.rsvd
+    always_comb begin
+        automatic logic [24:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_seed_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value & ~decoded_wr_biten[31:7]) | (decoded_wr_data[31:7] & decoded_wr_biten[31:7]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_seed_rd_ctrl.rsvd.next = next_c;
+        field_combo.kv_mlkem_seed_rd_ctrl.rsvd.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value <= 25'h0;
+        end else if(field_combo.kv_mlkem_seed_rd_ctrl.rsvd.load_next) begin
+            field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value <= field_combo.kv_mlkem_seed_rd_ctrl.rsvd.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_seed_rd_ctrl.rsvd.value = field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value;
+    // Field: abr_reg.kv_mlkem_seed_rd_status.VALID
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_seed_rd_status.VALID.value;
+        load_next_c = '0;
+        if(hwif_in.kv_mlkem_seed_rd_status.VALID.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_seed_rd_status.VALID.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_seed_rd_status.VALID.next = next_c;
+        field_combo.kv_mlkem_seed_rd_status.VALID.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_seed_rd_status.VALID.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_seed_rd_status.VALID.load_next) begin
+            field_storage.kv_mlkem_seed_rd_status.VALID.value <= field_combo.kv_mlkem_seed_rd_status.VALID.next;
+        end
+    end
+    // Field: abr_reg.kv_mlkem_msg_rd_ctrl.read_en
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_msg_rd_ctrl.read_en.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_msg_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_msg_rd_ctrl.read_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_msg_rd_ctrl.read_en.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_msg_rd_ctrl.read_en.next = next_c;
+        field_combo.kv_mlkem_msg_rd_ctrl.read_en.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.read_en.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_msg_rd_ctrl.read_en.load_next) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.read_en.value <= field_combo.kv_mlkem_msg_rd_ctrl.read_en.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_msg_rd_ctrl.read_en.value = field_storage.kv_mlkem_msg_rd_ctrl.read_en.value;
+    // Field: abr_reg.kv_mlkem_msg_rd_ctrl.read_entry
+    always_comb begin
+        automatic logic [4:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_msg_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_msg_rd_ctrl.read_entry.next = next_c;
+        field_combo.kv_mlkem_msg_rd_ctrl.read_entry.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value <= 5'h0;
+        end else if(field_combo.kv_mlkem_msg_rd_ctrl.read_entry.load_next) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value <= field_combo.kv_mlkem_msg_rd_ctrl.read_entry.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_msg_rd_ctrl.read_entry.value = field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value;
+    // Field: abr_reg.kv_mlkem_msg_rd_ctrl.pcr_hash_extend
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_msg_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.next = next_c;
+        field_combo.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.load_next) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value <= field_combo.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value = field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value;
+    // Field: abr_reg.kv_mlkem_msg_rd_ctrl.rsvd
+    always_comb begin
+        automatic logic [24:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_msg_rd_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value & ~decoded_wr_biten[31:7]) | (decoded_wr_data[31:7] & decoded_wr_biten[31:7]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_msg_rd_ctrl.rsvd.next = next_c;
+        field_combo.kv_mlkem_msg_rd_ctrl.rsvd.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value <= 25'h0;
+        end else if(field_combo.kv_mlkem_msg_rd_ctrl.rsvd.load_next) begin
+            field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value <= field_combo.kv_mlkem_msg_rd_ctrl.rsvd.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_msg_rd_ctrl.rsvd.value = field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value;
+    // Field: abr_reg.kv_mlkem_msg_rd_status.VALID
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_msg_rd_status.VALID.value;
+        load_next_c = '0;
+        if(hwif_in.kv_mlkem_msg_rd_status.VALID.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_msg_rd_status.VALID.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_msg_rd_status.VALID.next = next_c;
+        field_combo.kv_mlkem_msg_rd_status.VALID.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_msg_rd_status.VALID.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_msg_rd_status.VALID.load_next) begin
+            field_storage.kv_mlkem_msg_rd_status.VALID.value <= field_combo.kv_mlkem_msg_rd_status.VALID.next;
+        end
+    end
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.write_en
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_en.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.write_en.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.write_en.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.write_en.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.write_en.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.write_en.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.write_entry
+    always_comb begin
+        automatic logic [4:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.write_entry.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.write_entry.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value <= 5'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.write_entry.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.write_entry.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.write_entry.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value & ~decoded_wr_biten[7:7]) | (decoded_wr_data[7:7] & decoded_wr_biten[7:7]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value & ~decoded_wr_biten[8:8]) | (decoded_wr_data[8:8] & decoded_wr_biten[8:8]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value & ~decoded_wr_biten[9:9]) | (decoded_wr_data[9:9] & decoded_wr_biten[9:9]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value & ~decoded_wr_biten[10:10]) | (decoded_wr_data[10:10] & decoded_wr_biten[10:10]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value & ~decoded_wr_biten[11:11]) | (decoded_wr_data[11:11] & decoded_wr_biten[11:11]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value & ~decoded_wr_biten[12:12]) | (decoded_wr_data[12:12] & decoded_wr_biten[12:12]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value & ~decoded_wr_biten[13:13]) | (decoded_wr_data[13:13] & decoded_wr_biten[13:13]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_ctrl.rsvd
+    always_comb begin
+        automatic logic [17:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value & ~decoded_wr_biten[31:14]) | (decoded_wr_data[31:14] & decoded_wr_biten[31:14]);
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.rsvd.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_ctrl.rsvd.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value <= 18'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_ctrl.rsvd.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value <= field_combo.kv_mlkem_sharedkey_wr_ctrl.rsvd.next;
+        end
+    end
+    assign hwif_out.kv_mlkem_sharedkey_wr_ctrl.rsvd.value = field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value;
+    // Field: abr_reg.kv_mlkem_sharedkey_wr_status.VALID
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.kv_mlkem_sharedkey_wr_status.VALID.value;
+        load_next_c = '0;
+        if(hwif_in.kv_mlkem_sharedkey_wr_status.VALID.hwset) begin // HW Set
+            next_c = '1;
+            load_next_c = '1;
+        end else if(hwif_in.kv_mlkem_sharedkey_wr_status.VALID.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.kv_mlkem_sharedkey_wr_status.VALID.next = next_c;
+        field_combo.kv_mlkem_sharedkey_wr_status.VALID.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.kv_mlkem_sharedkey_wr_status.VALID.value <= 1'h0;
+        end else if(field_combo.kv_mlkem_sharedkey_wr_status.VALID.load_next) begin
+            field_storage.kv_mlkem_sharedkey_wr_status.VALID.value <= field_combo.kv_mlkem_sharedkey_wr_status.VALID.next;
+        end
+    end
     // Field: abr_reg.intr_block_rf.global_intr_en_r.error_en
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1627,7 +2358,7 @@ module abr_reg (
     logic [31:0] readback_data;
 
     // Assign readback values to a flattened array
-    logic [57-1:0][31:0] readback_array;
+    logic [63-1:0][31:0] readback_array;
     for(genvar i0=0; i0<2; i0++) begin
         assign readback_array[i0*1 + 0][31:0] = (decoded_reg_strb.MLDSA_NAME[i0] && !decoded_req_is_wr) ? hwif_in.MLDSA_NAME[i0].NAME.next : '0;
     end
@@ -1635,7 +2366,7 @@ module abr_reg (
         assign readback_array[i0*1 + 2][31:0] = (decoded_reg_strb.MLDSA_VERSION[i0] && !decoded_req_is_wr) ? hwif_in.MLDSA_VERSION[i0].VERSION.next : '0;
     end
     assign readback_array[4][0:0] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.READY.next : '0;
-    assign readback_array[4][1:1] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.VALID.next : '0;
+    assign readback_array[4][1:1] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? field_storage.MLDSA_STATUS.VALID.value : '0;
     assign readback_array[4][2:2] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next : '0;
     assign readback_array[4][31:3] = '0;
     for(genvar i0=0; i0<16; i0++) begin
@@ -1645,13 +2376,13 @@ module abr_reg (
     assign readback_array[22] = hwif_in.MLDSA_SIGNATURE.rd_ack ? hwif_in.MLDSA_SIGNATURE.rd_data : '0;
     assign readback_array[23] = hwif_in.MLDSA_PRIVKEY_OUT.rd_ack ? hwif_in.MLDSA_PRIVKEY_OUT.rd_data : '0;
     assign readback_array[24] = hwif_in.MLDSA_PRIVKEY_IN.rd_ack ? hwif_in.MLDSA_PRIVKEY_IN.rd_data : '0;
-    assign readback_array[25][0:0] = (decoded_reg_strb.mldsa_kv_rd_seed_ctrl && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_ctrl.read_en.value : '0;
-    assign readback_array[25][5:1] = (decoded_reg_strb.mldsa_kv_rd_seed_ctrl && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value : '0;
-    assign readback_array[25][6:6] = (decoded_reg_strb.mldsa_kv_rd_seed_ctrl && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value : '0;
-    assign readback_array[25][31:7] = (decoded_reg_strb.mldsa_kv_rd_seed_ctrl && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value : '0;
-    assign readback_array[26][0:0] = (decoded_reg_strb.mldsa_kv_rd_seed_status && !decoded_req_is_wr) ? hwif_in.mldsa_kv_rd_seed_status.READY.next : '0;
-    assign readback_array[26][1:1] = (decoded_reg_strb.mldsa_kv_rd_seed_status && !decoded_req_is_wr) ? field_storage.mldsa_kv_rd_seed_status.VALID.value : '0;
-    assign readback_array[26][9:2] = (decoded_reg_strb.mldsa_kv_rd_seed_status && !decoded_req_is_wr) ? hwif_in.mldsa_kv_rd_seed_status.ERROR.next : '0;
+    assign readback_array[25][0:0] = (decoded_reg_strb.kv_mldsa_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mldsa_seed_rd_ctrl.read_en.value : '0;
+    assign readback_array[25][5:1] = (decoded_reg_strb.kv_mldsa_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mldsa_seed_rd_ctrl.read_entry.value : '0;
+    assign readback_array[25][6:6] = (decoded_reg_strb.kv_mldsa_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.value : '0;
+    assign readback_array[25][31:7] = (decoded_reg_strb.kv_mldsa_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mldsa_seed_rd_ctrl.rsvd.value : '0;
+    assign readback_array[26][0:0] = (decoded_reg_strb.kv_mldsa_seed_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mldsa_seed_rd_status.READY.next : '0;
+    assign readback_array[26][1:1] = (decoded_reg_strb.kv_mldsa_seed_rd_status && !decoded_req_is_wr) ? field_storage.kv_mldsa_seed_rd_status.VALID.value : '0;
+    assign readback_array[26][9:2] = (decoded_reg_strb.kv_mldsa_seed_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mldsa_seed_rd_status.ERROR.next : '0;
     assign readback_array[26][31:10] = '0;
     for(genvar i0=0; i0<2; i0++) begin
         assign readback_array[i0*1 + 27][31:0] = (decoded_reg_strb.MLKEM_NAME[i0] && !decoded_req_is_wr) ? hwif_in.MLKEM_NAME[i0].NAME.next : '0;
@@ -1660,7 +2391,7 @@ module abr_reg (
         assign readback_array[i0*1 + 29][31:0] = (decoded_reg_strb.MLKEM_VERSION[i0] && !decoded_req_is_wr) ? hwif_in.MLKEM_VERSION[i0].VERSION.next : '0;
     end
     assign readback_array[31][0:0] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.READY.next : '0;
-    assign readback_array[31][1:1] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.VALID.next : '0;
+    assign readback_array[31][1:1] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? field_storage.MLKEM_STATUS.VALID.value : '0;
     assign readback_array[31][31:2] = '0;
     for(genvar i0=0; i0<8; i0++) begin
         assign readback_array[i0*1 + 32] = hwif_in.MLKEM_SHARED_KEY[i0].rd_ack ? hwif_in.MLKEM_SHARED_KEY[i0].rd_data : '0;
@@ -1669,31 +2400,62 @@ module abr_reg (
     assign readback_array[41] = hwif_in.MLKEM_DECAPS_KEY.rd_ack ? hwif_in.MLKEM_DECAPS_KEY.rd_data : '0;
     assign readback_array[42] = hwif_in.MLKEM_ENCAPS_KEY.rd_ack ? hwif_in.MLKEM_ENCAPS_KEY.rd_data : '0;
     assign readback_array[43] = hwif_in.MLKEM_CIPHERTEXT.rd_ack ? hwif_in.MLKEM_CIPHERTEXT.rd_data : '0;
-    assign readback_array[44][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
-    assign readback_array[44][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
-    assign readback_array[44][31:2] = '0;
-    assign readback_array[45][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
-    assign readback_array[45][31:1] = '0;
-    assign readback_array[46][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
-    assign readback_array[46][31:1] = '0;
-    assign readback_array[47][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
-    assign readback_array[47][31:1] = '0;
-    assign readback_array[48][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
-    assign readback_array[48][31:1] = '0;
-    assign readback_array[49][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
-    assign readback_array[49][31:1] = '0;
-    assign readback_array[50][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
-    assign readback_array[50][31:1] = '0;
-    assign readback_array[51][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
+    assign readback_array[44][0:0] = (decoded_reg_strb.kv_mlkem_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_seed_rd_ctrl.read_en.value : '0;
+    assign readback_array[44][5:1] = (decoded_reg_strb.kv_mlkem_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_seed_rd_ctrl.read_entry.value : '0;
+    assign readback_array[44][6:6] = (decoded_reg_strb.kv_mlkem_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.value : '0;
+    assign readback_array[44][31:7] = (decoded_reg_strb.kv_mlkem_seed_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_seed_rd_ctrl.rsvd.value : '0;
+    assign readback_array[45][0:0] = (decoded_reg_strb.kv_mlkem_seed_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_seed_rd_status.READY.next : '0;
+    assign readback_array[45][1:1] = (decoded_reg_strb.kv_mlkem_seed_rd_status && !decoded_req_is_wr) ? field_storage.kv_mlkem_seed_rd_status.VALID.value : '0;
+    assign readback_array[45][9:2] = (decoded_reg_strb.kv_mlkem_seed_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_seed_rd_status.ERROR.next : '0;
+    assign readback_array[45][31:10] = '0;
+    assign readback_array[46][0:0] = (decoded_reg_strb.kv_mlkem_msg_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_msg_rd_ctrl.read_en.value : '0;
+    assign readback_array[46][5:1] = (decoded_reg_strb.kv_mlkem_msg_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_msg_rd_ctrl.read_entry.value : '0;
+    assign readback_array[46][6:6] = (decoded_reg_strb.kv_mlkem_msg_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.value : '0;
+    assign readback_array[46][31:7] = (decoded_reg_strb.kv_mlkem_msg_rd_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_msg_rd_ctrl.rsvd.value : '0;
+    assign readback_array[47][0:0] = (decoded_reg_strb.kv_mlkem_msg_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_msg_rd_status.READY.next : '0;
+    assign readback_array[47][1:1] = (decoded_reg_strb.kv_mlkem_msg_rd_status && !decoded_req_is_wr) ? field_storage.kv_mlkem_msg_rd_status.VALID.value : '0;
+    assign readback_array[47][9:2] = (decoded_reg_strb.kv_mlkem_msg_rd_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_msg_rd_status.ERROR.next : '0;
+    assign readback_array[47][31:10] = '0;
+    assign readback_array[48][0:0] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.write_en.value : '0;
+    assign readback_array[48][5:1] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.write_entry.value : '0;
+    assign readback_array[48][6:6] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.value : '0;
+    assign readback_array[48][7:7] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.value : '0;
+    assign readback_array[48][8:8] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.value : '0;
+    assign readback_array[48][9:9] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.value : '0;
+    assign readback_array[48][10:10] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.value : '0;
+    assign readback_array[48][11:11] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.value : '0;
+    assign readback_array[48][12:12] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.value : '0;
+    assign readback_array[48][13:13] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.value : '0;
+    assign readback_array[48][31:14] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_ctrl && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_ctrl.rsvd.value : '0;
+    assign readback_array[49][0:0] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_sharedkey_wr_status.READY.next : '0;
+    assign readback_array[49][1:1] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_status && !decoded_req_is_wr) ? field_storage.kv_mlkem_sharedkey_wr_status.VALID.value : '0;
+    assign readback_array[49][9:2] = (decoded_reg_strb.kv_mlkem_sharedkey_wr_status && !decoded_req_is_wr) ? hwif_in.kv_mlkem_sharedkey_wr_status.ERROR.next : '0;
+    assign readback_array[49][31:10] = '0;
+    assign readback_array[50][0:0] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.error_en.value : '0;
+    assign readback_array[50][1:1] = (decoded_reg_strb.intr_block_rf.global_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.global_intr_en_r.notif_en.value : '0;
+    assign readback_array[50][31:2] = '0;
+    assign readback_array[51][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_en_r.error_internal_en.value : '0;
     assign readback_array[51][31:1] = '0;
-    assign readback_array[52][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
+    assign readback_array[52][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_en_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_en_r.notif_cmd_done_en.value : '0;
     assign readback_array[52][31:1] = '0;
-    assign readback_array[53][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
-    assign readback_array[54][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
-    assign readback_array[55][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[53][0:0] = (decoded_reg_strb.intr_block_rf.error_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_global_intr_r.agg_sts.value : '0;
+    assign readback_array[53][31:1] = '0;
+    assign readback_array[54][0:0] = (decoded_reg_strb.intr_block_rf.notif_global_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_global_intr_r.agg_sts.value : '0;
+    assign readback_array[54][31:1] = '0;
+    assign readback_array[55][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_r.error_internal_sts.value : '0;
     assign readback_array[55][31:1] = '0;
-    assign readback_array[56][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[56][0:0] = (decoded_reg_strb.intr_block_rf.notif_internal_intr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.value : '0;
     assign readback_array[56][31:1] = '0;
+    assign readback_array[57][0:0] = (decoded_reg_strb.intr_block_rf.error_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_intr_trig_r.error_internal_trig.value : '0;
+    assign readback_array[57][31:1] = '0;
+    assign readback_array[58][0:0] = (decoded_reg_strb.intr_block_rf.notif_intr_trig_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_intr_trig_r.notif_cmd_done_trig.value : '0;
+    assign readback_array[58][31:1] = '0;
+    assign readback_array[59][31:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_r.cnt.value : '0;
+    assign readback_array[60][31:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_r.cnt.value : '0;
+    assign readback_array[61][0:0] = (decoded_reg_strb.intr_block_rf.error_internal_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.error_internal_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[61][31:1] = '0;
+    assign readback_array[62][0:0] = (decoded_reg_strb.intr_block_rf.notif_cmd_done_intr_count_incr_r && !decoded_req_is_wr) ? field_storage.intr_block_rf.notif_cmd_done_intr_count_incr_r.pulse.value : '0;
+    assign readback_array[62][31:1] = '0;
 
     // Reduce the array
     always_comb begin
@@ -1701,7 +2463,7 @@ module abr_reg (
         readback_done = decoded_req & ~decoded_req_is_wr & ~decoded_strb_is_external;
         readback_err = '0;
         readback_data_var = '0;
-        for(int i=0; i<57; i++) readback_data_var |= readback_array[i];
+        for(int i=0; i<63; i++) readback_data_var |= readback_array[i];
         readback_data = readback_data_var;
     end
 
