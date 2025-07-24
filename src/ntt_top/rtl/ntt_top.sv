@@ -92,8 +92,8 @@ module ntt_top
     //NTT mem signals
     //Masking internal - TODO: remove and merge with mem_wr/rd interface after testing
     mem_if_t share_mem_wr_req, share_mem_rd_req, share_mem_rd_req_reg;
-    logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data, share_mem_wr_data_reg, share_mem_wr_data_comb;
-    logic [(MLKEM_NUM_SHARES*COEFF_PER_CLK)-1:0][MASKED_WIDTH-1:0] mlkem_share_mem_rd_data; //Used for mlkem masking
+    logic [3:0][1:0][MLDSA_SHARE_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data, share_mem_wr_data_reg, share_mem_wr_data_comb;
+    logic [(MLKEM_NUM_SHARES*COEFF_PER_CLK)-1:0][MLDSA_SHARE_WIDTH-1:0] mlkem_share_mem_rd_data; //Used for mlkem masking
 
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
@@ -275,7 +275,7 @@ module ntt_top
 
     always_comb begin
         for (int i = 0; i < 8; i++) begin
-            mlkem_share_mem_rd_data[i] = MASKED_WIDTH'(mem_rd_data[(i*48) +: 47]);
+            mlkem_share_mem_rd_data[i] = MLDSA_SHARE_WIDTH'(mem_rd_data[(i*48) +: 47]);
         end
     end
 
@@ -598,7 +598,7 @@ module ntt_top
             //Re-organize mem rd data since incoming shares are 48-bits. Internally we need 46-bit shares
             for (int i = 0; i < 4; i++) begin
                 for (int j = 0; j < 2; j++) begin
-                    share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MASKED_WIDTH-1)-2:0];
+                    share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MLDSA_SHARE_WIDTH-1)-2:0];
                 end
             end
             
