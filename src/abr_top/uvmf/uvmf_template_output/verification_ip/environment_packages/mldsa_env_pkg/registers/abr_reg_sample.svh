@@ -591,6 +591,45 @@
         end
     endfunction
 
+    /*----------------------- KV_WRITE_CTRL_REG SAMPLE FUNCTIONS -----------------------*/
+    function void kv_write_ctrl_reg::sample(uvm_reg_data_t  data,
+                                                   uvm_reg_data_t  byte_en,
+                                                   bit             is_read,
+                                                   uvm_reg_map     map);
+        m_current = get();
+        m_data    = data;
+        m_is_read = is_read;
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(write_en_bit_cg[bt]) this.write_en_bit_cg[bt].sample(data[0 + bt]);
+            foreach(write_entry_bit_cg[bt]) this.write_entry_bit_cg[bt].sample(data[1 + bt]);
+            foreach(hmac_key_dest_valid_bit_cg[bt]) this.hmac_key_dest_valid_bit_cg[bt].sample(data[6 + bt]);
+            foreach(hmac_block_dest_valid_bit_cg[bt]) this.hmac_block_dest_valid_bit_cg[bt].sample(data[7 + bt]);
+            foreach(mldsa_seed_dest_valid_bit_cg[bt]) this.mldsa_seed_dest_valid_bit_cg[bt].sample(data[8 + bt]);
+            foreach(ecc_pkey_dest_valid_bit_cg[bt]) this.ecc_pkey_dest_valid_bit_cg[bt].sample(data[9 + bt]);
+            foreach(ecc_seed_dest_valid_bit_cg[bt]) this.ecc_seed_dest_valid_bit_cg[bt].sample(data[10 + bt]);
+            foreach(rsvd_bit_cg[bt]) this.rsvd_bit_cg[bt].sample(data[11 + bt]);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( data[0:0]/*write_en*/  ,  data[5:1]/*write_entry*/  ,  data[6:6]/*hmac_key_dest_valid*/  ,  data[7:7]/*hmac_block_dest_valid*/  ,  data[8:8]/*mldsa_seed_dest_valid*/  ,  data[9:9]/*ecc_pkey_dest_valid*/  ,  data[10:10]/*ecc_seed_dest_valid*/  ,  data[31:11]/*rsvd*/   );
+        end
+    endfunction
+
+    function void kv_write_ctrl_reg::sample_values();
+        if (get_coverage(UVM_CVR_REG_BITS)) begin
+            foreach(write_en_bit_cg[bt]) this.write_en_bit_cg[bt].sample(write_en.get_mirrored_value() >> bt);
+            foreach(write_entry_bit_cg[bt]) this.write_entry_bit_cg[bt].sample(write_entry.get_mirrored_value() >> bt);
+            foreach(hmac_key_dest_valid_bit_cg[bt]) this.hmac_key_dest_valid_bit_cg[bt].sample(hmac_key_dest_valid.get_mirrored_value() >> bt);
+            foreach(hmac_block_dest_valid_bit_cg[bt]) this.hmac_block_dest_valid_bit_cg[bt].sample(hmac_block_dest_valid.get_mirrored_value() >> bt);
+            foreach(mldsa_seed_dest_valid_bit_cg[bt]) this.mldsa_seed_dest_valid_bit_cg[bt].sample(mldsa_seed_dest_valid.get_mirrored_value() >> bt);
+            foreach(ecc_pkey_dest_valid_bit_cg[bt]) this.ecc_pkey_dest_valid_bit_cg[bt].sample(ecc_pkey_dest_valid.get_mirrored_value() >> bt);
+            foreach(ecc_seed_dest_valid_bit_cg[bt]) this.ecc_seed_dest_valid_bit_cg[bt].sample(ecc_seed_dest_valid.get_mirrored_value() >> bt);
+            foreach(rsvd_bit_cg[bt]) this.rsvd_bit_cg[bt].sample(rsvd.get_mirrored_value() >> bt);
+        end
+        if (get_coverage(UVM_CVR_FIELD_VALS)) begin
+            this.fld_cg.sample( write_en.get_mirrored_value()  ,  write_entry.get_mirrored_value()  ,  hmac_key_dest_valid.get_mirrored_value()  ,  hmac_block_dest_valid.get_mirrored_value()  ,  mldsa_seed_dest_valid.get_mirrored_value()  ,  ecc_pkey_dest_valid.get_mirrored_value()  ,  ecc_seed_dest_valid.get_mirrored_value()  ,  rsvd.get_mirrored_value()   );
+        end
+    endfunction
+
     /*----------------------- ABR_REG__INTR_BLOCK_T__GLOBAL_INTR_EN_T SAMPLE FUNCTIONS -----------------------*/
     function void abr_reg__intr_block_t__global_intr_en_t::sample(uvm_reg_data_t  data,
                                                    uvm_reg_data_t  byte_en,
