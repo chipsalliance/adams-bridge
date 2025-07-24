@@ -1102,7 +1102,9 @@ initial begin
     // mlkem_pairwm_top_test(1, 1, 1); //masking_en, shuffling_en, accumulate_en
 
     init_mem();
-    mlkem_pairwm_top_test(1, 0, 0); //masking_en, shuffling_en, accumulate_en
+    mlkem_pairwm_top_test(1, 1, 1); //masking_en, shuffling_en, accumulate_en
+    mlkem_pairwm_top_test(1, 0, 1); //masking_en, shuffling_en, accumulate_en
+    mlkem_pairwm_top_test(0, 0, 1); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(0, 0, 1); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(1, 0, 1);
     // mlkem_pairwm_sampler_top_test(1,0,0);

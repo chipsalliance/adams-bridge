@@ -78,31 +78,6 @@ module ntt_mlkem_masked_BFU_mult
     );
     
     always_comb res = mul_res_reduced;
-    //1 clk
-    // always_ff @(posedge clk or negedge reset_n) begin
-    //     if (!reset_n) begin
-    //         for (int i = 0; i < WIDTH; i++)
-    //             res[i] <= 2'h0;
-    //     end
-    //     else if (zeroize) begin
-    //         for (int i = 0; i < WIDTH; i++)
-    //             res[i] <= 2'h0;
-    //     end
-    //     else begin
-    //         for (int i = 0; i < WIDTH; i++) begin
-    //             res[i][0] <= mul_res_reduced[0][i];
-    //             res[i][1] <= mul_res_reduced[1][i];
-    //         end
-    //     end
-    // end
-
-    // always_comb begin
-    //     for ( int i = 0; i < WIDTH; i++) begin
-    //         final_res[0][i] = res[i][0];
-    //         final_res[1][i] = res[i][1];
-    //     end
-        
-    // end
 
 
 endmodule

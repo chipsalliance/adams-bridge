@@ -114,7 +114,7 @@ module ntt_masked_butterfly1x2
         v11_combined = pwm_mode ? '0 : HALF_WIDTH'(v11_packed[0] + v11_packed[1]);
     end
 
-    //Perform div2 on combined outputs - TODO: add MLKEM instances
+    //Perform div2 on combined outputs
     ntt_div2 #(
         .REG_SIZE(HALF_WIDTH),
         .PRIME(abr_params_pkg::MLDSA_Q)

@@ -92,8 +92,8 @@ module ntt_top
     //NTT mem signals
     //Masking internal - TODO: remove and merge with mem_wr/rd interface after testing
     mem_if_t share_mem_wr_req, share_mem_rd_req, share_mem_rd_req_reg;
-    logic [3:0][1:0][MLDSA_SHARE_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data, share_mem_wr_data_reg, share_mem_wr_data_comb;
-    logic [(MLKEM_NUM_SHARES*COEFF_PER_CLK)-1:0][MLDSA_SHARE_WIDTH-1:0] mlkem_share_mem_rd_data; //Used for mlkem masking
+    logic [3:0][1:0][MASKED_WIDTH-1:0] share_mem_rd_data, share_mem_wr_data, share_mem_wr_data_reg, share_mem_wr_data_comb;
+    logic [(MLKEM_NUM_SHARES*COEFF_PER_CLK)-1:0][MASKED_WIDTH-1:0] mlkem_share_mem_rd_data; //Used for mlkem masking
 
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
@@ -275,7 +275,7 @@ module ntt_top
 
     always_comb begin
         for (int i = 0; i < 8; i++) begin
-            mlkem_share_mem_rd_data[i] = MLDSA_SHARE_WIDTH'(mem_rd_data[(i*48) +: 47]);
+            mlkem_share_mem_rd_data[i] = MASKED_WIDTH'(mem_rd_data[(i*48) +: 47]);
         end
     end
 
@@ -406,8 +406,8 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][0]); //TODO: justify
-                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][1]); //TODO: justify
+                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][0]); //In masked + shuffled mode, twiddle addr increments 2 clks before 2x2 receives enable. Using d1 version ensures additional 2 clk delay to match latency of a/b inputs to pairwm modules. (a/b require 4 cycles from incr_rd_addr to shares going to pairwm inputs)
+                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][1]); //In masked only mode, twiddle addr increments 3 clks before 2x2 receives enable, hence use d2 version
                 
                 mlkem_shares_pairwm_zeta13_i.z1_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][0]);
                 mlkem_shares_pairwm_zeta13_i.z1_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][1]); 
@@ -415,8 +415,8 @@ module ntt_top
                 mlkem_pairwm_zeta13_i = '0;
             end
             else begin
-                mlkem_pairwm_zeta13_i.z0_i = twiddle_factor_reg[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE];
-                mlkem_pairwm_zeta13_i.z1_i = twiddle_factor_reg[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)]; //TODO: justify
+                mlkem_pairwm_zeta13_i.z0_i = twiddle_factor_reg[(2*MLKEM_REG_SIZE)-1:MLKEM_REG_SIZE]; // In non-masking mode, twiddle addr increments 1 clk before 2x2 receives enable, hence use flopped twiddle_factor
+                mlkem_pairwm_zeta13_i.z1_i = twiddle_factor_reg[(3*MLKEM_REG_SIZE)-1:(2*MLKEM_REG_SIZE)];
                 mlkem_shares_pairwm_zeta13_i = '0;
             end
         end
@@ -426,7 +426,6 @@ module ntt_top
         end
     end
 
-    //ntt_hybrid_butterfly_2x2 #(
     ntt_hybrid_butterfly_2x2 #(
         .WIDTH(WIDTH)
     )
@@ -599,7 +598,7 @@ module ntt_top
             //Re-organize mem rd data since incoming shares are 48-bits. Internally we need 46-bit shares
             for (int i = 0; i < 4; i++) begin
                 for (int j = 0; j < 2; j++) begin
-                    share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MLDSA_SHARE_WIDTH-1)-2:0];
+                    share_mem_rd_data_reg[i][j] <= share_mem_rd_data[i][j][(MASKED_WIDTH-1)-2:0];
                 end
             end
             

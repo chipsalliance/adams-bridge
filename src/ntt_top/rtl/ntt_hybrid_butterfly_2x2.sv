@@ -115,7 +115,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         mldsa_w11_reg <= {uvw_i.w11_i, mldsa_w11_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
 
         mlkem_w10_reg <= {uvw_i.w10_i[MLKEM_REG_SIZE-1:0], mlkem_w10_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
-        mlkem_w11_reg <= {uvw_i.w11_i[MLKEM_REG_SIZE-1:0], mlkem_w11_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]}; //TODO: just use mldsa reg and choose mldsa_latency - mlkem_latency index?
+        mlkem_w11_reg <= {uvw_i.w11_i[MLKEM_REG_SIZE-1:0], mlkem_w11_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -211,7 +211,7 @@ ntt_masked_pwm #(
     .v(v00_share),
     .w(w00_share),
     .rnd({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
-    .res(mldsa_uv0_share) //(pwm_shares_uvo.uv0)
+    .res(mldsa_uv0_share)
 );
 
 ntt_masked_pwm #(
@@ -225,7 +225,7 @@ ntt_masked_pwm #(
     .v(v01_share),
     .w(w01_share),
     .rnd({rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1]}),
-    .res(mldsa_uv1_share) //(pwm_shares_uvo.uv1)
+    .res(mldsa_uv1_share)
 );
 
 //---------------------------
@@ -289,7 +289,6 @@ ntt_masked_butterfly1x2 #(
 
 //----------------------------------------------------
 //MLKEM Masked BFU stage 1 - Used in MLKEM masked INTT mode only - 16 clks
-//TODO: check input/output widths
 //----------------------------------------------------
 ntt_mlkem_masked_butterfly1x2 mlkem_masked_bf_1x2_inst0 
 (
@@ -347,40 +346,28 @@ ntt_butterfly #(
 //MLDSA/MLKEM - Unmasked BFU stage 2 - Used in all modes (irrespective of masking_en)
 //----------------------------------------------------
 logic [HALF_WIDTH-1:0] u20_int, v20_int, u21_int, v21_int;
-logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] /*u00_reg, u01_reg,*/ u10_reg, u11_reg;
-logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] /*v00_reg, v01_reg,*/ v10_reg, v11_reg;
+logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] u10_reg, u11_reg;
+logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] v10_reg, v11_reg;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        // u00_reg <= '0;
-        // u01_reg <= '0;
         u10_reg <= '0;
         u11_reg <= '0;
 
-        // v00_reg <= '0;
-        // v01_reg <= '0;
         v10_reg <= '0;
         v11_reg <= '0;
     end
     else if (zeroize) begin
-        // u00_reg <= '0;
-        // u01_reg <= '0;
         u10_reg <= '0;
         u11_reg <= '0;
 
-        // v00_reg <= '0;
-        // v01_reg <= '0;
         v10_reg <= '0;
         v11_reg <= '0;
     end
     else begin
-        // u00_reg <= {u00, u00_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
-        // u01_reg <= {u01, u01_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
         u10_reg <= {u10, u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
         u11_reg <= {u11, u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
 
-        // v00_reg <= {v00, v00_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
-        // v01_reg <= {v01, v01_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
         v10_reg <= {v10, v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
         v11_reg <= {v11, v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
     end
@@ -445,9 +432,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(bf_opu10), //(masking_en ? mlkem ? mlkem_masked_gs_stage1_uvo.u20_o : mldsa_masked_gs_stage1_uvo.u20_o /*TODO: masking passthrough*/ : intt_passthrough ? u00_reg[0] : u10),
-    .opv_i(bf_opv10), //(masking_en ? mlkem ? mlkem_masked_gs_stage1_uvo.v20_o : mldsa_masked_gs_stage1_uvo.v20_o /*TODO: masking passthrough*/ : intt_passthrough ? u01_reg[0] : v10),
-    .opw_i(bf_opw10), //(masking_en ? masked_w10_reg[0] /*TODO: masking mlkem*/ : pwo_mode ? w10 : mlkem ? mlkem_w10_reg[0] : mldsa_w10_reg[0]),
+    .opu_i(bf_opu10),
+    .opv_i(bf_opv10),
+    .opw_i(bf_opw10),
     .accumulate(accumulate),
     .u_o(u20_int),
     .v_o(v20_int),
@@ -462,9 +449,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(bf_opu11), //(masking_en ? mlkem ? mlkem_masked_gs_stage1_uvo.u21_o : mldsa_masked_gs_stage1_uvo.u21_o /*TODO: passthrough*/ : intt_passthrough ? v00_reg[0] : u11),
-    .opv_i(bf_opv11), //(masking_en ? mlkem ? mlkem_masked_gs_stage1_uvo.v21_o : mldsa_masked_gs_stage1_uvo.v21_o : intt_passthrough ? v01_reg[0] : v11),
-    .opw_i(bf_opw11), //(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : mlkem ? mlkem_w11_reg[0] : mldsa_w11_reg[0]),
+    .opu_i(bf_opu11),
+    .opv_i(bf_opv11),
+    .opw_i(bf_opw11),
     .accumulate(accumulate),
     .u_o(u21_int),
     .v_o(v21_int),
@@ -473,17 +460,17 @@ ntt_butterfly #(
 
 always_comb begin
     uv_o.u20_o = ntt_passthrough ? u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? masking_en ? u10/*_reg[0]*/ : u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                 : intt_passthrough ? masking_en ? u10 : u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
                                  : u20_int;
     uv_o.v20_o = ntt_passthrough ? v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
-                 : intt_passthrough ? masking_en ? u11/*_reg[0]*/ : u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                 : intt_passthrough ? masking_en ? u11 : u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
                                  : v20_int;
 
     uv_o.u21_o = ntt_passthrough ? u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? masking_en ? v10/*_reg[0]*/ : v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                 : intt_passthrough ? masking_en ? v10 : v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
                                  : u21_int;
     uv_o.v21_o = ntt_passthrough ? v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? masking_en ? v11/*_reg[0]*/ : v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                 : intt_passthrough ? masking_en ? v11 : v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
                                  : v21_int;
 end
 
@@ -609,7 +596,7 @@ end
                 unique case(mode)
                     ct: masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
                     gs: begin
-                        if (masking_en) //TODO: shuffling
+                        if (masking_en)
                             masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_MASKED_INTT_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_INTT_LATENCY-1:1]};
                         else
                             masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
@@ -618,7 +605,7 @@ end
                     pwa: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
                     pws: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
                     pairwm: begin
-                        if (masking_en) //TODO: shuffling
+                        if (masking_en)
                             masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-1:1]}
                                                             : {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_LATENCY-1:1]};
                         else
