@@ -40,12 +40,12 @@ module ntt_hybrid_butterfly_2x2
     input wire mlkem,
     input bf_uvwi_t uvw_i,      //Inputs are original form
     input pwo_uvwi_t pw_uvw_i,  //PWO inputs are original form - reuse for MLKEM PairWM
-    input pwm_shares_uvwi_t pwm_shares_uvw_i, //masked PWM inputs
+    input pwm_shares_uvwi_t pwm_shares_uvw_i, //masked PWM/PairWM inputs
     input wire [4:0][WIDTH-1:0] rnd_i,
     input wire accumulate,
     input masked_intt_uvwi_t bf_shares_uvw_i, //masked INTT inputs
     input mlkem_pairwm_zeta_t mlkem_pairwm_zeta13_i,
-    // input mlkem_pairwm_zeta_t mlkem_pairwm_zeta23_i,
+    input mlkem_masked_pairwm_zeta_shares_t mlkem_shares_pairwm_zeta13_i,
     input wire ntt_passthrough,
     input wire intt_passthrough,
 
@@ -75,6 +75,7 @@ logic pairwm_mode;
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg;
 logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] mlkem_masked_w10_reg, mlkem_masked_w11_reg;
 logic pwo_mode, masked_pwm_mode;
 
 //Shares - TODO replace with struct?
@@ -83,8 +84,16 @@ logic [1:0][WIDTH-1:0] w00_share, w01_share, w10_share, w11_share;
 logic [1:0][WIDTH-1:0] uv00_share, uv01_share, uv10_share, uv11_share;
 logic [1:0][WIDTH-1:0] uv00_share_reg, uv01_share_reg, uv10_share_reg, uv11_share_reg;
 logic [1:0][WIDTH-1:0] twiddle_w00_share, twiddle_w01_share;
-bf_uvo_t masked_gs_stage1_uvo;
+bf_uvo_t mldsa_masked_gs_stage1_uvo, mlkem_masked_gs_stage1_uvo;
+
+//pwm output shares
+logic [1:0][WIDTH-1:0] mldsa_uv0_share, mldsa_uv1_share;
 pwm_shares_uvo_t bf_pwm_shares_uvo;
+
+//zeta shares for pairwm
+logic [1:0][MLKEM_MASKED_WIDTH-1:0] z0_share, z1_share;
+//pairwm output shares
+logic [1:0][MLKEM_MASKED_WIDTH-1:0] mlkem_uv0_share, mlkem_uv1_share, mlkem_uv2_share, mlkem_uv3_share;
 
 //w delay flops
 //Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
@@ -158,12 +167,12 @@ always_comb begin
         v01 = uvw_i.v01_i;
         w01 = uvw_i.w01_i;
 
-        u10 = u10_int;
-        v10 = v10_int;
+        u10 = (masking_en & intt_passthrough) ? mlkem_masked_gs_stage1_uvo.u20_o : u10_int;
+        v10 = (masking_en & intt_passthrough) ? mlkem_masked_gs_stage1_uvo.v20_o : v10_int;
         w10 = mlkem ? HALF_WIDTH'(mlkem_w10_reg[0]) : mldsa_w10_reg[0];
 
-        u11 = u11_int;
-        v11 = v11_int;
+        u11 = (masking_en & intt_passthrough) ? mlkem_masked_gs_stage1_uvo.u21_o : u11_int;
+        v11 = (masking_en & intt_passthrough) ? mlkem_masked_gs_stage1_uvo.v21_o : v11_int;
         w11 = mlkem ? HALF_WIDTH'(mlkem_w11_reg[0]) : mldsa_w11_reg[0];
     end
 end
@@ -183,6 +192,9 @@ always_comb begin
     w01_share = pwm_shares_uvw_i.w1_i;
     w10_share = pwm_shares_uvw_i.w2_i;
     w11_share = pwm_shares_uvw_i.w3_i;
+
+    z0_share  = pairwm_mode ? mlkem_shares_pairwm_zeta13_i.z0_i : '0;
+    z1_share  = pairwm_mode ? mlkem_shares_pairwm_zeta13_i.z1_i : '0;
 end
 
 //----------------------------------------------------
@@ -199,7 +211,7 @@ ntt_masked_pwm #(
     .v(v00_share),
     .w(w00_share),
     .rnd({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
-    .res(pwm_shares_uvo.uv0)
+    .res(mldsa_uv0_share)
 );
 
 ntt_masked_pwm #(
@@ -213,13 +225,8 @@ ntt_masked_pwm #(
     .v(v01_share),
     .w(w01_share),
     .rnd({rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1]}),
-    .res(pwm_shares_uvo.uv1)
+    .res(mldsa_uv1_share)
 );
-
-always_comb begin //TODO: optimize
-    pwm_shares_uvo.uv2 = bf_pwm_shares_uvo.uv2;
-    pwm_shares_uvo.uv3 = bf_pwm_shares_uvo.uv3;
-end
 
 //---------------------------
 //Refresh randomness
@@ -249,19 +256,22 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else begin
         uv00_share_reg <= bf_shares_uvw_i.u00_i;
-        uv01_share_reg <= (gs_mode & masking_en) ? bf_shares_uvw_i.v00_i : bf_shares_uvw_i.u01_i;
-        uv10_share_reg <= (gs_mode & masking_en) ? bf_shares_uvw_i.u01_i : bf_shares_uvw_i.v00_i;
+        uv01_share_reg <= (gs_mode & masking_en & !intt_passthrough) ? bf_shares_uvw_i.v00_i : bf_shares_uvw_i.u01_i;
+        uv10_share_reg <= (gs_mode & masking_en & !intt_passthrough) ? bf_shares_uvw_i.u01_i : bf_shares_uvw_i.v00_i;
         uv11_share_reg <= bf_shares_uvw_i.v01_i;
 
-        twiddle_w00_share <= bf_shares_uvw_i.w00_i;
-        twiddle_w01_share <= bf_shares_uvw_i.w01_i;
+        //In passthrough mode, 1st stage is used instead of bypassed and 2nd stage is bypassed. Swap twiddles to ensure correct output
+        twiddle_w00_share[0] <= intt_passthrough ? WIDTH'(bf_shares_uvw_i.w10_i - rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w00_i[0];
+        twiddle_w00_share[1] <= intt_passthrough ? WIDTH'(rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w00_i[1];
+
+        twiddle_w01_share[0] <= intt_passthrough ? WIDTH'(bf_shares_uvw_i.w11_i - rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w01_i[0];
+        twiddle_w01_share[1] <= intt_passthrough ? WIDTH'(rnd_i[0][HALF_WIDTH-1:0]) : bf_shares_uvw_i.w01_i[1];
     end
 end
 
 //----------------------------------------------------
-//Masked BFU stage 1 - Used in masked PWM+INTT mode only - 264 clks
+//MLDSA Masked BFU stage 1 - Used in masked PWM/INTT mode only - 264 clks
 //PWM outputs: uv00[1:0], uv01[1:0], uv10[1:0], uv11[1:0]
-//TODO: optimize 2 of the masked PWM multipliers and use 1x2 multipliers instead
 //----------------------------------------------------
 ntt_masked_butterfly1x2 #(
     .WIDTH(WIDTH)
@@ -273,8 +283,26 @@ ntt_masked_butterfly1x2 #(
     .rnd_i({rnd_i[1], rnd_i[0], rnd_i[4], rnd_i[3], rnd_i[2]}),
     .mode(mode),
     .accumulate(accumulate),
-    .uv_o(masked_gs_stage1_uvo),
+    .uv_o(mldsa_masked_gs_stage1_uvo),
     .bf_pwm_uv_o(bf_pwm_shares_uvo)
+);
+
+//----------------------------------------------------
+//MLKEM Masked BFU stage 1 - Used in MLKEM masked INTT mode only - 16 clks
+//----------------------------------------------------
+ntt_mlkem_masked_butterfly1x2 mlkem_masked_bf_1x2_inst0 
+(
+    .clk(clk),
+    .reset_n(reset_n),
+    .zeroize(zeroize),
+    .uvw_i({{uv00_share_reg[1][MLKEM_MASKED_WIDTH-1:0], uv00_share_reg[0][MLKEM_MASKED_WIDTH-1:0]},
+            {uv10_share_reg[1][MLKEM_MASKED_WIDTH-1:0], uv10_share_reg[0][MLKEM_MASKED_WIDTH-1:0]}, 
+            {uv01_share_reg[1][MLKEM_MASKED_WIDTH-1:0], uv01_share_reg[0][MLKEM_MASKED_WIDTH-1:0]}, 
+            {uv11_share_reg[1][MLKEM_MASKED_WIDTH-1:0], uv11_share_reg[0][MLKEM_MASKED_WIDTH-1:0]}, 
+            {twiddle_w00_share[1][MLKEM_MASKED_WIDTH-1:0], twiddle_w00_share[0][MLKEM_MASKED_WIDTH-1:0]}, 
+            {twiddle_w01_share[1][MLKEM_MASKED_WIDTH-1:0], twiddle_w01_share[0][MLKEM_MASKED_WIDTH-1:0]}}),
+    .rnd_i({rnd_i[1][13:0], rnd_i[0][13:0], rnd_i[4][13:0], rnd_i[3][13:0], rnd_i[2][13:0]}),
+    .uv_o(mlkem_masked_gs_stage1_uvo)
 );
 
 //----------------------------------------------------
@@ -288,9 +316,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(masking_en ? HALF_WIDTH'(0) : u00),
-    .opv_i(masking_en ? HALF_WIDTH'(0) : v00),
-    .opw_i(masking_en ? HALF_WIDTH'(0) : w00),
+    .opu_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? u00 : u00),
+    .opv_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? u01 : v00),
+    .opw_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? uvw_i.w10_i[MLKEM_REG_SIZE-1:0] : w00),
     .accumulate(accumulate),
     .u_o(u10_int),
     .v_o(u11_int),
@@ -305,9 +333,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(masking_en ? HALF_WIDTH'(0) : u01),
-    .opv_i(masking_en ? HALF_WIDTH'(0) : v01),
-    .opw_i(masking_en ? HALF_WIDTH'(0) : w01),
+    .opu_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? v00 : u01),
+    .opv_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? v01 : v01),
+    .opw_i(masking_en ? HALF_WIDTH'(0) : intt_passthrough ? uvw_i.w11_i[MLKEM_REG_SIZE-1:0] : w01),
     .accumulate(accumulate),
     .u_o(v10_int),
     .v_o(v11_int),
@@ -318,42 +346,81 @@ ntt_butterfly #(
 //MLDSA/MLKEM - Unmasked BFU stage 2 - Used in all modes (irrespective of masking_en)
 //----------------------------------------------------
 logic [HALF_WIDTH-1:0] u20_int, v20_int, u21_int, v21_int;
-logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] u00_reg, u01_reg, u10_reg, u11_reg;
-logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] v00_reg, v01_reg, v10_reg, v11_reg;
+logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] u10_reg, u11_reg;
+logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] v10_reg, v11_reg;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        u00_reg <= '0;
-        u01_reg <= '0;
         u10_reg <= '0;
         u11_reg <= '0;
 
-        v00_reg <= '0;
-        v01_reg <= '0;
         v10_reg <= '0;
         v11_reg <= '0;
     end
     else if (zeroize) begin
-        u00_reg <= '0;
-        u01_reg <= '0;
         u10_reg <= '0;
         u11_reg <= '0;
 
-        v00_reg <= '0;
-        v01_reg <= '0;
         v10_reg <= '0;
         v11_reg <= '0;
     end
     else begin
-        u00_reg <= {u00_reg[1:0], u00};
-        u01_reg <= {u01_reg[1:0], u01};
-        u10_reg <= {u10_reg[1:0], u10};
-        u11_reg <= {u11_reg[1:0], u11};
+        u10_reg <= {u10, u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
+        u11_reg <= {u11, u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
 
-        v00_reg <= {v00_reg[1:0], v00};
-        v01_reg <= {v01_reg[1:0], v01};
-        v10_reg <= {v10_reg[1:0], v10};
-        v11_reg <= {v11_reg[1:0], v11};
+        v10_reg <= {v10, v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
+        v11_reg <= {v11, v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-1:1]};
+    end
+end
+
+logic [HALF_WIDTH-1:0] bf_opu10, bf_opv10, bf_opw10;
+logic [HALF_WIDTH-1:0] bf_opu11, bf_opv11, bf_opw11;
+
+always_comb begin
+    if (masking_en) begin
+        //Assign u, v inputs - masked mode
+        if (mlkem) begin //during passthrough 2nd stage is not used - assigning inputs to generate noise
+            bf_opu10 = mlkem_masked_gs_stage1_uvo.u20_o;
+            bf_opv10 = mlkem_masked_gs_stage1_uvo.v20_o;
+            bf_opw10 = masked_w10_reg[MASKED_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY]; //assuming mldsa bf stage 1 latency > mlkem bf stage 1 latency
+
+            bf_opu11 = mlkem_masked_gs_stage1_uvo.u21_o;
+            bf_opv11 = mlkem_masked_gs_stage1_uvo.v21_o;
+            bf_opw11 = masked_w11_reg[MASKED_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY];
+        end
+        else begin
+            bf_opu10 = mldsa_masked_gs_stage1_uvo.u20_o;
+            bf_opv10 = mldsa_masked_gs_stage1_uvo.v20_o;
+            bf_opw10 = masked_w10_reg[0];
+
+            bf_opu11 = mldsa_masked_gs_stage1_uvo.u21_o;
+            bf_opv11 = mldsa_masked_gs_stage1_uvo.v21_o;
+            bf_opw11 = masked_w11_reg[0];
+        end
+
+    end
+    else begin
+        //Assign u, v inputs - unmasked mode
+        bf_opu10 = u10;
+        bf_opv10 = v10;
+
+        bf_opu11 = u11;
+        bf_opv11 = v11;
+
+        //Assign w inputs - unmasked mode
+        if (pwo_mode) begin
+            bf_opw10 = w10;
+            bf_opw11 = w11;
+        end
+        else if (mlkem) begin
+            bf_opw10 = HALF_WIDTH'(mlkem_w10_reg[0]);
+            bf_opw11 = HALF_WIDTH'(mlkem_w11_reg[0]);
+        end
+        else begin
+            bf_opw10 = mldsa_w10_reg[0];
+            bf_opw11 = mldsa_w11_reg[0];
+        end
+        
     end
 end
 
@@ -365,9 +432,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(masking_en ? masked_gs_stage1_uvo.u20_o /*TODO: masking passthrough*/ : intt_passthrough ? u00_reg[2] : u10),
-    .opv_i(masking_en ? masked_gs_stage1_uvo.v20_o /*TODO: masking passthrough*/ : intt_passthrough ? u01_reg[2] : v10),
-    .opw_i(masking_en ? masked_w10_reg[0] /*TODO: masking mlkem*/ : pwo_mode ? w10 : mlkem ? mlkem_w10_reg[0] : mldsa_w10_reg[0]),
+    .opu_i(bf_opu10),
+    .opv_i(bf_opv10),
+    .opw_i(bf_opw10),
     .accumulate(accumulate),
     .u_o(u20_int),
     .v_o(v20_int),
@@ -382,9 +449,9 @@ ntt_butterfly #(
     .zeroize(zeroize),
     .mode(mode),
     .mlkem(mlkem),
-    .opu_i(masking_en ? masked_gs_stage1_uvo.u21_o /*TODO: passthrough*/ : intt_passthrough ? v00_reg[2] : u11),
-    .opv_i(masking_en ? masked_gs_stage1_uvo.v21_o : intt_passthrough ? v01_reg[2] : v11),
-    .opw_i(masking_en ? masked_w11_reg[0] : pwo_mode ? w11 : mlkem ? mlkem_w11_reg[0] : mldsa_w11_reg[0]),
+    .opu_i(bf_opu11),
+    .opv_i(bf_opv11),
+    .opw_i(bf_opw11),
     .accumulate(accumulate),
     .u_o(u21_int),
     .v_o(v21_int),
@@ -392,11 +459,19 @@ ntt_butterfly #(
 );
 
 always_comb begin
-    uv_o.u20_o = ntt_passthrough ? u10_reg[2] : u20_int;
-    uv_o.v20_o = ntt_passthrough ? v10_reg[2]  :v20_int;
+    uv_o.u20_o = ntt_passthrough ? u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
+                 : intt_passthrough ? masking_en ? u10 : u10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                                 : u20_int;
+    uv_o.v20_o = ntt_passthrough ? v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                 : intt_passthrough ? masking_en ? u11 : u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                                 : v20_int;
 
-    uv_o.u21_o = ntt_passthrough ? u11_reg[2] : u21_int;
-    uv_o.v21_o = ntt_passthrough ? v11_reg[2] : v21_int;
+    uv_o.u21_o = ntt_passthrough ? u11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
+                 : intt_passthrough ? masking_en ? v10 : v10_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                                 : u21_int;
+    uv_o.v21_o = ntt_passthrough ? v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
+                 : intt_passthrough ? masking_en ? v11 : v11_reg[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+                                 : v21_int;
 end
 
 //----------------------------------------------------
@@ -406,7 +481,7 @@ mlkem_pwo_uvwzi_t pairwm_uvw01_i, pairwm_uvw23_i;
 mlkem_pwo_t pairwm_uv01_o, pairwm_uv23_o;
 
 always_comb begin
-    if (mlkem & (mode == pairwm)) begin
+    if (pairwm_mode) begin
         pairwm_uvw01_i.u0_i = pw_uvw_i.u0_i[MLKEM_REG_SIZE-1:0];
         pairwm_uvw01_i.v0_i = pw_uvw_i.v0_i[MLKEM_REG_SIZE-1:0];
         pairwm_uvw01_i.w0_i = pw_uvw_i.w0_i[MLKEM_REG_SIZE-1:0];
@@ -455,6 +530,54 @@ always_comb begin
     pwo_uv_o.uv2 = pairwm_mode ? HALF_WIDTH'(pairwm_uv23_o.uv0_o) : mldsa_pwo_uv_o.uv2;
     pwo_uv_o.uv3 = pairwm_mode ? HALF_WIDTH'(pairwm_uv23_o.uv1_o) : mldsa_pwo_uv_o.uv3;
 end
+
+//----------------------------------------------------
+//MLKEM - Unmasked PairWM - TODO: check input/output widths
+//----------------------------------------------------
+ntt_masked_pairwm mlkem_masked_pawm_inst0 (
+    .clk(clk),
+    .reset_n(reset_n),
+    .zeroize(zeroize),
+    .accumulate(accumulate),
+    .u0({u00_share[1][MLKEM_MASKED_WIDTH-1:0], u00_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .v0({v00_share[1][MLKEM_MASKED_WIDTH-1:0], v00_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .w0({w00_share[1][MLKEM_MASKED_WIDTH-1:0], w00_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .u1({u01_share[1][MLKEM_MASKED_WIDTH-1:0], u01_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .v1({v01_share[1][MLKEM_MASKED_WIDTH-1:0], v01_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .w1({w01_share[1][MLKEM_MASKED_WIDTH-1:0], w01_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .zeta(z0_share),
+    .rnd({rnd_i[4][13:0], rnd_i[3][13:0], rnd_i[2][13:0], rnd_i[1][13:0], rnd_i[0][13:0]}),
+    .rnd_24bit({rnd_i[0][37:14]}),
+    .res0(mlkem_uv0_share),
+    .res1(mlkem_uv1_share)
+);
+
+ntt_masked_pairwm mlkem_masked_pawm_inst1 (
+    .clk(clk),
+    .reset_n(reset_n),
+    .zeroize(zeroize),
+    .accumulate(accumulate),
+    .u0({u10_share[1][MLKEM_MASKED_WIDTH-1:0], u10_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .v0({v10_share[1][MLKEM_MASKED_WIDTH-1:0], v10_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .w0({w10_share[1][MLKEM_MASKED_WIDTH-1:0], w10_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .u1({u11_share[1][MLKEM_MASKED_WIDTH-1:0], u11_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .v1({v11_share[1][MLKEM_MASKED_WIDTH-1:0], v11_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .w1({w11_share[1][MLKEM_MASKED_WIDTH-1:0], w11_share[0][MLKEM_MASKED_WIDTH-1:0]}),
+    .zeta(z1_share),
+    .rnd({rnd_i[0][13:0], rnd_i[4][13:0], rnd_i[3][13:0], rnd_i[2][13:0], rnd_i[1][13:0]}),
+    .rnd_24bit({rnd_i[1][37:14]}),
+    .res0(mlkem_uv2_share),
+    .res1(mlkem_uv3_share)
+);
+
+//Assign PWM output
+always_comb begin
+    pwm_shares_uvo.uv0 = pairwm_mode ? {WIDTH'(mlkem_uv0_share[1]), WIDTH'(mlkem_uv0_share[0])} : mldsa_uv0_share;
+    pwm_shares_uvo.uv1 = pairwm_mode ? {WIDTH'(mlkem_uv1_share[1]), WIDTH'(mlkem_uv1_share[0])} : mldsa_uv1_share;
+    pwm_shares_uvo.uv2 = pairwm_mode ? {WIDTH'(mlkem_uv2_share[1]), WIDTH'(mlkem_uv2_share[0])} : bf_pwm_shares_uvo.uv2;
+    pwm_shares_uvo.uv3 = pairwm_mode ? {WIDTH'(mlkem_uv3_share[1]), WIDTH'(mlkem_uv3_share[0])} : bf_pwm_shares_uvo.uv3;
+end
+
 //----------------------------------------------------
 //Determine when results are ready
 //----------------------------------------------------
@@ -473,18 +596,19 @@ end
                 unique case(mode)
                     ct: masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
                     gs: begin
-                        // if (masking_en)
-                        //     //TODO
-                        // else
+                        if (masking_en)
+                            masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_MASKED_INTT_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_INTT_LATENCY-1:1]};
+                        else
                             masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
                     end
                     pwm: masked_ready_reg <= 'b0;
                     pwa: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
                     pws: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
                     pairwm: begin
-                        // if (masking_en)
-                        //     //TODO
-                        // else
+                        if (masking_en)
+                            masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-1:1]}
+                                                            : {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_LATENCY-1:1]};
+                        else
                             masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_ACC_LATENCY-1:1]}
                                                                                : {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1:1]};
                     end

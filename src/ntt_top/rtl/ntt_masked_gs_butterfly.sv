@@ -134,7 +134,6 @@ module ntt_masked_gs_butterfly
     end
 
     //MLDSA: 210 clks
-    //MLKEM: TODO: new BFU mult with barrett redux, or split BFU mult into pre and post redux stages
     ntt_masked_BFU_mult #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (
@@ -148,7 +147,7 @@ module ntt_masked_gs_butterfly
         .rnd2(rnd_i[0]),
         .rnd3(rnd_i[1]),
         .rnd4(WIDTH'(rnd_i[2]+rnd_i[3])),
-        .res(mul_res) //pwm_mode ? uv : (u-v)*w
+        .res(mul_res)
     );
 
     always_comb begin
@@ -176,10 +175,6 @@ module ntt_masked_gs_butterfly
             end
         end
         else begin
-            // for (int i = 0; i < WIDTH; i++) begin
-            //     u_o[i] <= add_res_reg[i]; //div2 done outside 1st stage of butterfly (in 2x2)
-            //     v_o[i] <= mul_res[i];     //div2 done outside 1st stage of butterfly (in 2x2)
-            // end
             for (int i =0; i < WIDTH; i++) begin
                 mul_res0_reg[i] <= mul_res0[i];
                 mul_res1_reg[i] <= mul_res1[i];

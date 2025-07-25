@@ -47,7 +47,6 @@ module ntt_masked_BFU_add_sub
     logic [1:0] prime [WIDTH-1:0];
     logic [WIDTH-1:0] add_res_bool0, add_res_bool1, add_res_arith0, add_res_arith1;
 
-    //Add flops to inputs to avoid pruning TODO
     always_comb begin
         if (sub) begin
             v_int[0] = MLDSA_Q - v[0];

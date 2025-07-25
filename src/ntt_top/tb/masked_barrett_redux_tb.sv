@@ -29,8 +29,9 @@ module masked_barrett_redux_tb;
     logic reset_n;
     logic zeroize;
     logic [54:0] rnd_tb;
+    logic [23:0] rnd_24bit_tb;
     logic [1:0][MASKED_REG_SIZE-1:0] x;
-    logic [1:0][MLKEM_REG_SIZE-1:0] y;
+    logic [1:0][MASKED_REG_SIZE-1:0] y;
 
     // Instantiate DUT
     masked_barrett_reduction mbr_inst (
@@ -41,6 +42,7 @@ module masked_barrett_redux_tb;
         .y(y),
         .rnd_12bit(rnd_tb[11:0]),
         .rnd_14bit(rnd_tb[25:12]),
+        .rnd_24bit(rnd_24bit_tb),
         .rnd_for_Boolean0(rnd_tb[39:26]),
         .rnd_for_Boolean1(rnd_tb[53:40]),
         .rnd_1bit(rnd_tb[54])
@@ -50,7 +52,7 @@ module masked_barrett_redux_tb;
     always #5 clk = ~clk;
 
     // Helper function for modular add/sub
-    function automatic [MLKEM_REG_SIZE-1:0] barrett_redux_exp(
+    function automatic [MASKED_REG_SIZE-1:0] barrett_redux_exp(
         input [MASKED_REG_SIZE-1:0] opa
     );
         begin
@@ -63,36 +65,37 @@ module masked_barrett_redux_tb;
         int errors = 0;
         int total = 0;
         logic [23:0] x_in = 0;
-        logic [49:0][23:0] x_in_array;
-        logic [23:0] rnd;
+        logic [499:0][23:0] x_in_array;
+        logic [54:0] rnd;
         logic [11:0] expected;
         // Use small ranges for exhaustive test (full range is too large)
         
         fork
             begin
                 #10;
-                for (int i = 0; i < 50; i++) begin
+                for (int i = 0; i < 500; i++) begin
                     @(posedge clk);
-                    rnd = 0; //$urandom();
+                    rnd = 55'({$urandom(), $urandom()}); //$urandom();
                     x_in = $urandom();
                     x_in_array[i] = x_in;
-                    x[0] <= x_in - rnd;
-                    x[1] <= rnd;
-                    $display("Driving inputs for index %0d at time %t",i, $time);
-                    rnd_tb = 0; //55'({$urandom(), $urandom()});
-                    
-                    $display("Wait a clk");
+                    x[0] <= x_in - rnd[23:0];
+                    x[1] <= rnd[23:0];
+                    // $display("Driving inputs for index %0d at time %t",i, $time);
+                    rnd_tb = rnd;
+                    rnd_24bit_tb = 24'($urandom());
                 end
             end
             begin
-                repeat(25) @(posedge clk);
-                for (int i = 0; i < 50; i++)  begin
-                    $display("x_in_array = %h for index %0d at time %t", x_in_array[i], i, $time);
+                repeat(8) @(posedge clk);
+                for (int i = 0; i < 500; i++)  begin
                     expected = barrett_redux_exp(x_in_array[i]);
                     
                     // expected = barrett_redux_exp(x[0] + x[1]);
                     if (y[0] + y[1] !== expected) begin
+                        $display("========================");
+                        $display("x_in_array = %h for index %0d at time %t", x_in_array[i], i, $time);
                         $display("Error: Expected %0x, got %0x at i=%0d, at time %t", expected, y[0] + y[1], i,  $time);
+                        $display("========================");
                         errors++;
                     end
                     total++;
@@ -115,6 +118,7 @@ module masked_barrett_redux_tb;
         reset_n = 0;
         zeroize = 0;
         rnd_tb = 0;
+        rnd_24bit_tb = 0;
         x = 0;
 
         @(posedge clk);

@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 //======================================================================
-// masked_barrett_if_cond.sv
+// masked_barrett_if_cond_v2.sv
 // -----------
-// Performs masked Barrett reduction on a given input x.
-// Latency: 20 cycles //TODO
+// Checks if input is greater than 2^12.
+// Latency: 3 cycles
 
-module masked_barrett_if_cond
+module masked_barrett_if_cond_v2
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     #(
@@ -45,6 +45,10 @@ module masked_barrett_if_cond
     logic [1:0] boolean_y_unpacked [MLKEM_Q_WIDTH-1:0];
     logic [1:0] arith_Q_unpacked [MLKEM_Q_WIDTH-1:0];
 
+    logic [14:0] c_rolled_comb;
+    logic carry0, carry1;
+    logic c_carry_comb;
+
     always_comb begin
         for (int i = 0; i < 14; i++) begin
             c_rolled_unpacked[i][1] = c_rolled[1][i];
@@ -52,30 +56,16 @@ module masked_barrett_if_cond
         end
     end
 
-    //Convert input to boolean domain - 14+2 = 16 cycles
-    abr_masked_A2B_conv #(
-        .WIDTH(14)
-    ) barrett_a2b_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .zeroize(zeroize),
-        .x(c_rolled_unpacked),
-        .rnd(rnd_14bit),
-        .rnd_for_Boolean0(rnd_for_Boolean0),
-        .rnd_for_Boolean1(rnd_for_Boolean1),
-        .s(c_boolean)
-    );
+    always_comb begin
+        c_rolled_comb = c_rolled[0] + c_rolled[1];
+        carry0 = c_rolled_comb[12];
+        carry1 = c_rolled_comb[13];
+        c_carry_comb = carry0 | carry1;
 
-    //Compute carry - 1 cycle
-    abr_masked_OR barrett_or_inst (
-        .clk(clk),
-        .rst_n(rst_n),
-        .zeroize(zeroize),
-        .rnd(rnd_1bit),
-        .x(c_boolean[13]),
-        .y(c_boolean[12]),
-        .z(c_carry)
-    );
+        //Refresh randomness
+        c_carry[0] = c_carry_comb ^ rnd_1bit;
+        c_carry[1] = rnd_1bit;
+    end
 
     //Split q into shares
     always_comb begin
@@ -94,7 +84,7 @@ module masked_barrett_if_cond
                 .zeroize(zeroize),
                 .x(c_carry),
                 .y({q_share[1][i_AND], q_share[0][i_AND]}),
-                .rnd(rnd_12bit[i_AND]),
+                .rnd(rnd_14bit[i_AND]),
                 .c(boolean_y_unpacked[i_AND])
             );
         end
@@ -108,7 +98,7 @@ module masked_barrett_if_cond
         .rst_n(rst_n),
         .zeroize(zeroize),
         .x_boolean(boolean_y_unpacked),
-        .rnd(rnd_12bit),
+        .rnd(rnd_14bit[MLKEM_Q_WIDTH-1:0]),
         .x_arith(arith_Q_unpacked)
     );
 
