@@ -50,6 +50,18 @@ interface abr_top_cov_if
 
     assign pcr_sign_input_invalid = abr_top.abr_ctrl_inst.pcr_sign_input_invalid;
     assign pcr_sign_mode = abr_top.abr_ctrl_inst.pcr_sign_mode;
+    
+    always_ff @(posedge clk) begin
+        if (!rst_b) begin
+            pcr_process <= '0;
+        end
+        else if (pcr_sign_mode) begin
+            pcr_process <= '1;
+        end
+        else if (!mldsa_signing_process & !mldsa_keygen_signing_process) begin
+            pcr_process <= '0;
+        end
+    end
     `endif
 
     assign mldsa_cmd = abr_top.abr_ctrl_inst.mldsa_cmd_reg;
@@ -86,18 +98,6 @@ interface abr_top_cov_if
     assign makehint_failure = abr_top.abr_ctrl_inst.makehint_done_i & abr_top.abr_ctrl_inst.makehint_invalid_i;
     assign invalid_hint = abr_top.abr_ctrl_inst.sigdecode_h_invalid_i;
 
-    always_ff @(posedge clk) begin
-        if (!rst_b) begin
-            pcr_process <= '0;
-        end
-        else if (pcr_sign_mode) begin
-            pcr_process <= '1;
-        end
-        else if (!mldsa_signing_process & !mldsa_keygen_signing_process) begin
-            pcr_process <= '0;
-        end
-    end
-
     covergroup abr_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
         debugUnlock_or_scan_mode_switch_cp: coverpoint debugUnlock_or_scan_mode_switch;
@@ -120,13 +120,12 @@ interface abr_top_cov_if
         skdecode_error_cp: coverpoint skdecode_error;
         verify_failure_cp: coverpoint verify_failure;
         normcheck_mode_sign_cp: coverpoint normcheck_mode {
-            bins mode_0 = {0};
-            bins mode_1 = {1};
-            bins mode_2 = {2};
+            bins mode_0 = {1};
+            bins mode_1 = {2};
+            bins mode_2 = {4};
         }
         normcheck_mode_verify_cp: coverpoint normcheck_mode {
-            bins mode_0 = {0};
-            illegal_bins unsupported_modes = {1, 2};
+            bins mode_0 = {1};
         }
         normcheck_failure_cp: coverpoint normcheck_failure;
         makehint_failure_cp: coverpoint makehint_failure;
@@ -146,7 +145,7 @@ interface abr_top_cov_if
         errorXmldsa_verifying: cross error_flag_cp, mldsa_verifying_process_cp; // due to pcr_sign_input_invalid
         errorXmldsa_keygen_signing: cross error_flag_cp, mldsa_keygen_signing_process_cp; // due to pcr_sign_input_invalid
 
-        normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process);
+        normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process | mldsa_keygen_signing_process);
         normcheckXverifying_failure: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (mldsa_verifying_process);
 
         `ifdef CALIPTRA
