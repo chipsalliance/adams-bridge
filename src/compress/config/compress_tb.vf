@@ -40,6 +40,7 @@ ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond_v2.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_top.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_ctrl.sv

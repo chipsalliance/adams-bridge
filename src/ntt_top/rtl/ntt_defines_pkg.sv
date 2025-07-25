@@ -32,6 +32,7 @@ package ntt_defines_pkg;
 
 parameter NTT_REG_SIZE = REG_SIZE-1;
 parameter MASKED_WIDTH = 46;
+parameter MLKEM_MASKED_WIDTH = 2 * MLKEM_Q_WIDTH;
 // parameter MEM_DEPTH = 2**ABR_MEM_ADDR_WIDTH;
 
 //----------------------
@@ -64,12 +65,14 @@ parameter MLKEM_UNMASKED_PAIRWM_LATENCY = 4;
 parameter MLKEM_UNMASKED_BF_STAGE1_LATENCY = 3;
 parameter MLKEM_UNMASKED_BF_LATENCY  = MLKEM_UNMASKED_BF_STAGE1_LATENCY * 2;
 
-parameter MLKEM_MASKED_PAIRWM_LATENCY = 51;
-parameter MLKEM_MASKED_PAIRWM_ACC_LATENCY = 75;
-parameter MLKEM_MASKED_MULT_LATENCY = 2 + 23; //2 for two-share mult, 23 for masked barrett reduction
-parameter MLKEM_MASKED_ADD_SUB_LATENCY = 1+26+1+2+1; //internal flops + A2B + B2A conv
-
-
+parameter MLKEM_BARRETT_REDUCTION_LATENCY = 6; //latency of barrett reduction
+parameter MLKEM_MASKED_PAIRWM_LATENCY = 8+8+1+MLKEM_BARRETT_REDUCTION_LATENCY;
+parameter MLKEM_MASKED_PAIRWM_ACC_LATENCY = MLKEM_MASKED_PAIRWM_LATENCY + 1;
+parameter MLKEM_MASKED_MULT_LATENCY = 2 + 6; //23; //2 for two-share mult, /*23*/6 for masked barrett reduction
+parameter MLKEM_MASKED_ADD_SUB_LATENCY = 1+6; //internal flops + A2B + B2A conv
+parameter MLKEM_MASKED_BF_STAGE1_LATENCY = 16;
+parameter MLKEM_MASKED_INTT_LATENCY = MLKEM_MASKED_BF_STAGE1_LATENCY+1; //+1 for input flop //+ MLKEM_UNMASKED_BF_STAGE1_LATENCY; //masked INTT latency - in MLKEM, passthrough is applicable for masked layer, so no need for unmasked latency
+parameter MLKEM_MASKED_INTT_WRBUF_LATENCY = MLKEM_MASKED_INTT_LATENCY + 3; //masked INTT latency + mem latency for shuffled reads to begin
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
 //TODO: tb has issue with enums in top level ports. For now, using this workaround
 //Need to try something like bundling enable and mode into a struct to support enum.
@@ -131,7 +134,16 @@ typedef struct packed {
     logic [1:0][MASKED_WIDTH-1:0] v01_i;
     logic [1:0][MASKED_WIDTH-1:0] w00_i;
     logic [1:0][MASKED_WIDTH-1:0] w01_i;
-} masked_bf_uvwi_t; //Only used in masked INTT stage 1
+} masked_bf_uvwi_t; //Only used in MLDSA masked INTT stage 1
+
+typedef struct packed {
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] u00_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] u01_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] v00_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] v01_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] w00_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] w01_i;
+} mlkem_masked_bf_uvwi_t; //Only used in MLKEM masked INTT stage 1
 
 typedef struct packed {
     logic [1:0][MASKED_WIDTH-1:0] u00_i;
@@ -142,7 +154,7 @@ typedef struct packed {
     logic [1:0][MASKED_WIDTH-1:0] w01_i;
     logic [NTT_REG_SIZE-1:0] w10_i;
     logic [NTT_REG_SIZE-1:0] w11_i;
-} masked_intt_uvwi_t; //Only used in masked INTT
+} masked_intt_uvwi_t; //Only used in MLDSA masked INTT
 
 typedef struct packed {
     logic [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr;
@@ -220,6 +232,12 @@ typedef struct packed {
     logic [MLKEM_REG_SIZE-1:0] z0_i;
     logic [MLKEM_REG_SIZE-1:0] z1_i;
 } mlkem_pairwm_zeta_t;
+
+typedef struct packed {
+    //input zeta
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] z0_i;
+    logic [1:0][MLKEM_MASKED_WIDTH-1:0] z1_i;
+} mlkem_masked_pairwm_zeta_shares_t;
 
 typedef struct packed {
     logic [MLKEM_REG_SIZE-1:0] uv0_o;
