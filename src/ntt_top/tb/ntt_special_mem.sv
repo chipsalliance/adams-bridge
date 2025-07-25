@@ -61,6 +61,11 @@ module ntt_special_mem
     input wire [ADDR_WIDTH-4:0] acc_rd_addr,
     output logic [NTT_DATA_WIDTH-1:0] acc_data_out,
 
+    //PWM b interface
+    input wire ntt_pwm_b_en,
+    input wire [ADDR_WIDTH-4:0] ntt_pwm_b_rd_addr,
+    output logic [NTT_DATA_WIDTH-1:0] ntt_pwm_b_data_out,
+
     // reg interface
     input logic ntt_done,
     output logic [AHB_DATA_WIDTH-1:0] ctrl_data,
@@ -95,11 +100,13 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
         ahb_data_out <= '0;
         ntt_data_out <= '0;
         acc_data_out <= '0;
+        ntt_pwm_b_data_out <= '0;
     end
     else if (zeroize) begin
         ahb_data_out <= '0;
         ntt_data_out <= '0;
         acc_data_out <= '0;
+        ntt_pwm_b_data_out <= '0;
     end
     else begin
         if (ahb_ena) begin
@@ -119,6 +126,12 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
             acc_data_out <= (masking_en & pwm_mode) ? {mem[(acc_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
                              mem[(acc_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[acc_rd_addr*8][MASKED_REG_SIZE-1:0]}
                                                                         : NTT_DATA_WIDTH'({mem[(acc_rd_addr*4) + 3][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 2][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 1][REG_SIZE-1:0], mem[acc_rd_addr*4][REG_SIZE-1:0]});
+        end
+
+        if (ntt_pwm_b_en) begin
+            ntt_pwm_b_data_out <= (masking_en & pwm_mode) ? {mem[(ntt_pwm_b_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
+                             mem[(ntt_pwm_b_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[ntt_pwm_b_rd_addr*8][MASKED_REG_SIZE-1:0]}
+                                                                        : NTT_DATA_WIDTH'({mem[(ntt_pwm_b_rd_addr*4) + 3][REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*4) + 2][REG_SIZE-1:0], mem[(ntt_pwm_b_rd_addr*4) + 1][REG_SIZE-1:0], mem[ntt_pwm_b_rd_addr*4][REG_SIZE-1:0]});
         end
     end
 end

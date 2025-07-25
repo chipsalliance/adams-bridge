@@ -84,7 +84,7 @@ module ntt_wrapper_fpga
     //NTT signals
     mem_if_t ntt_mem_wr_req, ntt_mem_rd_req, pwm_a_rd_req, pwm_b_rd_req, gen_mem_rd_req, gen_mem_wr_req;
     logic ntt_done;
-    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data, acc_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data, ntt_mem_rd_data, sampler_data, acc_rd_data, ntt_mem_pwm_b_rd_data;
     logic masking_en_ctrl;
     logic accumulate;
 
@@ -172,20 +172,28 @@ module ntt_wrapper_fpga
         .clk(hclk),
         .reset_n(hreset_n),
         .zeroize(zeroize),
+        
         .ahb_ena(ahb_ena),
         .ahb_wea(ahb_wea),
         .ahb_addr(ahb_addr),
         .ahb_data_in(ahb_wdata),
         .ahb_data_out(ahb_rdata),
+        
         .ntt_enb(gen_mem_rd_req.rd_wr_en == RW_READ),
         .ntt_web(ntt_mem_wr_req.rd_wr_en == RW_WRITE),
         .ntt_rd_addr(9'(gen_mem_rd_req.addr)),
         .ntt_wr_addr(9'(ntt_mem_wr_req.addr)),
         .ntt_data_in(ntt_mem_wr_data),
         .ntt_data_out(ntt_mem_rd_data),
+
         .acc_enc((ntt_mem_rd_req.rd_wr_en == RW_READ) && ntt_accumulate),
         .acc_rd_addr(9'(ntt_mem_rd_req.addr)),
         .acc_data_out(acc_rd_data),
+
+        .ntt_pwm_b_en(pwm_b_rd_req.rd_wr_en == RW_READ), //pwm b input read interface. Writes through AHB. NTT cannot write to this location set. Only reads from it.
+        .ntt_pwm_b_rd_addr(9'(pwm_b_rd_req.addr)),
+        .ntt_pwm_b_data_out(ntt_mem_pwm_b_rd_data),
+
         .ntt_done(ntt_done),
         .ctrl_data(ctrl_data),
         .enable_data(enable_data),
@@ -259,7 +267,7 @@ ntt_top #(
     .pwm_a_rd_req(pwm_a_rd_req), //TODO: separate mem or same?
     .pwm_b_rd_req(pwm_b_rd_req),
     .pwm_a_rd_data(ntt_mem_rd_data),
-    .pwm_b_rd_data(sampler_mode ? sampler_data : ntt_mem_rd_data),
+    .pwm_b_rd_data(sampler_mode ? sampler_data : ntt_mem_pwm_b_rd_data),
     .ntt_done(ntt_done),
     .ntt_busy(),
     .masking_en_ctrl(masking_en_ctrl)

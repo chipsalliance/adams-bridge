@@ -194,19 +194,20 @@ localparam BASE_ADDR        = 32'h00000000;
       // zeroize_dut();
       init_mem_with_coeffs();
       $display("-----------------------------");
-      pgm_base_addr(NTT_SRC_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR);
+      pgm_base_addr(NTT_INTERIM_BASE_ADDR, NTT_SRC_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR); //pwm_src_b, src, interim, dest
       $display("-----------------------------");
       start_lfsr();
       $display("-----------------------------");
+      // zeroize_dut();
       // ct_test(1,0); //shuf, mode
       // $display("-----------------------------");
       // pgm_base_addr(NTT_DST_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR);
       // $display("-----------------------------");
       // gs_test(1,0,1,1); //shuf, mask, check, mode
       // $display("-----------------------------");
-      // pwm_test(0,0,0,1,2); //shuf, mask, acc, check, mode
-      // $display("-----------------------------");
-      // pwm_test(0,0,1,1,2);
+      pwm_test(0,0,0,1,2); //shuf, mask, acc, check, mode
+      $display("-----------------------------");
+      pwm_test(0,0,1,1,2);
       // $display("-----------------------------");
       // pwm_test(1,0,0,1,2);
       // $display("-----------------------------");
@@ -224,11 +225,11 @@ localparam BASE_ADDR        = 32'h00000000;
       // $display("-----------------------------");
       // pwm_test(1,1,1,1,2);
       // $display("-----------------------------");
-      pwm_sampler_test(1,0,1,2);
+      // pwm_sampler_test(1,0,1,2);
       // $display("-----------------------------");
       // pwm_sampler_test(1,1,0,2);
       // gs_test(1,1,1,1);
-      // $finish;
+      $finish;
 
    end
 

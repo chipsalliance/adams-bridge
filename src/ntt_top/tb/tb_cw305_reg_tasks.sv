@@ -411,6 +411,7 @@ task init_mem_with_coeffs;
   $display("Initializing memory with coefficients...");
   for (int i = 0; i < 256; i++) begin
     write_a_full_dword(NTT_SRC_BASE_ADDR+i, i);
+    write_a_full_dword((NTT_INTERIM_BASE_ADDR*4)+i, i*10);
     // $display("Writing coefficient %0d to address %h", i, NTT_SRC_BASE_ADDR+i);
   end
 endtask
@@ -418,9 +419,9 @@ endtask
   //----------------------------------------------------------------
   // Program base address
   //----------------------------------------------------------------
-  task pgm_base_addr(input logic [13:0] src, input logic [13:0] interim, input logic [13:0] dst);
+  task pgm_base_addr(input logic [13:0] pwm_src_b, input logic [13:0] src, input logic [13:0] interim, input logic [13:0] dst);
     $display("Programming base address...");
-    write_a_full_dword(NTT_BASE_ADDR_REG, {22'h0, 14'(src), 14'(interim), 14'(dst)});
+    write_a_full_dword(NTT_BASE_ADDR_REG, {8'h0, 14'(pwm_src_b), 14'(src), 14'(interim), 14'(dst)});
   endtask
 
   //----------------------------------------------------------------
@@ -576,9 +577,9 @@ task pwm_test (input logic shuf_en, input logic mask_en, input acc_en, input log
         end
 
         if (acc_en)
-          exp_data = (((i*i)%MLDSA_Q)+((i*i)%MLDSA_Q))%MLDSA_Q;
+          exp_data = (((i*(i*10))%MLDSA_Q)+((i*(i*10))%MLDSA_Q))%MLDSA_Q;
         else
-          exp_data = (i*i) % MLDSA_Q;
+          exp_data = (i*(i*10)) % MLDSA_Q;
 
         if (read_data[23:0] != exp_data) begin
           $display("Mismatch at index %0d: Expected %h, got %h", i, exp_data, read_data[23:0]);
