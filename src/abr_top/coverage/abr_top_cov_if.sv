@@ -30,7 +30,7 @@ interface abr_top_cov_if
     logic mldsa_valid;
     logic mlkem_valid;
     logic pcr_process;
-    logic kv_seed_data_present;
+    logic kv_mldsa_seed_data_present;
 
     logic error_flag;
     logic skdecode_error;
@@ -68,7 +68,7 @@ interface abr_top_cov_if
         end
     end
 
-    assign kv_seed_data_present  = abr_top.abr_ctrl_inst.kv_seed_data_present;
+    assign kv_mldsa_seed_data_present  = abr_top.abr_ctrl_inst.kv_mldsa_seed_data_present;
 
     assign error_flag = abr_top.abr_ctrl_inst.error_flag | abr_top.abr_ctrl_inst.error_flag_reg;
     assign skdecode_error = abr_top.abr_ctrl_inst.skdecode_error_i;
@@ -93,7 +93,7 @@ interface abr_top_cov_if
         else if (pcr_sign_mode) begin
             pcr_process <= '1;
         end
-        else if (!signing_process & !keygen_signing_process) begin
+        else if (!mldsa_signing_process & !mldsa_keygen_signing_process) begin
             pcr_process <= '0;
         end
     end
@@ -114,7 +114,7 @@ interface abr_top_cov_if
         mldsa_verifying_process_cp: coverpoint mldsa_verifying_process;
         mldsa_keygen_signing_process_cp: coverpoint mldsa_keygen_signing_process;
 
-        kv_seed_data_present_cp: coverpoint kv_seed_data_present ;
+        kv_mldsa_seed_data_present_cp: coverpoint kv_mldsa_seed_data_present ;
 
         error_flag_cp: coverpoint error_flag;
         skdecode_error_cp: coverpoint skdecode_error;
@@ -135,8 +135,8 @@ interface abr_top_cov_if
         mldsa_cmdXready: cross mldsa_sw_cmd, ready_cp{
             ignore_bins illegal_sw_cmd = binsof(mldsa_sw_cmd) intersect {5, 6, 7};
         }
-        mldsa_keygenXkv: cross keygen_process, kv_seed_data_present_cp;
-        zeroizeXmldsa_cmd: cross zeroize_cp, mldsa_cmd_cp{
+        mldsa_keygenXkv: cross mldsa_keygen_process_cp, kv_mldsa_seed_data_present_cp;
+        zeroizeXmldsa_cmd: cross zeroize_cp, mldsa_cmd_cp {
             ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
         }
         zeroizeXerror: cross zeroize_cp, error_flag_cp;
@@ -146,8 +146,8 @@ interface abr_top_cov_if
         errorXmldsa_verifying: cross error_flag_cp, mldsa_verifying_process_cp; // due to pcr_sign_input_invalid
         errorXmldsa_keygen_signing: cross error_flag_cp, mldsa_keygen_signing_process_cp; // due to pcr_sign_input_invalid
 
-        normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (signing_process);
-        normcheckXverifying_failure: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (verifying_process);
+        normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process);
+        normcheckXverifying_failure: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (mldsa_verifying_process);
 
         `ifdef CALIPTRA
         pcr_sign_cp: coverpoint pcr_sign_mode;
@@ -155,7 +155,7 @@ interface abr_top_cov_if
 
         errorXmldsa_cmd: cross error_flag_cp, mldsa_cmd_cp;
         readyXpcr_sign: cross ready_cp, pcr_sign_cp;
-        pcr_signXmldsa_cmd: cross pcr_sign_cp, mldsa_cmd{
+        pcr_signXmldsa_cmd: cross pcr_sign_cp, mldsa_cmd_cp {
             ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
         }
         zeroizeXpcr_sign: cross zeroize_cp, pcr_sign_cp;
