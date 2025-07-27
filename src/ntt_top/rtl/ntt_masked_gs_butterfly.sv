@@ -186,14 +186,14 @@ module ntt_masked_gs_butterfly
 
     always_comb begin
         for (int i = 0; i < WIDTH; i++) begin
+            u_o[i]   = pwm_mode ? accumulate ? add_res[i] : mul_res[i] : u_o_reg[i];
+            v_o[i]   = pwm_mode ? 2'b0 : v_o_reg[i];
+
             u_o_0[i] = u_o[i][0];
             u_o_1[i] = u_o[i][1];
 
             v_o_0[i] = v_o[i][0];
             v_o_1[i] = v_o[i][1];
-
-            u_o[i]   = pwm_mode ? accumulate ? add_res[i] : mul_res[i] : u_o_reg[i];
-            v_o[i]   = pwm_mode ? 2'b0 : v_o_reg[i];
         end
     end 
 
