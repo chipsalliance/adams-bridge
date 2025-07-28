@@ -192,7 +192,7 @@ localparam BASE_ADDR        = 32'h00000000;
 
       // mldsa_keygen_and_signing_test(); 
       // zeroize_dut();
-      init_mem_with_coeffs();
+      init_mem_with_8_coeffs();
       $display("-----------------------------");
       pgm_base_addr(NTT_INTERIM_BASE_ADDR, NTT_SRC_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR); //pwm_src_b, src, interim, dest
       $display("-----------------------------");
@@ -205,9 +205,9 @@ localparam BASE_ADDR        = 32'h00000000;
       // $display("-----------------------------");
       // gs_test(1,0,1,1); //shuf, mask, check, mode
       // $display("-----------------------------");
-      pwm_test(0,0,0,1,2); //shuf, mask, acc, check, mode
-      $display("-----------------------------");
-      pwm_test(0,0,1,1,2);
+      // pwm_test(0,0,0,1,2); //shuf, mask, acc, check, mode
+      // $display("-----------------------------");
+      // pwm_test(0,0,1,1,2);
       // $display("-----------------------------");
       // pwm_test(1,0,0,1,2);
       // $display("-----------------------------");
@@ -229,6 +229,9 @@ localparam BASE_ADDR        = 32'h00000000;
       // $display("-----------------------------");
       // pwm_sampler_test(1,1,0,2);
       // gs_test(1,1,1,1);
+      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      //pwm_test_simple_test(.mlkem(1), .shuf_en(0), .mask_en(0), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
       $finish;
 
    end

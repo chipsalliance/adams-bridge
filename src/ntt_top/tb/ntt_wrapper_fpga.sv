@@ -77,6 +77,7 @@ module ntt_wrapper_fpga
     logic [AHB_DATA_WIDTH-1:0] base_addr_data;
 
     logic ntt_enable, ntt_accumulate, ntt_sampler_valid, ntt_masking_en, ntt_shuffling_en;
+    logic ntt_mlkem;
     mode_t ntt_mode;
     logic zeroize;
     logic sampler_mode;
@@ -148,6 +149,7 @@ module ntt_wrapper_fpga
         .lfsr_enable_o(lfsr_enable),
         .zeroize_o(zeroize),
         .sampler_mode(sampler_mode),
+        .ntt_mlkem_o(ntt_mlkem),
         .ahb_ena(ahb_ena),
         .ahb_wea(ahb_wea),
         .ahb_addr(ahb_addr),
@@ -251,7 +253,7 @@ ntt_top #(
     .zeroize(zeroize),
     .mode(ntt_mode),
     .ntt_enable(ntt_enable),
-    .mlkem(1'b0),
+    .mlkem(ntt_mlkem),
     .ntt_mem_base_addr(base_addr_data[41:0]), 
     .pwo_mem_base_addr(base_addr_data[41:0]),
     .accumulate(ntt_accumulate),

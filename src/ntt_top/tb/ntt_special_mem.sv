@@ -79,7 +79,7 @@ module ntt_special_mem
 localparam DEPTH = 2**ADDR_WIDTH;
 reg [AHB_DATA_WIDTH-1:0] mem[DEPTH-1:0]; //mem[DEPTH-1] = status, mem[DEPTH-2] = enable, mem[DEPTH-3] = ctrl
 logic masking_en;
-logic pwm_mode;
+logic pwm_mode, pairwm_mode;
 
 always_comb begin
     base_addr_data = mem[BASE_ADDR_REG];
@@ -87,6 +87,7 @@ always_comb begin
     enable_data = mem[ENABLE_REG];
     masking_en = ctrl_data[5];
     pwm_mode = (ctrl_data[2:0] == 3'h2);
+    pairwm_mode = (ctrl_data[2:0] == 3'h5) & ctrl_data[9];
 
     sampler_data = {288'h0, mem[SAMPLER_INPUT_3_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_2_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_1_REG][REG_SIZE-1:0], mem[SAMPLER_INPUT_0_REG][REG_SIZE-1:0]};
 
@@ -117,13 +118,13 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
         end
 
         if (ntt_enb) begin
-            ntt_data_out <= (masking_en & masking_en_ctrl & !pwm_mode) ? {mem[(ntt_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
+            ntt_data_out <= (masking_en & masking_en_ctrl & !(pwm_mode | pairwm_mode)) ? {mem[(ntt_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
                              mem[(ntt_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(ntt_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[ntt_rd_addr*8][MASKED_REG_SIZE-1:0]}
                                                                         : NTT_DATA_WIDTH'({mem[(ntt_rd_addr*4) + 3][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 2][REG_SIZE-1:0], mem[(ntt_rd_addr*4) + 1][REG_SIZE-1:0], mem[ntt_rd_addr*4][REG_SIZE-1:0]});
         end
 
         if (acc_enc) begin
-            acc_data_out <= (masking_en & pwm_mode) ? {mem[(acc_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
+            acc_data_out <= (masking_en & (pwm_mode | pairwm_mode)) ? {mem[(acc_rd_addr*8) + 7][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 6][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 5][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 4][MASKED_REG_SIZE-1:0],
                              mem[(acc_rd_addr*8) + 3][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 2][MASKED_REG_SIZE-1:0], mem[(acc_rd_addr*8) + 1][MASKED_REG_SIZE-1:0], mem[acc_rd_addr*8][MASKED_REG_SIZE-1:0]}
                                                                         : NTT_DATA_WIDTH'({mem[(acc_rd_addr*4) + 3][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 2][REG_SIZE-1:0], mem[(acc_rd_addr*4) + 1][REG_SIZE-1:0], mem[acc_rd_addr*4][REG_SIZE-1:0]});
         end
@@ -154,7 +155,7 @@ always_ff @(posedge clk or negedge reset_n) begin: writing_memory
         end
 
         if (/*ntt_enb &*/ ntt_web) begin
-            if (masking_en & pwm_mode) begin
+            if (masking_en & (pwm_mode | pairwm_mode)) begin
                 mem[ntt_wr_addr *8]       <= {8'h0, ntt_data_in[  MASKED_REG_SIZE-1:0]};
                 mem[(ntt_wr_addr*8) + 1] <= {8'h0, ntt_data_in[2*MASKED_REG_SIZE-1:  MASKED_REG_SIZE]};
                 mem[(ntt_wr_addr*8) + 2] <= {8'h0, ntt_data_in[3*MASKED_REG_SIZE-1:2*MASKED_REG_SIZE]};

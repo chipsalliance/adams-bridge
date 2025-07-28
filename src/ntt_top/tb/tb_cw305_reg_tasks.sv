@@ -538,8 +538,8 @@ endtask
   //----------------------------------------------------------------
   // PWM mode
   //----------------------------------------------------------------
-task pwm_test (input logic shuf_en, input logic mask_en, input acc_en, input logic check_en, input logic [2:0] mode);
-  logic [63:0] read_data, exp_data;
+task pwm_test (input logic mlkem, input logic shuf_en, input logic mask_en, input acc_en, input logic check_en, input logic [2:0] mode);
+  logic [63:0] read_data, exp_data, mlkem_exp_data;
   logic [63:0] read_share0, read_share1;
   logic [23:0] test_vector_mem [255:0];
   int error_ctr = 0;
@@ -547,7 +547,7 @@ task pwm_test (input logic shuf_en, input logic mask_en, input acc_en, input log
   $display("Starting PWM test with shuf_en = %0d, mask_en = %0d, acc_en = %0d, check_en = %0d", shuf_en, mask_en, acc_en, check_en);
 
   // Write control register
-  write_a_full_dword(NTT_CTRL_REG, {56'h0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, mode});
+  write_a_full_dword(NTT_CTRL_REG, {54'h0, mlkem, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, mode});
 
   // Trigger NTT operation
   write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
@@ -576,7 +576,7 @@ task pwm_test (input logic shuf_en, input logic mask_en, input acc_en, input log
     end
     else begin
       for (int i = 0; i < 256; i++) begin
-        if (mask_en & shuf_en) begin
+        if (mask_en) begin
           read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2), read_share0);
           read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2)+1, read_share1);
           read_data = (read_share0 + read_share1);
@@ -676,3 +676,36 @@ task pwm_sampler_test (input logic mask_en, input logic acc_en, input logic chec
 endtask
 
 
+//----------------------------------------------------------------
+
+task pwm_test_simple_test (input logic mlkem, input logic  mask_en, input logic shuf_en, input acc_en, input logic check_en, input logic [2:0] mode);
+  logic [63:0] read_data, exp_data, mlkem_exp_data;
+  logic [63:0] read_share0, read_share1;
+  logic [23:0] test_vector_mem [255:0];
+  int error_ctr;
+ 
+  $display("Starting PWM test with mlkem = %0d, shuf_en = %0d, mask_en = %0d, acc_en = %0d, check_en = %0d", mlkem, shuf_en, mask_en, acc_en, check_en);
+  error_ctr = 0;
+  // Write control register
+  write_a_full_dword(NTT_CTRL_REG, {55'h0, mlkem, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, mode});
+ 
+  // Trigger NTT operation
+  write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
+ 
+  // Wait for NTT to complete
+  ntt_wait_ready();
+ 
+  $display("PWM done");
+  for (int i = 0; i < 16; i++) begin
+    if (mask_en) begin
+      read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2), read_share0);
+      read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2)+1, read_share1);
+      read_data = (read_share0 + read_share1);
+    end
+    else begin
+      read_a_full_dword((NTT_DST_BASE_ADDR*4)+i, read_data);
+    end
+    $display("Index %0d: got %h", i, read_data[23:0]);
+  end
+ 
+endtask

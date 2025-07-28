@@ -65,6 +65,7 @@ module ntt_ahb_mem_adapter
     output logic ntt_sampler_valid_o,
     output logic ntt_masking_en_o,
     output logic ntt_shuffle_en_o,
+    output logic ntt_mlkem_o,
     output logic zeroize_o,
     output logic lfsr_enable_o,
     output logic sampler_mode,
@@ -116,6 +117,7 @@ always_comb begin
     ntt_shuffle_en_o = mem_ctrl_data_i[6]; // Shuffle enabled
     zeroize_o = mem_ctrl_data_i[7]; // Zeroize operation
     sampler_mode = mem_ctrl_data_i[8]; // Sampler mode
+    ntt_mlkem_o = mem_ctrl_data_i[9]; // ML-KEM operation
 end
 
 always_ff @(posedge clk or negedge rst) begin
