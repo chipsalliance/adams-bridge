@@ -100,7 +100,7 @@ addrmap abr_reg {
         default hw = w;
         default resetsignal = reset_b;
         field {desc = "Status ready bit";} READY = 1'b0;
-        field {desc = "Status valid bit";} VALID = 1'b0;
+        field {hw = rw; desc = "Status valid bit";} VALID = 1'b0;
         field {desc = "The core is ready to recieve the message in streaming mode";} MSG_STREAM_READY = 1'b0;
     
     } MLDSA_STATUS;
@@ -280,8 +280,8 @@ addrmap abr_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
-    kv_read_ctrl_reg mldsa_kv_rd_seed_ctrl;
-    kv_status_reg mldsa_kv_rd_seed_status;
+    kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl;
+    kv_status_reg kv_mldsa_seed_rd_status;
 
     /* ---- MLKEM Component Name ---- */
     reg {
@@ -344,7 +344,7 @@ addrmap abr_reg {
         default hw = w;
         default resetsignal = reset_b;
         field {desc = "Status ready bit";} READY = 1'b0;
-        field {desc = "Status valid bit";} VALID = 1'b0;
+        field {hw = rw; desc = "Status valid bit";} VALID = 1'b0;
     
     } MLKEM_STATUS;
     
@@ -377,7 +377,7 @@ addrmap abr_reg {
     } MLKEM_SEED_Z[8];
 
     /* ---- MLKEM Component Shared Key ---- */
-    reg {
+    external reg {
         name = "MLKEM component shared key register type definition";
         desc = "8 32-bit registers storing the shared key.";
 
@@ -428,6 +428,14 @@ addrmap abr_reg {
         mementries = 392;
         memwidth = 32;
     } MLKEM_CIPHERTEXT;
+
+    kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl;
+    kv_status_reg kv_mlkem_seed_rd_status;
+    kv_read_ctrl_reg kv_mlkem_msg_rd_ctrl;
+    kv_status_reg kv_mlkem_msg_rd_status;
+    kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl;
+    kv_status_reg kv_mlkem_sharedkey_wr_status;
+
 
     ////////////////////////////////////////////////////////////////
     // Interrupts

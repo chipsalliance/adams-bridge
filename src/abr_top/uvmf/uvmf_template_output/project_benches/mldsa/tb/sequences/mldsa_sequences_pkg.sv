@@ -57,6 +57,12 @@ package mldsa_sequences_pkg;
   `include "src/ML_KEM_encaps_KATs_sequence.svh"
   `include "src/ML_KEM_decaps_KATs_sequence.svh"
   `include "src/ML_KEM_keygen_decaps_self_check_sequence.svh"
+  `include "src/ML_KEM_base_sequence.svh"
+  `include "src/ML_KEM_randomized_keygen_sequence.svh"
+  `include "src/ML_KEM_randomized_encap_sequence.svh"
+  `include "src/ML_KEM_randomized_decap_sequence.svh"
+  `include "src/ML_KEM_randomized_keygen_decap_sequence.svh"
+  `include "src/ML_KEM_randomized_all_sequence.svh"
 
   // pragma uvmf custom package_item_additional begin
   // UVMF_CHANGE_ME : When adding new sequences to the src directory

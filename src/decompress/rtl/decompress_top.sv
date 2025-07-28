@@ -75,8 +75,13 @@ module decompress_top
         .PISO_BUFFER_W(104),
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
+        `ifdef VERILATOR
+        .INPUT_RATES('{64, 64, 64, 64, 0}),
+        .OUTPUT_RATES('{4, 20, 44, 48, 0})
+        `else
         .INPUT_RATES('{64, 64, 64, 64}),
         .OUTPUT_RATES('{4, 20, 44, 48})
+        `endif
     ) abr_piso_inst (
         .clk(clk),
         .rst_b(reset_n),

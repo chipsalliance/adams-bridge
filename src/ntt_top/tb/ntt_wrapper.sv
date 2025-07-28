@@ -62,7 +62,7 @@ module ntt_wrapper
     mem_if_t mem_wr_req;
     mem_if_t mem_rd_req;
     logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data;
-    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data_int, mem_rd_data;
 
 
     //PWM A/B, PWA/S memory IF
@@ -117,7 +117,7 @@ module ntt_wrapper
         .web(1'b0), //Need only one write port so this can be 0
         .addrb(mem_rd_req.addr),
         .dinb(),
-        .doutb(mem_rd_data),
+        .doutb(mem_rd_data_int),
         .load_tb_values(load_tb_values),
         .load_tb_addr(load_tb_addr)
     );
@@ -163,6 +163,18 @@ module ntt_wrapper
         .load_tb_values(load_tb_values),
         .load_tb_addr(load_tb_addr)
     );
+
+    always_comb begin
+        mem_rd_data = (mlkem & (mode == gs) & ntt_top_inst0.ntt_ctrl_inst0.masking_en_ctrl) ? {MLDSA_SHARE_WIDTH'(0),
+                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[95:72]),
+                                                                                               MLDSA_SHARE_WIDTH'(0),
+                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[71:48]),
+                                                                                               MLDSA_SHARE_WIDTH'(0),
+                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[47:24]),
+                                                                                               MLDSA_SHARE_WIDTH'(0),
+                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[23:0])}  
+                                                                                            : mem_rd_data_int;
+    end
 
     ntt_top #(
         .REG_SIZE(REG_SIZE),

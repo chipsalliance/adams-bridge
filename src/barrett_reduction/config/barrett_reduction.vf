@@ -2,3 +2,4 @@
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_reduction.sv
+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond_v2.sv
