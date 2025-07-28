@@ -416,6 +416,15 @@ task init_mem_with_coeffs;
   end
 endtask
 
+task init_mem_with_8_coeffs;
+  $display("Initializing memory with coefficients...");
+  for (int i = 0; i < 8; i++) begin
+    write_a_full_dword(NTT_SRC_BASE_ADDR+i, i);
+    write_a_full_dword((NTT_INTERIM_BASE_ADDR*4)+i, i*10);
+    // $display("Writing coefficient %0d to address %h", i, NTT_SRC_BASE_ADDR+i);
+  end
+endtask
+
   //----------------------------------------------------------------
   // Program base address
   //----------------------------------------------------------------
