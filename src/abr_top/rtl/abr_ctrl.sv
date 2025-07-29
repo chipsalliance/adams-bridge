@@ -796,7 +796,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign notif_intr = abr_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
 
   always_comb begin
-    abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
+    abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge;
     abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = abr_status_done;
   end
 
@@ -1493,13 +1493,10 @@ end
     else if(zeroize) begin
       abr_prog_cntr <= ABR_ZEROIZE;
     end
-    else begin
-      if (error_flag_edge) begin
-        abr_prog_cntr <= ABR_ERROR;
-      end
-      else begin
-        abr_prog_cntr <= abr_prog_cntr_nxt;
-      end
+    else if (error_flag_reg) begin
+      abr_prog_cntr <= ABR_ERROR;
+    end else begin
+      abr_prog_cntr <= abr_prog_cntr_nxt;
     end
   end
 
