@@ -648,6 +648,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
     abr_reg_hwif_in.MLDSA_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
+    abr_reg_hwif_in.MLDSA_STATUS.ERROR.next = error_flag_reg;
     abr_reg_hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next = stream_msg_rdy;
 
     stream_msg_mode = abr_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
@@ -725,6 +726,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
     abr_reg_hwif_in.MLKEM_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mlkem_valid_reg;
+    abr_reg_hwif_in.MLKEM_STATUS.ERROR.next = error_flag_reg;
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
@@ -1461,12 +1463,15 @@ always_comb kv_mlkem_msg_write_data = '0;
   //ML-DSA sequencer, instruction is busy
   always_comb subcomponent_busy = !(abr_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
                                   sampler_busy_i | ntt_busy[0];
-`ifdef CALIPTRA
-  always_comb pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
-  always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid | encaps_input_check_failure | decaps_input_check_failure;
-`else
-  always_comb error_flag = skdecode_error_i;
-`endif                                  
+
+always_comb begin
+  error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
+  `ifdef CALIPTRA
+  //extra error condition for caliptra
+  pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  error_flag |= pcr_sign_input_invalid;
+  `endif
+end                              
 
   always_ff @(posedge clk or negedge rst_b) 
   begin : error_detection
