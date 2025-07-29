@@ -636,7 +636,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
   `endif
   
-  always_comb external_mu = 0; //abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value; //TODO: enable after ExternalMu validation
+  always_comb external_mu = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   always_comb abr_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
 
   always_comb begin : ABR_REG_HWIF_IN_ASSIGN
