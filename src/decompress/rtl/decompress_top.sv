@@ -42,13 +42,15 @@ module decompress_top
         output logic decompress_done
     );
 
+    localparam DECOMP_DATA_W = MLKEM_Q_WIDTH;
+
     logic api_rd_en_f;
     logic piso_hold_o;
     logic read_done;
     logic [3:0] d; // Decompression count
     logic piso_data_valid;
-    logic [48-1:0] piso_data_o; //FIXME magic number
-    logic [COEFF_PER_CLK-1:0][12-1:0] decompress_data_i; //FIXME magic number
+    logic [(COEFF_PER_CLK*DECOMP_DATA_W)-1:0] piso_data_o;
+    logic [COEFF_PER_CLK-1:0][DECOMP_DATA_W-1:0] decompress_data_i;
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] decompress_data_o;
     logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr;
     logic write_done;
