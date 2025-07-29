@@ -199,39 +199,44 @@ localparam BASE_ADDR        = 32'h00000000;
       start_lfsr();
       $display("-----------------------------");
       // zeroize_dut();
-      // ct_test(1,0); //shuf, mode
+      // ct_test(.mlkem(0), .shuf_en(1), .mode(0));
       // $display("-----------------------------");
-      // pgm_base_addr(NTT_DST_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR);
+      // pgm_base_addr(NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR);
       // $display("-----------------------------");
-      // gs_test(1,0,1,1); //shuf, mask, check, mode
+      // gs_test(.mlkem(0), .shuf_en(1), .mask_en(0), .check_en(1), .mode(1));
       // $display("-----------------------------");
-      // pwm_test(0,0,0,1,2); //shuf, mask, acc, check, mode
+      // pwm_test(.mlkem(0), .shuf_en(0), .mask_en(0), .acc_en(0), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(0,0,1,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(0), .mask_en(0), .acc_en(1), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(1,0,0,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(1), .mask_en(0), .acc_en(0), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(1,0,1,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(1), .mask_en(0), .acc_en(1), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_sampler_test(0,0,1,2); //mask, acc, check, mode
+      // pwm_sampler_test(.mlkem(0), .mask_en(0), .acc_en(0), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_sampler_test(0,1,1,2);
+      // pwm_sampler_test(.mlkem(0), .mask_en(0), .acc_en(1), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(0,1,0,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(0), .mask_en(1), .acc_en(0), .check_en(0), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(0,1,1,0,2);
+      // pwm_test(.mlkem(0), .shuf_en(0), .mask_en(1), .acc_en(1), .check_en(0), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(1,1,0,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_test(1,1,1,1,2);
+      // pwm_test(.mlkem(0), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_sampler_test(1,0,1,2);
+      // pwm_sampler_test(.mlkem(0), .mask_en(1), .acc_en(0), .check_en(1), .mode(2));
       // $display("-----------------------------");
-      // pwm_sampler_test(1,1,0,2);
-      // gs_test(1,1,1,1);
-      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
-      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
-      //pwm_test_simple_test(.mlkem(1), .shuf_en(0), .mask_en(0), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      // pwm_sampler_test(.mlkem(0), .mask_en(1), .acc_en(1), .check_en(0), .mode(2));
+      // $display("-----------------------------");
+      // gs_test(.mlkem(0), .shuf_en(1), .mask_en(1), .check_en(1), .mode(1));
+      // $display("-----------------------------");
+      pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      $display("-----------------------------");
+      pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      // $display("-----------------------------");
+      // pwm_test_simple_test(.mlkem(1), .shuf_en(0), .mask_en(0), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      // $display("-----------------------------");
       $finish;
 
    end

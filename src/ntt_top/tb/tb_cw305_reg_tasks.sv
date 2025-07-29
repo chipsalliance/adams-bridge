@@ -458,11 +458,12 @@ endtask
   // NTT mode
   //----------------------------------------------------------------
 
-task ct_test (input logic shuf_en, input logic [2:0] mode);
+task ct_test (input logic mlkem, input logic shuf_en, input logic [2:0] mode);
   $display("Starting CT test with shuf_en = %0d", shuf_en);
 
   $display("Writing control register with shuf_en = %0d", shuf_en);
-  write_a_full_dword(NTT_CTRL_REG, {56'h0, 1'b0, shuf_en, 1'b0, 1'b1, 1'b0, mode});
+  // write_a_full_dword(NTT_CTRL_REG, {56'h0, 1'b0, shuf_en, 1'b0, 1'b1, 1'b0, mode});
+  write_a_full_dword(NTT_CTRL_REG, {54'h0, mlkem, 1'b0, 1'b0, shuf_en, 1'b0, 1'b1, 1'b0, mode});
 
   $display("Triggering NTT operation");
   write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
@@ -476,7 +477,7 @@ endtask
   //----------------------------------------------------------------
   // INTT mode
   //----------------------------------------------------------------
-task gs_test (input logic shuf_en, input logic mask_en, input logic check_en, input logic [2:0] mode);
+task gs_test (input logic mlkem, input logic shuf_en, input logic mask_en, input logic check_en, input logic [2:0] mode);
   logic [63:0] read_data, read_share0, read_share1;
   int error_ctr = 0;
   logic [63:0] test_vector_mem [255:0];
@@ -484,7 +485,7 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en, in
 
   $display("Initializing memory with coefficients from ct...");
 
-  if (mask_en) begin
+  if (!mlkem & mask_en) begin
     $readmemh("/home/ws/caliptra/kupadhyayula/ws_may12025/gs_masked_input.hex", masked_test_vector_mem);
     for (int i = 0; i < 512; i++) begin
       write_a_full_dword(NTT_SRC_BASE_ADDR+i, masked_test_vector_mem[i]);
@@ -504,7 +505,8 @@ task gs_test (input logic shuf_en, input logic mask_en, input logic check_en, in
   $display("Starting GS test with shuf_en = %0d, mask_en = %0d, check_en = %0d", shuf_en, mask_en, check_en);
 
   // Write control register
-  write_a_full_dword(NTT_CTRL_REG, {56'h0, 1'b0, shuf_en, mask_en, 1'b1, 1'b0, mode});
+  // write_a_full_dword(NTT_CTRL_REG, {56'h0, 1'b0, shuf_en, mask_en, 1'b1, 1'b0, mode});
+  write_a_full_dword(NTT_CTRL_REG, {54'h0, mlkem, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, 1'b0, mode});
 
   // Trigger NTT operation
   write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
@@ -544,6 +546,10 @@ task pwm_test (input logic mlkem, input logic shuf_en, input logic mask_en, inpu
   logic [23:0] test_vector_mem [255:0];
   int error_ctr = 0;
 
+  if (mlkem & (mode != 5)) begin
+    $error("ML-KEM mode is only supported for mode 5");
+    $finish;
+  end
   $display("Starting PWM test with shuf_en = %0d, mask_en = %0d, acc_en = %0d, check_en = %0d", shuf_en, mask_en, acc_en, check_en);
 
   // Write control register
@@ -608,17 +614,23 @@ endtask
   //----------------------------------------------------------------
   // PWM Sampler mode
   //----------------------------------------------------------------
-task pwm_sampler_test (input logic mask_en, input logic acc_en, input logic check_en, input logic [2:0] mode);
+task pwm_sampler_test (input logic mlkem, input logic mask_en, input logic acc_en, input logic check_en, input logic [2:0] mode);
   logic [63:0] read_data, read_share0, read_share1;
   int error_ctr = 0;
   logic rand_svalid;
   logic [63:0] test_vector_mem [255:0];
   int count;
   logic [383:0] sampler_input;
+
+  if (mlkem & (mode != 5)) begin
+    $error("ML-KEM mode is only supported for mode 5");
+    $finish;
+  end
+
   $display("Starting PWM sampler test with mask_en = %0d, acc_en = %0d", mask_en, acc_en);
 
   $display("Writing control register with mask_en = %0d, acc_en = %0d", mask_en, acc_en);
-  write_a_full_dword(NTT_CTRL_REG, {55'h0, 1'b1, 1'b0, 1'b0, mask_en, 1'b0, acc_en, mode});
+  write_a_full_dword(NTT_CTRL_REG, {54'h0, mlkem, 1'b1, 1'b0, 1'b0, mask_en, 1'b0, acc_en, mode});
 
   count = 0;
 
@@ -684,10 +696,59 @@ task pwm_test_simple_test (input logic mlkem, input logic  mask_en, input logic 
   logic [23:0] test_vector_mem [255:0];
   int error_ctr;
  
+  if (mlkem & (mode != 5)) begin
+    $error("ML-KEM mode is only supported for mode 5");
+    $finish;
+  end
+
   $display("Starting PWM test with mlkem = %0d, shuf_en = %0d, mask_en = %0d, acc_en = %0d, check_en = %0d", mlkem, shuf_en, mask_en, acc_en, check_en);
   error_ctr = 0;
   // Write control register
   write_a_full_dword(NTT_CTRL_REG, {55'h0, mlkem, 1'b0, 1'b0, shuf_en, mask_en, 1'b1, acc_en, mode});
+ 
+  // Trigger NTT operation
+  write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
+ 
+  // Wait for NTT to complete
+  ntt_wait_ready();
+ 
+  $display("PWM done");
+  for (int i = 0; i < 16; i++) begin
+    if (mask_en) begin
+      read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2), read_share0);
+      read_a_full_dword((NTT_DST_BASE_ADDR*8)+(i*2)+1, read_share1);
+      read_data = (read_share0 + read_share1);
+    end
+    else begin
+      read_a_full_dword((NTT_DST_BASE_ADDR*4)+i, read_data);
+    end
+    $display("Index %0d: got %h", i, read_data[23:0]);
+  end
+ 
+endtask
+
+
+task pwm_sampler_test_simple_test (input logic mlkem, input logic  mask_en, input logic shuf_en, input acc_en, input logic check_en, input logic [2:0] mode);
+  logic [63:0] read_data, exp_data, mlkem_exp_data;
+  logic [63:0] read_share0, read_share1;
+  logic [23:0] test_vector_mem [255:0];
+  int error_ctr;
+ 
+  if (mlkem & (mode != 5)) begin
+    $error("ML-KEM mode is only supported for mode 5");
+    $finish;
+  end
+
+  $display("Starting PWM test with mlkem = %0d, shuf_en = %0d, mask_en = %0d, acc_en = %0d, check_en = %0d", mlkem, shuf_en, mask_en, acc_en, check_en);
+  error_ctr = 0;
+
+  write_a_full_dword(NTT_SAMPLER_INPUT_0_REG, 5);
+  write_a_full_dword(NTT_SAMPLER_INPUT_1_REG, 6);
+  write_a_full_dword(NTT_SAMPLER_INPUT_2_REG, 7);
+  write_a_full_dword(NTT_SAMPLER_INPUT_3_REG, 8);
+
+  // Write control register
+  write_a_full_dword(NTT_CTRL_REG, {54'h0, mlkem, 1'b1, 1'b0, shuf_en, mask_en, 1'b1, acc_en, mode});
  
   // Trigger NTT operation
   write_a_full_dword(NTT_ENABLE_REG, {63'h0, 1'b1});
