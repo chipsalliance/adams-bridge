@@ -97,20 +97,20 @@ module decompress_top
         .data_o(piso_data_o)
       );
 
-    //Cast the API bitstream into integers for decomp block
+    //Cast the API bitstream into 12 bit vectors per coefficient
     always_comb begin
         for (int i = 0; i < COEFF_PER_CLK; i++) begin
             unique case (mode)
-                decompress1: begin
+                DECOMPRESS1: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*1 +: 1]);
                 end
-                decompress5: begin
+                DECOMPRESS5: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*5 +: 5]);
                 end
-                decompress11: begin
+                DECOMPRESS11: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*11 +: 11]);
                 end
-                decompress12: begin
+                DECOMPRESS12: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*12 +: 12]);
                 end
                 default: begin
@@ -166,10 +166,10 @@ module decompress_top
 
     always_comb begin
         unique case (mode)
-            decompress1: d = 1;
-            decompress5: d = 5;
-            decompress11: d = 11;
-            decompress12: d = 12;
+            DECOMPRESS1: d = 1;
+            DECOMPRESS5: d = 5;
+            DECOMPRESS11: d = 11;
+            DECOMPRESS12: d = 12;
             default: d = 12; // Default case
         endcase
     end
