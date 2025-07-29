@@ -31,6 +31,8 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   string input_fname, output_fname, cmd, line;
   int    fd;
 
+  rand int rand_delay;
+
   //----------------------------------------------------------------------  
   // their expected vs. actual counterparts
   bit [31:0] expected_seed_d     [];
@@ -229,7 +231,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_keygen_with_rand_val();
+  task run_model_for_keygen_with_rand_val(bit on_the_fly_reset = 0);
     // 1) randomize seeds
     foreach (seed_d[i]) begin
       if (!this.randomize(data)) begin
@@ -284,6 +286,12 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 392, expected_ek);
     read_line(fd, 792, expected_dk);  
     $fclose(fd);
+
+    if (on_the_fly_reset) begin
+      `uvm_info("ON_THE_FLY_RESET",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_ek = new[expected_ek.size()];
+      expected_dk = new[expected_dk.size()];
+    end 
   endtask
 
   task compare_keygen_vectors();
