@@ -61,7 +61,10 @@ module abr_piso_multi #(
 
   // Storage element
   always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b || zeroize) begin
+    if (!rst_b) begin
+      buffer <= '0;
+      buffer_wr_ptr <= '0;
+    end else if (zeroize) begin
       buffer <= '0;
       buffer_wr_ptr <= '0;
     end else if (update_buffer) begin
