@@ -24,6 +24,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   bit [31:0] seed_d [];
   bit [31:0] seed_z [];
   bit [31:0] ek [];
+  bit [11:0] ek_error [];
   bit [31:0] dk [];
   bit [31:0] msg [];
   bit [31:0] ciphertext [];
@@ -133,7 +134,30 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   endtask
 
 
-  task write_ek();
+  task write_ek(bit error_inject = 0);
+    if (error_inject) begin
+      int chunk_index;
+      int bit_index;
+      bit [(384*32)-1:0] ek_flat;
+      for (int i = 0; i < 384; i++) begin
+        ek_flat[i*32 +: 32] = ek[i];
+      end
+
+      // Pick a random chunk index between 0 and 1023
+      chunk_index = $urandom_range(0, 1023);
+      bit_index = chunk_index * 12;
+
+      // Assign 3329 to the selected 12-bit chunk to cause an error
+      // Use part-select across the array
+      ek_flat[bit_index +: 12] = 12'd3329;
+
+      // Reconstruct the ek array from the flat representation
+      for (int i = 0; i < 384; i++) begin
+        ek[i] = ek_flat[i*32 +: 32];
+      end
+      `uvm_info("EK_ERROR", $sformatf("Injected out of range value at chunk %0d", chunk_index), UVM_LOW);
+    end
+
     // Write MLKEM_ENCAPS_KEY
     for(int j = 0; j < reg_model.MLKEM_ENCAPS_KEY.m_mem.get_size(); j++) begin
       reg_model.MLKEM_ENCAPS_KEY.m_mem.write(status, j, ek[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -157,7 +181,20 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task write_dk();
+  task write_dk(bit error_inject = 0);
+    if (error_inject) begin
+      int dword_index;
+      int bit_index;
+
+      // Pick a random dword and bit in the ek/hash of ek range of dk
+      dword_index = $urandom_range(384, 783);
+      bit_index = $urandom_range(0, 31);
+
+      //inject a bit flip on that bit
+      dk[dword_index][bit_index] = ~dk[dword_index][bit_index];
+
+      `uvm_info("EK_ERROR", $sformatf("Injected DK bit flip at dword %0d bit %0d", dword_index, bit_index), UVM_LOW);
+    end
     // Write MLKEM_DECAPS_KEY
     for(int j = 0; j < reg_model.MLKEM_DECAPS_KEY.m_mem.get_size(); j++) begin
       reg_model.MLKEM_DECAPS_KEY.m_mem.write(status, j, dk[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -392,9 +429,10 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     $fclose(fd);
   endtask
 
-  task compare_encap_vectors();
+  task compare_encap_vectors(bit error_flag = 0);
     // Compare Shared Key (K)
     foreach (expected_shared_key[i]) begin
+      if (error_flag) expected_shared_key[i] = '0;
       if (actual_shared_key[i] !== expected_shared_key[i]) begin
         `uvm_error("K_MISMATCH",
           $sformatf("K[%0d] mismatch: expected %08h, actual %08h",
@@ -408,6 +446,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   
     // Compare Ciphertext (c)
     foreach (expected_ciphertext[j]) begin
+      if (error_flag) expected_ciphertext[j] = '0;
       if (actual_ciphertext[j] !== expected_ciphertext[j]) begin
         `uvm_error("c_MISMATCH",
           $sformatf("c[%0d] mismatch: expected %08h, actual %08h",
@@ -468,9 +507,10 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     $fclose(fd);
   endtask
 
-  task compare_decap_vectors();
+  task compare_decap_vectors(bit error_flag = 0);
     // Compare Shared Key (K)
     foreach (expected_shared_key[i]) begin
+      if (error_flag) expected_shared_key[i] = '0;
       if (actual_shared_key[i] !== expected_shared_key[i]) begin
         `uvm_error("K_MISMATCH",
           $sformatf("K[%0d] mismatch: expected %08h, actual %08h",

@@ -63,7 +63,9 @@ package mldsa_tests_pkg;
    `include "src/ML_KEM_keygen_decaps_self_check_test.svh"
    `include "src/ML_KEM_randomized_keygen_test.svh"
    `include "src/ML_KEM_randomized_encap_test.svh"
+   `include "src/ML_KEM_randomized_encap_input_fail_test.svh"
    `include "src/ML_KEM_randomized_decap_test.svh"
+   `include "src/ML_KEM_randomized_decap_input_fail_test.svh"
    `include "src/ML_KEM_randomized_keygen_decap_test.svh"
    `include "src/ML_KEM_randomized_all_test.svh"
 

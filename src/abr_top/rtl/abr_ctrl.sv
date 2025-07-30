@@ -480,6 +480,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic signature_valid, set_signature_valid, clear_signature_valid;
   logic verify_valid, set_verify_valid, clear_verify_valid;
   logic decaps_valid, set_decaps_valid, clear_decaps_valid;
+  logic encaps_input_check_failure;
+  logic decaps_input_check_failure;
 
   //per controller enable/busy for ntt
   logic [ABR_NUM_NTT-1:0] ntt_en; //This is the pulse we drive to NTT to start it
@@ -595,7 +597,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   //ABR Ready allows writes to api registers
   //No writes allowed during operation or when keyvault reads are in progress
   `ifdef CALIPTRA
-  always_comb abr_ready = (abr_prog_cntr == MLDSA_RESET) & 
+  always_comb abr_ready = (abr_prog_cntr == ABR_RESET) & 
                           ~kv_mlkem_seed_write_en &
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
@@ -604,7 +606,7 @@ always_comb kv_mlkem_msg_write_data = '0;
                                    ((mlkem_encaps_process & mlkem_encaps_done) |
                                     (mlkem_decaps_process & mlkem_decaps_done));   
   `else
-  always_comb abr_ready = (abr_prog_cntr == MLDSA_RESET);
+  always_comb abr_ready = (abr_prog_cntr == ABR_RESET);
   `endif
 
   //without zeroize to make it more complex
@@ -634,7 +636,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
   `endif
   
-  always_comb external_mu = 0; //abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value; //TODO: enable after ExternalMu validation
+  always_comb external_mu = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
   always_comb abr_reg_hwif_in.MLDSA_CTRL.EXTERNAL_MU.hwclr = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
 
   always_comb begin : ABR_REG_HWIF_IN_ASSIGN
@@ -646,6 +648,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
     abr_reg_hwif_in.MLDSA_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
+    abr_reg_hwif_in.MLDSA_STATUS.ERROR.next = error_flag_reg;
     abr_reg_hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next = stream_msg_rdy;
 
     stream_msg_mode = abr_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
@@ -723,6 +726,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
     abr_reg_hwif_in.MLKEM_STATUS.READY.next = abr_ready;
     abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mlkem_valid_reg;
+    abr_reg_hwif_in.MLKEM_STATUS.ERROR.next = error_flag_reg;
 
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
@@ -792,7 +796,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign notif_intr = abr_reg_hwif_out.intr_block_rf.notif_global_intr_r.intr;
 
   always_comb begin
-    abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge; //TODO
+    abr_reg_hwif_in.intr_block_rf.error_internal_intr_r.error_internal_sts.hwset = error_flag_edge;
     abr_reg_hwif_in.intr_block_rf.notif_internal_intr_r.notif_cmd_done_sts.hwset = abr_status_done;
   end
 
@@ -1453,15 +1457,21 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb clear_decaps_valid = mlkem_decaps_process & abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) &
                                    compress_compare_mode_o & compress_compare_failed_i;
 
+  always_comb encaps_input_check_failure = mlkem_encaps_process & abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) & compress_compare_mode_o & compress_compare_failed_i;
+  always_comb decaps_input_check_failure = mlkem_decaps_process & sampler_state_dv_i & (abr_instr.operand3 == MLKEM_DEST_TR_REG_ID) & (sampler_state_data_i[0][255:0] != abr_scratch_reg.mlkem_enc.tr);
+
   //ML-DSA sequencer, instruction is busy
   always_comb subcomponent_busy = !(abr_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
                                   sampler_busy_i | ntt_busy[0];
-`ifdef CALIPTRA
-  always_comb pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
-  always_comb error_flag = skdecode_error_i | pcr_sign_input_invalid;
-`else
-  always_comb error_flag = skdecode_error_i;
-`endif                                  
+
+always_comb begin
+  error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
+  `ifdef CALIPTRA
+  //extra error condition for caliptra
+  pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  error_flag |= pcr_sign_input_invalid;
+  `endif
+end                              
 
   always_ff @(posedge clk or negedge rst_b) 
   begin : error_detection
@@ -1478,18 +1488,15 @@ always_comb kv_mlkem_msg_write_data = '0;
   //program counter
   always_ff @(posedge clk or negedge rst_b) begin
     if(!rst_b) begin
-      abr_prog_cntr <= MLDSA_RESET;
+      abr_prog_cntr <= ABR_RESET;
     end
     else if(zeroize) begin
-      abr_prog_cntr <= MLDSA_ZEROIZE;
+      abr_prog_cntr <= ABR_ZEROIZE;
     end
-    else begin
-      if (error_flag_edge) begin
-        abr_prog_cntr <= MLDSA_ERROR;
-      end
-      else begin
-        abr_prog_cntr <= abr_prog_cntr_nxt;
-      end
+    else if (error_flag_reg) begin
+      abr_prog_cntr <= ABR_ERROR;
+    end else begin
+      abr_prog_cntr <= abr_prog_cntr_nxt;
     end
   end
 
@@ -1514,12 +1521,12 @@ always_comb kv_mlkem_msg_write_data = '0;
     mlkem_keygen_done = 0;
     mlkem_encaps_done = 0;
     mlkem_decaps_done = 0;
-    abr_prog_cntr_nxt = MLDSA_RESET;
+    abr_prog_cntr_nxt = ABR_RESET;
     abr_seq_en = !zeroize;
     set_entropy = 0;
 
     unique case (abr_prog_cntr) inside
-      MLDSA_RESET : begin 
+      ABR_RESET : begin 
         // Waiting for new valid command
         unique case ({mlkem_cmd_reg,mldsa_cmd_reg}) inside
           {MLKEM_NONE,MLDSA_KEYGEN} : begin  // keygen
@@ -1566,17 +1573,17 @@ always_comb kv_mlkem_msg_write_data = '0;
             set_decaps_valid = 1;
           end
           default : begin
-            abr_prog_cntr_nxt = MLDSA_RESET;
+            abr_prog_cntr_nxt = ABR_RESET;
             abr_seq_en = 0;
             external_mu_mode_nxt = 0;
           end
         endcase
       end
-      MLDSA_ZEROIZE : begin
+      ABR_ZEROIZE : begin
         if (zeroize_mem_done)
-          abr_prog_cntr_nxt = MLDSA_RESET;
+          abr_prog_cntr_nxt = ABR_RESET;
         else
-          abr_prog_cntr_nxt = MLDSA_ZEROIZE;
+          abr_prog_cntr_nxt = ABR_ZEROIZE;
         abr_seq_en = 0;  
       end     
       MLDSA_KG_JUMP_SIGN : begin
@@ -1591,7 +1598,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //abr_prog_cntr_nxt = MLDSA_RESET;
+        //abr_prog_cntr_nxt = ABR_RESET;
         mldsa_keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
@@ -1690,7 +1697,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb compress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[1:0] : '0;
   always_comb compress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[10:8] : '0;
   always_comb compress_compare_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) & 
-                                        abr_instr.operand3 inside {MLKEM_DEST_C1_MEM_OFFSET,MLKEM_DEST_C2_MEM_OFFSET} & mlkem_decaps_process; 
+                                        ((abr_instr.imm[4] & mlkem_encaps_process) | (abr_instr.imm[5] & mlkem_decaps_process)); 
   always_comb decompress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[1:0] : '0;
   always_comb decompress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[10:8] : '0;
   
@@ -2014,7 +2021,7 @@ always_comb begin
 end
 
 //Zeroizer
-always_comb abr_instr = ((abr_prog_cntr == MLDSA_ZEROIZE) | (abr_prog_cntr == MLDSA_RESET)) ? '0 : abr_instr_o;
+always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -2025,7 +2032,7 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_addr <= 0;
     zeroize_mem_done <= 0;
   end
-  else if (abr_prog_cntr == MLDSA_ZEROIZE) begin
+  else if (abr_prog_cntr == ABR_ZEROIZE) begin
     if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
@@ -2038,7 +2045,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb zeroize_mem_we = (abr_prog_cntr == MLDSA_ZEROIZE);
+always_comb zeroize_mem_we = (abr_prog_cntr == ABR_ZEROIZE);
 
 always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;
