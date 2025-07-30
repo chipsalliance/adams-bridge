@@ -92,8 +92,9 @@ addrmap abr_reg {
                 [br]                a control command and process the inputs.  
                 [br]bit #1: VALID : ​Indicates if the process is done and the
                 [br]                result is valid. 
-                [br]bit #2: MSG_STREAM_READY: indicates if the core is ready 
+                [br]bit #2: MSG_STREAM_READY: Indicates if the core is ready 
                 [br]                          to recieve the message in streaming mode.
+                [br]bit #3: ERROR: Indicates the process ended with an error
                 ";
 
         default sw = r;
@@ -102,6 +103,7 @@ addrmap abr_reg {
         field {desc = "Status ready bit";} READY = 1'b0;
         field {hw = rw; desc = "Status valid bit";} VALID = 1'b0;
         field {desc = "The core is ready to recieve the message in streaming mode";} MSG_STREAM_READY = 1'b0;
+        field {hw = rw; desc = "Status error bit";} ERROR = 1'b0;
     
     } MLDSA_STATUS;
 
@@ -337,7 +339,8 @@ addrmap abr_reg {
                 [br]bit #0: READY : ​Indicates if the core is ready to take
                 [br]                a control command and process the inputs.  
                 [br]bit #1: VALID : ​Indicates if the process is done and the
-                [br]                result is valid. 
+                [br]                result is valid.  
+                [br]bit #2: ERROR : ​Indicates the process ended in an error. 
                 ";
 
         default sw = r;
@@ -345,6 +348,7 @@ addrmap abr_reg {
         default resetsignal = reset_b;
         field {desc = "Status ready bit";} READY = 1'b0;
         field {hw = rw; desc = "Status valid bit";} VALID = 1'b0;
+        field {hw = rw; desc = "Status error bit";} ERROR = 1'b0;
     
     } MLKEM_STATUS;
     

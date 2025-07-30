@@ -43,6 +43,9 @@ module decompress_ctrl
         else if (zeroize) begin
             mem_wr_addr <= '0;
         end
+        else if (last_poly_last_addr_wr) begin
+            mem_wr_addr <= '0;
+        end
         else if (decompress_enable) begin
             mem_wr_addr <= dest_base_addr;
         end
