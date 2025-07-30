@@ -62,7 +62,7 @@ module mlkem_masked_gs_butterfly_tb;
         int errors = 0;
         int total = 0;
         logic [23:0] u = 0, v = 0, w = 0;
-        logic [499:0][23:0] u_array, v_array, w_array;
+        logic [(3328*3329)+3328:0][23:0] u_array, v_array, w_array;
         logic [4:0][13:0] rnd;
         logic [23:0] exp_u, exp_v;
         // Use small ranges for exhaustive test (full range is too large)
@@ -70,52 +70,57 @@ module mlkem_masked_gs_butterfly_tb;
         fork
             begin
                 #10;
-                for (int i = 0; i < 500; i++) begin
-                    @(posedge clk);
-                    rnd = 'h0; //55'({$urandom(), $urandom()});
-                    u = $urandom() % 'd3329;
-                    v = $urandom() % 'd3329;
-                    w = $urandom() % 'd3329;
-                    u_array[i] = u;
-                    v_array[i] = v;
-                    w_array[i] = w;
+                for (int i = 0; i < 3329; i++) begin
+                    for (int j = 0; j < 3329; j++) begin
+                        @(posedge clk);
+                        rnd = 70'({$urandom(),$urandom(), $urandom()});
+                        u = i; //$urandom() % 'd3329;
+                        v = j; //$urandom() % 'd3329;
+                        w = $urandom() % 'd3329;
+                        u_array[j+(i*3329)] = u;
+                        v_array[j+(i*3329)] = v;
+                        w_array[j+(i*3329)] = w;
 
-                    opu_i[0] <= u - rnd;
-                    opu_i[1] <= rnd;
+                        opu_i[0] <= u - 24'(rnd[1:0]);
+                        opu_i[1] <= 24'(rnd[1:0]);
 
-                    opv_i[0] <= v - rnd;
-                    opv_i[1] <= rnd;
+                        opv_i[0] <= v - 24'(rnd[1:0]);
+                        opv_i[1] <= 24'(rnd[1:0]);
 
-                    opw_i[0] <= w - rnd;
-                    opw_i[1] <= rnd;
-                    
-                    // $display("Driving inputs for index %0d at time %t",i, $time);
-                    rnd_tb = rnd; //55'({$urandom(), $urandom()});
-                    
-                    // $display("Wait a clk");
+                        opw_i[0] <= w - 24'(rnd[1:0]);
+                        opw_i[1] <= 24'(rnd[1:0]);
+                        
+                        // $display("Driving inputs for index %0d at time %t",i, $time);
+                        rnd_tb = rnd; //55'({$urandom(), $urandom()});
+                        
+                        // $display("Wait a clk");
+                    end
                 end
             end
             begin
-                repeat(/*25*/17) @(posedge clk); //15+2
-                for (int i = 0; i < 500; i++)  begin
-                    exp_u = ((u_array[i] + v_array[i]) % 'd3329);
-                    if (u_array[i] > v_array[i]) begin
-                        exp_v = (((u_array[i] - v_array[i]) % 'd3329) * w_array[i]) % 'd3329;
-                    end
-                    else begin
-                        exp_v = (((u_array[i] - v_array[i]) + 'd3329) * w_array[i]) % 'd3329;;
-                    end
-                    if (u_o[0] + u_o[1] !== exp_u) begin
-                        $display("Error: Expected %0x, got %0x at i=%0d, at time %t", exp_u, u_o[0] + u_o[1], i,  $time);
-                        errors++;
-                    end
-                    if (v_o[0] + v_o[1] !== exp_v) begin
-                        $display("Error: Expected %0x, got %0x at i=%0d, at time %t", exp_v, v_o[0] + v_o[1], i,  $time);
-                        errors++;
-                    end
+                repeat(/*25*/ 17) @(posedge clk); //15+2
+                for (int i = 0; i < 3329; i++)  begin
+                    for (int j = 0; j < 3329; j++) begin
+                        exp_u = ((u_array[j+(i*3329)] + v_array[j+(i*3329)]) % 'd3329);
+                        if (u_array[j+(i*3329)] > v_array[j+(i*3329)]) begin
+                            exp_v = (((u_array[j+(i*3329)] - v_array[j+(i*3329)]) % 'd3329) * w_array[j+(i*3329)]) % 'd3329;
+                        end
+                        else begin
+                            exp_v = (((u_array[j+(i*3329)] - v_array[j+(i*3329)]) + 'd3329) * w_array[j+(i*3329)]) % 'd3329;
+                        end
 
-                    total++;
-                    @(posedge clk);
+                        if (u_o[0] + u_o[1] !== exp_u) begin
+                            $display("Error: Expected %0x, got %0x at index=%0d, for inputs u = %0x, v = %0x, w = %0x at time %t", exp_u, u_o[0] + u_o[1], j+(i*3329), u_array[j+(i*3329)], v_array[j+(i*3329)], w_array[j+(i*3329)],  $time);
+                            errors++;
+                        end
+                        if (v_o[0] + v_o[1] !== exp_v) begin
+                            $display("Error: Expected %0x, got %0x at index=%0d, at time %t", exp_v, v_o[0] + v_o[1], j+(i*3329),  $time);
+                            errors++;
+                        end
+
+                        total++;
+                        @(posedge clk);
+                    end
                 end
             end
         join

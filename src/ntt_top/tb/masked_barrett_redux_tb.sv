@@ -60,56 +60,52 @@ module masked_barrett_redux_tb;
         end
     endfunction
 
-    // Test task
-    task automatic run_test();
+    task run_full_test();
         int errors = 0;
         int total = 0;
-        logic [23:0] x_in = 0;
-        logic [499:0][23:0] x_in_array;
+        logic [11:0] a, b;
+        logic [23:0] x_in;
+        logic [(3328*3328):0][23:0] x_in_array;
         logic [54:0] rnd;
         logic [11:0] expected;
-        // Use small ranges for exhaustive test (full range is too large)
-        
+
         fork
             begin
                 #10;
-                for (int i = 0; i < 500; i++) begin
-                    @(posedge clk);
-                    rnd = 55'({$urandom(), $urandom()}); //$urandom();
-                    x_in = $urandom();
-                    x_in_array[i] = x_in;
-                    x[0] <= x_in - rnd[23:0];
-                    x[1] <= rnd[23:0];
-                    // $display("Driving inputs for index %0d at time %t",i, $time);
-                    rnd_tb = rnd;
-                    rnd_24bit_tb = 24'($urandom());
+                for (int a = 0; a < 3329; a++) begin
+                    for (int b = 0; b < 3329; b++) begin
+                        @(posedge clk);
+                        rnd = 55'({$urandom(), $urandom()}); //$urandom();
+                        x_in = a*b; //$urandom();
+                        x_in_array[a*b] = x_in;
+                        x[0] <= x_in - rnd[23:0];
+                        x[1] <= rnd[23:0];
+                        // $display("Driving inputs for index %0d at time %t",i, $time);
+                        rnd_tb = rnd;
+                        rnd_24bit_tb = 24'($urandom());
+                    end
                 end
             end
             begin
                 repeat(8) @(posedge clk);
-                for (int i = 0; i < 500; i++)  begin
-                    expected = barrett_redux_exp(x_in_array[i]);
-                    
-                    // expected = barrett_redux_exp(x[0] + x[1]);
-                    if (y[0] + y[1] !== expected) begin
-                        $display("========================");
-                        $display("x_in_array = %h for index %0d at time %t", x_in_array[i], i, $time);
-                        $display("Error: Expected %0x, got %0x at i=%0d, at time %t", expected, y[0] + y[1], i,  $time);
-                        $display("========================");
-                        errors++;
-                    end
-                    total++;
+                for (int a = 0; a < 3329; a++)  begin
+                    for (int b = 0; b < 3329; b++) begin
+                        expected = barrett_redux_exp(x_in_array[a*b]);
+                        
+                        // expected = barrett_redux_exp(x[0] + x[1]);
+                        if (y[0] + y[1] !== expected) begin
+                            $display("========================");
+                            $display("x_in_array = %h for index %0d at time %t", x_in_array[a*b], a*b, $time);
+                            $display("Error: Expected %0x, got %0x at index=%0d, at time %t", expected, y[0] + y[1], a*b,  $time);
+                            $display("========================");
+                            errors++;
+                        end
+                        total++;
                     @(posedge clk);
+                    end
                 end
             end
         join
-
-        $display("Total tests: %0d, Errors: %0d", total, errors);
-        if (errors == 0)
-            $display("PASS");
-        else
-            $display("FAIL");
-        
     endtask
 
     // Main test sequence
@@ -125,7 +121,7 @@ module masked_barrett_redux_tb;
         reset_n = 1;
         @(posedge clk);
 
-        run_test();
+        run_full_test();
 
         $display("All tests completed.");
         $finish;
