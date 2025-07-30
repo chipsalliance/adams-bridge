@@ -132,7 +132,8 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 | Bits     | Identifier | Access | Reset | Decoded | Name |
 | :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:3\] | \-                | \-     | \-    |         | \-   |
+| \[31:4\] | \-                | \-     | \-    |         | \-   |
+| \[3\]    | ERROR             | r      | 0x0   |         | \-   |
 | \[2\]    | MSG_STREAM_READY  | r      | 0x0   |         | \-   |
 | \[1\]    | VALID             | r      | 0x0   |         | \-   |
 | \[0\]    | READY             | r      | 0x0   |         | \-   |
@@ -143,11 +144,17 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 ### ​VALID 
 
-​Indicates if the process is computed and the output is valid. 
+​Indicates if the process is computed and the output is valid.
 
 ### MSG_STREAM_READY
 
 ​Indicates if the core is ready to process the message.
+
+### ​VALID 
+
+​Indicates if the process could not complete due to an error.
+For ML-DSA this status bit indicates an error while decoding the secret key.
+In Caliptra it could also indicate that pcr signing mode was enabled with a command other than Keygen+Signing.
 
 ## entropy
 
@@ -407,26 +414,6 @@ The area overhead associated with enabling these countermeasures is as follows:
     - 0.0220mm2 for ram area for 57.38 KB memory.
 
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
-
-### Memory requirement
-
-The following table shows the required memory instances for ML-DSA-87:
-
-| Instance                                     | Depth | Data Width | Strobe Width |
-| -------------------------------------------- | ----- | ---------- | ------------ |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank0 | 596   | 32         |              |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank1 | 596   | 32         |              |
-| mldsa_top.mldsa_w1_mem_inst                  | 512   | 4          |              |
-| mldsa_top.mldsa_ram_inst0_bank0              | 832   | 96         |              |
-| mldsa_top.mldsa_ram_inst0_bank1              | 832   | 96         |              |
-| mldsa_top.mldsa_ram_inst1                    | 576   | 96         |              |
-| mldsa_top.mldsa_ram_inst2                    | 1408  | 96         |              |
-| mldsa_top.mldsa_ram_inst3                    | 128   | 96         |              |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
-| mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
-
-All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
-See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
 
 ### Signing perofrmance
 
