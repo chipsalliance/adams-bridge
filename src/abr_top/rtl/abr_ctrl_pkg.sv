@@ -529,9 +529,9 @@ package abr_ctrl_pkg;
 
     // MLDSA Subroutine listing
     //KG
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_RESET        = 'd0;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_ZEROIZE      = MLDSA_RESET + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = MLDSA_ZEROIZE + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] ABR_RESET          = 'd0;
+    localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ZEROIZE        = ABR_RESET + 1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = ABR_ZEROIZE + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
@@ -561,7 +561,7 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_RES        = MLDSA_VERIFY_EXP_A + 80;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_E          = MLDSA_VERIFY_RES + 4;
 
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_ERROR             = '1;
+    localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ERROR               = '1;
 
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_RESET = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;

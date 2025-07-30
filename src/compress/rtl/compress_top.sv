@@ -46,11 +46,11 @@ module compress_top
         output logic compress_done
     );
 
-    localparam COMP_DATA_W = 12; //FIXME magic number
+    localparam COMP_DATA_W = MLKEM_Q_WIDTH;
 
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_i, compress_data_o, compress_data;
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] mem_rd_data_stalled;
-    logic [11:0] compress_data_valid; //FIXME magic number
+    logic [COMP_DATA_W-1:0] compress_data_valid;
     logic read_done;
     logic mem_rd_data_valid;
     logic mem_rd_data_hold,mem_rd_data_hold_f ;
@@ -58,7 +58,7 @@ module compress_top
     logic [DATA_WIDTH-1:0] buffer_data, buffer_data_f;
     logic compress_busy;
 
-    always_comb compress_done = compress_busy & read_done & ~(|api_rw_en) & ~buffer_valid_f;
+    always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | buffer_valid | buffer_valid_f);
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin

@@ -278,6 +278,10 @@ module abr_reg (
                 logic next;
                 logic load_next;
             } VALID;
+            struct packed{
+                logic next;
+                logic load_next;
+            } ERROR;
         } MLDSA_STATUS;
         struct packed{
             struct packed{
@@ -372,6 +376,10 @@ module abr_reg (
                 logic next;
                 logic load_next;
             } VALID;
+            struct packed{
+                logic next;
+                logic load_next;
+            } ERROR;
         } MLKEM_STATUS;
         struct packed{
             struct packed{
@@ -596,6 +604,9 @@ module abr_reg (
             struct packed{
                 logic value;
             } VALID;
+            struct packed{
+                logic value;
+            } ERROR;
         } MLDSA_STATUS;
         struct packed{
             struct packed{
@@ -673,6 +684,9 @@ module abr_reg (
             struct packed{
                 logic value;
             } VALID;
+            struct packed{
+                logic value;
+            } ERROR;
         } MLKEM_STATUS;
         struct packed{
             struct packed{
@@ -971,6 +985,27 @@ module abr_reg (
         end
     end
     assign hwif_out.MLDSA_STATUS.VALID.value = field_storage.MLDSA_STATUS.VALID.value;
+    // Field: abr_reg.MLDSA_STATUS.ERROR
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_STATUS.ERROR.value;
+        load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.MLDSA_STATUS.ERROR.next;
+        load_next_c = '1;
+        field_combo.MLDSA_STATUS.ERROR.next = next_c;
+        field_combo.MLDSA_STATUS.ERROR.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_STATUS.ERROR.value <= 1'h0;
+        end else if(field_combo.MLDSA_STATUS.ERROR.load_next) begin
+            field_storage.MLDSA_STATUS.ERROR.value <= field_combo.MLDSA_STATUS.ERROR.next;
+        end
+    end
+    assign hwif_out.MLDSA_STATUS.ERROR.value = field_storage.MLDSA_STATUS.ERROR.value;
     for(genvar i0=0; i0<16; i0++) begin
         // Field: abr_reg.ABR_ENTROPY[].ENTROPY
         always_comb begin
@@ -1410,6 +1445,27 @@ module abr_reg (
         end
     end
     assign hwif_out.MLKEM_STATUS.VALID.value = field_storage.MLKEM_STATUS.VALID.value;
+    // Field: abr_reg.MLKEM_STATUS.ERROR
+    always_comb begin
+        automatic logic [0:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLKEM_STATUS.ERROR.value;
+        load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.MLKEM_STATUS.ERROR.next;
+        load_next_c = '1;
+        field_combo.MLKEM_STATUS.ERROR.next = next_c;
+        field_combo.MLKEM_STATUS.ERROR.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLKEM_STATUS.ERROR.value <= 1'h0;
+        end else if(field_combo.MLKEM_STATUS.ERROR.load_next) begin
+            field_storage.MLKEM_STATUS.ERROR.value <= field_combo.MLKEM_STATUS.ERROR.next;
+        end
+    end
+    assign hwif_out.MLKEM_STATUS.ERROR.value = field_storage.MLKEM_STATUS.ERROR.value;
     for(genvar i0=0; i0<8; i0++) begin
         // Field: abr_reg.MLKEM_SEED_D[].SEED
         always_comb begin
@@ -2368,7 +2424,8 @@ module abr_reg (
     assign readback_array[4][0:0] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.READY.next : '0;
     assign readback_array[4][1:1] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? field_storage.MLDSA_STATUS.VALID.value : '0;
     assign readback_array[4][2:2] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next : '0;
-    assign readback_array[4][31:3] = '0;
+    assign readback_array[4][3:3] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? field_storage.MLDSA_STATUS.ERROR.value : '0;
+    assign readback_array[4][31:4] = '0;
     for(genvar i0=0; i0<16; i0++) begin
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.MLDSA_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end
@@ -2392,7 +2449,8 @@ module abr_reg (
     end
     assign readback_array[31][0:0] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? hwif_in.MLKEM_STATUS.READY.next : '0;
     assign readback_array[31][1:1] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? field_storage.MLKEM_STATUS.VALID.value : '0;
-    assign readback_array[31][31:2] = '0;
+    assign readback_array[31][2:2] = (decoded_reg_strb.MLKEM_STATUS && !decoded_req_is_wr) ? field_storage.MLKEM_STATUS.ERROR.value : '0;
+    assign readback_array[31][31:3] = '0;
     for(genvar i0=0; i0<8; i0++) begin
         assign readback_array[i0*1 + 32] = hwif_in.MLKEM_SHARED_KEY[i0].rd_ack ? hwif_in.MLKEM_SHARED_KEY[i0].rd_data : '0;
     end
