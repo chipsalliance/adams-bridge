@@ -523,29 +523,27 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [1:0] skdecode_re_bank;
   logic [1:0][SK_MEM_BANK_ADDR_W:0] skdecode_rdaddr;
 
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_waddr, mlkem_api_dk_raddr;
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_mem_waddr, mlkem_api_dk_mem_raddr;
-  logic [5:0] mlkem_api_dk_reg_waddr, mlkem_api_dk_reg_raddr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_addr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_mem_addr;
+  logic [5:0] mlkem_api_dk_reg_addr;
   logic [1:0] mlkem_api_dk_re_bank;
 
-  logic mlkem_api_dk_mem_wr_dec, mlkem_api_dk_reg_wr_dec;
-  logic mlkem_api_dk_mem_rd_dec, mlkem_api_dk_reg_rd_dec;
-  logic mlkem_api_dk_mem_rd_vld;
+  logic mlkem_api_dk_mem_dec, mlkem_api_dk_reg_dec;
+  logic mlkem_api_dk_rd_vld;
 
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_waddr, mlkem_api_ek_raddr;
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_mem_waddr, mlkem_api_ek_mem_raddr;
-  logic [5:0] mlkem_api_ek_reg_waddr, mlkem_api_ek_reg_raddr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_addr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ek_mem_addr;
+  logic [5:0] mlkem_api_ek_reg_addr;
   logic [1:0] mlkem_api_ek_re_bank;
 
-  logic mlkem_api_ek_mem_wr_dec, mlkem_api_ek_reg_wr_dec;
-  logic mlkem_api_ek_mem_rd_dec, mlkem_api_ek_reg_rd_dec;
-  logic mlkem_api_ek_mem_rd_vld;
+  logic mlkem_api_ek_mem_dec, mlkem_api_ek_reg_dec;
+  logic mlkem_api_ek_rd_vld;
 
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_waddr, mlkem_api_ct_raddr;
-  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_mem_waddr, mlkem_api_ct_mem_raddr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_addr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_mem_addr;
   logic [1:0] mlkem_api_ct_re_bank;
 
-  logic mlkem_api_ct_mem_wr_dec, mlkem_api_ct_mem_rd_dec, mlkem_api_ct_mem_rd_vld;
+  logic mlkem_api_ct_mem_dec, mlkem_api_ct_rd_vld;
 
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_msg_waddr;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_msg_mem_waddr;
@@ -624,7 +622,7 @@ always_comb kv_mlkem_msg_write_data = '0;
                         debugUnlock_or_scan_mode_switch;
 
   always_comb abr_reg_hwif_in.reset_b = rst_b;
-  always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //FIXME interface needs a hard reset signal?
+  always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //no sticky registers
   always_comb abr_reg_hwif_in.abr_ready = abr_ready;
   always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value);
   always_comb mlkem_cmd_reg = mlkem_cmd_e'(abr_reg_hwif_out.MLKEM_CTRL.CTRL.value);
@@ -816,7 +814,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
   
   always_comb api_keymem_rd_vld = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr & 
-                                  mldsa_valid_reg & ~mldsa_privkey_lock ;
+                                  mldsa_valid_reg & ~mldsa_privkey_lock;
 
   always_comb api_sk_waddr = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
   always_comb api_sk_raddr = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
@@ -833,54 +831,36 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign api_sk_mem_waddr = api_sk_waddr - 'd32;
   assign api_sk_mem_raddr = api_sk_raddr - 'd32;
 
-  always_comb mlkem_api_dk_mem_rd_vld = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr & 
-                                        mlkem_valid_reg & ~mlkem_dk_lock;
+  always_comb mlkem_api_dk_rd_vld = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr & 
+                                    mlkem_valid_reg & ~mlkem_dk_lock;
 
-  always_comb mlkem_api_dk_waddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
-  always_comb mlkem_api_dk_raddr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
+  always_comb mlkem_api_dk_addr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
 
-  always_comb mlkem_api_dk_reg_wr_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_waddr inside {[MLKEM_DK_MEM_NUM_DWORDS:DK_NUM_DWORDS-1]};
-  always_comb mlkem_api_dk_mem_wr_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_waddr inside {[0:MLKEM_DK_MEM_NUM_DWORDS-1]};
+  always_comb mlkem_api_dk_reg_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_addr inside {[MLKEM_DK_MEM_NUM_DWORDS:DK_NUM_DWORDS-1]};
+  always_comb mlkem_api_dk_mem_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_addr inside {[0:MLKEM_DK_MEM_NUM_DWORDS-1]};
 
-  always_comb mlkem_api_dk_reg_rd_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_raddr inside {[MLKEM_DK_MEM_NUM_DWORDS:DK_NUM_DWORDS-1]};
-  always_comb mlkem_api_dk_mem_rd_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_raddr inside {[0:MLKEM_DK_MEM_NUM_DWORDS-1]};
+  assign mlkem_api_dk_reg_addr = {1'b0,mlkem_api_dk_addr[4:0]};
 
-  assign mlkem_api_dk_reg_waddr = {1'b0,mlkem_api_dk_waddr[4:0]};
-  assign mlkem_api_dk_reg_raddr = {1'b0,mlkem_api_dk_raddr[4:0]};
+  assign mlkem_api_dk_mem_addr = mlkem_api_dk_addr;
 
-  assign mlkem_api_dk_mem_waddr = mlkem_api_dk_waddr;
-  assign mlkem_api_dk_mem_raddr = mlkem_api_dk_raddr;
+  always_comb mlkem_api_ek_rd_vld = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr & mlkem_valid_reg;
 
-  always_comb mlkem_api_ek_mem_rd_vld = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr & 
-                                        mlkem_valid_reg;
+  always_comb mlkem_api_ek_addr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
 
-  always_comb mlkem_api_ek_waddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
-  always_comb mlkem_api_ek_raddr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
+  always_comb mlkem_api_ek_reg_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_addr inside {[MLKEM_EK_MEM_NUM_DWORDS:EK_NUM_DWORDS-1]};
+  always_comb mlkem_api_ek_mem_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_addr inside {[0:MLKEM_EK_MEM_NUM_DWORDS-1]};
 
-  always_comb mlkem_api_ek_reg_wr_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_waddr inside {[MLKEM_EK_MEM_NUM_DWORDS:EK_NUM_DWORDS-1]};
-  always_comb mlkem_api_ek_mem_wr_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_waddr inside {[0:MLKEM_EK_MEM_NUM_DWORDS-1]};
+  assign mlkem_api_ek_reg_addr = {3'b0,mlkem_api_ek_addr[2:0]};
 
-  always_comb mlkem_api_ek_reg_rd_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_raddr inside {[MLKEM_EK_MEM_NUM_DWORDS:EK_NUM_DWORDS-1]};
-  always_comb mlkem_api_ek_mem_rd_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_raddr inside {[0:MLKEM_EK_MEM_NUM_DWORDS-1]};
+  assign mlkem_api_ek_mem_addr = mlkem_api_ek_addr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
-  assign mlkem_api_ek_reg_waddr = {3'b0,mlkem_api_ek_waddr[2:0]};
-  assign mlkem_api_ek_reg_raddr = {3'b0,mlkem_api_ek_raddr[2:0]};
+  always_comb mlkem_api_ct_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & mlkem_valid_reg;
 
-  assign mlkem_api_ek_mem_waddr = mlkem_api_ek_waddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
-  assign mlkem_api_ek_mem_raddr = mlkem_api_ek_raddr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
+  always_comb mlkem_api_ct_addr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
 
-  always_comb mlkem_api_ct_mem_rd_vld = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr & 
-                                        mlkem_valid_reg;
+  always_comb mlkem_api_ct_mem_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ct_addr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
 
-  always_comb mlkem_api_ct_waddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
-  always_comb mlkem_api_ct_raddr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
-
-  always_comb mlkem_api_ct_mem_wr_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ct_waddr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
-
-  always_comb mlkem_api_ct_mem_rd_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ct_raddr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
-
-  assign mlkem_api_ct_mem_waddr = mlkem_api_ct_waddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
-  assign mlkem_api_ct_mem_raddr = mlkem_api_ct_raddr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
+  assign mlkem_api_ct_mem_addr = mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
   always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,kv_mlkem_msg_write_offset} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & ~kv_mlkem_msg_data_present & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
@@ -901,9 +881,9 @@ always_comb kv_mlkem_msg_write_data = '0;
       skencode_keymem_we_bank[i] = ((skencode_keymem_if_i.rd_wr_en == RW_WRITE) & (skencode_keymem_if_i.addr[0] == i));
       pwr2rnd_keymem_we_bank[i] = (pwr2rnd_keymem_if_i[i].rd_wr_en == RW_WRITE);
       api_keymem_we_bank[i] = abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & abr_ready & api_keymem_wr_dec & (api_sk_mem_waddr[0] == i);
-      mlkem_api_dk_we_bank[i] = abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack & abr_ready & mlkem_api_dk_mem_wr_dec & (mlkem_api_dk_mem_waddr[0] == i);
-      mlkem_api_ek_we_bank[i] = abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack & abr_ready & mlkem_api_ek_mem_wr_dec & (mlkem_api_ek_mem_waddr[0] == i);
-      mlkem_api_ct_we_bank[i] = abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack & abr_ready & mlkem_api_ct_mem_wr_dec & (mlkem_api_ct_mem_waddr[0] == i);
+      mlkem_api_dk_we_bank[i] = abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack & abr_ready & mlkem_api_dk_mem_dec & (mlkem_api_dk_mem_addr[0] == i);
+      mlkem_api_ek_we_bank[i] = abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack & abr_ready & mlkem_api_ek_mem_dec & (mlkem_api_ek_mem_addr[0] == i);
+      mlkem_api_ct_we_bank[i] = abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack & abr_ready & mlkem_api_ct_mem_dec & (mlkem_api_ct_mem_addr[0] == i);
       mlkem_api_msg_we_bank[i] = ((abr_reg_hwif_in.MLKEM_MSG.wr_ack & abr_ready & mlkem_api_msg_mem_wr_dec) | kv_mlkem_msg_write_en) & (mlkem_api_msg_waddr[0] == i);
       compress_keymem_we_bank[i] = compress_api_rw_en_i[0] & (compress_api_rw_addr_i[0] == i);
 
@@ -914,9 +894,9 @@ always_comb kv_mlkem_msg_write_data = '0;
                              ({SK_MEM_BANK_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:1] ) |
                              ({SK_MEM_BANK_ADDR_W{compress_keymem_we_bank[i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{api_keymem_we_bank[i]}} & api_sk_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_we_bank[i]}} & mlkem_api_dk_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_we_bank[i]}} & mlkem_api_ek_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_we_bank[i]}} & mlkem_api_ct_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_we_bank[i]}} & mlkem_api_dk_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_we_bank[i]}} & mlkem_api_ek_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_we_bank[i]}} & mlkem_api_ct_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_msg_we_bank[i]}} & mlkem_api_msg_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_BANK_ADDR_W-1:0]);
                  
@@ -935,9 +915,9 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb begin
     for (int i = 0; i < 2; i++) begin
       api_keymem_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
-      mlkem_api_dk_re_bank[i] = mlkem_api_dk_mem_rd_vld & mlkem_api_dk_mem_rd_dec & (mlkem_api_dk_mem_raddr[0] == i);
-      mlkem_api_ek_re_bank[i] = mlkem_api_ek_mem_rd_vld & mlkem_api_ek_mem_rd_dec & (mlkem_api_ek_mem_raddr[0] == i);
-      mlkem_api_ct_re_bank[i] = mlkem_api_ct_mem_rd_vld & mlkem_api_ct_mem_rd_dec & (mlkem_api_ct_mem_raddr[0] == i);
+      mlkem_api_dk_re_bank[i] = mlkem_api_dk_rd_vld & mlkem_api_dk_mem_dec & (mlkem_api_dk_mem_addr[0] == i);
+      mlkem_api_ek_re_bank[i] = mlkem_api_ek_rd_vld & mlkem_api_ek_mem_dec & (mlkem_api_ek_mem_addr[0] == i);
+      mlkem_api_ct_re_bank[i] = mlkem_api_ct_rd_vld & mlkem_api_ct_mem_dec & (mlkem_api_ct_mem_addr[0] == i);
 
       skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
 
@@ -950,9 +930,9 @@ always_comb kv_mlkem_msg_write_data = '0;
 
       sk_ram_raddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skdecode_re_bank[i]}} & skdecode_rdaddr[i][SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{api_keymem_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_re_bank[i]}} & mlkem_api_dk_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_re_bank[i]}} & mlkem_api_ek_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_re_bank[i]}} & mlkem_api_ct_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_re_bank[i]}} & mlkem_api_dk_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_re_bank[i]}} & mlkem_api_ek_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_re_bank[i]}} & mlkem_api_ct_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{decompress_api_rd_en_i}} & decompress_api_rd_addr_i[SK_MEM_BANK_ADDR_W-1:0]) |
                              ({SK_MEM_BANK_ADDR_W{compress_keymem_re_bank[i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{sampler_sk_rd_en}} & (sampler_src_offset[SK_MEM_BANK_ADDR_W-1:0] + sampler_sk_rd_offset));
@@ -969,7 +949,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       api_sk_reg_rd_dec_f <= '0;
     end else begin
       api_keymem_re_bank_f <= api_keymem_re_bank | mlkem_api_dk_re_bank | mlkem_api_ek_re_bank | mlkem_api_ct_re_bank | compress_keymem_re_bank;
-      api_sk_reg_rd_dec_f <= api_sk_reg_rd_dec | mlkem_api_dk_reg_rd_dec | mlkem_api_ek_reg_rd_dec;
+      api_sk_reg_rd_dec_f <= api_sk_reg_rd_dec | (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) | (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec);
     end
   end
 
@@ -1002,11 +982,11 @@ always_comb kv_mlkem_msg_write_data = '0;
     end else if (zeroize) begin
       api_reg_rdata <= '0;
     end else begin
-      if (api_keymem_rd_vld & api_sk_reg_rd_dec)             api_reg_rdata <= abr_scratch_reg.raw[api_sk_reg_raddr];
-      if (mlkem_api_dk_mem_rd_vld & mlkem_api_dk_reg_rd_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_dk_reg_raddr];
-      if (mlkem_api_ek_mem_rd_vld & mlkem_api_ek_reg_rd_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_raddr];    
-      if (mldsa_valid_reg & api_pubkey_rho_dec)              api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
-      if (mldsa_valid_reg & api_sig_reg_re)                  api_reg_rdata <= signature_reg_rdata;
+      if (api_keymem_rd_vld & api_sk_reg_rd_dec)      api_reg_rdata <= abr_scratch_reg.raw[api_sk_reg_raddr];
+      if (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_dk_reg_addr];
+      if (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_addr];    
+      if (mldsa_valid_reg & api_pubkey_rho_dec)       api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
+      if (mldsa_valid_reg & api_sig_reg_re)           api_reg_rdata <= signature_reg_rdata;
     end
   end
 
@@ -1311,11 +1291,11 @@ always_comb kv_mlkem_msg_write_data = '0;
       endcase
     end
     //API Writes
-    else if (abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack & abr_ready & mlkem_api_ek_reg_wr_dec) begin
-      abr_scratch_reg.raw[mlkem_api_ek_reg_waddr] <= abr_reg_hwif_out.MLKEM_ENCAPS_KEY.wr_data;
+    else if (abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack & abr_ready & mlkem_api_ek_reg_dec) begin
+      abr_scratch_reg.raw[mlkem_api_ek_reg_addr] <= abr_reg_hwif_out.MLKEM_ENCAPS_KEY.wr_data;
     end
-    else if (abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack & abr_ready & mlkem_api_dk_reg_wr_dec) begin
-      abr_scratch_reg.raw[mlkem_api_dk_reg_waddr] <= abr_reg_hwif_out.MLKEM_DECAPS_KEY.wr_data;
+    else if (abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack & abr_ready & mlkem_api_dk_reg_dec) begin
+      abr_scratch_reg.raw[mlkem_api_dk_reg_addr] <= abr_reg_hwif_out.MLKEM_DECAPS_KEY.wr_data;
     end
     else if (abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & abr_ready & api_sk_reg_wr_dec) begin
       abr_scratch_reg.raw[api_sk_reg_waddr] <= abr_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data;
