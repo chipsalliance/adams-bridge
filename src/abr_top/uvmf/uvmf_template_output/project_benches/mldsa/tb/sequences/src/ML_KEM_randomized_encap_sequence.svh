@@ -46,6 +46,7 @@ class ML_KEM_randomized_encap_sequence extends ML_KEM_base_sequence;
     read_ciphertext();
     read_shared_key();
     compare_encap_vectors();
+    check_mldsa_api();
     zeroize();
     wait_for_done(0, "ready");
 

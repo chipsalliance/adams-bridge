@@ -109,6 +109,40 @@ class ML_DSA_randomized_key_gen_sequence extends mldsa_bench_sequence_base;
         `uvm_info("REG_READ", $sformatf("MLDSA_PRIVKEY_OUT[%0d]: %0h", i, data), UVM_LOW);
       end
     end
+
+    // Reading MLKEM_ENCAPS_KEY register
+    for(int i = 0; i < reg_model.MLKEM_ENCAPS_KEY.m_mem.get_size(); i++) begin
+      reg_model.MLKEM_ENCAPS_KEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLKEM_ENCAPS_KEY[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("MLKEM_ENCAPS[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+
+    // Read MLKEM_DECAPS_KEY
+    for(int i = 0; i < reg_model.MLKEM_DECAPS_KEY.m_mem.get_size(); i++) begin
+      reg_model.MLKEM_DECAPS_KEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLKEM_DECAPS_KEY[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("MLKEM_DECAPS[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+
+    // Reading MLKEM_CIPHERTEXT register
+    for(int i = 0; i < reg_model.MLKEM_CIPHERTEXT.m_mem.get_size(); i++) begin
+      reg_model.MLKEM_CIPHERTEXT.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLKEM_CIPHERTEXT[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("MLKEM_CIPHERTEXT[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+
     // ---------------------------------------------------------
     //              KEYGEN TEST IS DONE
     // ---------------------------------------------------------

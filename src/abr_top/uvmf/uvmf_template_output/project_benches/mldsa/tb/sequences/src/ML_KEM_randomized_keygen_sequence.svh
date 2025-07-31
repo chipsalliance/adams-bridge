@@ -45,6 +45,7 @@ class ML_KEM_randomized_keygen_sequence extends ML_KEM_base_sequence;
     read_ek();
     read_dk();
     compare_keygen_vectors();
+    check_mldsa_api();
     zeroize();
     wait_for_done(0, "ready");
 
