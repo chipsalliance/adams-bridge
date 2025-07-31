@@ -33,6 +33,27 @@ The project contains comprehensive documentation of all submodules for ML-DSA an
 - [ML-DSA Documentation](./AdamsBridge_MLDSA.md)
 - [ML-KEM Documentation](./AdamsBridge_MLKEM.md)
 
+# Memory requirement
+
+The following table shows the required memory instances for Adam's Bridge:
+
+| Instance            | Depth | Data Width | Strobe Width |
+| --------------------| ----- | ---------- | ------------ |
+| abr_sk_mem_bank0    | 596   | 32         |              |
+| abr_sk_mem_bank1    | 596   | 32         |              |
+| abr_w1_mem          | 512   | 4          |              |
+| abr_mem_inst0_bank0 | 832   | 96         |              |
+| abr_mem_inst0_bank1 | 832   | 96         |              |
+| abr_mem_inst1       | 576   | 96         |              |
+| abr_mem_inst2       | 1472  | 96         |              |
+| abr_mem_inst3       | 64    | 384        |              |
+| abr_sig_z_mem       | 224   | 160        | 8            |
+| abr_pk_mem          | 64    | 320        | 8            |
+
+All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
+See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
+Strobe width describes the number of bits enabled by each strobe. All strobed memories are byte enabled in the design.
+
 # References:
 
 [1] The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022. [Online]. Available: [White House](https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/).
