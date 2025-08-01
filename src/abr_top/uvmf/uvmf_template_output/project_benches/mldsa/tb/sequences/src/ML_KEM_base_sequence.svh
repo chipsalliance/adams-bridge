@@ -209,9 +209,9 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     for(int j = 0; j < reg_model.MLKEM_DECAPS_KEY.m_mem.get_size(); j++) begin
       reg_model.MLKEM_DECAPS_KEY.m_mem.read(status, j, actual_dk[j], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE_FAIL", $sformatf("Failed to read MLKEM_DECAPS_KEY[%0d]", j));
+        `uvm_error("REG_READ_FAIL", $sformatf("Failed to read MLKEM_DECAPS_KEY[%0d]", j));
       end else begin
-        `uvm_info("REG_WRITE_PASS", $sformatf("Successfully read MLKEM_DECAPS_KEY[%0d]: %0h", j, actual_dk[j]), UVM_LOW);
+        `uvm_info("REG_READ_PASS", $sformatf("Successfully read MLKEM_DECAPS_KEY[%0d]: %0h", j, actual_dk[j]), UVM_LOW);
       end
     end
   endtask
@@ -515,6 +515,40 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
   
+  task check_mldsa_api();
+    //Read MLDSA PRIVKEY API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_PRIVKEY_OUT.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PRIVKEY_OUT.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PRIVKEY_OUT[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("PRIVKEY_OUT[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+    //Read MLDSA PUBKEY API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PUBKEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("PUBKEY[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+    //Read MLDSA SIGNATURE API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_SIGNATURE[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("SIGNATURE[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+
+  endtask
+
 
 endclass
 
