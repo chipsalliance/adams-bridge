@@ -80,6 +80,7 @@ module ntt_wrapper_fpga
     logic ntt_mlkem;
     mode_t ntt_mode;
     logic zeroize;
+    assign zeroize = 1'b0; //TODO: connect to zeroize signal
     logic sampler_mode;
 
     //NTT signals
@@ -126,6 +127,8 @@ module ntt_wrapper_fpga
     ntt_ahb_mem_adapter #(
         .MEM_ADDR_WIDTH(AHB_ADDR_WIDTH),
         .MEM_DATA_WIDTH(MEM_DATA_WIDTH),
+        .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
+        .AHB_DATA_WIDTH(AHB_DATA_WIDTH),
         .MASKED_MEM_DATA_WIDTH(MASKED_MEM_DATA_WIDTH)
     ) ntt_ahb_mem_adptr_inst (
         .clk(hclk),
@@ -147,7 +150,7 @@ module ntt_wrapper_fpga
         .ntt_masking_en_o(ntt_masking_en),
         .ntt_shuffle_en_o(ntt_shuffling_en),
         .lfsr_enable_o(lfsr_enable),
-        .zeroize_o(zeroize),
+        .zeroize_o(),
         .sampler_mode(sampler_mode),
         .ntt_mlkem_o(ntt_mlkem),
         .ahb_ena(ahb_ena),
@@ -183,17 +186,17 @@ module ntt_wrapper_fpga
         
         .ntt_enb(gen_mem_rd_req.rd_wr_en == RW_READ),
         .ntt_web(ntt_mem_wr_req.rd_wr_en == RW_WRITE),
-        .ntt_rd_addr(9'(gen_mem_rd_req.addr)),
-        .ntt_wr_addr(9'(ntt_mem_wr_req.addr)),
+        .ntt_rd_addr(7'(gen_mem_rd_req.addr)),
+        .ntt_wr_addr(7'(ntt_mem_wr_req.addr)),
         .ntt_data_in(ntt_mem_wr_data),
         .ntt_data_out(ntt_mem_rd_data),
 
         .acc_enc((ntt_mem_rd_req.rd_wr_en == RW_READ) && ntt_accumulate),
-        .acc_rd_addr(9'(ntt_mem_rd_req.addr)),
+        .acc_rd_addr(7'(ntt_mem_rd_req.addr)),
         .acc_data_out(acc_rd_data),
 
         .ntt_pwm_b_en(pwm_b_rd_req.rd_wr_en == RW_READ), //pwm b input read interface. Writes through AHB. NTT cannot write to this location set. Only reads from it.
-        .ntt_pwm_b_rd_addr(9'(pwm_b_rd_req.addr)),
+        .ntt_pwm_b_rd_addr(7'(pwm_b_rd_req.addr)),
         .ntt_pwm_b_data_out(ntt_mem_pwm_b_rd_data),
 
         .ntt_done(ntt_done),

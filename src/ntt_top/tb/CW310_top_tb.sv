@@ -72,22 +72,40 @@ localparam BASE_ADDR        = 32'h00000000;
   localparam REG_CRYPT_CTRL                 = 9;
   
 
+   localparam AHB_ADDR_WIDTH = 10;
+   localparam AHB_DATA_WIDTH = 64;
+   localparam MEM_DEPTH = 2**AHB_ADDR_WIDTH; // 4096
+   localparam STATUS_REG = MEM_DEPTH - 1; // 4095
+   localparam ENABLE_REG = MEM_DEPTH - 2; // 4094
+   localparam CTRL_REG = MEM_DEPTH - 3; // 4093
+   localparam BASE_ADDR_REG = MEM_DEPTH - 4; // 4092
+   localparam SAMPLER_INPUT_0_REG = MEM_DEPTH - 5; // 4091
+   localparam SAMPLER_INPUT_1_REG = MEM_DEPTH - 6; // 4090
+   localparam SAMPLER_INPUT_2_REG = MEM_DEPTH - 7; // 4089
+   localparam SAMPLER_INPUT_3_REG = MEM_DEPTH - 8; // 4088
+   localparam LFSR_EN_REG = MEM_DEPTH - 9; // 4087
+   localparam LFSR_SEED0_0_REG = MEM_DEPTH - 10; // 4086
+   localparam LFSR_SEED0_1_REG = MEM_DEPTH - 11; // 4085
+   localparam LFSR_SEED1_0_REG = MEM_DEPTH - 12; // 4084
+   localparam LFSR_SEED1_1_REG = MEM_DEPTH - 13; // 4083
+
+
    localparam NTT_SRC_BASE_ADDR = 14'h0;
-   localparam NTT_INTERIM_BASE_ADDR = 14'h40;
-   localparam NTT_DST_BASE_ADDR = 14'h80;
-   localparam NTT_STATUS_REG = 12'hFFF;
-   localparam NTT_ENABLE_REG = 12'hFFE;
-   localparam NTT_CTRL_REG = 12'hFFD;
-   localparam NTT_BASE_ADDR_REG = 12'hFFC;
-   localparam NTT_SAMPLER_INPUT_0_REG = 12'hFFB;
-   localparam NTT_SAMPLER_INPUT_1_REG = 12'hFFA;
-   localparam NTT_SAMPLER_INPUT_2_REG = 12'hFF9;
-   localparam NTT_SAMPLER_INPUT_3_REG = 12'hFF8;
-   localparam NTT_LFSR_EN_REG = 12'hFF7;
-   localparam NTT_LFSR_SEED0_0_REG = 12'hFF6;
-   localparam NTT_LFSR_SEED0_1_REG = 12'hFF5;
-   localparam NTT_LFSR_SEED1_0_REG = 12'hFF4;
-   localparam NTT_LFSR_SEED1_1_REG = 12'hFF3;
+   localparam NTT_INTERIM_BASE_ADDR = 14'h20;
+   localparam NTT_DST_BASE_ADDR = 14'h20;
+   localparam NTT_STATUS_REG = STATUS_REG;
+   localparam NTT_ENABLE_REG = ENABLE_REG;
+   localparam NTT_CTRL_REG = CTRL_REG;
+   localparam NTT_BASE_ADDR_REG = BASE_ADDR_REG;
+   localparam NTT_SAMPLER_INPUT_0_REG = SAMPLER_INPUT_0_REG;
+   localparam NTT_SAMPLER_INPUT_1_REG = SAMPLER_INPUT_1_REG;
+   localparam NTT_SAMPLER_INPUT_2_REG = SAMPLER_INPUT_2_REG;
+   localparam NTT_SAMPLER_INPUT_3_REG = SAMPLER_INPUT_3_REG;
+   localparam NTT_LFSR_EN_REG = LFSR_EN_REG;
+   localparam NTT_LFSR_SEED0_0_REG = LFSR_SEED0_0_REG;
+   localparam NTT_LFSR_SEED0_1_REG = LFSR_SEED0_1_REG;
+   localparam NTT_LFSR_SEED1_0_REG = LFSR_SEED1_0_REG;
+   localparam NTT_LFSR_SEED1_1_REG = LFSR_SEED1_1_REG;
 
    localparam MLDSA_Q = 23'd8380417;
 
@@ -190,14 +208,19 @@ localparam BASE_ADDR        = 32'h00000000;
       #(pUSB_CLOCK_PERIOD*2) pushbutton = 1;
       #(pUSB_CLOCK_PERIOD*10);
 
-      // mldsa_keygen_and_signing_test(); 
-      // zeroize_dut();
-      init_mem_with_8_coeffs();
+
       $display("-----------------------------");
       pgm_base_addr(NTT_INTERIM_BASE_ADDR, NTT_SRC_BASE_ADDR, NTT_INTERIM_BASE_ADDR, NTT_DST_BASE_ADDR); //pwm_src_b, src, interim, dest
       $display("-----------------------------");
+      // init_mem_with_coeffs();
+      init_mem_with_8_coeffs();
       start_lfsr();
-      $display("-----------------------------");
+
+      // mldsa_keygen_and_signing_test(); 
+      // zeroize_dut();
+      // init_mem_with_coeffs();
+      // start_lfsr();
+      // $display("-----------------------------");
       // zeroize_dut();
       // ct_test(.mlkem(0), .shuf_en(1), .mode(0));
       // $display("-----------------------------");
@@ -231,12 +254,13 @@ localparam BASE_ADDR        = 32'h00000000;
       // $display("-----------------------------");
       // gs_test(.mlkem(0), .shuf_en(1), .mask_en(1), .check_en(1), .mode(1));
       // $display("-----------------------------");
-      pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      // pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      // $display("-----------------------------");
+      // pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
       $display("-----------------------------");
-      pwm_sampler_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
-      // $display("-----------------------------");
-      // pwm_test_simple_test(.mlkem(1), .shuf_en(0), .mask_en(0), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
-      // $display("-----------------------------");
+      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      $display("-----------------------------");
+      pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
       $finish;
 
    end
@@ -280,8 +304,8 @@ localparam BASE_ADDR        = 32'h00000000;
    cw310_mldsa_top #(
       .pBYTECNT_SIZE            (pBYTECNT_SIZE),
       .pADDR_WIDTH              (pADDR_WIDTH),
-      .AHB_ADDR_WIDTH           (12),
-      .AHB_DATA_WIDTH           (64)
+      .AHB_ADDR_WIDTH           (AHB_ADDR_WIDTH),
+      .AHB_DATA_WIDTH           (AHB_DATA_WIDTH)
    ) U_dut (
       .usb_clk                  (usb_clk & usb_clk_enable),
       .usb_data                 (usb_data),

@@ -25,7 +25,7 @@ package ntt_wrapper_pkg;
   import ntt_defines_pkg::*;
 
   // NTT wrapper parameters
-  parameter AHB_ADDR_WIDTH = 12;
+  parameter AHB_ADDR_WIDTH = 10;
   parameter AHB_DATA_WIDTH = 64;
   parameter MEM_DEPTH = 2**AHB_ADDR_WIDTH; // 4096
 
@@ -38,11 +38,11 @@ package ntt_wrapper_pkg;
   parameter SAMPLER_INPUT_1_REG = MEM_DEPTH - 6; // 4090
   parameter SAMPLER_INPUT_2_REG = MEM_DEPTH - 7; // 4089
   parameter SAMPLER_INPUT_3_REG = MEM_DEPTH - 8; // 4088
-  parameter LFSR_EN_REG = MEM_DEPTH - 9; // 4085
-  parameter LFSR_SEED0_0_REG = MEM_DEPTH - 10; // 4084
-  parameter LFSR_SEED0_1_REG = MEM_DEPTH - 11; // 4083
-  parameter LFSR_SEED1_0_REG = MEM_DEPTH - 12; // 4082
-  parameter LFSR_SEED1_1_REG = MEM_DEPTH - 13; // 4081
+  parameter LFSR_EN_REG = MEM_DEPTH - 9; // 4087
+  parameter LFSR_SEED0_0_REG = MEM_DEPTH - 10; // 4086
+  parameter LFSR_SEED0_1_REG = MEM_DEPTH - 11; // 4085
+  parameter LFSR_SEED1_0_REG = MEM_DEPTH - 12; // 4084
+  parameter LFSR_SEED1_1_REG = MEM_DEPTH - 13; // 4083
 endpackage
     
 `endif

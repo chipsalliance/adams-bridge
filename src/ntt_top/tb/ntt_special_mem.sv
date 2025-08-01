@@ -135,26 +135,21 @@ always_ff @(posedge clk or negedge reset_n) begin: reading_memory
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin: writing_memory
-    if (!reset_n) begin
-        for (int i = 0; i < DEPTH; i++) begin
-            mem[i] <= '0;
+always_ff @(posedge clk) begin: writing_memory
+
+        if (!reset_n) begin
+            mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Reset status to not done
+            mem[ENABLE_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Disable NTT on reset
+            mem[CTRL_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Disable NTT on reset
+            mem[LFSR_EN_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Disable LFSR on reset
         end
-    end
-    else if (zeroize) begin
-        for (int i = 0; i < DEPTH; i++) begin
-            mem[i] <= '0;
-        end
-    end
-    else begin
-        if (/*ahb_ena &&*/ ahb_wea) begin
+        else if (/*ahb_ena &&*/ ahb_wea) begin
             mem[ahb_addr] <= ahb_data_in;
             if ((ahb_addr == ENABLE_REG) & ahb_data_in[0]) begin
                 mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Reset status to not done upon new ntt enable
             end
         end
-
-        if (/*ntt_enb &*/ ntt_web) begin
+        else if (/*ntt_enb &*/ ntt_web) begin
             if (masking_en & (pwm_mode | pairwm_mode)) begin
                 mem[ntt_wr_addr *8]       <= {8'h0, ntt_data_in[  MASKED_REG_SIZE-1:0]};
                 mem[(ntt_wr_addr*8) + 1] <= {8'h0, ntt_data_in[2*MASKED_REG_SIZE-1:  MASKED_REG_SIZE]};
@@ -172,12 +167,11 @@ always_ff @(posedge clk or negedge reset_n) begin: writing_memory
                 mem[(ntt_wr_addr*4) + 3] <= {24'h0, ntt_data_in[4*REG_SIZE-1:3*REG_SIZE]};
             end
         end
-
-        if (ntt_done) begin
+        else if (ntt_done) begin
             mem[STATUS_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b1}; // Set status to done
             mem[ENABLE_REG] <= {{(AHB_DATA_WIDTH-1){1'b0}},1'b0}; // Disable NTT after completion
         end
-    end
+
 end
 
 endmodule
