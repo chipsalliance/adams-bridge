@@ -1,0 +1,8 @@
+---
+# Random seed desired...
+# seed: 11516
+plusargs:
+  - '+UVM_TESTNAME=ML_KEM_overwrite_test'
+testname: ML_KEM_overwrite_test
+parameters:
+  dilithium_command: "test_dilithium5"
