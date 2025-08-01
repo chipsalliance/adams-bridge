@@ -144,8 +144,11 @@ class mldsa_predictor #(
     logic [31:0] written_value, expected_value;
     uvm_reg_addr_t privkey_out_base_addr, privkey_in_base_addr, signature_base_addr, pubkey_base_addr;
     uvm_reg_addr_t privkey_out_size, privkey_in_size, signature_size, pubkey_size;
+    uvm_reg_addr_t encapskey_base_addr, decapskey_base_addr, ciphertext_base_addr;
+    uvm_reg_addr_t encapskey_size, decapskey_size, ciphertext_size;
     uvm_reg_addr_t reg_addr;
     uvm_mem privkey_out_mem, privkey_in_mem, signature_mem, pubkey_mem;
+    uvm_mem encapskey_mem, decapskey_mem, ciphertext_mem;
     uvm_reg reg_obj;
     bit MEM_range_true;
     // pragma uvmf custom ahb_slave_0_ae_predictor begin
@@ -176,10 +179,7 @@ class mldsa_predictor #(
     privkey_out_mem = p_mldsa_rm.default_map.get_mem_by_offset(privkey_out_base_addr);
     privkey_out_size = uvm_reg_addr_t'(privkey_out_mem.get_size());
     // Check if MLDSA_PRIVKEY_OUT memory is correctly retrieved
-    if (privkey_out_mem != null) begin
-      //`uvm_info("PRED_AHB", $sformatf("MLDSA_PRIVKEY_OUT: Base Addr = 0x%0h, Size = %0d", privkey_out_base_addr, privkey_out_size), UVM_LOW)
-    end
-    else begin
+    if (privkey_out_mem == null) begin
       `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_PRIVKEY_OUT memory from sub-map")
     end
 
@@ -189,10 +189,7 @@ class mldsa_predictor #(
     privkey_in_size = uvm_reg_addr_t'(privkey_in_mem.get_size());
 
     // Check if MLDSA_PRIVKEY_IN memory is correctly retrieved
-    if (privkey_in_mem != null) begin
-      //`uvm_info("PRED_AHB", $sformatf("MLDSA_PRIVKEY_IN: Base Addr = 0x%0h, Size = %0d", privkey_in_base_addr, privkey_in_size), UVM_LOW)
-    end
-    else begin
+    if (privkey_in_mem == null) begin
       `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_PRIVKEY_IN memory from sub-map")
     end
 
@@ -202,10 +199,7 @@ class mldsa_predictor #(
     signature_size = uvm_reg_addr_t'(signature_mem.get_size());
 
     // Check if MLDSA_SIGNATURE memory is correctly retrieved
-    if (signature_mem != null) begin
-      //`uvm_info("PRED_AHB", $sformatf("MLDSA_SIGNATURE: Base Addr = 0x%0h, Size = %0d", signature_base_addr, signature_size), UVM_LOW)
-    end
-    else begin
+    if (signature_mem == null) begin
       `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_SIGNATURE memory from sub-map")
     end
     
@@ -215,12 +209,39 @@ class mldsa_predictor #(
     pubkey_size = uvm_reg_addr_t'(pubkey_mem.get_size());
 
     // Check if MLDSA_PUBKEY memory is correctly retrieved
-    if (pubkey_mem != null) begin
-      //`uvm_info("PRED_AHB", $sformatf("MLDSA_PUBKEY: Base Addr = 0x%0h, Size = %0d", pubkey_base_addr, pubkey_size), UVM_LOW)
-    end
-    else begin
+    if (pubkey_mem == null) begin
       `uvm_fatal("PRED_AHB", "Could not retrieve MLDSA_PUBKEY memory from sub-map")
     end
+
+    // Retrieve base address and memory object for MLKEM_ENCAPS_KEY
+    encapskey_base_addr = p_mldsa_rm.default_map.get_submap_offset(p_mldsa_rm.MLKEM_ENCAPS_KEY.default_map);
+    encapskey_mem = p_mldsa_rm.default_map.get_mem_by_offset(encapskey_base_addr);
+    encapskey_size = uvm_reg_addr_t'(encapskey_mem.get_size());
+
+    // Check if MLKEM_ENCAPS_KEY memory is correctly retrieved
+    if (encapskey_mem == null) begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve MLKEM_ENCAPS_KEY memory from sub-map")
+    end  
+
+    // Retrieve base address and memory object for MLKEM_DECAPS_KEY
+    decapskey_base_addr = p_mldsa_rm.default_map.get_submap_offset(p_mldsa_rm.MLKEM_DECAPS_KEY.default_map);
+    decapskey_mem = p_mldsa_rm.default_map.get_mem_by_offset(decapskey_base_addr);
+    decapskey_size = uvm_reg_addr_t'(decapskey_mem.get_size());
+    // Check if MLKEM_DECAPS_KEY memory is correctly retrieved
+    if (decapskey_mem == null) begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve MLKEM_DECAPS_KEY memory from sub-map")
+    end
+
+    // Retrieve base address and memory object for MLKEM_CIPHERTEXT
+    ciphertext_base_addr = p_mldsa_rm.default_map.get_submap_offset(p_mldsa_rm.MLKEM_CIPHERTEXT.default_map);
+    ciphertext_mem = p_mldsa_rm.default_map.get_mem_by_offset(ciphertext_base_addr);
+    ciphertext_size = uvm_reg_addr_t'(ciphertext_mem.get_size());
+    // Check if MLKEM_CIPHERTEXT memory is correctly retrieved
+    if (ciphertext_mem == null) begin
+      `uvm_fatal("PRED_AHB", "Could not retrieve MLKEM_CIPHERTEXT memory from sub-map")
+    end
+
+
     reg_addr = t.address;
     MEM_range_true = (reg_addr >= privkey_in_base_addr && reg_addr < privkey_in_base_addr + privkey_in_size * 4)
                       ||
@@ -228,7 +249,13 @@ class mldsa_predictor #(
                       ||
                      (reg_addr >= signature_base_addr && reg_addr < signature_base_addr + signature_size * 4)
                       ||
-                     (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4);
+                     (reg_addr >= pubkey_base_addr && reg_addr < pubkey_base_addr + pubkey_size * 4)
+                      ||
+                     (reg_addr >= encapskey_base_addr && reg_addr < encapskey_base_addr + encapskey_size * 4)
+                      ||
+                     (reg_addr >= decapskey_base_addr && reg_addr < decapskey_base_addr + decapskey_size * 4)
+                      ||
+                     (reg_addr >= ciphertext_base_addr && reg_addr < ciphertext_base_addr + ciphertext_size * 4);
 
 //===========================================================================================
     if (t.RnW == 1'b1 && !disable_pred_from_test) begin // write
@@ -281,6 +308,12 @@ class mldsa_predictor #(
         end
         else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_Z[0].get_address(p_mldsa_map) &&
                  reg_addr <= p_mldsa_rm.MLKEM_SEED_Z[$size(p_mldsa_rm.MLKEM_SEED_Z)-1].get_address(p_mldsa_map)) begin
+        end
+        else if (reg_addr >= encapskey_base_addr && reg_addr < encapskey_base_addr + encapskey_size * 4) begin
+        end
+        else if (reg_addr >= decapskey_base_addr && reg_addr < decapskey_base_addr + decapskey_size * 4) begin
+        end
+        else if (reg_addr >= ciphertext_base_addr && reg_addr < ciphertext_base_addr + ciphertext_size * 4) begin
         end
         else begin
           `uvm_error("PRED_AHB", $sformatf("Unhandled register write at address: 0x%x", reg_addr))
@@ -388,6 +421,16 @@ class mldsa_predictor #(
         else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_Z[0].get_address(p_mldsa_map) &&
                 reg_addr <= p_mldsa_rm.MLKEM_SEED_Z[$size(p_mldsa_rm.MLKEM_SEED_Z)-1].get_address(p_mldsa_map)) begin
             `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_SEED_Z at address: 0x%x", reg_addr), UVM_HIGH)
+        end
+        else if (reg_addr >= p_mldsa_rm.MLKEM_SEED_Z[0].get_address(p_mldsa_map) &&
+                reg_addr <= p_mldsa_rm.MLKEM_SEED_Z[$size(p_mldsa_rm.MLKEM_SEED_Z)-1].get_address(p_mldsa_map)) begin
+            `uvm_info("PRED_AHB", $sformatf("Skipping register MLKEM_SEED_Z at address: 0x%x", reg_addr), UVM_HIGH)
+        end
+        else if (reg_addr >= encapskey_base_addr && reg_addr < encapskey_base_addr + encapskey_size * 4) begin
+        end
+        else if (reg_addr >= decapskey_base_addr && reg_addr < decapskey_base_addr + decapskey_size * 4) begin
+        end
+        else if (reg_addr >= ciphertext_base_addr && reg_addr < ciphertext_base_addr + ciphertext_size * 4) begin
         end
         // Add more cases as needed for other registers
         else begin

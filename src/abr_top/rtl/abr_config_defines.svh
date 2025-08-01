@@ -26,7 +26,7 @@
   abr_1r1w_ram \
   #( .DEPTH(``_depth``), \
      .DATA_WIDTH(``_width``)) \
-   mldsa_``_mem_name``_inst\
+   abr_``_mem_name``_inst\
    (\
       .clk_i(clk_i),\
       .we_i(abr_memory_export.``_mem_name``_we_i),\
@@ -41,7 +41,7 @@
   abr_1r1w_be_ram \
   #( .DEPTH(``_depth``), \
      .DATA_WIDTH(``_width``))  \
-     mldsa_``_mem_name``_inst\
+     abr_``_mem_name``_inst\
      (\
         .clk_i(clk_i),\
         .we_i(abr_memory_export.``_mem_name``_we_i),\

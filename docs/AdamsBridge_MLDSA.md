@@ -132,7 +132,8 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 | Bits     | Identifier | Access | Reset | Decoded | Name |
 | :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:3\] | \-                | \-     | \-    |         | \-   |
+| \[31:4\] | \-                | \-     | \-    |         | \-   |
+| \[3\]    | ERROR             | r      | 0x0   |         | \-   |
 | \[2\]    | MSG_STREAM_READY  | r      | 0x0   |         | \-   |
 | \[1\]    | VALID             | r      | 0x0   |         | \-   |
 | \[0\]    | READY             | r      | 0x0   |         | \-   |
@@ -143,11 +144,17 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 ### ​VALID 
 
-​Indicates if the process is computed and the output is valid. 
+​Indicates if the process is computed and the output is valid.
 
 ### MSG_STREAM_READY
 
 ​Indicates if the core is ready to process the message.
+
+### ​VALID 
+
+​Indicates if the process could not complete due to an error.
+For ML-DSA this status bit indicates an error while decoding the secret key.
+In Caliptra it could also indicate that pcr signing mode was enabled with a command other than Keygen+Signing.
 
 ## entropy
 
@@ -407,26 +414,6 @@ The area overhead associated with enabling these countermeasures is as follows:
     - 0.0220mm2 for ram area for 57.38 KB memory.
 
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
-
-### Memory requirement
-
-The following table shows the required memory instances for ML-DSA-87:
-
-| Instance                                     | Depth | Data Width | Strobe Width |
-| -------------------------------------------- | ----- | ---------- | ------------ |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank0 | 596   | 32         |              |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sk_ram_bank1 | 596   | 32         |              |
-| mldsa_top.mldsa_w1_mem_inst                  | 512   | 4          |              |
-| mldsa_top.mldsa_ram_inst0_bank0              | 832   | 96         |              |
-| mldsa_top.mldsa_ram_inst0_bank1              | 832   | 96         |              |
-| mldsa_top.mldsa_ram_inst1                    | 576   | 96         |              |
-| mldsa_top.mldsa_ram_inst2                    | 1408  | 96         |              |
-| mldsa_top.mldsa_ram_inst3                    | 128   | 96         |              |
-| mldsa_top.mldsa_ctrl_inst.mldsa_sig_z_ram    | 224   | 160        | 8            |
-| mldsa_top.mldsa_ctrl_inst.mldsa_pubkey_ram   | 64    | 320        | 8            |
-
-All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
-See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
 
 ### Signing perofrmance
 
@@ -1001,7 +988,7 @@ For a complete NTT/INTT operation for Dilithium ML-DSA-87 with 7 or 8 polynomial
 
 ### NTT shuffling countermeasure
 
-To protect NTT, we have two options – shuffling the order of execution of coefficients and masking in-order computation such that NTT performs operation on two input shares per coefficient and produces two output shares. While masking is a strong countermeasure for side-channel attacks, it requires at least 4x the area and adds 4x the latency to one NTT operation. Shuffling is an implementation trick that can be used to provide randomization to some degree without area or latency overhead. In Adam’s Bridge, we employ a combination of both for protected design. One NTT core will have shuffling for both NTT and INTT modes. The second NTT core will have shuffling and masking on the first layer of computation for INTT mode with cascaded connection from a masked PWM module. In NTT mode, the second NTT core will employ only shuffling. PWM operations are masked by default. PWA and PWS operations are shuffled by default.
+To protect NTT, we have two options – shuffling the order of execution of coefficients and masking in-order computation such that NTT performs operation on two input shares per coefficient and produces two output shares. While masking is a strong countermeasure for side-channel attacks, it requires at least 4x the area and adds 4x the latency to one NTT operation. Shuffling is an implementation trick that can be used to provide randomization to some degree without area or latency overhead. In Adam’s Bridge, we employ a combination of both for protected design. Both NTT cores will have masking on the first layer of computation for INTT mode and will have a fully masked PWM module, in addition to shuffling. In NTT, PWA and PWS modes, the NTT cores can employ only shuffling.
 
 | Address |     | Memory Content |     |     |     |
 | ------- | --- | -------------- | --- | --- | --- |
@@ -1751,9 +1738,19 @@ Polynomial in NTT domain can be performed using point-wise multiplication (PWM).
 
 There are 2 memories containing polynomial f and g, with 4 coefficients per each memory address. The parallel butterfly cores enable us to perform 4 point-wise multiplication operations with 4 parallel coefficients as follows:
 
-![A diagram of a computerDescription automatically generated](./images/MLDSA/image22.png)
+![](./images/MLDSA/image22.png)
 
 The proposed NTT method preserves the memory contents in sequence without needing to shuffle and reorder them, so the point-wise multiplication can be sped up by using consistent reading/writing addresses from both memories.
+
+## PWM and INTT masking countermeasure
+
+Masking countermeasure is implemented for two of the most critical operations in ML-DSA-87 to protect secrets - point-wise multiplication and INTT. A fully masked 2x2 butterfly architecture increases memory, area and latency by ~4 times. To avoid such large overhead, Adams Bridge implements a hybrid masking countermeasure where PWM operation is fully masked and the first stage of INTT operation is masked. To support Ay calculation where one input of PWM operation comes from samplers, an additional shares memory is provided that stores 1 polynomial worth of shares. Figure below shows the masking architecture:
+
+![Masking architecture](./images/MLDSA/image64.png)
+
+PWM, PWM with accumulation and INTT modes of NTT engine support masking and shuffling countermeasures. Remaining opcodes (NTT, PWA and PWS) only support shuffling countermeasure. During Ay computation, the first PWM operation with masking enabled will receive inputs from the original coefficient memory/sampler and these inputs are in their original form. Internal to the NTT block, the inputs are split into shares and fed to the masked PWM units. The output shares are then stored in the share memory in split form. Subsequent PWM operations with accumulation and masking enabled will retrieve primary inputs from the original memory/sampler which are split on the fly and the accumulation input is retrieved from share memory. The accumulated output shares are stored back into the share memory. 
+
+The following masked INTT operation in Ay computation receives inputs from the share memory in split format. Once the first stage of INTT is finished, the shares are combined and passed onto the unmasked second stage of INTT. The final outputs of INTT are stored in the original coefficient memory in their combined form.
 
 ## RejBounded architecture
 

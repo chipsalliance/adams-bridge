@@ -54,6 +54,7 @@ class ML_KEM_randomized_keygen_decap_sequence extends ML_KEM_base_sequence;
     wait_for_done(1, "valid");
     read_shared_key();
     compare_decap_vectors();
+    check_mldsa_api();
     zeroize();
     wait_for_done(0, "ready");
 
