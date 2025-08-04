@@ -261,6 +261,11 @@ localparam BASE_ADDR        = 32'h00000000;
       pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
       $display("-----------------------------");
       pwm_test_simple_test(.mlkem(1), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(5)); //shuf, mask, acc, check, mode
+      $display("-----------------------------");
+      pwm_test_simple_test(.mlkem(0), .shuf_en(1), .mask_en(1), .acc_en(0), .check_en(0), .mode(2)); //shuf, mask, acc, check, mode
+      $display("-----------------------------");
+      pwm_test_simple_test(.mlkem(0), .shuf_en(1), .mask_en(1), .acc_en(1), .check_en(0), .mode(2)); //shuf, mask, acc, check, mode
+      
       $finish;
 
    end
