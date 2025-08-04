@@ -27,7 +27,7 @@ module ntt_wrapper
     parameter RADIX = 23,
     parameter MLDSA_Q = 23'd8380417,
     parameter MLDSA_N = 256,
-    parameter MEM_ADDR_WIDTH = 14,
+    parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH, //14,
     parameter MEM_DATA_WIDTH = 96
 )
 (
@@ -118,8 +118,8 @@ module ntt_wrapper
         .addrb(mem_rd_req.addr),
         .dinb(),
         .doutb(mem_rd_data_int),
-        .load_tb_values(load_tb_values),
-        .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)//,
+        // .load_tb_addr(load_tb_addr)
     );
 
     ntt_ram_tdp_file #(
@@ -139,8 +139,8 @@ module ntt_wrapper
         .addrb(pwm_a_rd_req.addr), //(pwm_rd_addr_a_reg),
         .dinb(),
         .doutb(pwm_a_rd_data),
-        .load_tb_values(load_tb_values),
-        .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)//,
+        // .load_tb_addr(load_tb_addr)
     );
 
     ntt_ram_tdp_file #(
@@ -160,8 +160,8 @@ module ntt_wrapper
         .addrb(pwm_b_rd_req.addr), //(pwm_rd_addr_b_reg),
         .dinb(),
         .doutb(pwm_b_rd_data),
-        .load_tb_values(load_tb_values),
-        .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)//,
+        // .load_tb_addr(load_tb_addr)
     );
 
     always_comb begin
