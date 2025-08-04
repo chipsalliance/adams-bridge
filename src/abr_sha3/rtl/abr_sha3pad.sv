@@ -893,7 +893,7 @@ module abr_sha3pad
   // Keccak control interface
   // Keccak run triggered -> completion should come
   `ABR_ASSERT(RunThenComplete_M,
-    keccak_run_o |-> strong(##[24*Share:$] keccak_complete_i),
+    keccak_run_o |-> strong(##[12*Share:$] keccak_complete_i),
     clk_i, !rst_b)
 
   // No partial write is allowed for Message FIFO interface

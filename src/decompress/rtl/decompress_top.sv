@@ -42,13 +42,15 @@ module decompress_top
         output logic decompress_done
     );
 
+    localparam DECOMP_DATA_W = MLKEM_Q_WIDTH;
+
     logic api_rd_en_f;
     logic piso_hold_o;
     logic read_done;
     logic [3:0] d; // Decompression count
     logic piso_data_valid;
-    logic [48-1:0] piso_data_o; //FIXME magic number
-    logic [COEFF_PER_CLK-1:0][12-1:0] decompress_data_i; //FIXME magic number
+    logic [(COEFF_PER_CLK*DECOMP_DATA_W)-1:0] piso_data_o;
+    logic [COEFF_PER_CLK-1:0][DECOMP_DATA_W-1:0] decompress_data_i;
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] decompress_data_o;
     logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr;
     logic write_done;
@@ -75,8 +77,13 @@ module decompress_top
         .PISO_BUFFER_W(104),
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
+        `ifdef VERILATOR
+        .INPUT_RATES('{64, 64, 64, 64, 0}),
+        .OUTPUT_RATES('{4, 20, 44, 48, 0})
+        `else
         .INPUT_RATES('{64, 64, 64, 64}),
         .OUTPUT_RATES('{4, 20, 44, 48})
+        `endif
     ) abr_piso_inst (
         .clk(clk),
         .rst_b(reset_n),
@@ -90,20 +97,20 @@ module decompress_top
         .data_o(piso_data_o)
       );
 
-    //Cast the API bitstream into integers for decomp block
+    //Cast the API bitstream into 12 bit vectors per coefficient
     always_comb begin
         for (int i = 0; i < COEFF_PER_CLK; i++) begin
             unique case (mode)
-                decompress1: begin
+                DECOMPRESS1: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*1 +: 1]);
                 end
-                decompress5: begin
+                DECOMPRESS5: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*5 +: 5]);
                 end
-                decompress11: begin
+                DECOMPRESS11: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*11 +: 11]);
                 end
-                decompress12: begin
+                DECOMPRESS12: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*12 +: 12]);
                 end
                 default: begin
@@ -159,10 +166,10 @@ module decompress_top
 
     always_comb begin
         unique case (mode)
-            decompress1: d = 1;
-            decompress5: d = 5;
-            decompress11: d = 11;
-            decompress12: d = 12;
+            DECOMPRESS1: d = 1;
+            DECOMPRESS5: d = 5;
+            DECOMPRESS11: d = 11;
+            DECOMPRESS12: d = 12;
             default: d = 12; // Default case
         endcase
     end

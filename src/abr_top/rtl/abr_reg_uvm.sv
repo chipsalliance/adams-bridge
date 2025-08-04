@@ -123,10 +123,12 @@ package abr_reg_uvm;
         abr_reg__MLDSA_STATUS_bit_cg READY_bit_cg[1];
         abr_reg__MLDSA_STATUS_bit_cg VALID_bit_cg[1];
         abr_reg__MLDSA_STATUS_bit_cg MSG_STREAM_READY_bit_cg[1];
+        abr_reg__MLDSA_STATUS_bit_cg ERROR_bit_cg[1];
         abr_reg__MLDSA_STATUS_fld_cg fld_cg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
         rand uvm_reg_field MSG_STREAM_READY;
+        rand uvm_reg_field ERROR;
 
         function new(string name = "abr_reg__MLDSA_STATUS");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -144,10 +146,13 @@ package abr_reg_uvm;
             this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
             this.MSG_STREAM_READY = new("MSG_STREAM_READY");
             this.MSG_STREAM_READY.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
+            this.ERROR = new("ERROR");
+            this.ERROR.configure(this, 1, 3, "RO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
                 foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
                 foreach(MSG_STREAM_READY_bit_cg[bt]) MSG_STREAM_READY_bit_cg[bt] = new();
+                foreach(ERROR_bit_cg[bt]) ERROR_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();
@@ -676,9 +681,11 @@ package abr_reg_uvm;
 
         abr_reg__MLKEM_STATUS_bit_cg READY_bit_cg[1];
         abr_reg__MLKEM_STATUS_bit_cg VALID_bit_cg[1];
+        abr_reg__MLKEM_STATUS_bit_cg ERROR_bit_cg[1];
         abr_reg__MLKEM_STATUS_fld_cg fld_cg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
+        rand uvm_reg_field ERROR;
 
         function new(string name = "abr_reg__MLKEM_STATUS");
             super.new(name, 32, build_coverage(UVM_CVR_ALL));
@@ -694,9 +701,12 @@ package abr_reg_uvm;
             this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
             this.VALID = new("VALID");
             this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            this.ERROR = new("ERROR");
+            this.ERROR.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
             if (has_coverage(UVM_CVR_REG_BITS)) begin
                 foreach(READY_bit_cg[bt]) READY_bit_cg[bt] = new();
                 foreach(VALID_bit_cg[bt]) VALID_bit_cg[bt] = new();
+                foreach(ERROR_bit_cg[bt]) ERROR_bit_cg[bt] = new();
             end
             if (has_coverage(UVM_CVR_FIELD_VALS))
                 fld_cg = new();

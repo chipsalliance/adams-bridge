@@ -46,7 +46,7 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             r_12_bit = int(randomness.value)
             t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
-            actual_t = ((t0 + t1) & 0x1FFF)
+            actual_t = ((t0 + t1) & 0xFFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
@@ -79,7 +79,7 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             r_12_bit = int(randomness.value)
             t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
-            actual_t = ((t0 + t1) & 0x1FFF)
+            actual_t = ((t0 + t1) & 0xFFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
@@ -113,7 +113,7 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             r_12_bit = int(randomness.value)
             t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
-            actual_t = ((t0 + t1) & 0x1FFF)
+            actual_t = ((t0 + t1) & 0xFFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")
@@ -148,7 +148,7 @@ class TestMaskedBarrettReduction(unittest.TestCase):
             r_12_bit = int(randomness.value)
             t0, t1 = masked_barret_with_vuln_shift(x0, x1, r_12_bit, r_24_bit, turn_off_randomness=0)
             expected_t = (x % self.MLKEM_Q)
-            actual_t = ((t0 + t1) & 0x1FFF)
+            actual_t = ((t0 + t1) & 0xFFF)
             if actual_t != expected_t:
                 print(f"Assertion failed: Failed for t0={t0}, t1={t1}, expected_t={expected_t}, actual_t0={actual_t}")
                 print(f"x={x}, cm={cm}, t={t}, c={c}")

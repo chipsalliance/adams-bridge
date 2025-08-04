@@ -103,6 +103,7 @@ Software write generates only a single-cycle pulse on the hardware interface and
 | Bits     | Identifier     | Access | Reset | Decoded | Name |
 | :------- | :------------- | :----- | :---- | :------ | :--- |
 | \[31:2\] | \-             | \-     | \-    |         | \-   |
+| \[2\]    | ERROR          | r      | 0x0   |         | \-   |
 | \[1\]    | VALID          | r      | 0x0   |         | \-   |
 | \[0\]    | READY          | r      | 0x0   |         | \-   |
 
@@ -113,6 +114,12 @@ Software write generates only a single-cycle pulse on the hardware interface and
 ### ​VALID 
 
 ​Indicates if the process is computed and the output is valid. 
+
+### ERROR
+
+​Indicates if the process could not complete due to an error.
+For encapsulation, this indicates that the provided encapsulation key does not pass the FIPS 203 input check (Modulus check).
+For decapsulation, this indicates that the provided decapsulation key does not pass the FIPS 203 input check (Hash check).
 
 ## entropy
 
@@ -905,7 +912,7 @@ There are 10 rejection sampler circuits corresponding to each 12-bit input. The 
 
 1) At the very first cycle, or whenever the FIFO is empty, rejection sampling unit may not provide all 4 coefficients for the polynomial multiplication unit. We reduce the failure probability of this scenario by feeding 10 coefficients, however, it may happen. So, for designing efficient architecture, instead of reducing the failure probability by adding more hardware cost, we use a VALID output that stops the polynomial multiplier until all 4 required coefficients are sampled.  
 2) If all 10 inputs are valid, they are going to be stored into FIFO. The first 4 coefficients will be sent to the polynomial multiplication unit, while the remaining coefficients will be shifted to the head of FIFO and be used for the next cycle.  
-3) The maximum depth of FIFO is 14 entries. If at least 4 FIFO entries are full, the rejection sampling unit can provide the required output for the next cycles too. Hence, it does not accept a new input from the Keccak core by raising the FULL flag.
+3) The FIFO has a maximum depth of 14 entries. When 9 or more entries are filled, a pop operation reduces the occupancy to 5, which is still insufficient to accommodate new inputs while allowing the rejection sampling unit to continue outputting data in upcoming cycles. As a result, the FIFO asserts the FULL flag to block further input from the Keccak core.
 
 | Cycle count | Input from PISO | FIFO valid entries from previous cycle | Total valid samples | output | FIFO remaining for the next cycle |
 | :---------- | :-------------- | :------------------------------------- | :------------------ | :----- | :-------------------------------- |
@@ -918,7 +925,7 @@ There are 10 rejection sampler circuits corresponding to each 12-bit input. The 
 | 6           | 10              | 6                                      | 13                  | 4      | 9 (FULL)                          |
 
 4) If there is not FULL condition for reading from Keccak, all PISO data can be read in 11 cycles. This would match with Keccak throughput that generates 112 coefficients per 12 cycles.  
-5) The maximum number of FULL conditions is when there are no rejected coefficients for all 112 inputs. In this case, after every cycle with 8 coefficients, there is one FULL condition. It takes 28 cycles to process all PISO contents. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, the Keccak output will be stored into PISO when all PISO contents are processed by rejection sampler.
+5) The maximum number of FULL conditions is when there are no rejected coefficients for all 112 inputs. In this case, after every cycle with 10 coefficients, there is one FULL condition. It takes 28 cycles to process all PISO contents. To maximize the utilization factor of our hardware resources, Keccak core will check the PISO status. If PISO contains 8 coefficients or more (the required inputs for rejection sampling unit), EMPTY flag will not be set, and Keccak will wait until the next cycle. Hence, the Keccak output will be stored into PISO when all PISO contents are processed by rejection sampler.
 
 ![](./images/MLKEM/image10.png)
 

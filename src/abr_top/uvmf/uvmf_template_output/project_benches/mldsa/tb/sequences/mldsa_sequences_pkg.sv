@@ -60,7 +60,9 @@ package mldsa_sequences_pkg;
   `include "src/ML_KEM_base_sequence.svh"
   `include "src/ML_KEM_randomized_keygen_sequence.svh"
   `include "src/ML_KEM_randomized_encap_sequence.svh"
+  `include "src/ML_KEM_randomized_encap_input_fail_sequence.svh"
   `include "src/ML_KEM_randomized_decap_sequence.svh"
+  `include "src/ML_KEM_randomized_decap_input_fail_sequence.svh"
   `include "src/ML_KEM_randomized_keygen_decap_sequence.svh"
   `include "src/ML_KEM_randomized_all_sequence.svh"
 

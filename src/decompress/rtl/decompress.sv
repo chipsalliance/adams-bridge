@@ -16,9 +16,6 @@
 // decompress.sv
 // --------
 // Converts d-bit coefficients into 12-bit representation where d is the decompression level.
-// Based on input mode, d is selected and the following equation is performed:
-// ((data[11:0] << d) + q/2) / q
-// To efficiently perform /q operation, barrett reduction is used.
 
 module decompress
     import abr_params_pkg::*;
@@ -34,12 +31,12 @@ module decompress
     
     always_comb begin
         if (mode == 3) begin
-            op_o = op_i; // No decompression, just pass through
+            op_o = (op_i < MLKEM_Q) ? op_i : '0; // No decompression, just pass through if < MLKEM_Q
         end else begin
             unique case(mode)
-                0: d = 1;
-                1: d = 5;
-                2: d = 11;
+                DECOMPRESS1:  d = 1;
+                DECOMPRESS5:  d = 5;
+                DECOMPRESS11: d = 11;
                 default: d = 1;
             endcase
 
