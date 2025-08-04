@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+`include "abr_config_defines.svh"
+
 `ifndef TECH_SPECIFIC_ICG
     module `ABR_ICG (
         input logic clk,
