@@ -130,7 +130,7 @@ interface abr_sram_be_if #(parameter integer ADDR_W = 16, parameter integer DATA
     );
   
     modport resp (
-        input we_i, waddr_i, wdata_i, re_i, raddr_i,
+        input we_i, waddr_i, wdata_i, wstrobe_i, re_i, raddr_i,
         output rdata_o
     );
   
