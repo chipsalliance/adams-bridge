@@ -30,7 +30,6 @@ interface abr_top_cov_if
     logic mldsa_valid;
     logic mlkem_valid;
     logic pcr_process;
-    logic kv_mldsa_seed_data_present;
 
     logic error_flag;
     logic skdecode_error;
@@ -38,6 +37,10 @@ interface abr_top_cov_if
     logic mldsa_signing_process;
     logic mldsa_verifying_process;
     logic mldsa_keygen_signing_process;
+    logic mlkem_keygen_process;
+    logic mlkem_encaps_process;
+    logic mlkem_decaps_process;
+    logic mlkem_keygen_decaps_process;
 
     logic verify_failure;
     logic normcheck_failure;
@@ -47,10 +50,17 @@ interface abr_top_cov_if
     `ifdef CALIPTRA
     logic pcr_sign_mode;
     logic pcr_sign_input_invalid;
+    logic kv_mldsa_seed_data_present;
+    logic kv_mlkem_seed_data_present;
+    logic kv_mlkem_msg_data_present;
 
     assign pcr_sign_input_invalid = abr_top.abr_ctrl_inst.pcr_sign_input_invalid;
     assign pcr_sign_mode = abr_top.abr_ctrl_inst.pcr_sign_mode;
     
+    assign kv_mldsa_seed_data_present = abr_top.abr_ctrl_inst.kv_mldsa_seed_data_present;
+    assign kv_mlkem_seed_data_present = abr_top.abr_ctrl_inst.kv_mlkem_seed_data_present;
+    assign kv_mlkem_msg_data_present  = abr_top.abr_ctrl_inst.kv_mlkem_msg_data_present;
+
     always_ff @(posedge clk) begin
         if (!rst_b) begin
             pcr_process <= '0;
@@ -80,7 +90,6 @@ interface abr_top_cov_if
         end
     end
 
-    assign kv_mldsa_seed_data_present  = abr_top.abr_ctrl_inst.kv_mldsa_seed_data_present;
 
     assign error_flag = abr_top.abr_ctrl_inst.error_flag | abr_top.abr_ctrl_inst.error_flag_reg;
     assign skdecode_error = abr_top.abr_ctrl_inst.skdecode_error_i;
@@ -89,6 +98,10 @@ interface abr_top_cov_if
     assign mldsa_signing_process = abr_top.abr_ctrl_inst.mldsa_signing_process;
     assign mldsa_verifying_process = abr_top.abr_ctrl_inst.mldsa_verifying_process;
     assign mldsa_keygen_signing_process = abr_top.abr_ctrl_inst.mldsa_keygen_signing_process;
+    assign mlkem_keygen_process = abr_top.abr_ctrl_inst.mldsa_keygen_process;
+    assign mlkem_encaps_process = abr_top.abr_ctrl_inst.mlkem_encaps_process;
+    assign mlkem_decaps_process = abr_top.abr_ctrl_inst.mlkem_decaps_process;
+    assign mlkem_keygen_decaps_process = abr_top.abr_ctrl_inst.mlkem_keygen_decaps_process;
 
     assign verify_failure = abr_top.abr_ctrl_inst.clear_verify_valid;
     assign normcheck_failure = abr_top.abr_ctrl_inst.normcheck_done_i & abr_top.abr_ctrl_inst.normcheck_invalid_i;
@@ -105,6 +118,9 @@ interface abr_top_cov_if
         mldsa_cmd_cp: coverpoint mldsa_cmd{
             illegal_bins illegal_values = {5, 6, 7};
         }
+        mlkem_cmd_cp: coverpoint mlkem_cmd{
+            illegal_bins illegal_values = {5, 6, 7};
+        }
         zeroize_cp: coverpoint zeroize;
         ready_cp: coverpoint ready;
         mldsa_valid_cp: coverpoint mldsa_valid;
@@ -114,7 +130,10 @@ interface abr_top_cov_if
         mldsa_verifying_process_cp: coverpoint mldsa_verifying_process;
         mldsa_keygen_signing_process_cp: coverpoint mldsa_keygen_signing_process;
 
-        kv_mldsa_seed_data_present_cp: coverpoint kv_mldsa_seed_data_present ;
+        mlkem_keygen_process_cp: coverpoint mlkem_keygen_process;
+        mlkem_encaps_process_cp: coverpoint mlkem_encaps_process;
+        mlkem_decaps_process_cp: coverpoint mlkem_decaps_process;
+        mlkem_keygen_decaps_process_cp: coverpoint mlkem_keygen_decaps_process;
 
         error_flag_cp: coverpoint error_flag;
         skdecode_error_cp: coverpoint skdecode_error;
@@ -130,25 +149,41 @@ interface abr_top_cov_if
         normcheck_failure_cp: coverpoint normcheck_failure;
         makehint_failure_cp: coverpoint makehint_failure;
         invalid_hint_cp: coverpoint invalid_hint;
+        clear_decaps_valid_cp: coverpoint abr_top.abr_ctrl_inst.clear_decaps_valid;
+        encaps_input_check_failure_cp: coverpoint abr_top.abr_ctrl_inst.encaps_input_check_failure;
+        decaps_input_check_failure_cp: coverpoint abr_top.abr_ctrl_inst.decaps_input_check_failure;
+
+        stream_msg_strobe_cp: coverpoint abr_top.abr_ctrl_inst.stream_msg_strobe {
+            bins one_byte = {4'b0001};
+            bins two_bytes = {4'b0011};
+            bins three_bytes = {4'b0111};
+            bins four_bytes = {4'b1111};
+        }
 
         mldsa_cmdXready: cross mldsa_sw_cmd, ready_cp{
             ignore_bins illegal_sw_cmd = binsof(mldsa_sw_cmd) intersect {5, 6, 7};
         }
-        mldsa_keygenXkv: cross mldsa_keygen_process_cp, kv_mldsa_seed_data_present_cp;
         zeroizeXmldsa_cmd: cross zeroize_cp, mldsa_cmd_cp {
             ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
         }
         zeroizeXerror: cross zeroize_cp, error_flag_cp;
         readyXzeroize: cross ready_cp, zeroize_cp;
         errorXmldsa_signing: cross error_flag_cp, mldsa_signing_process_cp;
-        errorXmldsa_keygen: cross error_flag_cp, mldsa_keygen_process_cp; // due to pcr_sign_input_invalid
-        errorXmldsa_verifying: cross error_flag_cp, mldsa_verifying_process_cp; // due to pcr_sign_input_invalid
-        errorXmldsa_keygen_signing: cross error_flag_cp, mldsa_keygen_signing_process_cp; // due to pcr_sign_input_invalid
 
         normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process | mldsa_keygen_signing_process);
         normcheckXverifying_failure: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (mldsa_verifying_process);
 
         `ifdef CALIPTRA
+        kv_mldsa_seed_data_present_cp: coverpoint kv_mldsa_seed_data_present;
+        mldsa_keygenXkv: cross mldsa_keygen_process_cp, kv_mldsa_seed_data_present_cp;
+
+        kv_mlkem_seed_data_present_cp: coverpoint kv_mlkem_seed_data_present;
+        mlkem_keygenXkv: cross mlkem_keygen_process_cp, kv_mlkem_seed_data_present_cp;
+        mlkem_keygen_decapsXkv: cross mlkem_keygen_decaps_process_cp, kv_mlkem_seed_data_present_cp;
+
+        kv_mlkem_msg_data_present_cp: coverpoint kv_mlkem_msg_data_present;
+        mlkem_encapsXkv: cross mlkem_encaps_process_cp, kv_mlkem_msg_data_present_cp;
+
         pcr_sign_cp: coverpoint pcr_sign_mode;
         pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
 
@@ -159,6 +194,10 @@ interface abr_top_cov_if
         }
         zeroizeXpcr_sign: cross zeroize_cp, pcr_sign_cp;
 
+        errorXmldsa_keygen: cross error_flag_cp, mldsa_keygen_process_cp; // due to pcr_sign_input_invalid
+        errorXmldsa_verifying: cross error_flag_cp, mldsa_verifying_process_cp; // due to pcr_sign_input_invalid
+        errorXmldsa_keygen_signing: cross error_flag_cp, mldsa_keygen_signing_process_cp; // due to pcr_sign_input_invalid
+        
         normcheck_fail_signXpcr_sign: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (pcr_process);
         makehint_failXpcr_sign: cross makehint_failure_cp, pcr_sign_cp;
         `endif

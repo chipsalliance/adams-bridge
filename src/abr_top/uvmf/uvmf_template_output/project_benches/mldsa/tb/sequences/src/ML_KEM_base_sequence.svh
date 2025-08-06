@@ -32,6 +32,8 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   string input_fname, output_fname, cmd, line;
   int    fd;
 
+  rand int rand_delay;
+
   //----------------------------------------------------------------------  
   // their expected vs. actual counterparts
   bit [31:0] expected_seed_d     [];
@@ -209,9 +211,9 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     for(int j = 0; j < reg_model.MLKEM_DECAPS_KEY.m_mem.get_size(); j++) begin
       reg_model.MLKEM_DECAPS_KEY.m_mem.read(status, j, actual_dk[j], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
-        `uvm_error("REG_WRITE_FAIL", $sformatf("Failed to read MLKEM_DECAPS_KEY[%0d]", j));
+        `uvm_error("REG_READ_FAIL", $sformatf("Failed to read MLKEM_DECAPS_KEY[%0d]", j));
       end else begin
-        `uvm_info("REG_WRITE_PASS", $sformatf("Successfully read MLKEM_DECAPS_KEY[%0d]: %0h", j, actual_dk[j]), UVM_LOW);
+        `uvm_info("REG_READ_PASS", $sformatf("Successfully read MLKEM_DECAPS_KEY[%0d]: %0h", j, actual_dk[j]), UVM_LOW);
       end
     end
   endtask
@@ -266,7 +268,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_keygen_with_rand_val();
+  task run_model_for_keygen_with_rand_val(bit on_the_fly_zeroize = 0);
     // 1) randomize seeds
     foreach (seed_d[i]) begin
       if (!this.randomize(data)) begin
@@ -321,6 +323,12 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 392, expected_ek);
     read_line(fd, 792, expected_dk);  
     $fclose(fd);
+
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_ek = new[expected_ek.size()];
+      expected_dk = new[expected_dk.size()];
+    end 
   endtask
 
   task compare_keygen_vectors();
@@ -352,7 +360,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   endtask
 
 
-  task run_model_for_encap_with_rand_val(bit decaps_rej = 0);
+  task run_model_for_encap_with_rand_val(bit decaps_rej = 0, bit on_the_fly_zeroize = 0);
     run_model_for_keygen_with_rand_val();
 
     if (decaps_rej) begin
@@ -419,6 +427,12 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 8, expected_shared_key);
     read_line(fd, 392, expected_ciphertext);  
     $fclose(fd);
+
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_shared_key = new[expected_shared_key.size()];
+      expected_ciphertext = new[expected_ciphertext.size()];
+    end 
   endtask
 
   task compare_encap_vectors(bit error_flag = 0);
@@ -451,7 +465,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_decap_with_rand_val(bit decaps_rej = 0);
+  task run_model_for_decap_with_rand_val(bit decaps_rej = 0, bit on_the_fly_zeroize = 0);
     run_model_for_encap_with_rand_val(decaps_rej);
     foreach (expected_dk[i]) begin
       dk[i] = expected_dk[i];
@@ -497,6 +511,11 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
 
     read_line(fd, 8, expected_shared_key);  
     $fclose(fd);
+
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_shared_key = new[expected_shared_key.size()];
+    end 
   endtask
 
   task compare_decap_vectors(bit error_flag = 0);
@@ -515,6 +534,40 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
   
+  task check_mldsa_api();
+    //Read MLDSA PRIVKEY API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_PRIVKEY_OUT.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PRIVKEY_OUT.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PRIVKEY_OUT[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("PRIVKEY_OUT[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+    //Read MLDSA PUBKEY API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_PUBKEY.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_PUBKEY.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_PUBKEY[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("PUBKEY[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+    //Read MLDSA SIGNATURE API output to ensure we don't leak data
+    for(int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      reg_model.MLDSA_SIGNATURE.m_mem.read(status, i, data, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_READ", $sformatf("Failed to read MLDSA_SIGNATURE[%0d]", i));
+      end
+      if (data !== '0) begin
+        `uvm_error("SECRET_LEAKED", $sformatf("SIGNATURE[%0d] is not 0 after ML-KEM operation", i));
+      end
+    end
+
+  endtask
+
 
 endclass
 

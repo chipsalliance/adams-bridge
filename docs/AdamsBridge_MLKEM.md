@@ -103,6 +103,7 @@ Software write generates only a single-cycle pulse on the hardware interface and
 | Bits     | Identifier     | Access | Reset | Decoded | Name |
 | :------- | :------------- | :----- | :---- | :------ | :--- |
 | \[31:2\] | \-             | \-     | \-    |         | \-   |
+| \[2\]    | ERROR          | r      | 0x0   |         | \-   |
 | \[1\]    | VALID          | r      | 0x0   |         | \-   |
 | \[0\]    | READY          | r      | 0x0   |         | \-   |
 
@@ -113,6 +114,12 @@ Software write generates only a single-cycle pulse on the hardware interface and
 ### ​VALID 
 
 ​Indicates if the process is computed and the output is valid. 
+
+### ERROR
+
+​Indicates if the process could not complete due to an error.
+For encapsulation, this indicates that the provided encapsulation key does not pass the FIPS 203 input check (Modulus check).
+For decapsulation, this indicates that the provided decapsulation key does not pass the FIPS 203 input check (Hash check).
 
 ## entropy
 
