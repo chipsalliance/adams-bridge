@@ -35,7 +35,7 @@ module mlkem_karatsuba_tb
 
     logic [11:0] u_tb, v_tb, w_tb;
     logic [22:0] u_o_tb, v_o_tb;
-    logic [((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1)-1:0][11:0] w_array;
+    logic [((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1)-1:0][11:0] zeta_array;
 
     mlkem_pwo_uvwzi_t pwo_uvw_i_tb;
     logic [11:0] zeta_tb;
@@ -106,7 +106,7 @@ endtask // reset_dut
         zeta_tb = '0;
 
         for (i = 0; i < ((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1); i++) begin
-            w_array[i] = '0;
+            zeta_array[i] = '0;
         end
 
         $display("End of init");
@@ -131,10 +131,8 @@ task pairwm_test(input logic acc_en);
             begin
                 for (int i = 0; i < MLKEM_Q; i++) begin
                     for (int j = 0; j < MLKEM_Q; j++) begin
-                        w_array[j+(i*j)] = $urandom() % MLKEM_Q;
-                        // u_tb <= i;
-                        // v_tb <= j;
-                        // w_tb <= w_array[j+(i*j)];
+                        zeta_array[j+(i*j)] = $urandom() % MLKEM_Q;
+
                         pwo_uvw_i_tb.u0_i <= i;
                         pwo_uvw_i_tb.u1_i <= j;
                         pwo_uvw_i_tb.v0_i <= i;
@@ -147,12 +145,7 @@ task pairwm_test(input logic acc_en);
                             pwo_uvw_i_tb.w1_i <= 0;
                         end
                         
-                        zeta_tb <= w_array[j+(i*j)];
-
-                        // $display("Setting inputs: u0=%0x, u1=%0x, v0=%0x, v1=%0x, w0=%0x, w1=%0x, zeta=%0x", 
-                            // pwo_uvw_i_tb.u0_i, pwo_uvw_i_tb.u1_i, pwo_uvw_i_tb.v0_i, pwo_uvw_i_tb.v1_i,
-                            // pwo_uvw_i_tb.w0_i, pwo_uvw_i_tb.w1_i, zeta_tb);
-
+                        zeta_tb <= zeta_array[j+(i*j)];
                         @(posedge clk_tb);
                     end
                 end
@@ -166,8 +159,7 @@ task pairwm_test(input logic acc_en);
 
                 for (int i = 0; i < MLKEM_Q; i++) begin
                     for (int j = 0; j < MLKEM_Q; j++) begin
-                        // $display("Calculating exp res with zeta = %0x", w_array[j+(i*j)]);
-                        exp_u_o_tb = (((i*i) % MLKEM_Q) + ((((j*j)%MLKEM_Q)*w_array[j+(i*j)])%MLKEM_Q)) % MLKEM_Q;
+                        exp_u_o_tb = (((i*i) % MLKEM_Q) + ((((j*j)%MLKEM_Q)*zeta_array[j+(i*j)])%MLKEM_Q)) % MLKEM_Q;
                         exp_v_o_tb = (((i*j) % MLKEM_Q) + ((i*j) % MLKEM_Q)) % MLKEM_Q;
 
                         if (acc_en) begin
@@ -176,12 +168,12 @@ task pairwm_test(input logic acc_en);
                         end
 
                         if (pwo_uv_o_tb.uv0_o != exp_u_o_tb) begin
-                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x, zeta=%0x: expected %0x, got %0x", i, j, i, w_array[j+(i*j)], exp_u_o_tb, pwo_uv_o_tb.uv0_o);
+                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x, zeta=%0x: expected %0x, got %0x", i, j, i, zeta_array[j+(i*j)], exp_u_o_tb, pwo_uv_o_tb.uv0_o);
                             err_ctr++;
                         end
 
                         if (pwo_uv_o_tb.uv1_o != exp_v_o_tb) begin
-                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x, zeta=%0x: expected %0x, got %0x", i, j, j, w_array[j+(i*j)], exp_v_o_tb, pwo_uv_o_tb.uv1_o);
+                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x, zeta=%0x: expected %0x, got %0x", i, j, j, zeta_array[j+(i*j)], exp_v_o_tb, pwo_uv_o_tb.uv1_o);
                             err_ctr++;
                         end
                         
