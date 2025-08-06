@@ -18,7 +18,6 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
   rand bit decaps_rej;
   rand bit [1:0] op;
   rand bit on_the_fly_zeroize;
-  rand bit use_reset_not_zeroize;
   rand int rand_delay;
 
   constraint decaps_rej_c {
@@ -27,10 +26,6 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
 
   constraint on_the_fly_zeroize_c {
     on_the_fly_zeroize dist {1 := 10, 0 := 90};  // 1% chance of reset per op
-  }
-
-  constraint choose_cmd_c {
-    use_reset_not_zeroize inside {0,1};
   }
 
   `uvm_object_utils(ML_KEM_randomized_all_sequence);
