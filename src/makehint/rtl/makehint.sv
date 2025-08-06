@@ -365,7 +365,7 @@ module makehint
     assign makehint_done       = (read_fsm_state_ps == MH_IDLE);
 
     generate
-        for (genvar i = 0; i < 4; i++) begin
+        for (genvar i = 0; i < 4; i++) begin : gen
             hintgen #(
                 .REG_SIZE(REG_SIZE-1)
             )
