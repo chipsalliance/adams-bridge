@@ -27,7 +27,7 @@ module ntt_wrapper
     parameter RADIX = 23,
     parameter MLDSA_Q = 23'd8380417,
     parameter MLDSA_N = 256,
-    parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH, //14,
+    parameter MEM_ADDR_WIDTH = ABR_MEM_ADDR_WIDTH,
     parameter MEM_DATA_WIDTH = 96
 )
 (
@@ -43,9 +43,8 @@ module ntt_wrapper
     input wire [5:0] random,
     input wire [4:0][45:0] rnd_i,
     
-    //TB purpose - remove later TODO
+    //TB purpose
     input wire load_tb_values,
-    input wire [MEM_ADDR_WIDTH-1:0] load_tb_addr,
 
     input ntt_mem_addr_t ntt_mem_base_addr,
     input pwo_mem_addr_t pwo_mem_base_addr,
@@ -118,8 +117,7 @@ module ntt_wrapper
         .addrb(mem_rd_req.addr),
         .dinb(),
         .doutb(mem_rd_data_int),
-        .load_tb_values(load_tb_values)//,
-        // .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)
     );
 
     ntt_ram_tdp_file #(
@@ -139,8 +137,7 @@ module ntt_wrapper
         .addrb(pwm_a_rd_req.addr), //(pwm_rd_addr_a_reg),
         .dinb(),
         .doutb(pwm_a_rd_data),
-        .load_tb_values(load_tb_values)//,
-        // .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)
     );
 
     ntt_ram_tdp_file #(
@@ -160,8 +157,7 @@ module ntt_wrapper
         .addrb(pwm_b_rd_req.addr), //(pwm_rd_addr_b_reg),
         .dinb(),
         .doutb(pwm_b_rd_data),
-        .load_tb_values(load_tb_values)//,
-        // .load_tb_addr(load_tb_addr)
+        .load_tb_values(load_tb_values)
     );
 
     always_comb begin

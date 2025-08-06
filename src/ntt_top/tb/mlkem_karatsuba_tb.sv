@@ -33,12 +33,12 @@ module mlkem_karatsuba_tb
     logic zeroize_tb;
     logic acc_tb;
 
-    logic [11:0] u_tb, v_tb, w_tb;
-    logic [22:0] u_o_tb, v_o_tb;
-    logic [((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1)-1:0][11:0] zeta_array;
+    logic [MLKEM_REG_SIZE-1:0] u_tb, v_tb, w_tb;
+    logic [NTT_REG_SIZE-1:0] u_o_tb, v_o_tb;
+    logic [((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1)-1:0][MLKEM_REG_SIZE-1:0] zeta_array;
 
     mlkem_pwo_uvwzi_t pwo_uvw_i_tb;
-    logic [11:0] zeta_tb;
+    logic [MLKEM_REG_SIZE-1:0] zeta_tb;
     mlkem_pwo_t pwo_uv_o_tb;
 
     
@@ -115,7 +115,7 @@ endtask
 
 task pairwm_test(input logic acc_en);
     
-    logic [22:0] exp_u_o_tb, exp_v_o_tb;
+    logic [NTT_REG_SIZE-1:0] exp_u_o_tb, exp_v_o_tb;
     int err_ctr = 0;
 
     begin
@@ -207,7 +207,7 @@ initial begin
     init_sim();
     pairwm_test(1'b1); // Test with accumulation
 
-    $display("End of hybrid_bf_tb");
+    $display("End of karatsuba tb");
     $finish;
 end
 

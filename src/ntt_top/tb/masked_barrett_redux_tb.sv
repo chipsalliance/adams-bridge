@@ -17,7 +17,9 @@
 
 `timescale 1ns/1ps
 
-module masked_barrett_redux_tb;
+module masked_barrett_redux_tb
+    import abr_params_pkg::*;
+    ();
 
     // Parameters
     parameter REG_SIZE = 23;
@@ -56,30 +58,31 @@ module masked_barrett_redux_tb;
         input [MASKED_REG_SIZE-1:0] opa
     );
         begin
-            barrett_redux_exp = opa % 3329;
+            barrett_redux_exp = opa % MLKEM_Q;
         end
     endfunction
 
     task run_full_test();
         int errors = 0;
         int total = 0;
-        logic [11:0] a, b;
-        logic [23:0] x_in;
-        logic [(3328*3328):0][23:0] x_in_array;
+        logic [MLKEM_REG_SIZE-1:0] a, b;
+        logic [MASKED_REG_SIZE-1:0] x_in;
+        logic [((MLKEM_Q-1)*(MLKEM_Q-1)):0][MASKED_REG_SIZE-1:0] x_in_array;
         logic [54:0] rnd;
-        logic [11:0] expected;
+        logic [MLKEM_REG_SIZE-1:0] expected;
 
+        $display("Starting masked_barrett_redux test...");
         fork
             begin
                 #10;
-                for (int a = 0; a < 3329; a++) begin
-                    for (int b = 0; b < 3329; b++) begin
+                for (int a = 0; a < MLKEM_Q; a++) begin
+                    for (int b = 0; b < MLKEM_Q; b++) begin
                         @(posedge clk);
                         rnd = 55'({$urandom(), $urandom()}); //$urandom();
                         x_in = a*b; //$urandom();
                         x_in_array[a*b] = x_in;
-                        x[0] <= x_in - rnd[23:0];
-                        x[1] <= rnd[23:0];
+                        x[0] <= x_in - rnd[MASKED_REG_SIZE-1:0];
+                        x[1] <= rnd[MASKED_REG_SIZE-1:0];
                         // $display("Driving inputs for index %0d at time %t",i, $time);
                         rnd_tb = rnd;
                         rnd_24bit_tb = 24'($urandom());
@@ -87,9 +90,11 @@ module masked_barrett_redux_tb;
                 end
             end
             begin
+                $display("Waiting for results to be ready");
                 repeat(8) @(posedge clk);
-                for (int a = 0; a < 3329; a++)  begin
-                    for (int b = 0; b < 3329; b++) begin
+                $display("Checking results...");
+                for (int a = 0; a < MLKEM_Q; a++)  begin
+                    for (int b = 0; b < MLKEM_Q; b++) begin
                         expected = barrett_redux_exp(x_in_array[a*b]);
                         
                         // expected = barrett_redux_exp(x[0] + x[1]);
@@ -106,6 +111,12 @@ module masked_barrett_redux_tb;
                 end
             end
         join
+
+        if (errors == 0) begin
+            $display("All %0d tests passed successfully.", total);
+        end else begin
+            $display("Test failed with %0d errors out of %0d total tests.", errors, total);
+        end
     endtask
 
     // Main test sequence
@@ -123,7 +134,6 @@ module masked_barrett_redux_tb;
 
         run_full_test();
 
-        $display("All tests completed.");
         $finish;
     end
 

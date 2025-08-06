@@ -35,8 +35,8 @@ module mlkem_hybrid_bf_tb
     logic mlkem_tb;
     logic acc_tb;
 
-    logic [11:0] u_tb, v_tb, w_tb;
-    logic [22:0] u_o_tb, v_o_tb;
+    logic [MLKEM_REG_SIZE-1:0] u_tb, v_tb, w_tb;
+    logic [NTT_REG_SIZE-1:0] u_o_tb, v_o_tb;
     logic [((MLKEM_Q-1) * (MLKEM_Q-1))+(MLKEM_Q-1)-1:0][11:0] w_array;
 
     
@@ -46,9 +46,9 @@ module mlkem_hybrid_bf_tb
         .zeroize(zeroize_tb),
         .mode(mode_tb),
         .mlkem(mlkem_tb),
-        .opu_i(23'(u_tb)),
-        .opv_i(23'(v_tb)),
-        .opw_i(23'(w_tb)),
+        .opu_i(NTT_REG_SIZE'(u_tb)),
+        .opv_i(NTT_REG_SIZE'(v_tb)),
+        .opw_i(NTT_REG_SIZE'(w_tb)),
         .accumulate(acc_tb),
         .u_o(u_o_tb),
         .v_o(v_o_tb),
@@ -110,7 +110,7 @@ endtask
 
 task ct_test(input logic mlkem);
     
-    logic [22:0] exp_u_o_tb, exp_v_o_tb;
+    logic [NTT_REG_SIZE-1:0] exp_u_o_tb, exp_v_o_tb;
     int err_ctr = 0;
 
     begin
@@ -151,13 +151,13 @@ task ct_test(input logic mlkem);
                             exp_v_o_tb = ((i - ((j*w_array[j+(i*j)])%MLKEM_Q)+MLKEM_Q));
 
 
-                        if (u_o_tb[11:0] != exp_u_o_tb) begin
-                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_u_o_tb, u_o_tb[11:0]);
+                        if (u_o_tb[MLKEM_REG_SIZE-1:0] != exp_u_o_tb) begin
+                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_u_o_tb, u_o_tb[MLKEM_REG_SIZE-1:0]);
                             err_ctr++;
                         end
 
-                        if (v_o_tb[11:0] != exp_v_o_tb) begin
-                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_v_o_tb, v_o_tb[11:0]);
+                        if (v_o_tb[MLKEM_REG_SIZE-1:0] != exp_v_o_tb) begin
+                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_v_o_tb, v_o_tb[MLKEM_REG_SIZE-1:0]);
                             err_ctr++;
                         end
                         
@@ -178,7 +178,7 @@ task ct_test(input logic mlkem);
 endtask
 
 //----------------------------------------------------------------
-function logic [11:0] div2(input logic [11:0] in);
+function logic [MLKEM_REG_SIZE-1:0] div2(input logic [MLKEM_REG_SIZE-1:0] in);
     // Divide the input by 2, rounding down
     if (in[0] == 1'b1) begin
         div2 = (in >> 1) + ((MLKEM_Q + 1)/2);
@@ -189,8 +189,8 @@ endfunction
 
 //---------------------------------------------------------
 task gs_test(input logic mlkem);
-    
-    logic [22:0] exp_u_o_tb, exp_v_o_tb;
+
+    logic [NTT_REG_SIZE-1:0] exp_u_o_tb, exp_v_o_tb;
     int err_ctr = 0;
 
     begin
@@ -231,13 +231,13 @@ task gs_test(input logic mlkem);
                             exp_v_o_tb = div2(((i - j)+MLKEM_Q)*w_array[j+(i*j)] % MLKEM_Q);
 
 
-                        if (u_o_tb[11:0] != exp_u_o_tb) begin
-                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_u_o_tb, u_o_tb[11:0]);
+                        if (u_o_tb[MLKEM_REG_SIZE-1:0] != exp_u_o_tb) begin
+                            $display("Error: u_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_u_o_tb, u_o_tb[MLKEM_REG_SIZE-1:0]);
                             err_ctr++;
                         end
 
-                        if (v_o_tb[11:0] != exp_v_o_tb) begin
-                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_v_o_tb, v_o_tb[11:0]);
+                        if (v_o_tb[MLKEM_REG_SIZE-1:0] != exp_v_o_tb) begin
+                            $display("Error: v_o mismatch at i=%0x, j=%0x, w=%0x: expected %0x, got %0x", i, j, w_array[j+(i*j)], exp_v_o_tb, v_o_tb[MLKEM_REG_SIZE-1:0]);
                             err_ctr++;
                         end
                         

@@ -64,7 +64,7 @@ reg [23:0] zeta_inv [255:0];
 reg [(4*(REG_SIZE+1))-1:0] ntt_mem_tb [63:0];
 
 reg load_tb_values;
-reg [ABR_MEM_ADDR_WIDTH-1:0] load_tb_addr;
+// reg [ABR_MEM_ADDR_WIDTH-1:0] load_tb_addr;
 
 reg [7:0] src_base_addr, interim_base_addr, dest_base_addr;
 reg acc_tb, svalid_tb, sampler_mode_tb;
@@ -94,59 +94,7 @@ logic [95:0] sampler_data_tb;
 //----------------------------------------------------------------
 // Device Under Test.
 //----------------------------------------------------------------
-// ntt_buffer #(
-//     .REG_SIZE(REG_SIZE),
-//     .NUM_COEFF(4)
-// ) dut (
-//     .clk(clk_tb),
-//     .reset_n(reset_n_tb),
-//     .zeroize(zeroize_tb),
-//     .enable(enable_tb),
-//     .data_i(data_i_tb),
-//     .data_o(data_o_tb)
-// );
 
-// twiddle_rom dut (
-//     .zeroize(),
-//     .mode   (mode_tb),
-//     .raddr00(addr0),
-//     .raddr01(addr1),
-//     .raddr10(addr2),
-//     .raddr11(addr3),
-//     .rdata00(data0),
-//     .rdata01(data1),
-//     .rdata10(data2),
-//     .rdata11(data3)
-// );
-
-// ntt_ctrl dut (
-//     .clk(clk_tb),
-//     .reset_n(reset_n_tb),
-//     .zeroize(zeroize_tb),
-//     .ntt_mode(mode_tb),
-//     .ntt_enable(enable_tb),
-//     .butterfly_ready(bf_ready_tb)
-// );
-
-// ntt_top dut (
-//     .clk(clk_tb),
-//     .reset_n(reset_n_tb),
-//     .zeroize(zeroize_tb),
-//     .mode(mode_tb),
-//     .ntt_enable(enable_tb),
-//     .load_tb_values(load_tb_values),
-//     .load_tb_addr(load_tb_addr),
-//     // .src_base_addr(src_base_addr),
-//     // .interim_base_addr(interim_base_addr),
-//     // .dest_base_addr(dest_base_addr),
-//     // .pw_base_addr_a(8'd0),
-//     // .pw_base_addr_b(8'd0),
-//     // .pw_base_addr_c(8'd0),
-//     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
-//     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
-//     .accumulate(acc_tb),
-//     .sampler_valid(svalid_tb)
-// );
 logic [11:0] d1, d2, d3, d4;
 
 always_comb begin
@@ -166,7 +114,6 @@ ntt_wrapper dut (
     .ntt_enable(enable_tb),
     .mlkem(mlkem_tb),
     .load_tb_values(load_tb_values),
-    .load_tb_addr(load_tb_addr),
     .shuffle_en(shuffling_en_tb),
     .random(random_tb),
     .masking_en(masking_en_tb),
@@ -275,7 +222,7 @@ task init_sim;
         ntt_mem_base_addr_tb.dest_base_addr = 'h0;
 
         pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-        pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+        pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
         pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
 
         //NTT ctrl
@@ -467,7 +414,7 @@ task mlkem_pwa_pws_top_test();
             // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
             pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
             acc_tb = 1'b0;
             svalid_tb = 1'b1;
@@ -490,7 +437,7 @@ task mlkem_pwa_pws_top_test();
             // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
             pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
             acc_tb = 1'b0;
             svalid_tb = 1'b1;
@@ -515,7 +462,7 @@ task mlkem_pwa_pws_top_test();
             // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
             pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
             acc_tb = 1'b0;
             svalid_tb = 1'b1;
@@ -538,7 +485,7 @@ task mlkem_pwa_pws_top_test();
             // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
             pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
             acc_tb = 1'b0;
             svalid_tb = 1'b1;
@@ -575,7 +522,7 @@ task mlkem_pairwm_top_test(input logic mask_en, input logic shuf_en, input logic
             // ntt_mem_base_addr_tb.interim_base_addr = 8'd64;
             // ntt_mem_base_addr_tb.dest_base_addr = 8'd128;
             pwo_mem_base_addr_tb.pw_base_addr_a <= 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b <= 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b <= 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c <= 'h80;
             acc_tb <= acc_en;
             svalid_tb <= 1'b1;
@@ -611,7 +558,7 @@ task mlkem_pairwm_sampler_top_test(input logic mask_en, input logic shuf_en, inp
             shuffling_en_tb = shuf_en;
             masking_en_tb = mask_en;
             pwo_mem_base_addr_tb.pw_base_addr_a = 'h0;
-            pwo_mem_base_addr_tb.pw_base_addr_b = 'h40;
+            pwo_mem_base_addr_tb.pw_base_addr_b = 'h0;
             pwo_mem_base_addr_tb.pw_base_addr_c = 'h80;
             repeat(2) @(posedge clk_tb);
             svalid_tb <= 1'b1;
@@ -938,12 +885,12 @@ endtask
 
 task init_mem();
     for (int i = 0; i < 512; i++) begin
-        load_tb_addr = i;
+        // load_tb_addr = i;
         load_tb_values = 1'b1;
         @(posedge clk_tb);
     end
     load_tb_values = 1'b0;
-    load_tb_addr = 'h0;
+    // load_tb_addr = 'h0;
 endtask
 
 initial begin
@@ -956,15 +903,15 @@ initial begin
 
     @(posedge clk_tb);
     $display("Starting ntt test\n");
-    // ntt_top_test();
+    ntt_top_test();
     // mlkem_ntt_top_test(1, 1); //masking_en, shuffling_en
-    mlkem_pairwm_top_test(1, 1, 0); //masking_en, shuffling_en, accumulate_en
+    // mlkem_pairwm_top_test(1, 1, 0); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(1, 1, 1); //masking_en, shuffling_en, accumulate_en
 
-    init_mem();
-    mlkem_pairwm_top_test(1, 1, 1); //masking_en, shuffling_en, accumulate_en
-    mlkem_pairwm_top_test(1, 0, 1); //masking_en, shuffling_en, accumulate_en
-    mlkem_pairwm_top_test(0, 0, 1); //masking_en, shuffling_en, accumulate_en
+    // init_mem();
+    // mlkem_pairwm_top_test(1, 1, 1); //masking_en, shuffling_en, accumulate_en
+    // mlkem_pairwm_top_test(1, 0, 1); //masking_en, shuffling_en, accumulate_en
+    // mlkem_pairwm_top_test(0, 0, 1); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(0, 0, 1); //masking_en, shuffling_en, accumulate_en
     // mlkem_pairwm_top_test(1, 0, 1);
     // mlkem_pairwm_sampler_top_test(1,0,0);
