@@ -268,7 +268,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_keygen_with_rand_val(bit on_the_fly_reset = 0);
+  task run_model_for_keygen_with_rand_val(bit on_the_fly_zeroize = 0);
     // 1) randomize seeds
     foreach (seed_d[i]) begin
       if (!this.randomize(data)) begin
@@ -324,8 +324,8 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 792, expected_dk);  
     $fclose(fd);
 
-    if (on_the_fly_reset) begin
-      `uvm_info("ON_THE_FLY_RESET",$sformatf("reseting the expected results"), UVM_LOW);
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
       expected_ek = new[expected_ek.size()];
       expected_dk = new[expected_dk.size()];
     end 
@@ -360,7 +360,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   endtask
 
 
-  task run_model_for_encap_with_rand_val(bit decaps_rej = 0);
+  task run_model_for_encap_with_rand_val(bit decaps_rej = 0, bit on_the_fly_zeroize = 0);
     run_model_for_keygen_with_rand_val();
 
     if (decaps_rej) begin
@@ -427,6 +427,12 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     read_line(fd, 8, expected_shared_key);
     read_line(fd, 392, expected_ciphertext);  
     $fclose(fd);
+
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_shared_key = new[expected_shared_key.size()];
+      expected_ciphertext = new[expected_ciphertext.size()];
+    end 
   endtask
 
   task compare_encap_vectors(bit error_flag = 0);
@@ -459,7 +465,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  task run_model_for_decap_with_rand_val(bit decaps_rej = 0);
+  task run_model_for_decap_with_rand_val(bit decaps_rej = 0, bit on_the_fly_zeroize = 0);
     run_model_for_encap_with_rand_val(decaps_rej);
     foreach (expected_dk[i]) begin
       dk[i] = expected_dk[i];
@@ -505,6 +511,11 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
 
     read_line(fd, 8, expected_shared_key);  
     $fclose(fd);
+
+    if (on_the_fly_zeroize) begin
+      `uvm_info("on_the_fly_zeroize",$sformatf("reseting the expected results"), UVM_LOW);
+      expected_shared_key = new[expected_shared_key.size()];
+    end 
   endtask
 
   task compare_decap_vectors(bit error_flag = 0);
