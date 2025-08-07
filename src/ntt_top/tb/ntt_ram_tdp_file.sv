@@ -21,7 +21,9 @@
 //
 //======================================================================
 
-module ntt_ram_tdp_file #(
+module ntt_ram_tdp_file 
+    import abr_params_pkg::*;
+    #(
     parameter ADDR_WIDTH = 10,
     parameter DATA_WIDTH = 32
     )
@@ -43,8 +45,8 @@ module ntt_ram_tdp_file #(
     output logic [DATA_WIDTH-1 : 0]  doutb,
 
     //TODO: temporary inputs. Remove after high-level memory is ready
-    input wire load_tb_values,
-    input wire [ADDR_WIDTH-1:0] load_tb_addr
+    input wire load_tb_values //,
+    // input wire [ADDR_WIDTH-1:0] load_tb_addr
     );
  
     // Declare the RAM variable
@@ -55,7 +57,7 @@ module ntt_ram_tdp_file #(
     //for tb purpose - TODO: temp, remove after high-level memory is ready
     initial begin
         $display("In ram, initing mem_tb\n");
-        $readmemh("ntt_stage0_mem.hex", mem_tb);
+        $readmemh("ntt_unmasked_input.hex", mem_tb);
     end
     
 
@@ -88,8 +90,10 @@ module ntt_ram_tdp_file #(
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)
                 mem[i0] <= '0;
         end
-        else if (load_tb_values)
-            mem[load_tb_addr] <= mem_tb[load_tb_addr];
+        else if (load_tb_values) begin
+            for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++)
+                mem[i0] <= mem_tb[i0];
+        end
         else begin
             if (ena & wea)
                 mem[addra] <= dina;
