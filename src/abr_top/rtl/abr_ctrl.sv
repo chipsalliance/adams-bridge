@@ -173,6 +173,7 @@ module abr_ctrl
   input kv_wr_resp_t kv_wr_resp,
   //PCR Signing
   input pcr_signing_t pcr_signing_data,
+  input logic ocp_lock_in_progress,
   `endif
 
   input logic debugUnlock_or_scan_mode_switch,
@@ -211,6 +212,10 @@ module abr_ctrl
   kv_read_ctrl_reg_t kv_mlkem_seed_read_ctrl_reg;
   kv_read_ctrl_reg_t kv_mlkem_msg_read_ctrl_reg;
   kv_write_ctrl_reg_t kv_mlkem_sharedkey_write_ctrl_reg;
+  kv_read_filter_metrics_t kv_mldsa_seed_read_metrics;
+  kv_read_filter_metrics_t kv_mlkem_seed_read_metrics;
+  kv_read_filter_metrics_t kv_mlkem_msg_read_metrics;
+  kv_write_filter_metrics_t kv_mlkem_sharedkey_write_metrics;
   kv_error_code_e kv_mldsa_seed_error;
   kv_error_code_e kv_mlkem_seed_error;
   kv_error_code_e kv_mlkem_msg_error;
@@ -245,6 +250,31 @@ module abr_ctrl
   always_comb kv_mlkem_msg_data_present_set = kv_mlkem_msg_read_ctrl_reg.read_en;
   always_comb kv_data_present_reset = mldsa_valid_reg;
 
+  //OCP Lock filtering rules inputs
+  always_comb begin
+    //MLDSA SEED
+    kv_mldsa_seed_read_metrics.ocp_lock_in_progress = ocp_lock_in_progress;
+    kv_mldsa_seed_read_metrics.kv_read_dest         = KV_NUM_READ'(1<<KV_DEST_IDX_MLDSA_SEED);
+    kv_mldsa_seed_read_metrics.kv_key_entry         = kv_mldsa_seed_read_ctrl_reg.read_entry;
+    //MLKEM SEED
+    kv_mlkem_seed_read_metrics.ocp_lock_in_progress = ocp_lock_in_progress;
+    kv_mlkem_seed_read_metrics.kv_read_dest         = KV_NUM_READ'(1<<KV_DEST_IDX_MLKEM_SEED);
+    kv_mlkem_seed_read_metrics.kv_key_entry         = kv_mlkem_seed_read_ctrl_reg.read_entry;
+    //MLKEM MSG
+    kv_mlkem_msg_read_metrics.ocp_lock_in_progress  = ocp_lock_in_progress;
+    kv_mlkem_msg_read_metrics.kv_read_dest          = KV_NUM_READ'(1<<KV_DEST_IDX_MLKEM_MSG);
+    kv_mlkem_msg_read_metrics.kv_key_entry          = kv_mlkem_msg_read_ctrl_reg.read_entry;
+    //MLKEM SHARED KEY
+    kv_mlkem_sharedkey_write_metrics.ocp_lock_in_progress = ocp_lock_in_progress;
+    kv_mlkem_sharedkey_write_metrics.kv_data0_present     = kv_mlkem_seed_data_present;
+    kv_mlkem_sharedkey_write_metrics.kv_data0_entry       = kv_mlkem_seed_read_ctrl_reg.read_entry;
+    kv_mlkem_sharedkey_write_metrics.kv_data1_present     = kv_mlkem_msg_data_present;
+    kv_mlkem_sharedkey_write_metrics.kv_data1_entry       = kv_mlkem_msg_read_ctrl_reg.read_entry;
+    kv_mlkem_sharedkey_write_metrics.kv_write_src         = KV_NUM_WRITE'(1 << KV_WRITE_IDX_MLKEM);
+    kv_mlkem_sharedkey_write_metrics.kv_write_entry       = kv_mlkem_sharedkey_write_ctrl_reg.write_entry;
+    kv_mlkem_sharedkey_write_metrics.aes_decrypt_ecb_op   = 1'b0;
+  end
+
   //Read ML-DSA SEED
   kv_read_client #(
     .DATA_WIDTH(SEED_NUM_DWORDS*32),
@@ -258,6 +288,7 @@ module abr_ctrl
 
     //client control register
     .read_ctrl_reg(kv_mldsa_seed_read_ctrl_reg),
+    .read_metrics(kv_mldsa_seed_read_metrics),
 
     //interface with kv
     .kv_read(kv_read[0]),
@@ -286,6 +317,7 @@ module abr_ctrl
 
     //client control register
     .read_ctrl_reg(kv_mlkem_seed_read_ctrl_reg),
+    .read_metrics(kv_mlkem_seed_read_metrics),
 
     //interface with kv
     .kv_read(kv_read[1]),
@@ -314,6 +346,7 @@ module abr_ctrl
 
     //client control register
     .read_ctrl_reg(kv_mlkem_msg_read_ctrl_reg),
+    .read_metrics(kv_mlkem_msg_read_metrics),
 
     //interface with kv
     .kv_read(kv_read[2]),
@@ -342,6 +375,7 @@ kv_mlkem_sharedkey_write_inst
   //client control register
   .write_ctrl_reg(kv_mlkem_sharedkey_write_ctrl_reg),
   .num_dwords(SHAREDKEY_NUM_DWORDS[3:0]), 
+  .write_metrics(kv_mlkem_sharedkey_write_metrics),
 
   //interface with kv
   .kv_write(kv_write),

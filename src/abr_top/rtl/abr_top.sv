@@ -72,6 +72,7 @@ module abr_top
   input kv_wr_resp_t kv_wr_resp,
   //PCR Signing
   input pcr_signing_t pcr_signing_data,
+  input logic ocp_lock_in_progress,
   `endif
   //Zeroize the engine if entering debug or scan mode
   input logic debugUnlock_or_scan_mode_switch,
@@ -358,6 +359,7 @@ abr_ctrl abr_ctrl_inst
   .kv_write(kv_write),
   .kv_wr_resp(kv_wr_resp),
   .pcr_signing_data(pcr_signing_data),
+  .ocp_lock_in_progress(ocp_lock_in_progress),
 `endif
 
   //control interface
