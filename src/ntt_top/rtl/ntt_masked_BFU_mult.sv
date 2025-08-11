@@ -46,6 +46,7 @@ module ntt_masked_BFU_mult
     logic [1:0] mul_res_bool_reduced [HALF_WIDTH-1:0];
     logic [1:0] mul_res_bool_reduced_padded [WIDTH-1:0];
     logic [1:0] mul_res_reduced [WIDTH-1:0];
+    logic [1:0][23:0] barrett_mul_res_reduced;
     logic [WIDTH-1:0] mul_res_bool_redux0, mul_res_bool_redux1, mul_res_redux0, mul_res_redux1;
 
     //Perform mul on input shares - 2 clk
@@ -74,6 +75,7 @@ module ntt_masked_BFU_mult
         end
     end
 
+    /*
     //48 clks
     abr_masked_A2B_conv #(
         .WIDTH(WIDTH)
@@ -127,6 +129,21 @@ module ntt_masked_BFU_mult
         .x_boolean(mul_res_bool_reduced_padded),
         .x_arith(mul_res_reduced)
     );
+    */
+
+    masked_barrett_reduction mldsa_masked_barrett_reduction_inst (
+        .clk(clk),
+        .rst_n(reset_n),
+        .zeroize(zeroize),
+        .x({mul_res1[23:0], mul_res0[23:0]}),
+        .rnd_12bit(rnd0[11:0]),
+        .rnd_14bit(rnd1[13:0]),
+        .rnd_24bit(rnd2[23:0]),
+        .rnd_for_Boolean0(rnd3[13:0]),
+        .rnd_for_Boolean1(rnd4[13:0]),
+        .rnd_1bit(rnd0[12]),
+        .y(barrett_mul_res_reduced)
+    );
 
     always_comb begin
         
@@ -146,7 +163,15 @@ module ntt_masked_BFU_mult
                 res[i] <= 2'h0;
         end
         else begin
-            res <= mul_res_reduced;
+            for (int i = 0; i < 24; i++) begin
+                res[i][0] <= barrett_mul_res_reduced[0][i];
+                res[i][1] <= barrett_mul_res_reduced[1][i];
+            end
+            for (int i = 24; i < WIDTH; i++) begin
+                res[i][0] <= 0;
+                res[i][1] <= 0;
+            end
+            // res <= mul_res_reduced;
         end
     end
 
