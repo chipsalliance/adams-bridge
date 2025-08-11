@@ -117,6 +117,42 @@ targets:
     pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
 
 ---
+provides: [ntt_fpga_tb]  
+schema_version: 2.4.0
+requires: 
+  - ntt_top
+  - ntt_pkg
+  - abr_prim
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/ahb_interface.sv
+      - $COMPILE_ROOT/tb/cdc_pulse.v
+      - $COMPILE_ROOT/tb/clocks_sim.v
+      # - $COMPILE_ROOT/tb/clocks.v
+      - $COMPILE_ROOT/tb/cw305_usb_reg_fe.v
+      - $COMPILE_ROOT/tb/cw310_usb_reg_fe.v
+      # - $COMPILE_ROOT/tb/tb_cw305_reg_tasks.sv
+      - $COMPILE_ROOT/tb/cw310_mldsa_top.sv
+      # - $COMPILE_ROOT/tb/cw305_mldsa_top.sv
+      - $COMPILE_ROOT/tb/CW310_top_tb.sv
+      # - $COMPILE_ROOT/tb/CW305_top_tb.sv
+      # - $COMPILE_ROOT/tb/tb_tasks.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper_pkg.sv
+      - $COMPILE_ROOT/tb/ntt_top_tb.sv
+      - $COMPILE_ROOT/tb/ntt_top_tb_fpga.sv
+      - $COMPILE_ROOT/tb/ntt_ram_tdp_file.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper.sv
+      - $COMPILE_ROOT/tb/ntt_ahb_slv_sif.sv
+      - $COMPILE_ROOT/tb/ntt_special_mem.sv
+      - $COMPILE_ROOT/tb/ntt_ahb_mem_adapter.sv
+      - $COMPILE_ROOT/tb/ntt_wrapper_fpga.sv
+    tops: [CW310_top_tb]
+  sim:
+    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/rand_ntt_stage0_mem.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage67.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter1.hex . && cp $COMPILE_ROOT/tb/test_vectors/pwm_iter2.hex .'
+
+---
 provides: [ntt_mult_reduction_tb]  
 schema_version: 2.4.0
 requires: 
