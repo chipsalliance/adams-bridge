@@ -249,6 +249,32 @@ module abr_ctrl
   always_comb kv_mlkem_seed_data_present_set = kv_mlkem_seed_read_ctrl_reg.read_en;
   always_comb kv_mlkem_msg_data_present_set = kv_mlkem_msg_read_ctrl_reg.read_en;
   always_comb kv_data_present_reset = mldsa_valid_reg;
+  
+  //lock kv controls
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_entry.swwe      = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.rsvd.swwe            = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_en.swwe         = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_entry.swwe      = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.rsvd.swwe            = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_en.swwe          = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_entry.swwe       = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.rsvd.swwe             = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_en.swwe              = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_entry.swwe           = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.swwe   = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.hmac_block_dest_valid.swwe = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.mldsa_seed_dest_valid.swwe = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.ecc_pkey_dest_valid.swwe   = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.ecc_seed_dest_valid.swwe   = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.aes_key_dest_valid.swwe    = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.swwe = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.swwe  = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.dma_data_dest_valid.swwe   = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.rsvd.swwe                  = abr_ready;
 
   //OCP Lock filtering rules inputs
   always_comb begin
@@ -658,14 +684,18 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb abr_reg_hwif_in.reset_b = rst_b;
   always_comb abr_reg_hwif_in.hard_reset_b = rst_b; //no sticky registers
   always_comb abr_reg_hwif_in.abr_ready = abr_ready;
-  always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value);
-  always_comb mlkem_cmd_reg = mlkem_cmd_e'(abr_reg_hwif_out.MLKEM_CTRL.CTRL.value);
   always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |mldsa_cmd_reg;
   always_comb abr_reg_hwif_in.MLKEM_CTRL.CTRL.hwclr = |mlkem_cmd_reg;
   `ifdef CALIPTRA
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
+    always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value & {$bits(mldsa_cmd_reg){kv_mldsa_seed_ready}});
+    always_comb mlkem_cmd_reg = mlkem_cmd_e'(abr_reg_hwif_out.MLKEM_CTRL.CTRL.value & 
+                                            {$bits(mlkem_cmd_reg){kv_mlkem_seed_ready}} & 
+                                            {$bits(mlkem_cmd_reg){kv_mlkem_msg_ready}});
   `else
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
+    always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value);
+    always_comb mlkem_cmd_reg = mlkem_cmd_e'(abr_reg_hwif_out.MLKEM_CTRL.CTRL.value);
   `endif
   
   always_comb external_mu = abr_reg_hwif_out.MLDSA_CTRL.EXTERNAL_MU.value;
