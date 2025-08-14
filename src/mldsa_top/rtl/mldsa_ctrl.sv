@@ -185,24 +185,19 @@ module mldsa_ctrl
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
 
-  always_comb begin: mldsa_kv_ctrl_reg
-    //ready when fsm is not busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
-    //ready when fsm is not busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
-    //set valid when fsm is done
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
-    //clear valid when new request is made
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
-    //clear enable when busy
-    mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
-  end
 
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_seed, mldsa_reg_hwif_in)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
   always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
+
+  //lock kv controls
+  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.read_en.swwe         = !kv_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.read_entry.swwe      = !kv_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.rsvd.swwe            = !kv_seed_data_present && abr_ready;
 
   //Read SEED
   kv_read_client #(

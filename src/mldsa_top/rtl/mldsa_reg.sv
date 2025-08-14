@@ -937,7 +937,7 @@ module mldsa_reg (
         automatic logic load_next_c;
         next_c = field_storage.mldsa_kv_rd_seed_ctrl.read_en.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
+        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr && hwif_in.mldsa_kv_rd_seed_ctrl.read_en.swwe) begin // SW write
             next_c = (field_storage.mldsa_kv_rd_seed_ctrl.read_en.value & ~decoded_wr_biten[0:0]) | (decoded_wr_data[0:0] & decoded_wr_biten[0:0]);
             load_next_c = '1;
         end else if(hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr) begin // HW Clear
@@ -961,7 +961,7 @@ module mldsa_reg (
         automatic logic load_next_c;
         next_c = field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
+        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr && hwif_in.mldsa_kv_rd_seed_ctrl.read_entry.swwe) begin // SW write
             next_c = (field_storage.mldsa_kv_rd_seed_ctrl.read_entry.value & ~decoded_wr_biten[5:1]) | (decoded_wr_data[5:1] & decoded_wr_biten[5:1]);
             load_next_c = '1;
         end
@@ -982,7 +982,7 @@ module mldsa_reg (
         automatic logic load_next_c;
         next_c = field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
+        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr && hwif_in.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.swwe) begin // SW write
             next_c = (field_storage.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.value & ~decoded_wr_biten[6:6]) | (decoded_wr_data[6:6] & decoded_wr_biten[6:6]);
             load_next_c = '1;
         end
@@ -1003,7 +1003,7 @@ module mldsa_reg (
         automatic logic load_next_c;
         next_c = field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr) begin // SW write
+        if(decoded_reg_strb.mldsa_kv_rd_seed_ctrl && decoded_req_is_wr && hwif_in.mldsa_kv_rd_seed_ctrl.rsvd.swwe) begin // SW write
             next_c = (field_storage.mldsa_kv_rd_seed_ctrl.rsvd.value & ~decoded_wr_biten[31:7]) | (decoded_wr_data[31:7] & decoded_wr_biten[31:7]);
             load_next_c = '1;
         end

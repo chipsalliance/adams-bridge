@@ -171,11 +171,27 @@ package mldsa_reg_pkg;
     } mldsa_reg__MLDSA_PRIVKEY_IN__external__in_t;
 
     typedef struct packed{
+        logic swwe;
         logic hwclr;
     } kv_read_ctrl_reg__read_en__in_t;
 
     typedef struct packed{
+        logic swwe;
+    } kv_read_ctrl_reg__read_entry__in_t;
+
+    typedef struct packed{
+        logic swwe;
+    } kv_read_ctrl_reg__pcr_hash_extend__in_t;
+
+    typedef struct packed{
+        logic swwe;
+    } kv_read_ctrl_reg__rsvd__in_t;
+
+    typedef struct packed{
         kv_read_ctrl_reg__read_en__in_t read_en;
+        kv_read_ctrl_reg__read_entry__in_t read_entry;
+        kv_read_ctrl_reg__pcr_hash_extend__in_t pcr_hash_extend;
+        kv_read_ctrl_reg__rsvd__in_t rsvd;
     } kv_read_ctrl_reg__in_t;
 
     typedef struct packed{
