@@ -167,7 +167,7 @@ class mldsa_environment  extends uvmf_environment_base #(
 // responsible for sampling the covergroup in the configuration if required.
 //
   virtual function void start_of_simulation_phase(uvm_phase phase);
-     configuration.mldsa_configuration_cg.sample();
+     //configuration.mldsa_configuration_cg.sample();
   endfunction
 
 endclass

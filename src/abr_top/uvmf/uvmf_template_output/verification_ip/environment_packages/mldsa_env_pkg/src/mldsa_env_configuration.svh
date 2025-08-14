@@ -52,8 +52,8 @@ extends uvmf_environment_configuration_base;
     super.new( name );
     qvip_ahb_lite_slave_subenv_config = qvip_ahb_lite_slave_env_configuration::type_id::create("qvip_ahb_lite_slave_subenv_config");
 
-    mldsa_configuration_cg=new;
-    `uvm_warning("COVERAGE_MODEL_REVIEW", "A covergroup has been constructed which may need review because of either generation or re-generation with merging.  Please note that configuration variables added as a result of re-generation and merging are not automatically added to the covergroup.  Remove this warning after the covergroup has been reviewed.")
+    //mldsa_configuration_cg=new;
+    //`uvm_warning("COVERAGE_MODEL_REVIEW", "A covergroup has been constructed which may need review because of either generation or re-generation with merging.  Please note that configuration variables added as a result of re-generation and merging are not automatically added to the covergroup.  Remove this warning after the covergroup has been reviewed.")
 
   // pragma uvmf custom new begin
   // pragma uvmf custom new end
@@ -160,8 +160,8 @@ extends uvmf_environment_configuration_base;
 
   // pragma uvmf custom initialize begin
      qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.agent_cfg.en_cvg.slave = 1'b1;
-     qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.agent_cfg.en_cvg.master = 1'b1;
-     qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.agent_cfg.en_cvg.response = 1'b1;
+     qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.agent_cfg.en_cvg.master = 1'b0;
+     qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.agent_cfg.en_cvg.response = 1'b0;
 
     // Add analysis ports to send Bus traffic to the scoreboard, so that the predictor/scoreboard can check read transfer data
     void'(qvip_ahb_lite_slave_subenv_config.ahb_lite_slave_0_cfg.set_monitor_item( "burst_transfer_sb" , ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS,

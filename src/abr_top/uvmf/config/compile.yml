@@ -40,12 +40,7 @@ global:
       default:
         - '-assert svaext'
         - +define+ABR_ASSERT_ON
-        #- '-v2k_generate'
-        #- '-timescale=1ns/1ps'
         - '-noinherit_timescale=1ns/1ps'
-        #- '-ucli -i dump.ucli'
-      #sim:
-        #- '-ucli -i dump.ucli'
         # Suppress a warning due to calling $fgets as task instead of function
         # i.e. discarding the return value. This is in auto-generated code.
         - '+warn=noRVOSFD'

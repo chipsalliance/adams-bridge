@@ -5,12 +5,10 @@
 
 
 {% macro top() -%}
-{{include_covergroups(top_node)}}
     {%- for node in top_node.descendants(in_post_order=True) -%}
         {{child_def(node)}}
     {%- endfor -%}
     {{child_def(top_node)}}
-{{include_sample(top_node)}}
 {%- endmacro %}
 
 
@@ -26,12 +24,4 @@
     {%- elif isinstance(node, MemNode) -%}
         {{uvm_reg_block_mem.class_definition(node)}}
     {%- endif -%}
-{%- endmacro %}
-
-{% macro include_covergroups(node) -%}
-`include "{{get_class_name(node)}}_covergroups.svh"
-{%- endmacro %}
-
-{% macro include_sample(node) -%}
-`include "{{get_class_name(node)}}_sample.svh"
 {%- endmacro %}
