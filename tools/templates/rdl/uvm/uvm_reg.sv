@@ -10,75 +10,13 @@ class {{get_class_name(node)}} extends uvm_reg;
 {%- if use_uvm_factory %}
     `uvm_object_utils({{get_class_name(node)}})
 {%- endif %}
-    protected uvm_reg_data_t m_current;
-    protected uvm_reg_data_t m_data;
-    protected bit            m_is_read;
-{% for field in node.fields() %}
-    {{bit_covergroup_name(node)|indent}} {{bit_covergroup_inst(field)}}[{{field.width}}];
-{%- endfor %}
-    {{fld_covergroup_name(node)|indent}} fld_cg;
     {{child_insts(node)|indent}}
     {{function_new(node)|indent}}
-    {{function_sample_values(node)|indent}}
-    {{function_sample(node)|indent}}
 
     {{function_build(node)|indent}}
 endclass : {{get_class_name(node)}}
 {% endif -%}
 {%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// Covergroup Definitions
-//------------------------------------------------------------------------------
-{% macro cg_definition(node) %}
-{{"/*-----------------------"}} {{get_class_name(node)|upper}} {{"COVERGROUPS -----------------------*/"}}
-covergroup {{bit_covergroup_name(node)}} with function sample(input bit reg_bit);
-    option.per_instance = 1;
-    {{bit_coverpoint()|indent}}
-endgroup
-covergroup {{fld_covergroup_name(node)}} with function sample({{covergroup_inputs(node)}});
-    option.per_instance = 1;
-    {{fld_coverpoints(node)|indent}}
-endgroup
-{% endmacro %}
-
-
-//------------------------------------------------------------------------------
-// Covergroup Inputs
-//------------------------------------------------------------------------------
-{% macro covergroup_inputs(node) %}
-{% for field in node.fields() -%}
-input bit [{{field.width}}-1:0] {{get_inst_name(field)}}{% if not loop.last %}{{","}}{% endif %}
-{% endfor %}
-{%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// Coverpoint Definitions
-//------------------------------------------------------------------------------
-{%- macro fld_coverpoints(node) -%}
-{%- for field in node.fields() -%}
-{{field_coverpoint(field)}}
-{%- endfor -%}
-{%- endmacro -%}
-
-
-//------------------------------------------------------------------------------
-// Singular Coverpoint Definition
-//------------------------------------------------------------------------------
-{%- macro bit_coverpoint() -%}
-reg_bit_cp : coverpoint reg_bit {
-    bins value[2] = {0,1};
-}
-reg_bit_edge_cp : coverpoint reg_bit {
-    bins rise = (0 => 1);
-    bins fall = (1 => 0);
-}
-{% endmacro %}
-{%- macro field_coverpoint(field) -%}
-{{get_inst_name(field)}}_cp : coverpoint {{get_inst_name(field)}};
-{% endmacro %}
 
 
 //------------------------------------------------------------------------------
@@ -96,68 +34,9 @@ rand uvm_reg_field {{get_inst_name(field)}};
 //------------------------------------------------------------------------------
 {% macro function_new(node) -%}
 function new(string name = "{{get_class_name(node)}}");
-    super.new(name, {{node.get_property('regwidth')}}, build_coverage(UVM_CVR_ALL));
+    super.new(name, {{node.get_property('regwidth')}}, UVM_NO_COVERAGE);
 endfunction : new
 {%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// sample() function declaration
-//------------------------------------------------------------------------------
-{% macro function_sample(node) -%}
-extern protected virtual function void sample(uvm_reg_data_t  data,
-                                              uvm_reg_data_t  byte_en,
-                                              bit             is_read,
-                                              uvm_reg_map     map);
-{%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// sample_values() function declaration
-//------------------------------------------------------------------------------
-{% macro function_sample_values(node) -%}
-extern virtual function void sample_values();
-{%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// sample() function definition
-//------------------------------------------------------------------------------
-{%- macro function_sample_def(node) -%}
-function void {{get_class_name(node)}}::sample(uvm_reg_data_t  data,
-                                               uvm_reg_data_t  byte_en,
-                                               bit             is_read,
-                                               uvm_reg_map     map);
-    m_current = get();
-    m_data    = data;
-    m_is_read = is_read;
-    if (get_coverage(UVM_CVR_REG_BITS)) begin
-{%- for field in node.fields() %}
-        foreach({{bit_covergroup_inst(field)}}[bt]) this.{{bit_covergroup_inst(field)}}[bt].sample(data[{{field.lsb}} + bt]);
-{%- endfor %}
-    end
-    if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-        this.fld_cg.sample({{covergroup_sample_args(node)}});
-    end
-endfunction
-{% endmacro -%}
-
-
-//------------------------------------------------------------------------------
-// sample_values() function definition
-//------------------------------------------------------------------------------
-{%- macro function_sample_values_def(node) -%}
-function void {{get_class_name(node)}}::sample_values();
-    if (get_coverage(UVM_CVR_REG_BITS)) begin
-{%- for field in node.fields() %}
-        foreach({{bit_covergroup_inst(field)}}[bt]) this.{{bit_covergroup_inst(field)}}[bt].sample({{get_inst_name(field)}}.get_mirrored_value() >> bt);
-{%- endfor %}
-    end
-    if (get_coverage(UVM_CVR_FIELD_VALS)) begin
-        this.fld_cg.sample({{covergroup_sample_values_args(node)}});
-    end
-endfunction
-{% endmacro %}
 
 
 //------------------------------------------------------------------------------
@@ -173,45 +52,7 @@ virtual function void build();
     {%- endif %}
     this.{{get_inst_name(field)}}.configure(this, {{field.width}}, {{field.lsb}}, "{{get_field_access(field)}}", {{field.is_volatile|int}}, {{"'h%x" % field.get_property('reset', default=0)}}, {{field.get_property('reset') is not none|int}}, 1, 0);
     {%- endfor %}
-    if (has_coverage(UVM_CVR_REG_BITS)) begin
-{%- for field in node.fields() %}
-        foreach({{bit_covergroup_inst(field)}}[bt]) {{bit_covergroup_inst(field)}}[bt] = new();
-{%- endfor %}
-    end
-    if (has_coverage(UVM_CVR_FIELD_VALS))
-        fld_cg = new();
 endfunction : build
-{%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// Covergroup Name
-//------------------------------------------------------------------------------
-{% macro bit_covergroup_name(node)  -%} {{get_class_name(node)}}_bit_cg {%- endmacro %}
-{% macro bit_covergroup_inst(field) -%} {{"%s_bit_cg"|format(get_inst_name(field))}} {%- endmacro %}
-{% macro fld_covergroup_name(node)  -%} {{get_class_name(node)}}_fld_cg {%- endmacro %}
-
-
-//------------------------------------------------------------------------------
-// Covergroup Constructor Arguments
-//------------------------------------------------------------------------------
-{% macro covergroup_new_args(node) -%}
-    {%- for field in node.fields() %} {{covergroup_new_arg(field)}} {% if loop.last %} {{''}} {% else %} {{","}} {% endif %} {%- endfor %}
-{%- endmacro %}
-{% macro covergroup_new_arg(field) -%}
-    {{get_inst_name(field)}}.get_reset()
-{%- endmacro %}
-{% macro covergroup_sample_args(node) -%}
-    {%- for field in node.fields() %} {{covergroup_sample_arg(field)}} {% if loop.last %} {{''}} {% else %} {{","}} {% endif %} {%- endfor %}
-{%- endmacro %}
-{% macro covergroup_sample_arg(field) -%}
-    data[{{field.msb}}:{{field.lsb}}]{{"/*%s*/"|format(get_inst_name(field))}}
-{%- endmacro %}
-{% macro covergroup_sample_values_args(node) -%}
-    {%- for field in node.fields() %} {{covergroup_sample_values_arg(field)}} {% if loop.last %} {{''}} {% else %} {{","}} {% endif %} {%- endfor %}
-{%- endmacro %}
-{% macro covergroup_sample_values_arg(field) -%}
-    {{get_inst_name(field)}}.get_mirrored_value()
 {%- endmacro %}
 
 

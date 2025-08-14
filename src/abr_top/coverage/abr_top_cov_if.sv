@@ -160,7 +160,7 @@ interface abr_top_cov_if
             bins four_bytes = {4'b1111};
         }
 
-        mldsa_cmdXready: cross mldsa_sw_cmd, ready_cp{
+        mldsa_cmdXready: cross mldsa_sw_cmd, ready_cp {
             ignore_bins illegal_sw_cmd = binsof(mldsa_sw_cmd) intersect {5, 6, 7};
         }
         zeroizeXmldsa_cmd: cross zeroize_cp, mldsa_cmd_cp {
