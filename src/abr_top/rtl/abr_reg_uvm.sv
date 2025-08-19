@@ -956,61 +956,61 @@ package abr_reg_uvm;
             this.kv_mldsa_seed_rd_ctrl.configure(this);
 
             this.kv_mldsa_seed_rd_ctrl.build();
-            this.default_map.add_reg(this.kv_mldsa_seed_rd_ctrl, 'h7320);
+            this.default_map.add_reg(this.kv_mldsa_seed_rd_ctrl, 'h8000);
             this.kv_mldsa_seed_rd_status = new("kv_mldsa_seed_rd_status");
             this.kv_mldsa_seed_rd_status.configure(this);
 
             this.kv_mldsa_seed_rd_status.build();
-            this.default_map.add_reg(this.kv_mldsa_seed_rd_status, 'h7324);
+            this.default_map.add_reg(this.kv_mldsa_seed_rd_status, 'h8004);
             foreach(this.MLKEM_NAME[i0]) begin
                 this.MLKEM_NAME[i0] = new($sformatf("MLKEM_NAME[%0d]", i0));
                 this.MLKEM_NAME[i0].configure(this);
                 
                 this.MLKEM_NAME[i0].build();
-                this.default_map.add_reg(this.MLKEM_NAME[i0], 'h8000 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_NAME[i0], 'h8100 + i0*'h4);
             end
             foreach(this.MLKEM_VERSION[i0]) begin
                 this.MLKEM_VERSION[i0] = new($sformatf("MLKEM_VERSION[%0d]", i0));
                 this.MLKEM_VERSION[i0].configure(this);
                 
                 this.MLKEM_VERSION[i0].build();
-                this.default_map.add_reg(this.MLKEM_VERSION[i0], 'h8008 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_VERSION[i0], 'h8108 + i0*'h4);
             end
             this.MLKEM_CTRL = new("MLKEM_CTRL");
             this.MLKEM_CTRL.configure(this);
 
             this.MLKEM_CTRL.build();
-            this.default_map.add_reg(this.MLKEM_CTRL, 'h8010);
+            this.default_map.add_reg(this.MLKEM_CTRL, 'h8110);
             this.MLKEM_STATUS = new("MLKEM_STATUS");
             this.MLKEM_STATUS.configure(this);
 
             this.MLKEM_STATUS.build();
-            this.default_map.add_reg(this.MLKEM_STATUS, 'h8014);
+            this.default_map.add_reg(this.MLKEM_STATUS, 'h8114);
             foreach(this.MLKEM_SEED_D[i0]) begin
                 this.MLKEM_SEED_D[i0] = new($sformatf("MLKEM_SEED_D[%0d]", i0));
                 this.MLKEM_SEED_D[i0].configure(this);
                 
                 this.MLKEM_SEED_D[i0].build();
-                this.default_map.add_reg(this.MLKEM_SEED_D[i0], 'h8018 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SEED_D[i0], 'h8118 + i0*'h4);
             end
             foreach(this.MLKEM_SEED_Z[i0]) begin
                 this.MLKEM_SEED_Z[i0] = new($sformatf("MLKEM_SEED_Z[%0d]", i0));
                 this.MLKEM_SEED_Z[i0].configure(this);
                 
                 this.MLKEM_SEED_Z[i0].build();
-                this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h8038 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h8138 + i0*'h4);
             end
             foreach(this.MLKEM_SHARED_KEY[i0]) begin
                 this.MLKEM_SHARED_KEY[i0] = new($sformatf("MLKEM_SHARED_KEY[%0d]", i0));
                 this.MLKEM_SHARED_KEY[i0].configure(this);
                 
                 this.MLKEM_SHARED_KEY[i0].build();
-                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8058 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8158 + i0*'h4);
             end
             this.MLKEM_MSG = new("MLKEM_MSG");
             this.MLKEM_MSG.configure(this);
             this.MLKEM_MSG.build();
-            this.default_map.add_submap(this.MLKEM_MSG.default_map, 'h8080);
+            this.default_map.add_submap(this.MLKEM_MSG.default_map, 'h8180);
             this.MLKEM_DECAPS_KEY = new("MLKEM_DECAPS_KEY");
             this.MLKEM_DECAPS_KEY.configure(this);
             this.MLKEM_DECAPS_KEY.build();

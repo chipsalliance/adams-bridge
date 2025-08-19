@@ -14,8 +14,17 @@
 
 `ifndef VERILATOR
 
-interface abr_top_cov_if     
+interface abr_top_cov_if
+    import abr_params_pkg::*;
+    `ifdef CALIPTRA
+    import kv_defines_pkg::*; 
+    `endif  
     (
+
+    `ifdef CALIPTRA
+    input logic           ocp_lock_in_progress,
+    `endif
+
     input logic           clk,
     input logic           rst_b,
     input logic           debugUnlock_or_scan_mode_switch
@@ -47,6 +56,7 @@ interface abr_top_cov_if
     logic [2 : 0] normcheck_mode;
     logic makehint_failure;
     logic invalid_hint;
+
     `ifdef CALIPTRA
     logic pcr_sign_mode;
     logic pcr_sign_input_invalid;
@@ -72,6 +82,14 @@ interface abr_top_cov_if
             pcr_process <= '0;
         end
     end
+
+    kv_write_filter_metrics_t kv_write_metrics;
+    kv_write_ctrl_reg_t kv_write_ctrl_reg;
+    kv_read_ctrl_reg_t kv_read_ctrl_reg;
+
+    assign kv_write_metrics = abr_top.abr_ctrl_inst.kv_mlkem_sharedkey_write_metrics;
+    assign kv_write_ctrl_reg = abr_top.abr_ctrl_inst.kv_mlkem_sharedkey_write_ctrl_reg;
+    assign kv_read_ctrl_reg = abr_top.abr_ctrl_inst.kv_mldsa_seed_read_ctrl_reg;
     `endif
 
     assign mldsa_cmd = abr_top.abr_ctrl_inst.mldsa_cmd_reg;
@@ -296,6 +314,50 @@ interface abr_top_cov_if
         coverpoint skenc_state_mq2_agg { bins hit = {1'b1}; }
     endgroup
     
+    `ifdef CALIPTRA
+    covergroup abr_ocp_lock_cov_grp @(posedge clk);
+
+        ocp_lock_in_progress_cp: coverpoint ocp_lock_in_progress;
+
+        kv_read_entry_mldsa_cp: coverpoint {kv_mldsa_seed_data_present, kv_read_ctrl_reg.read_entry } 
+        iff (mldsa_cmd inside {MLDSA_KEYGEN, MLDSA_KEYGEN_SIGN}) {
+            bins fw = {1'b0, [0:$]};
+            bins lower_slots = {1'b1, [0:15]};
+            bins upper_slots = {1'b1, [16:22]};
+            bins slot_23 = {1'b1, 23};
+        }
+
+        kv_read_entry_0_cp: coverpoint {kv_write_metrics.kv_data0_present, kv_write_metrics.kv_data0_entry} 
+        iff (mlkem_cmd inside {MLKEM_KEYGEN_DEC}) {
+            bins fw = {1'b0, [0:$]};
+            bins lower_slots = {1'b1, [0:15]};
+            bins upper_slots = {1'b1, [16:22]};
+            bins slot_23 = {1'b1, 23};
+        }
+
+        kv_read_entry_1_cp: coverpoint {kv_write_metrics.kv_data1_present, kv_write_metrics.kv_data1_entry} 
+        iff (mlkem_cmd inside {MLKEM_ENCAPS}) {
+            bins fw = {1'b0, [0:$]};
+            bins lower_slots = {1'b1, [0:15]};
+            bins upper_slots = {1'b1, [16:22]};
+            bins slot_23 = {1'b1, 23};
+        }
+
+        kv_write_entry_cp: coverpoint {kv_write_ctrl_reg.write_en, kv_write_metrics.kv_write_entry} 
+        iff (mlkem_encaps_process | mlkem_keygen_decaps_process) {
+            bins fw = {1'b0, [0:$]};
+            bins lower_slots = {1'b1, [0:15]};
+            bins upper_slots = {1'b1, [16:22]};
+            bins slot_23 = {1'b1, 23};
+        }
+
+        ocp_lock_X_kv_read_entry0: cross ocp_lock_in_progress_cp, kv_write_entry_cp, kv_read_entry_0_cp;
+        ocp_lock_X_kv_read_entry1: cross ocp_lock_in_progress_cp, kv_write_entry_cp, kv_read_entry_1_cp;
+        ocp_lock_X_kv_read_entry_mldsa: cross ocp_lock_in_progress_cp, kv_read_entry_mldsa_cp;
+    endgroup  
+    abr_ocp_lock_cov_grp abr_ocp_lock_cov_grp1 = new();
+    `endif
+
     // Instantiate the covergroup
     mldsa_skencode_agg_cg mldsa_skencode_agg_cov = new();
     mldsa_sign_z_enc_agg_cg mldsa_sign_z_enc_agg_cov_grp1 = new();
