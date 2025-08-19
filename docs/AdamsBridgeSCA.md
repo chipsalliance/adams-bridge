@@ -149,13 +149,118 @@ Version 1.0 presents TVLA results only for the case where the shuffling counterm
 - **Target Physical Device**: CW310 Bergen Board with Kintex K410T FPGA, executing the hardware design for side-channel evaluation. The FPGA board has a designated SMA port that provides the power drop across a shunt resistor.
 - **Oscilloscope**: PicoScope 6428E-D, capable of capturing up to 10 GS/s.
 - **FPGA Operating Frequency**: 10 MHz.
-- **Oscilloscope Sampling Frequency**: 150 MHz.
+- **Oscilloscope Sampling Frequency**: 156 MHz.
 
-**Figure 1**: NTT and Point-wise multiplication TVLA results for 54,000 traces, showing leakage after 55,000 traces.
+<!-- **Figure 1**: NTT and Point-wise multiplication TVLA results for 54,000 traces, showing leakage after 55,000 traces.
 
 ![](./images/NTT_shuf_tvla_54K_1st_order.png)
 
-Although Version 1.0 includes masking countermeasures, this report does not present TVLA results for masking countermeasures. These results will be provided in future releases.
+Although Version 1.0 includes masking countermeasures, this report does not present TVLA results for masking countermeasures. These results will be provided in future releases. -->
+
+
+# Side‑Channel Analysis (SCA) — TVLA Results for ML‑KEM & ML‑DSA
+**Version:** 1.1 • **Date:** 2025‑08‑19  
+**Author:** Emre Karabulut (Senior Security Architect)
+
+---
+
+## Experiment Setup
+- **Target Physical Device:** CW310 Bergen Board with Kintex K410T FPGA implementing the DUT for side‑channel evaluation. The FPGA’s designated SMA port exposes the voltage drop across the on‑board shunt resistor.  
+- **Oscilloscope:** PicoScope 6428E‑D (up to 10 GS/s).  
+- **FPGA Operating Frequency:** 10 MHz.  
+- **Oscilloscope Sampling Frequency:** 156 MHz.  
+- **Statistical Test:** Fixed‑vs‑Random (TVLA) first‑order Welch’s t‑test. Conventional screening threshold \|t\| ≥ 4.5; borderline excursions are examined contextually.
+
+> **Legacy Baseline (v1.0)**  
+> Although v1.0 included masking countermeasures, TVLA for masking was not reported at that time. The legacy baseline below covered **NTT + point‑wise multiplication** with shuffling.  
+> **Figure 1.** NTT & PWM TVLA results for 54,000 traces (leakage observed after ~55,000 traces).  
+> ![](./images/NTT_shuf_tvla_54K_1st_order.png)
+
+
+## Input Set Selection
+- **NTT top Module:**  
+  - Operates on **4 coefficients at a time**.  
+  - For the **fixed set**, we selected **4 fixed coefficients** for operand A and **4 fixed coefficients** for operand B for the point‑wise multiplication (PWM). For the **random set**, each trace uses **4 random coefficients** for operand A and the **same 4 fixed coefficients** for operand B.
+  - For INTT (Inverse Transform), the **fixed set** has **4 fixed coefficients**, and the rest are zero. For the **random set**, **4 coefficients** are random, and the rest are zero.  
+
+
+## Summary of New Results (v1.1)
+
+| Algorithm | Configuration | Component / Phase | Traces to First Leakage | Max Traces Analyzed | Outcome |
+|---|---|---|---:|---:|---|
+| **ML‑KEM** | **Masking OFF, Shuffling OFF** (PRNG disabled) | **PWM** | **~21K** | 100K | Leakage observed starting ~21K |
+| **ML‑DSA** | **Masking OFF, Shuffling OFF** (PRNG disabled) | **PWM** | **~5K** | 100K | Leakage observed starting ~5K |
+| **ML‑KEM** | **Masking ON, Shuffling ON** | **Full flow segments covered** | **None up to 1M** | 1M | **Pass** |
+| **ML‑DSA** | **Masking ON, Shuffling ON** | **Full flow segments covered** | **None up to 1M** | 1M | **Pass**; minor excursions (4.5 < \|t\| < 5.5) from ~275K |
+| **ML‑KEM** | **Masking ON, Shuffling ON** | **INTT** | **Pass up to 1M** | 1M | **Pass**; apparent “leak” after X sample = unmasked 2nd layer |
+| **ML‑DSA** | **Masking ON, Shuffling ON** | **INTT** | **Pass up to 1M** | 1M | **Pass**; apparent “leak” after X sample = unmasked 2nd layer |
+
+---
+
+## Detailed Results & Figures
+
+### Unmasked & Unshuffled (PRNG OFF)
+
+**ML‑KEM — Point‑Wise Multiplication (PWM)**  
+- Leakage starts at ~21K traces.  
+- TVLA plotted up to 100K traces.  
+- **Figure 2:** ![](./images/mlkem_pwm_unmasked_tvla_100k.png)
+
+**ML‑DSA — Point‑Wise Multiplication (PWM)**  
+- Leakage starts at ~5K traces.  
+- TVLA plotted up to 100K traces.  
+- **Figure 3:** ![](./images/mldsa_pwm_unmasked_tvla_100k.png)
+
+---
+
+### Masking & Shuffling ON (1,000,000 traces)
+
+**ML‑KEM**  
+- No first‑order leakage up to 1M traces.  
+- **Figure 4:** ![](./images/mlkem_masked_shuffled_tvla_1m.png)
+
+**ML‑DSA**  
+- No first‑order leakage up to 1M traces.  
+- Minor excursions (4.5 < \|t\| < 5.5) from ~275K but bounded.  
+- The minor excutsions are observed in memory write of an PWM. Since the shuffling is enabled, the excursions present for the first 63 cycles of memory write and not for masked operations. 
+- **Figure 5:** ![](./images/mldsa_masked_shuffled_tvla_1m.png)
+
+---
+
+### INTT TVLA (Masking & Shuffling ON)
+
+- **ML‑KEM INTT:** Pass up to 1M traces.  
+- **ML‑DSA INTT:** Pass up to 1M traces.  
+- Apparent “leak” after X sample = unmasked 2nd layer (shuffling only).  
+
+**Figure 6:** ![](./images/mldsa_intt_tvla_1m.png)
+<!-- **Figure 7:** `./images/mlkem_intt_tvla_1m.png` -->
+
+---
+
+## Interpretation & Risk Posture
+- Unprotected PWM leaks early (ML‑DSA ~5K, ML‑KEM ~21K).  
+- Masked + Shuffled builds withstand 1M traces (first order).  
+- ML‑DSA excursions remain bounded and acceptable.  
+- INTT nuance: late “leak” is expected for unmasked 2nd layer.  
+
+---
+
+## Change Log
+- **v1.1 (2025‑08‑19):** Added ML‑KEM/ML‑DSA PWM (PRNG OFF), masked+shuffled results (1M), INTT TVLA, and ML‑DSA excursion note.  
+- **v1.0:** Reported NTT + PWM with shuffling only.  
+
+---
+
+## Figures Quick Reference
+- Figure 1: ![](./images/NTT_shuf_tvla_54K_1st_order.png)
+- Figure 2: ![](./images/mlkem_pwm_unmasked_tvla_100k.png)  
+- Figure 3: ![](./images/mldsa_pwm_unmasked_tvla_100k.png)  
+- Figure 4: ![](./images/mlkem_masked_shuffled_tvla_1m.png)  
+- Figure 5: ![](./images/mldsa_masked_shuffled_tvla_1m.png)  
+- Figure 6: ![](./images/mldsa_intt_tvla_1m.png)
+<!-- - Figure 7: `./images/mlkem_intt_tvla_1m.png`   -->
+
 
 ## Formal Validation
 Unlike other SCA countermeasures, masking is a provable countermeasure. It can be formally verified using an accepted simulation and probing model. Boolean domain-oriented masking (DOM) AND gates or arithmetic DOM multiplier gadgets are constructed as building blocks for implementing masking countermeasures. 
