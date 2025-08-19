@@ -159,8 +159,6 @@ Although Version 1.0 includes masking countermeasures, this report does not pres
 
 
 # Side‑Channel Analysis (SCA) — TVLA Results for ML‑KEM & ML‑DSA
-**Version:** 1.1 • **Date:** 2025‑08‑19  
-**Author:** Emre Karabulut (Senior Security Architect)
 
 ---
 
