@@ -199,7 +199,7 @@ Although Version 1.0 includes masking countermeasures, this report does not pres
 
 ### Unmasked & Unshuffled (PRNG OFF)
 
-**ML‑KEM — Point‑Wise Multiplication (PWM)**  
+**ML‑KEM — Point‑Wise Multiplication (PWM Pair-wise)**  
 - Leakage starts at ~21K traces.  
 - TVLA plotted up to 100K traces.  
 - **Figure 2:** ![](./images/mlkem_pwm_unmasked_tvla_100k.png)
@@ -214,13 +214,13 @@ Although Version 1.0 includes masking countermeasures, this report does not pres
 ### Masking & Shuffling ON (1,000,000 traces)
 
 **ML‑KEM**  
-- No first‑order leakage up to 1M traces.  
+- No first‑order leakage up to 1M traces for PWM pair-wise.  
 - **Figure 4:** ![](./images/mlkem_masked_shuffled_tvla_1m.png)
 
 **ML‑DSA**  
 - No first‑order leakage up to 1M traces.  
 - Minor excursions (4.5 < \|t\| < 5.5) from ~275K but bounded.  
-- The minor excutsions are observed in memory write of an PWM. Since the shuffling is enabled, the excursions present for the first 63 cycles of memory write and not for masked operations. 
+- The minor excutsions are observed in memory write of an PWM. Since the shuffling is enabled, the excursions present for the 16 cycles of memory write and not for masked operations. It presents for the 16 cycles because shuffling has a randomness space of 16. It means that first memory write can happen between 217th cycle and 233rd cycle when the shuffling is enabled. 
 - **Figure 5:** ![](./images/mldsa_masked_shuffled_tvla_1m.png)
 
 ---
