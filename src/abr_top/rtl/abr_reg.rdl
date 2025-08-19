@@ -282,7 +282,7 @@ addrmap abr_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
-    kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl;
+    kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl @0x8000;
     kv_status_reg kv_mldsa_seed_rd_status;
 
     /* ---- MLKEM Component Name ---- */
@@ -295,7 +295,7 @@ addrmap abr_reg {
         default hw = w;
         field {desc = "Name field";} NAME[32];
 
-    } MLKEM_NAME[2] @0x8000;
+    } MLKEM_NAME[2] @0x8100;
 
     /* ---- MLKEM Component Version ---- */
     reg {

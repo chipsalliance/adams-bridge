@@ -187,29 +187,29 @@ module abr_reg (
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h4000) & (cpuif_addr <= 16'h4000 + 16'h131f);
         decoded_reg_strb.MLDSA_PRIVKEY_IN = cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h6000) & (cpuif_addr <= 16'h6000 + 16'h131f);
-        decoded_reg_strb.kv_mldsa_seed_rd_ctrl = cpuif_req_masked & (cpuif_addr == 16'h7320);
-        decoded_reg_strb.kv_mldsa_seed_rd_status = cpuif_req_masked & (cpuif_addr == 16'h7324);
+        decoded_reg_strb.kv_mldsa_seed_rd_ctrl = cpuif_req_masked & (cpuif_addr == 16'h8000);
+        decoded_reg_strb.kv_mldsa_seed_rd_status = cpuif_req_masked & (cpuif_addr == 16'h8004);
         for(int i0=0; i0<2; i0++) begin
-            decoded_reg_strb.MLKEM_NAME[i0] = cpuif_req_masked & (cpuif_addr == 16'h8000 + i0*16'h4);
+            decoded_reg_strb.MLKEM_NAME[i0] = cpuif_req_masked & (cpuif_addr == 16'h8100 + i0*16'h4);
         end
         for(int i0=0; i0<2; i0++) begin
-            decoded_reg_strb.MLKEM_VERSION[i0] = cpuif_req_masked & (cpuif_addr == 16'h8008 + i0*16'h4);
+            decoded_reg_strb.MLKEM_VERSION[i0] = cpuif_req_masked & (cpuif_addr == 16'h8108 + i0*16'h4);
         end
-        decoded_reg_strb.MLKEM_CTRL = cpuif_req_masked & (cpuif_addr == 16'h8010);
-        decoded_reg_strb.MLKEM_STATUS = cpuif_req_masked & (cpuif_addr == 16'h8014);
+        decoded_reg_strb.MLKEM_CTRL = cpuif_req_masked & (cpuif_addr == 16'h8110);
+        decoded_reg_strb.MLKEM_STATUS = cpuif_req_masked & (cpuif_addr == 16'h8114);
         for(int i0=0; i0<8; i0++) begin
-            decoded_reg_strb.MLKEM_SEED_D[i0] = cpuif_req_masked & (cpuif_addr == 16'h8018 + i0*16'h4);
-        end
-        for(int i0=0; i0<8; i0++) begin
-            decoded_reg_strb.MLKEM_SEED_Z[i0] = cpuif_req_masked & (cpuif_addr == 16'h8038 + i0*16'h4);
-            is_external |= cpuif_req_masked & (cpuif_addr == 16'h8038 + i0*16'h4) & cpuif_req_is_wr;
+            decoded_reg_strb.MLKEM_SEED_D[i0] = cpuif_req_masked & (cpuif_addr == 16'h8118 + i0*16'h4);
         end
         for(int i0=0; i0<8; i0++) begin
-            decoded_reg_strb.MLKEM_SHARED_KEY[i0] = cpuif_req_masked & (cpuif_addr == 16'h8058 + i0*16'h4);
-            is_external |= cpuif_req_masked & (cpuif_addr == 16'h8058 + i0*16'h4) & !cpuif_req_is_wr;
+            decoded_reg_strb.MLKEM_SEED_Z[i0] = cpuif_req_masked & (cpuif_addr == 16'h8138 + i0*16'h4);
+            is_external |= cpuif_req_masked & (cpuif_addr == 16'h8138 + i0*16'h4) & cpuif_req_is_wr;
         end
-        decoded_reg_strb.MLKEM_MSG = cpuif_req_masked & (cpuif_addr >= 16'h8080) & (cpuif_addr <= 16'h8080 + 16'h1f);
-        is_external |= cpuif_req_masked & (cpuif_addr >= 16'h8080) & (cpuif_addr <= 16'h8080 + 16'h1f);
+        for(int i0=0; i0<8; i0++) begin
+            decoded_reg_strb.MLKEM_SHARED_KEY[i0] = cpuif_req_masked & (cpuif_addr == 16'h8158 + i0*16'h4);
+            is_external |= cpuif_req_masked & (cpuif_addr == 16'h8158 + i0*16'h4) & !cpuif_req_is_wr;
+        end
+        decoded_reg_strb.MLKEM_MSG = cpuif_req_masked & (cpuif_addr >= 16'h8180) & (cpuif_addr <= 16'h8180 + 16'h1f);
+        is_external |= cpuif_req_masked & (cpuif_addr >= 16'h8180) & (cpuif_addr <= 16'h8180 + 16'h1f);
         decoded_reg_strb.MLKEM_DECAPS_KEY = cpuif_req_masked & (cpuif_addr >= 16'h9000) & (cpuif_addr <= 16'h9000 + 16'hc5f);
         is_external |= cpuif_req_masked & (cpuif_addr >= 16'h9000) & (cpuif_addr <= 16'h9000 + 16'hc5f);
         decoded_reg_strb.MLKEM_ENCAPS_KEY = cpuif_req_masked & (cpuif_addr >= 16'ha000) & (cpuif_addr <= 16'ha000 + 16'h61f);
