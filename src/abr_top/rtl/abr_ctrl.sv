@@ -189,6 +189,7 @@ module abr_ctrl
   abr_reg__out_t abr_reg_hwif_out;
   abr_scratch_reg_u abr_scratch_reg;
   logic abr_ready;
+  logic abr_idle;
   logic mldsa_valid_reg;
   logic mlkem_valid_reg;
   logic mldsa_privkey_lock, mlkem_dk_lock;
@@ -660,11 +661,17 @@ always_comb kv_mlkem_msg_write_data = '0;
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
 
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE)) & 
+                          ~kv_mlkem_seed_write_en &
+                          ~kv_mlkem_msg_write_en &
+                          ~kv_mldsa_seed_write_en;
+
   always_comb kv_dest_data_avail = dest_keyvault & 
                                    ((mlkem_encaps_process & mlkem_encaps_done) |
                                     (mlkem_decaps_process & mlkem_decaps_done));   
   `else
   always_comb abr_ready = (abr_prog_cntr == ABR_RESET);
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE));
   `endif
 
   //without zeroize to make it more complex
@@ -676,7 +683,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   //Set busy when engine is in progress
-  always_comb busy_o = ~abr_ready;
+  always_comb busy_o = ~abr_idle;
   always_comb zeroize = abr_reg_hwif_out.MLDSA_CTRL.ZEROIZE.value || 
                         abr_reg_hwif_out.MLKEM_CTRL.ZEROIZE.value ||
                         debugUnlock_or_scan_mode_switch;
