@@ -282,6 +282,7 @@ addrmap abr_reg {
         memwidth = 32;
     } MLDSA_PRIVKEY_IN;
 
+    //Don't move these - breaks backwards compatibility with Caliptra
     kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl @0x8000;
     kv_status_reg kv_mldsa_seed_rd_status;
 
@@ -295,7 +296,7 @@ addrmap abr_reg {
         default hw = w;
         field {desc = "Name field";} NAME[32];
 
-    } MLKEM_NAME[2] @0x8100;
+    } MLKEM_NAME[2] @0x9000;
 
     /* ---- MLKEM Component Version ---- */
     reg {
@@ -433,7 +434,8 @@ addrmap abr_reg {
         memwidth = 32;
     } MLKEM_CIPHERTEXT;
 
-    kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl;
+    //Moved down to dedicated space to keep room above for any future enhancements
+    kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl @0xC000;
     kv_status_reg kv_mlkem_seed_rd_status;
     kv_read_ctrl_reg kv_mlkem_msg_rd_ctrl;
     kv_status_reg kv_mlkem_msg_rd_status;
@@ -703,5 +705,6 @@ addrmap abr_reg {
     /* -----------------------
      * Register File instance
      * ----------------------- */
-    intr_block_t intr_block_rf @0xb000;
+    //Don't move these - breaks backwards compatibility with Caliptra
+    intr_block_t intr_block_rf @0x8100;
 };

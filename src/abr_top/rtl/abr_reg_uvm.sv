@@ -314,224 +314,6 @@ package abr_reg_uvm;
         endfunction : build
     endclass : kv_status_reg
 
-    // Reg - abr_reg::MLKEM_NAME
-    class abr_reg__MLKEM_NAME extends uvm_reg;
-        rand uvm_reg_field NAME;
-
-        function new(string name = "abr_reg__MLKEM_NAME");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.NAME = new("NAME");
-            this.NAME.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_NAME
-
-    // Reg - abr_reg::MLKEM_VERSION
-    class abr_reg__MLKEM_VERSION extends uvm_reg;
-        rand uvm_reg_field VERSION;
-
-        function new(string name = "abr_reg__MLKEM_VERSION");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.VERSION = new("VERSION");
-            this.VERSION.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_VERSION
-
-    // Reg - abr_reg::MLKEM_CTRL
-    class abr_reg__MLKEM_CTRL extends uvm_reg;
-        rand uvm_reg_field CTRL;
-        rand uvm_reg_field ZEROIZE;
-
-        function new(string name = "abr_reg__MLKEM_CTRL");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.CTRL = new("CTRL");
-            this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
-            this.ZEROIZE = new("ZEROIZE");
-            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_CTRL
-
-    // Reg - abr_reg::MLKEM_STATUS
-    class abr_reg__MLKEM_STATUS extends uvm_reg;
-        rand uvm_reg_field READY;
-        rand uvm_reg_field VALID;
-        rand uvm_reg_field ERROR;
-
-        function new(string name = "abr_reg__MLKEM_STATUS");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.READY = new("READY");
-            this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
-            this.VALID = new("VALID");
-            this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
-            this.ERROR = new("ERROR");
-            this.ERROR.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_STATUS
-
-    // Reg - abr_reg::MLKEM_SEED_D
-    class abr_reg__MLKEM_SEED_D extends uvm_reg;
-        rand uvm_reg_field SEED;
-
-        function new(string name = "abr_reg__MLKEM_SEED_D");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.SEED = new("SEED");
-            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_SEED_D
-
-    // Reg - abr_reg::MLKEM_SEED_Z
-    class abr_reg__MLKEM_SEED_Z extends uvm_reg;
-        rand uvm_reg_field SEED;
-
-        function new(string name = "abr_reg__MLKEM_SEED_Z");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.SEED = new("SEED");
-            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_SEED_Z
-
-    // Reg - abr_reg::MLKEM_SHARED_KEY
-    class abr_reg__MLKEM_SHARED_KEY extends uvm_reg;
-        rand uvm_reg_field KEY;
-
-        function new(string name = "abr_reg__MLKEM_SHARED_KEY");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.KEY = new("KEY");
-            this.KEY.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_SHARED_KEY
-
-    // Mem - abr_reg::MLKEM_MSG
-    class abr_reg__MLKEM_MSG extends uvm_reg_block;
-        rand uvm_mem m_mem;
-        
-        function new(string name = "abr_reg__MLKEM_MSG");
-            super.new(name);
-        endfunction : new
-
-        virtual function void build();
-            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 8, 32, "RW");
-            this.m_mem.configure(this);
-            this.default_map.add_mem(this.m_mem, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_MSG
-
-    // Mem - abr_reg::MLKEM_DECAPS_KEY
-    class abr_reg__MLKEM_DECAPS_KEY extends uvm_reg_block;
-        rand uvm_mem m_mem;
-        
-        function new(string name = "abr_reg__MLKEM_DECAPS_KEY");
-            super.new(name);
-        endfunction : new
-
-        virtual function void build();
-            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 792, 32, "RW");
-            this.m_mem.configure(this);
-            this.default_map.add_mem(this.m_mem, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_DECAPS_KEY
-
-    // Mem - abr_reg::MLKEM_ENCAPS_KEY
-    class abr_reg__MLKEM_ENCAPS_KEY extends uvm_reg_block;
-        rand uvm_mem m_mem;
-        
-        function new(string name = "abr_reg__MLKEM_ENCAPS_KEY");
-            super.new(name);
-        endfunction : new
-
-        virtual function void build();
-            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 392, 32, "RW");
-            this.m_mem.configure(this);
-            this.default_map.add_mem(this.m_mem, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_ENCAPS_KEY
-
-    // Mem - abr_reg::MLKEM_CIPHERTEXT
-    class abr_reg__MLKEM_CIPHERTEXT extends uvm_reg_block;
-        rand uvm_mem m_mem;
-        
-        function new(string name = "abr_reg__MLKEM_CIPHERTEXT");
-            super.new(name);
-        endfunction : new
-
-        virtual function void build();
-            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 392, 32, "RW");
-            this.m_mem.configure(this);
-            this.default_map.add_mem(this.m_mem, 0);
-        endfunction : build
-    endclass : abr_reg__MLKEM_CIPHERTEXT
-
-    // Reg - kv_write_ctrl_reg
-    class kv_write_ctrl_reg extends uvm_reg;
-        rand uvm_reg_field write_en;
-        rand uvm_reg_field write_entry;
-        rand uvm_reg_field hmac_key_dest_valid;
-        rand uvm_reg_field hmac_block_dest_valid;
-        rand uvm_reg_field mldsa_seed_dest_valid;
-        rand uvm_reg_field ecc_pkey_dest_valid;
-        rand uvm_reg_field ecc_seed_dest_valid;
-        rand uvm_reg_field aes_key_dest_valid;
-        rand uvm_reg_field mlkem_seed_dest_valid;
-        rand uvm_reg_field mlkem_msg_dest_valid;
-        rand uvm_reg_field dma_data_dest_valid;
-        rand uvm_reg_field rsvd;
-
-        function new(string name = "kv_write_ctrl_reg");
-            super.new(name, 32, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.write_en = new("write_en");
-            this.write_en.configure(this, 1, 0, "RW", 1, 'h0, 1, 1, 0);
-            this.write_entry = new("write_entry");
-            this.write_entry.configure(this, 5, 1, "RW", 0, 'h0, 1, 1, 0);
-            this.hmac_key_dest_valid = new("hmac_key_dest_valid");
-            this.hmac_key_dest_valid.configure(this, 1, 6, "RW", 0, 'h0, 1, 1, 0);
-            this.hmac_block_dest_valid = new("hmac_block_dest_valid");
-            this.hmac_block_dest_valid.configure(this, 1, 7, "RW", 0, 'h0, 1, 1, 0);
-            this.mldsa_seed_dest_valid = new("mldsa_seed_dest_valid");
-            this.mldsa_seed_dest_valid.configure(this, 1, 8, "RW", 0, 'h0, 1, 1, 0);
-            this.ecc_pkey_dest_valid = new("ecc_pkey_dest_valid");
-            this.ecc_pkey_dest_valid.configure(this, 1, 9, "RW", 0, 'h0, 1, 1, 0);
-            this.ecc_seed_dest_valid = new("ecc_seed_dest_valid");
-            this.ecc_seed_dest_valid.configure(this, 1, 10, "RW", 0, 'h0, 1, 1, 0);
-            this.aes_key_dest_valid = new("aes_key_dest_valid");
-            this.aes_key_dest_valid.configure(this, 1, 11, "RW", 0, 'h0, 1, 1, 0);
-            this.mlkem_seed_dest_valid = new("mlkem_seed_dest_valid");
-            this.mlkem_seed_dest_valid.configure(this, 1, 12, "RW", 0, 'h0, 1, 1, 0);
-            this.mlkem_msg_dest_valid = new("mlkem_msg_dest_valid");
-            this.mlkem_msg_dest_valid.configure(this, 1, 13, "RW", 0, 'h0, 1, 1, 0);
-            this.dma_data_dest_valid = new("dma_data_dest_valid");
-            this.dma_data_dest_valid.configure(this, 1, 14, "RW", 0, 'h0, 1, 1, 0);
-            this.rsvd = new("rsvd");
-            this.rsvd.configure(this, 17, 15, "RW", 0, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : kv_write_ctrl_reg
-
     // Reg - abr_reg::intr_block_t::global_intr_en_t
     class abr_reg__intr_block_t__global_intr_en_t extends uvm_reg;
         rand uvm_reg_field error_en;
@@ -807,6 +589,224 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t
 
+    // Reg - abr_reg::MLKEM_NAME
+    class abr_reg__MLKEM_NAME extends uvm_reg;
+        rand uvm_reg_field NAME;
+
+        function new(string name = "abr_reg__MLKEM_NAME");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.NAME = new("NAME");
+            this.NAME.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_NAME
+
+    // Reg - abr_reg::MLKEM_VERSION
+    class abr_reg__MLKEM_VERSION extends uvm_reg;
+        rand uvm_reg_field VERSION;
+
+        function new(string name = "abr_reg__MLKEM_VERSION");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.VERSION = new("VERSION");
+            this.VERSION.configure(this, 32, 0, "RO", 1, 'h0, 0, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_VERSION
+
+    // Reg - abr_reg::MLKEM_CTRL
+    class abr_reg__MLKEM_CTRL extends uvm_reg;
+        rand uvm_reg_field CTRL;
+        rand uvm_reg_field ZEROIZE;
+
+        function new(string name = "abr_reg__MLKEM_CTRL");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.CTRL = new("CTRL");
+            this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
+            this.ZEROIZE = new("ZEROIZE");
+            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_CTRL
+
+    // Reg - abr_reg::MLKEM_STATUS
+    class abr_reg__MLKEM_STATUS extends uvm_reg;
+        rand uvm_reg_field READY;
+        rand uvm_reg_field VALID;
+        rand uvm_reg_field ERROR;
+
+        function new(string name = "abr_reg__MLKEM_STATUS");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.READY = new("READY");
+            this.READY.configure(this, 1, 0, "RO", 1, 'h0, 1, 1, 0);
+            this.VALID = new("VALID");
+            this.VALID.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
+            this.ERROR = new("ERROR");
+            this.ERROR.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_STATUS
+
+    // Reg - abr_reg::MLKEM_SEED_D
+    class abr_reg__MLKEM_SEED_D extends uvm_reg;
+        rand uvm_reg_field SEED;
+
+        function new(string name = "abr_reg__MLKEM_SEED_D");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.SEED = new("SEED");
+            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_SEED_D
+
+    // Reg - abr_reg::MLKEM_SEED_Z
+    class abr_reg__MLKEM_SEED_Z extends uvm_reg;
+        rand uvm_reg_field SEED;
+
+        function new(string name = "abr_reg__MLKEM_SEED_Z");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.SEED = new("SEED");
+            this.SEED.configure(this, 32, 0, "WO", 1, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_SEED_Z
+
+    // Reg - abr_reg::MLKEM_SHARED_KEY
+    class abr_reg__MLKEM_SHARED_KEY extends uvm_reg;
+        rand uvm_reg_field KEY;
+
+        function new(string name = "abr_reg__MLKEM_SHARED_KEY");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.KEY = new("KEY");
+            this.KEY.configure(this, 32, 0, "RO", 1, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_SHARED_KEY
+
+    // Mem - abr_reg::MLKEM_MSG
+    class abr_reg__MLKEM_MSG extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_MSG");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 8, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_MSG
+
+    // Mem - abr_reg::MLKEM_DECAPS_KEY
+    class abr_reg__MLKEM_DECAPS_KEY extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_DECAPS_KEY");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 792, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_DECAPS_KEY
+
+    // Mem - abr_reg::MLKEM_ENCAPS_KEY
+    class abr_reg__MLKEM_ENCAPS_KEY extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_ENCAPS_KEY");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 392, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_ENCAPS_KEY
+
+    // Mem - abr_reg::MLKEM_CIPHERTEXT
+    class abr_reg__MLKEM_CIPHERTEXT extends uvm_reg_block;
+        rand uvm_mem m_mem;
+        
+        function new(string name = "abr_reg__MLKEM_CIPHERTEXT");
+            super.new(name);
+        endfunction : new
+
+        virtual function void build();
+            this.default_map = create_map("reg_map", 0, 4.0, UVM_NO_ENDIAN);
+            this.m_mem = new("m_mem", 392, 32, "RW");
+            this.m_mem.configure(this);
+            this.default_map.add_mem(this.m_mem, 0);
+        endfunction : build
+    endclass : abr_reg__MLKEM_CIPHERTEXT
+
+    // Reg - kv_write_ctrl_reg
+    class kv_write_ctrl_reg extends uvm_reg;
+        rand uvm_reg_field write_en;
+        rand uvm_reg_field write_entry;
+        rand uvm_reg_field hmac_key_dest_valid;
+        rand uvm_reg_field hmac_block_dest_valid;
+        rand uvm_reg_field mldsa_seed_dest_valid;
+        rand uvm_reg_field ecc_pkey_dest_valid;
+        rand uvm_reg_field ecc_seed_dest_valid;
+        rand uvm_reg_field aes_key_dest_valid;
+        rand uvm_reg_field mlkem_seed_dest_valid;
+        rand uvm_reg_field mlkem_msg_dest_valid;
+        rand uvm_reg_field dma_data_dest_valid;
+        rand uvm_reg_field rsvd;
+
+        function new(string name = "kv_write_ctrl_reg");
+            super.new(name, 32, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.write_en = new("write_en");
+            this.write_en.configure(this, 1, 0, "RW", 1, 'h0, 1, 1, 0);
+            this.write_entry = new("write_entry");
+            this.write_entry.configure(this, 5, 1, "RW", 0, 'h0, 1, 1, 0);
+            this.hmac_key_dest_valid = new("hmac_key_dest_valid");
+            this.hmac_key_dest_valid.configure(this, 1, 6, "RW", 0, 'h0, 1, 1, 0);
+            this.hmac_block_dest_valid = new("hmac_block_dest_valid");
+            this.hmac_block_dest_valid.configure(this, 1, 7, "RW", 0, 'h0, 1, 1, 0);
+            this.mldsa_seed_dest_valid = new("mldsa_seed_dest_valid");
+            this.mldsa_seed_dest_valid.configure(this, 1, 8, "RW", 0, 'h0, 1, 1, 0);
+            this.ecc_pkey_dest_valid = new("ecc_pkey_dest_valid");
+            this.ecc_pkey_dest_valid.configure(this, 1, 9, "RW", 0, 'h0, 1, 1, 0);
+            this.ecc_seed_dest_valid = new("ecc_seed_dest_valid");
+            this.ecc_seed_dest_valid.configure(this, 1, 10, "RW", 0, 'h0, 1, 1, 0);
+            this.aes_key_dest_valid = new("aes_key_dest_valid");
+            this.aes_key_dest_valid.configure(this, 1, 11, "RW", 0, 'h0, 1, 1, 0);
+            this.mlkem_seed_dest_valid = new("mlkem_seed_dest_valid");
+            this.mlkem_seed_dest_valid.configure(this, 1, 12, "RW", 0, 'h0, 1, 1, 0);
+            this.mlkem_msg_dest_valid = new("mlkem_msg_dest_valid");
+            this.mlkem_msg_dest_valid.configure(this, 1, 13, "RW", 0, 'h0, 1, 1, 0);
+            this.dma_data_dest_valid = new("dma_data_dest_valid");
+            this.dma_data_dest_valid.configure(this, 1, 14, "RW", 0, 'h0, 1, 1, 0);
+            this.rsvd = new("rsvd");
+            this.rsvd.configure(this, 17, 15, "RW", 0, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : kv_write_ctrl_reg
+
     // Addrmap - abr_reg
     class abr_reg extends uvm_reg_block;
         rand abr_reg__MLDSA_NAME MLDSA_NAME[2];
@@ -828,6 +828,7 @@ package abr_reg_uvm;
         rand abr_reg__MLDSA_PRIVKEY_IN MLDSA_PRIVKEY_IN;
         rand kv_read_ctrl_reg kv_mldsa_seed_rd_ctrl;
         rand kv_status_reg kv_mldsa_seed_rd_status;
+        rand abr_reg__intr_block_t intr_block_rf;
         rand abr_reg__MLKEM_NAME MLKEM_NAME[2];
         rand abr_reg__MLKEM_VERSION MLKEM_VERSION[2];
         rand abr_reg__MLKEM_CTRL MLKEM_CTRL;
@@ -845,7 +846,6 @@ package abr_reg_uvm;
         rand kv_status_reg kv_mlkem_msg_rd_status;
         rand kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl;
         rand kv_status_reg kv_mlkem_sharedkey_wr_status;
-        rand abr_reg__intr_block_t intr_block_rf;
 
         function new(string name = "abr_reg");
             super.new(name);
@@ -962,101 +962,101 @@ package abr_reg_uvm;
 
             this.kv_mldsa_seed_rd_status.build();
             this.default_map.add_reg(this.kv_mldsa_seed_rd_status, 'h8004);
+            this.intr_block_rf = new("intr_block_rf");
+            this.intr_block_rf.configure(this);
+            this.intr_block_rf.build();
+            this.default_map.add_submap(this.intr_block_rf.default_map, 'h8100);
             foreach(this.MLKEM_NAME[i0]) begin
                 this.MLKEM_NAME[i0] = new($sformatf("MLKEM_NAME[%0d]", i0));
                 this.MLKEM_NAME[i0].configure(this);
                 
                 this.MLKEM_NAME[i0].build();
-                this.default_map.add_reg(this.MLKEM_NAME[i0], 'h8100 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_NAME[i0], 'h9000 + i0*'h4);
             end
             foreach(this.MLKEM_VERSION[i0]) begin
                 this.MLKEM_VERSION[i0] = new($sformatf("MLKEM_VERSION[%0d]", i0));
                 this.MLKEM_VERSION[i0].configure(this);
                 
                 this.MLKEM_VERSION[i0].build();
-                this.default_map.add_reg(this.MLKEM_VERSION[i0], 'h8108 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_VERSION[i0], 'h9008 + i0*'h4);
             end
             this.MLKEM_CTRL = new("MLKEM_CTRL");
             this.MLKEM_CTRL.configure(this);
 
             this.MLKEM_CTRL.build();
-            this.default_map.add_reg(this.MLKEM_CTRL, 'h8110);
+            this.default_map.add_reg(this.MLKEM_CTRL, 'h9010);
             this.MLKEM_STATUS = new("MLKEM_STATUS");
             this.MLKEM_STATUS.configure(this);
 
             this.MLKEM_STATUS.build();
-            this.default_map.add_reg(this.MLKEM_STATUS, 'h8114);
+            this.default_map.add_reg(this.MLKEM_STATUS, 'h9014);
             foreach(this.MLKEM_SEED_D[i0]) begin
                 this.MLKEM_SEED_D[i0] = new($sformatf("MLKEM_SEED_D[%0d]", i0));
                 this.MLKEM_SEED_D[i0].configure(this);
                 
                 this.MLKEM_SEED_D[i0].build();
-                this.default_map.add_reg(this.MLKEM_SEED_D[i0], 'h8118 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SEED_D[i0], 'h9018 + i0*'h4);
             end
             foreach(this.MLKEM_SEED_Z[i0]) begin
                 this.MLKEM_SEED_Z[i0] = new($sformatf("MLKEM_SEED_Z[%0d]", i0));
                 this.MLKEM_SEED_Z[i0].configure(this);
                 
                 this.MLKEM_SEED_Z[i0].build();
-                this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h8138 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SEED_Z[i0], 'h9038 + i0*'h4);
             end
             foreach(this.MLKEM_SHARED_KEY[i0]) begin
                 this.MLKEM_SHARED_KEY[i0] = new($sformatf("MLKEM_SHARED_KEY[%0d]", i0));
                 this.MLKEM_SHARED_KEY[i0].configure(this);
                 
                 this.MLKEM_SHARED_KEY[i0].build();
-                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h8158 + i0*'h4);
+                this.default_map.add_reg(this.MLKEM_SHARED_KEY[i0], 'h9058 + i0*'h4);
             end
             this.MLKEM_MSG = new("MLKEM_MSG");
             this.MLKEM_MSG.configure(this);
             this.MLKEM_MSG.build();
-            this.default_map.add_submap(this.MLKEM_MSG.default_map, 'h8180);
+            this.default_map.add_submap(this.MLKEM_MSG.default_map, 'h9080);
             this.MLKEM_DECAPS_KEY = new("MLKEM_DECAPS_KEY");
             this.MLKEM_DECAPS_KEY.configure(this);
             this.MLKEM_DECAPS_KEY.build();
-            this.default_map.add_submap(this.MLKEM_DECAPS_KEY.default_map, 'h9000);
+            this.default_map.add_submap(this.MLKEM_DECAPS_KEY.default_map, 'ha000);
             this.MLKEM_ENCAPS_KEY = new("MLKEM_ENCAPS_KEY");
             this.MLKEM_ENCAPS_KEY.configure(this);
             this.MLKEM_ENCAPS_KEY.build();
-            this.default_map.add_submap(this.MLKEM_ENCAPS_KEY.default_map, 'ha000);
+            this.default_map.add_submap(this.MLKEM_ENCAPS_KEY.default_map, 'hb000);
             this.MLKEM_CIPHERTEXT = new("MLKEM_CIPHERTEXT");
             this.MLKEM_CIPHERTEXT.configure(this);
             this.MLKEM_CIPHERTEXT.build();
-            this.default_map.add_submap(this.MLKEM_CIPHERTEXT.default_map, 'ha800);
+            this.default_map.add_submap(this.MLKEM_CIPHERTEXT.default_map, 'hb800);
             this.kv_mlkem_seed_rd_ctrl = new("kv_mlkem_seed_rd_ctrl");
             this.kv_mlkem_seed_rd_ctrl.configure(this);
 
             this.kv_mlkem_seed_rd_ctrl.build();
-            this.default_map.add_reg(this.kv_mlkem_seed_rd_ctrl, 'hae20);
+            this.default_map.add_reg(this.kv_mlkem_seed_rd_ctrl, 'hc000);
             this.kv_mlkem_seed_rd_status = new("kv_mlkem_seed_rd_status");
             this.kv_mlkem_seed_rd_status.configure(this);
 
             this.kv_mlkem_seed_rd_status.build();
-            this.default_map.add_reg(this.kv_mlkem_seed_rd_status, 'hae24);
+            this.default_map.add_reg(this.kv_mlkem_seed_rd_status, 'hc004);
             this.kv_mlkem_msg_rd_ctrl = new("kv_mlkem_msg_rd_ctrl");
             this.kv_mlkem_msg_rd_ctrl.configure(this);
 
             this.kv_mlkem_msg_rd_ctrl.build();
-            this.default_map.add_reg(this.kv_mlkem_msg_rd_ctrl, 'hae28);
+            this.default_map.add_reg(this.kv_mlkem_msg_rd_ctrl, 'hc008);
             this.kv_mlkem_msg_rd_status = new("kv_mlkem_msg_rd_status");
             this.kv_mlkem_msg_rd_status.configure(this);
 
             this.kv_mlkem_msg_rd_status.build();
-            this.default_map.add_reg(this.kv_mlkem_msg_rd_status, 'hae2c);
+            this.default_map.add_reg(this.kv_mlkem_msg_rd_status, 'hc00c);
             this.kv_mlkem_sharedkey_wr_ctrl = new("kv_mlkem_sharedkey_wr_ctrl");
             this.kv_mlkem_sharedkey_wr_ctrl.configure(this);
 
             this.kv_mlkem_sharedkey_wr_ctrl.build();
-            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_ctrl, 'hae30);
+            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_ctrl, 'hc010);
             this.kv_mlkem_sharedkey_wr_status = new("kv_mlkem_sharedkey_wr_status");
             this.kv_mlkem_sharedkey_wr_status.configure(this);
 
             this.kv_mlkem_sharedkey_wr_status.build();
-            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_status, 'hae34);
-            this.intr_block_rf = new("intr_block_rf");
-            this.intr_block_rf.configure(this);
-            this.intr_block_rf.build();
-            this.default_map.add_submap(this.intr_block_rf.default_map, 'hb000);
+            this.default_map.add_reg(this.kv_mlkem_sharedkey_wr_status, 'hc014);
         endfunction : build
     endclass : abr_reg
 

@@ -156,8 +156,8 @@ module abr_top
   mem_if_t [1:0] pwr2rnd_keymem_if;
   logic [1:0] [DATA_WIDTH-1:0] pwr2rnd_wr_data;
   logic pk_t1_wren;
-  logic [7:0][9:0] pk_t1_wrdata; // TODO: change to parameter
-  logic [7:0] pk_t1_wr_addr; // TODO: change to parameter
+  logic [7:0][T1_COEFF_W-1:0] pk_t1_wrdata;
+  logic [7:0] pk_t1_wr_addr;
 
   logic decompose_enable, decompose_done;
   mem_if_t decomp_mem_wr_req;
@@ -499,10 +499,10 @@ abr_sampler_top sampler_top_inst
   .sampler_mode_i(sampler_mode),
   .sha3_start_i(sha3_start), //start the sha3 engine
   .msg_start_i(msg_start), //start a new message
-  .msg_valid_i(msg_valid | decomp_msg_valid), //msg interface valid //FIXME
-  .msg_rdy_o(msg_rdy),  //msg interface rdy (~hold)
-  .msg_strobe_i(decomp_msg_valid ? '1 : msg_strobe), //msg byte enables //FIXME
-  .msg_data_i(msg_data_i), //msg data/ /FIXME
+  .msg_valid_i(msg_valid | decomp_msg_valid),
+  .msg_rdy_o(msg_rdy), 
+  .msg_strobe_i(decomp_msg_valid ? '1 : msg_strobe),
+  .msg_data_i(msg_data_i), 
 
   .sib_mem_rd_req_i(sib_mem_rd_req),
   .sib_mem_rd_data_o(sib_mem_rd_data),
@@ -863,13 +863,13 @@ sigencode_z_inst
   
   .sigmem_a_wr_req(sigencode_mem_wr_req),
   .sigmem_a_wr_data(sigencode_mem_wr_data[0]),
-  .sigmem_b_wr_req(), //fixme single interface
+  .sigmem_b_wr_req(),
   .sigmem_b_wr_data(sigencode_mem_wr_data[1])
 );
 
 pkdecode 
 #(
-  .API_ADDR_WIDTH(8) //FIXME
+  .API_ADDR_WIDTH(8)
 )
 pkdecode_inst (
   .clk(clk),
@@ -879,7 +879,7 @@ pkdecode_inst (
   .pkdecode_enable(pkdecode_enable),
   .pkdecode_done(pkdecode_done),
 
-  .src_base_addr('0), //fixme remove - api register reads, no need for base address
+  .src_base_addr('0),
   .dest_base_addr(aux_dest_base_addr[0]),
 
   .API_rd_address(pkdecode_rd_addr),
@@ -900,7 +900,7 @@ sigdecode_z_inst (
   .sigdecode_z_enable(sigdecode_z_enable),
   .sigdecode_z_done(sigdecode_z_done),
 
-  .sigmem_src_base_addr('0), //fixme remove, reads dedicated memory
+  .sigmem_src_base_addr('0),
   .dest_base_addr(aux_dest_base_addr[0]),
 
   .mem_a_wr_req(sigdecode_z_mem_wr_req[0]),
@@ -910,7 +910,7 @@ sigdecode_z_inst (
 
   .sigmem_a_rd_req(sigdecode_z_mem_rd_req),
   .sigmem_a_rd_data(sigdecode_z_mem_rd_data[0]),
-  .sigmem_b_rd_req(), //fixme switch to single interface
+  .sigmem_b_rd_req(),
   .sigmem_b_rd_data(sigdecode_z_mem_rd_data[1])
 );
 
@@ -1051,9 +1051,6 @@ logic [3:3][ABR_MEM_MASKED_DATA_WIDTH-1:0] abr_mem_masked_wdata;
 logic [1:0] abr_mem_we0_bank;
 logic [1:0][ABR_MEM_ADDR_WIDTH-5:0] abr_mem_waddr0_bank;
 logic [1:0][ABR_MEM_DATA_WIDTH-1:0] abr_mem_wdata0_bank;
-
-//FIXME common memory ports to make muxing easier
-//this is better - common interfaces will help clean this up further
 
 logic [3:1] sampler_mem_we;
 logic [ABR_NUM_NTT-1:0][3:0] ntt_mem_we;
