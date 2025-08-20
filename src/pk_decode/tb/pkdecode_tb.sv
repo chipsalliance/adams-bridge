@@ -69,7 +69,6 @@ pkdecode #(
 
     .pkdecode_enable(pkdecode_enable_tb),
     .dest_base_addr(dest_base_addr_tb),
-    .src_base_addr(src_base_addr_tb),
     .API_rd_data(API_rd_data_tb),
 
     .API_rd_address(API_rd_address_tb),
@@ -141,7 +140,6 @@ task init_sim;
         reset_n_tb = 0;
         zeroize_tb = 0;
         pkdecode_enable_tb = 0;
-        src_base_addr_tb = 0;
         dest_base_addr_tb = 0;
     end
 endtask

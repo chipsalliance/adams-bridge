@@ -84,8 +84,8 @@ module abr_ctrl
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [DATA_WIDTH-1:0] pwr2rnd_wr_data_i,
   input logic pk_t1_wren_i,
-  input logic [7:0][9:0] pk_t1_wrdata_i, // TODO: change to parameter
-  input logic [7:0] pk_t1_wr_addr_i, // TODO: change to parameter
+  input logic [7:0][T1_COEFF_W-1:0] pk_t1_wrdata_i,
+  input logic [7:0] pk_t1_wr_addr_i,
   input logic power2round_done_i,
 
   output logic decompose_enable_o,
@@ -1111,7 +1111,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sig_h_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
 
   always_comb api_sig_z_addr.addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
-  always_comb api_sig_z_addr.offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD; //FIXME can this be done better?
+  always_comb api_sig_z_addr.offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD;
   always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
   always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
 
@@ -1220,7 +1220,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_pubkey_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
 
   always_comb api_pubkey_mem_addr.addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
-  always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS; //FIXME can this be done better?
+  always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS;
 
   always_comb sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
   always_comb sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);

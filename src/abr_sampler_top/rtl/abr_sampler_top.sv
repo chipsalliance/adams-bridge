@@ -566,7 +566,7 @@ always_comb sampler_ntt_dv_o = mldsa_rejs_dv | mlkem_rejs_dv;
   always_comb sib_mem_cs_mux[0] = (sib_mem_rd_req_i.rd_wr_en == RW_READ) | sib_mem_cs[0];
   always_comb sib_mem_cs_mux[1] = sib_mem_cs[1];
 
-  //ugly expansion of 23->24 bits FIXME
+  //ugly expansion of 23->24 bits
   assign sib_mem_rd_data_o = {1'b0,sib_mem_rddata[0][3],1'b0,sib_mem_rddata[0][2],1'b0,sib_mem_rddata[0][1],1'b0,sib_mem_rddata[0][0]};
 
   sib_mem
