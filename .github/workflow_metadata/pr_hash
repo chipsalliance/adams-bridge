@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 cb6cf915bd6db3c71b42488b6dc5b08f065685af091faf22d42405d44a680ff3369a179a0411d632ff07bfefe830b41f
+=======
+e94349989d4938cc877c29c4bbaa39cc3187df2cfc8c448564930b1ec474a598e277829f4c4c79ce39e7b830aedcc3f2
+>>>>>>> 800bcec (fix zeroize during fatal errors (#193))

@@ -1878,15 +1878,11 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_addr <= 0;
     zeroize_mem_done <= 0;
   end
-  else if (zeroize) begin
-    zeroize_mem_addr <= 0;
-    zeroize_mem_done <= 0;
-  end
-  else if (prim_prog_cntr == MLDSA_ZEROIZE) begin
-    if (zeroize_mem_addr == MLDSA_MEM_MAX_DEPTH) begin
+  else if (abr_prog_cntr == ABR_ZEROIZE) begin
+    if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
-    end else begin
+    end else if (!zeroize_mem_done) begin
       zeroize_mem_addr <= zeroize_mem_addr + 1;
     end
   end else begin
@@ -1895,7 +1891,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE);
+always_comb zeroize_mem_we = (abr_prog_cntr == ABR_ZEROIZE) & !zeroize_mem_done;
 
 always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;
