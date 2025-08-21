@@ -51,8 +51,6 @@ module makehint
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr, //reg API base addr - TODO: finalize size
-
         output logic invalid_h,
         output mem_if_t mem_rd_req,
         output mem_if_t z_rd_req,
@@ -246,7 +244,7 @@ module makehint
             reg_wr_addr <= 'h0;
         end
         else if (sample_valid | flush_buffer | max_index_buffer_rd) begin
-            reg_wr_addr <= dest_base_addr + reg_wr_addr_nxt;
+            reg_wr_addr <= reg_wr_addr_nxt;
         end
     end
 

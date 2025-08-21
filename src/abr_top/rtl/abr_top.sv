@@ -804,7 +804,6 @@ makehint_inst
   .makehint_done(makehint_done),
 
   .mem_base_addr(aux_src0_base_addr[0]),
-  .dest_base_addr('0),
 
   .mem_rd_req(makehint_mem_rd_req),
   .r(makehint_mem_rd_data),
@@ -829,7 +828,6 @@ norm_check_inst
   .mode(normcheck_mode),
   .norm_check_enable(normcheck_enable),
 
-  .shuffling_enable(1'b1), // This signal can be controlled by the controller
   .randomness(rand_bits[5:0]),
 
   .norm_check_ready(),
@@ -879,7 +877,6 @@ pkdecode_inst (
   .pkdecode_enable(pkdecode_enable),
   .pkdecode_done(pkdecode_done),
 
-  .src_base_addr('0),
   .dest_base_addr(aux_dest_base_addr[0]),
 
   .API_rd_address(pkdecode_rd_addr),
@@ -900,7 +897,6 @@ sigdecode_z_inst (
   .sigdecode_z_enable(sigdecode_z_enable),
   .sigdecode_z_done(sigdecode_z_done),
 
-  .sigmem_src_base_addr('0),
   .dest_base_addr(aux_dest_base_addr[0]),
 
   .mem_a_wr_req(sigdecode_z_mem_wr_req[0]),

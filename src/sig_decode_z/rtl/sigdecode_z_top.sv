@@ -47,7 +47,6 @@ module sigdecode_z_top
         output logic [3:0][REG_SIZE-1:0] mem_b_wr_data,
 
         // Input API ports
-        input wire [MEM_ADDR_WIDTH-1:0] sigmem_src_base_addr,
         output sig_mem_if_t sigmem_a_rd_req,
         output sig_mem_if_t sigmem_b_rd_req,
         input wire [3:0][GAMMA1:0]  sigmem_a_rd_data,
@@ -70,7 +69,7 @@ module sigdecode_z_top
 
 
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
-    logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr, locked_src_addr; // this ensures that addresses are captured when the block is enabled
+    logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr; // this ensures that addresses are captured when the block is enabled
     logic [2:0] state, next_state;
 
 
@@ -131,20 +130,17 @@ module sigdecode_z_top
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;
             locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
             sigdecode_z_done    <= 'h0;
         end
         else if (zeroize) begin
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;
             locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
             sigdecode_z_done    <= 'h0;
         end
         else begin
             if (sigdecode_z_enable) begin
                 locked_dest_addr    <= dest_base_addr;
-                locked_src_addr     <= sigmem_src_base_addr;
             end
 
             
@@ -200,8 +196,8 @@ module sigdecode_z_top
             sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
         else if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_api_operands + 1};
+            sigmem_a_rd_req <= '{rd_wr_en: RW_READ, addr: num_api_operands};
+            sigmem_b_rd_req <= '{rd_wr_en: RW_READ, addr: num_api_operands + 1};
         end else begin
             sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
