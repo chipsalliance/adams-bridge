@@ -95,7 +95,7 @@ module power2round_top
     end
 
     generate
-        for (genvar i = 0; i < 8; i++) begin
+        for (genvar i = 0; i < 8; i++) begin : gen_r0_r1
             power2round_core #(
                 .REG_SIZE(REG_SIZE-1),
                 .MLDSA_Q(MLDSA_Q),
@@ -111,7 +111,7 @@ module power2round_top
 
 
     generate
-        for (genvar i = 0; i < 8; i++) begin
+        for (genvar i = 0; i < 8; i++) begin : gen_r0_packed
             power2round_skencode #(
                 .REG_SIZE(REG_SIZE-1),
                 .MLDSA_Q(MLDSA_Q),

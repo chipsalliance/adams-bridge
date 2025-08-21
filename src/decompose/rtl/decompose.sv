@@ -126,7 +126,7 @@ module decompose
     );
 
     generate
-        for (genvar i = 0; i < 4; i++) begin
+        for (genvar i = 0; i < 4; i++) begin : gen_r1_lut
             decompose_r1_lut #(
                 .REG_SIZE(REG_SIZE-1)
             ) 
@@ -140,7 +140,7 @@ module decompose
     endgenerate
 
     generate
-        for(genvar i = 0; i < 4; i++) begin
+        for(genvar i = 0; i < 4; i++) begin : gen_dcmp_redux
             decompose_mod_2gamma2 #(
                 .REG_SIZE(REG_SIZE-1)
             )
@@ -199,7 +199,7 @@ module decompose
     endgenerate
 
     generate
-        for (genvar i = 0; i < 4; i++) begin
+        for (genvar i = 0; i < 4; i++) begin : gen_usehint
             decompose_usehint #(
                 .REG_SIZE(REG_SIZE-1)
             )

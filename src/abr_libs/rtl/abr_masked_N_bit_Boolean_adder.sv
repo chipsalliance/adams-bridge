@@ -100,7 +100,7 @@
                     end
                 end
             end
-            if (i<(WIDTH-1)) begin
+            if (i<(WIDTH-1)) begin : gen_masked_full_adder
                 // Instance of abr_masked_full_adder
                 abr_masked_full_adder u_abr_masked_full_adder (
                     .clk(clk),              // Connect clk to clk

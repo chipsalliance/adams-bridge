@@ -121,7 +121,7 @@ module decompress_top
     end
 
     generate
-        for (genvar i = 0; i < COEFF_PER_CLK; i++) begin
+        for (genvar i = 0; i < COEFF_PER_CLK; i++) begin : gen_decompress_data_o
             decompress decompress_inst (
                 .op_i(decompress_data_i[i]),
                 .mode(mode),
