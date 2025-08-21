@@ -178,14 +178,16 @@ interface abr_top_cov_if
             bins four_bytes = {4'b1111};
         }
 
-        mldsa_cmdXready: cross mldsa_sw_cmd, ready_cp {
-            ignore_bins illegal_sw_cmd = binsof(mldsa_sw_cmd) intersect {5, 6, 7};
+        mldsa_sw_cmd_cp: coverpoint mldsa_sw_cmd {
+            illegal_bins illegal_values = {5, 6, 7};
         }
-        zeroizeXmldsa_cmd: cross zeroize_cp, mldsa_cmd_cp {
-            ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
-        }
+
+        mldsa_cmdXready: cross mldsa_sw_cmd_cp, ready_cp;
+
         zeroizeXerror: cross zeroize_cp, error_flag_cp;
         readyXzeroize: cross ready_cp, zeroize_cp;
+        mldsa_validXzeroize: cross mldsa_valid_cp, zeroize_cp;
+        mlkem_validXzeroize: cross mlkem_valid_cp, zeroize_cp;
         errorXmldsa_signing: cross error_flag_cp, mldsa_signing_process_cp;
 
         normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process | mldsa_keygen_signing_process);
