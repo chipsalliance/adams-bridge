@@ -170,7 +170,7 @@ module skdecode_top
 
     //8 s1s2 unpack instances to process 3*8 = 24-bits per cycle. In this case, one addr of key mem is read per cycle
     generate
-        for (genvar i = 0; i < 8; i++) begin
+        for (genvar i = 0; i < 8; i++) begin : gen_s1s2_unpack
             skdecode_s1s2_unpack #(
                 .REG_SIZE(REG_SIZE)
             )
@@ -187,7 +187,7 @@ module skdecode_top
     //4 t0 unpack instances to process 13*4 = 52-bits per cycle. This makes it simpler to interface with key mem that can provide
     //atmost 64-bits per cycle. Remaining bits are accumulated in buffer. in this case, 2 addr of key mem are read per cycle
     generate
-        for (genvar i = 0; i < 4; i++) begin
+        for (genvar i = 0; i < 4; i++) begin : gen_t0_unpack
             skdecode_t0_unpack #(
                 .REG_SIZE(REG_SIZE-1)
             )

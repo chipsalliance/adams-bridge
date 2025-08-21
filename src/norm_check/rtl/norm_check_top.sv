@@ -65,7 +65,7 @@ module norm_check_top
     assign controller_randomness = randomness_enable ? randomness: '0;
 
     generate 
-        for (genvar i = 0; i < 4; i++) begin
+        for (genvar i = 0; i < 4; i++) begin : gen_check_a_invalid
             norm_check check_inst (
                 .enable(check_enable_reg),
                 .mode(mode),

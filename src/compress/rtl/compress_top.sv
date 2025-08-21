@@ -90,7 +90,7 @@ module compress_top
     );
 
     generate
-        for (genvar i = 0; i < COEFF_PER_CLK; i++) begin
+        for (genvar i = 0; i < COEFF_PER_CLK; i++) begin : gen_mem_rd_data_stalled
 
             always_ff @(posedge clk or negedge reset_n) begin
                 if (!reset_n) begin
