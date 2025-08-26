@@ -57,4 +57,8 @@
 `define ABR_ASSERT_MUTEX(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST, en = 1) \
     `ABR_ASSERT(assert_name, $onehot0(sig), clk, rst, en)
 
+// Assert that a vector of signals is stable (does not change value)
+`define ABR_ASSERT_STABLE(assert_name, sig, clk = `ABR_ASSERT_DEFAULT_CLK, rst = `ABR_ASSERT_DEFAULT_RST) \
+    `ABR_ASSERT(assert_name, $stable(sig), clk, rst)
+
 `endif
