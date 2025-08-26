@@ -64,7 +64,6 @@ makehint #(
     .r(coeff_tb),
     .z(z_tb),
     .mem_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),
-    .dest_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),
     .invalid_h(),
     .mem_rd_req(),
     .z_rd_req(),

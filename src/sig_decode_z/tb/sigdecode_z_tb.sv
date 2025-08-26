@@ -41,7 +41,6 @@ reg clk_tb;
 reg reset_n_tb;
 reg zeroize_tb;
 reg sigdecode_z_enable_tb;
-reg [MEM_ADDR_WIDTH-1:0] src_base_addr_tb;
 reg [MEM_ADDR_WIDTH-1:0] dest_base_addr_tb;
 wire  [3:0][REG_SIZE-1:0] mem_a_wr_data_tb;
 wire  [3:0][REG_SIZE-1:0] mem_b_wr_data_tb;
@@ -73,7 +72,6 @@ sigdecode_z_top #(
     .mem_b_wr_req(mem_b_wr_req_tb),
     .mem_a_wr_data(mem_a_wr_data_tb),
     .mem_b_wr_data(mem_b_wr_data_tb),
-    .sigmem_src_base_addr(src_base_addr_tb),
     .sigmem_a_rd_req(sigmem_a_rd_req_tb),
     .sigmem_b_rd_req(sigmem_b_rd_req_tb),
     .sigmem_a_rd_data(sigmem_a_rd_data_tb),
@@ -140,7 +138,6 @@ task init_sim;
         reset_n_tb = 0;
         zeroize_tb = 0;
         sigdecode_z_enable_tb = 0;
-        src_base_addr_tb = 0;
         dest_base_addr_tb = 0;
     end
 endtask
@@ -161,15 +158,15 @@ task reset_dut;
 endtask // reset_dut
 
 
-task overwrite_memory_content(reg [MEM_ADDR_WIDTH-1:0] src_base_addr);
+task overwrite_memory_content();
     int i, j;
 
     // Overwrite input memory with the values from input_mem
     for (i = 0; i < (NUM_OF_COEFF/4); i = i + 1) begin
-        mem_blocks[0].input_memory.mem[i+src_base_addr] = input_mem[4*i + 0];
-        mem_blocks[1].input_memory.mem[i+src_base_addr] = input_mem[4*i + 1];
-        mem_blocks[2].input_memory.mem[i+src_base_addr] = input_mem[4*i + 2];
-        mem_blocks[3].input_memory.mem[i+src_base_addr] = input_mem[4*i + 3];
+        mem_blocks[0].input_memory.mem[i] = input_mem[4*i + 0];
+        mem_blocks[1].input_memory.mem[i] = input_mem[4*i + 1];
+        mem_blocks[2].input_memory.mem[i] = input_mem[4*i + 2];
+        mem_blocks[3].input_memory.mem[i] = input_mem[4*i + 3];
     end
 endtask
 
@@ -184,7 +181,7 @@ task read_memory_content(input reg [MEM_ADDR_WIDTH-1:0] dest_base_addr);
     end
 endtask
 
-task read_test_vectors(input reg [MEM_ADDR_WIDTH-1:0] src_base_addr);
+task read_test_vectors();
     string input_file = "input_z.hex";
     string output_file = "output_decoded_z.hex";
     integer file, ret;
@@ -202,7 +199,7 @@ task read_test_vectors(input reg [MEM_ADDR_WIDTH-1:0] src_base_addr);
         end
     end
     $fclose(file);
-    overwrite_memory_content(src_base_addr);
+    overwrite_memory_content();
 
     // Read expected output file
     file = $fopen(output_file, "r");
@@ -218,17 +215,15 @@ task read_test_vectors(input reg [MEM_ADDR_WIDTH-1:0] src_base_addr);
     
 endtask
 
-task sigdecode_z_test(input reg [MEM_ADDR_WIDTH-1:0] dest_base_addr, input reg [MEM_ADDR_WIDTH-1:0] src_base_addr);
+task sigdecode_z_test(input reg [MEM_ADDR_WIDTH-1:0] dest_base_addr);
     int i, j;
     $display("Starting sigdecode_z test\n");
-    read_test_vectors(src_base_addr);
+    read_test_vectors();
     @(posedge clk_tb);
     sigdecode_z_enable_tb = 1;
-    src_base_addr_tb = src_base_addr;
     dest_base_addr_tb = dest_base_addr;
     @(posedge clk_tb);
     sigdecode_z_enable_tb = 0;
-    src_base_addr_tb = 0;
     dest_base_addr_tb = 0;
 
     $display("Waiting for sigdecode_z to complete\n");

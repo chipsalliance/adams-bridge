@@ -38,7 +38,6 @@ module pkdecode
 
         input wire pkdecode_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [API_ADDR_WIDTH-1:0] src_base_addr,
         input wire [8*INPUT_COEFF_SIZE-1:0] API_rd_data,
 
         output logic [API_ADDR_WIDTH-1:0] API_rd_address,
@@ -66,7 +65,6 @@ module pkdecode
     logic [7:0][REG_SIZE-1:0] coefficients;  // Extracted 10-bit coefficients
     logic [7:0][REG_SIZE-1:0] encoded_coeffs; // Encoded 24-bit coefficients
     logic [ABR_MEM_ADDR_WIDTH-1:0] locked_dest_addr;
-    logic [API_ADDR_WIDTH-1:0] locked_src_addr; // this ensures that addresses are captured when the block is enabled
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [2:0] state, next_state;
 
@@ -178,7 +176,7 @@ module pkdecode
             API_rd_address <= '0;
         end
         else if (state == READ || state == READ_and_EXEC || state == READ_and_WRITE) begin
-            API_rd_address <= API_ADDR_WIDTH'(locked_src_addr + num_api_operands);
+            API_rd_address <= API_ADDR_WIDTH'(num_api_operands);
         end else begin
             API_rd_address <= '0;
         end
@@ -191,20 +189,17 @@ module pkdecode
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;
             locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
             pkdecode_done       <= 'h0;
         end
         else if (zeroize) begin
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;
             locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
             pkdecode_done       <= 'h0;
         end
         else begin
             if (pkdecode_enable) begin
                 locked_dest_addr    <= dest_base_addr;
-                locked_src_addr     <= src_base_addr;
             end
             if (state == READ || state == READ_and_EXEC || state == READ_and_WRITE) begin
                 num_api_operands    <= num_api_operands +1'h1;

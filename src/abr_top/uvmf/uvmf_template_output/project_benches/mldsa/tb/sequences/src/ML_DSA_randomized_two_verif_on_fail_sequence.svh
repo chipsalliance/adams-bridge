@@ -58,12 +58,12 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
           `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for PK");
         end
         else if (fail_register == 1 && !randomize(fail_index) with {
-          fail_index inside {[0:15]};  // Assuming max index is 15 for PUBKEY
+          fail_index inside {[0:15]};  // Assuming max index is 15 for MSG
         }) begin
           `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
         end
         else if (fail_register == 2 && !randomize(fail_index) with {
-          fail_index inside {[1:1156]};  // Assuming max index is 1156 for PUBKEY 1157th word is tested with decode_h_fail test
+          fail_index inside {[0:1156]};  // Assuming max index is 1156 for PUBKEY 1157th word is tested with decode_h_fail test
         }) begin
           `uvm_error("RANDOMIZE_FAIL", "Failed to randomize failure fail_index parameter for MSG");
         end
@@ -146,7 +146,7 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
       return;
     end
     $fwrite(fd, "%02X\n", 1); // Signature generation cmd
-    // Generate a random SEED array
+    // Generate a random MSG array
     foreach (MSG[i]) begin
       if (!this.randomize(data)) begin
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize MSG data");
@@ -249,7 +249,7 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
 
 
 
-    data = 'h0000_0003; // verify singature
+    data = 'h0000_0003; // verify signature
     reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_CTRL"));

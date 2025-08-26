@@ -54,7 +54,6 @@ reg           clk_tb;
 reg           reset_n_tb;
 reg           zeroize_tb;
 reg           en_tb;
-reg           shuffling_enable_tb;
 reg           [5:0] randomness_tb;
 reg [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_tb;
 wire invalid_tb;
@@ -97,7 +96,6 @@ norm_check_top dut(
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
     .norm_check_enable(en_tb),
-    .shuffling_enable(shuffling_enable_tb),
     .randomness(randomness_tb),
     .mode(mode_tb),
     .mem_base_addr(src_base_tb),
@@ -125,7 +123,6 @@ task init_sim;
         zeroize_tb = 0;
         en_tb = 0;
         src_base_tb = 'h0;
-        shuffling_enable_tb = '0;
     end
 endtask
 
@@ -420,9 +417,6 @@ initial begin
     begin
       init_sim();
       reset_dut();
-      shuffling_enable_tb = '0;
-      norm_check_test();
-      shuffling_enable_tb = '1;
       norm_check_test();
     end
     begin

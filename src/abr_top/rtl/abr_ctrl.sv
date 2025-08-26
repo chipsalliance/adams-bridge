@@ -21,6 +21,11 @@
 //  ML-KEM Encaps
 //  ML-KEM Decaps
 
+`include "abr_config_defines.svh"
+`ifdef CALIPTRA
+`include "kv_macros.svh"
+`endif
+
 module abr_ctrl
   import abr_reg_pkg::*;
   import abr_sha3_pkg::*;
