@@ -530,6 +530,10 @@ always_comb kv_seed_data_present = '0;
       mldsa_privkey_lock <= '1;
     else if (zeroize)
       mldsa_privkey_lock <= '1;
+    else if (|cmd_reg) begin
+      //Re-lock when any command is issued
+      mldsa_privkey_lock <= '1;
+    end
     //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
     else if (~kv_seed_data_present & (keygen_process & keygen_done))
       mldsa_privkey_lock <= '0;
@@ -1166,7 +1170,7 @@ always_comb kv_seed_data_present = '0;
     update_kappa = 0;
     set_verify_valid = 0;
     set_entropy = 0;
-    prim_prog_cntr_nxt = MLDSA_RESET;
+    prim_prog_cntr_nxt = prim_prog_cntr;
     prim_seq_en = !zeroize;
     external_mu_mode_nxt = 0;
 
@@ -1223,7 +1227,6 @@ always_comb kv_seed_data_present = '0;
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //prim_prog_cntr_nxt = MLDSA_RESET;
         keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
@@ -1660,7 +1663,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
 
   //subroutine decode
   always_comb begin
-    sec_prog_cntr_nxt = MLDSA_RESET;
+    sec_prog_cntr_nxt = sec_prog_cntr;
     clear_c_valid = 0;
     clear_y_valid = 0;
     clear_w0_valid = 0;
