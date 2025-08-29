@@ -1582,7 +1582,7 @@ end
     mlkem_keygen_done = 0;
     mlkem_encaps_done = 0;
     mlkem_decaps_done = 0;
-    abr_prog_cntr_nxt = ABR_RESET;
+    abr_prog_cntr_nxt = abr_prog_cntr;
     abr_seq_en = !zeroize;
     set_entropy = 0;
 
@@ -1596,16 +1596,11 @@ end
             set_entropy = 1;
           end
           {MLKEM_NONE,MLDSA_SIGN} : begin  // signing
-            //Only perform standalone signing after zeroize
-            if (~mldsa_valid_reg) begin
-              abr_prog_cntr_nxt = MLDSA_SIGN_S;
-              mldsa_signing_process_nxt  = 1;
-              set_signature_valid = 1;
-              set_entropy = 1;
-              external_mu_mode_nxt = external_mu;
-            end else begin
-              abr_prog_cntr_nxt = ABR_RESET;
-            end
+            abr_prog_cntr_nxt = MLDSA_SIGN_S;
+            mldsa_signing_process_nxt  = 1;
+            set_signature_valid = 1;
+            set_entropy = 1;
+            external_mu_mode_nxt = external_mu;
           end
           {MLKEM_NONE,MLDSA_VERIFY} : begin  // verifying
             abr_prog_cntr_nxt = MLDSA_VERIFY_S;
@@ -1629,14 +1624,9 @@ end
             mlkem_encaps_process_nxt  = 1;
           end
           {MLKEM_DECAPS,MLDSA_NONE} : begin  // MLKEM DECAPS
-            //Only perform standalone decaps after zeroize
-            if (~mldsa_valid_reg) begin
-              abr_prog_cntr_nxt = MLKEM_DECAPS_S;
-              mlkem_decaps_process_nxt = 1;
-              set_decaps_valid = 1;
-            end else begin
-              abr_prog_cntr_nxt = ABR_RESET;
-            end
+            abr_prog_cntr_nxt = MLKEM_DECAPS_S;
+            mlkem_decaps_process_nxt = 1;
+            set_decaps_valid = 1;
           end
           {MLKEM_KEYGEN_DEC,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_KG_S;
@@ -1669,7 +1659,6 @@ end
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //abr_prog_cntr_nxt = ABR_RESET;
         mldsa_keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
@@ -1711,13 +1700,13 @@ end
       end
       MLKEM_ENCAPS_E : begin // end of encaps
         //Both encaps and encaps come here
-        //if encaps, mark done
-        if (mlkem_encaps_process) begin
-          mlkem_encaps_done = 1;
+        //if decaps, keep running to decaps chk state
+        if (mlkem_decaps_process) begin
+          abr_prog_cntr_nxt = MLKEM_DECAPS_CHK;
         end
-        //else, keep running
+        //else, we're done here
         else begin
-            abr_prog_cntr_nxt = MLKEM_DECAPS_CHK;
+          mlkem_encaps_done = 1;
         end
       end
       MLKEM_DECAPS_E : begin // end of decaps
