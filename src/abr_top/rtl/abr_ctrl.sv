@@ -882,8 +882,12 @@ always_comb kv_mlkem_msg_write_data = '0;
     end else if (zeroize) begin
       mldsa_privkey_lock <= '1;
       mlkem_dk_lock <= '1;
+    end else if ((|mldsa_cmd_reg) | (|mlkem_cmd_reg)) begin
+      //Re-lock when any command is issued
+      mldsa_privkey_lock <= '1;
+      mlkem_dk_lock <= '1;
     end else begin
-    //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
+      //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
       if (~kv_mldsa_seed_data_present & (mldsa_keygen_process & mldsa_keygen_done)) mldsa_privkey_lock <= '0;
       if (~kv_mlkem_seed_data_present & (mlkem_keygen_process & mlkem_keygen_done)) mlkem_dk_lock <= '0;
     end
@@ -1578,7 +1582,7 @@ end
     mlkem_keygen_done = 0;
     mlkem_encaps_done = 0;
     mlkem_decaps_done = 0;
-    abr_prog_cntr_nxt = ABR_RESET;
+    abr_prog_cntr_nxt = abr_prog_cntr;
     abr_seq_en = !zeroize;
     set_entropy = 0;
 
@@ -1655,7 +1659,6 @@ end
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //abr_prog_cntr_nxt = ABR_RESET;
         mldsa_keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
@@ -1697,13 +1700,13 @@ end
       end
       MLKEM_ENCAPS_E : begin // end of encaps
         //Both encaps and encaps come here
-        //if encaps, mark done
-        if (mlkem_encaps_process) begin
-          mlkem_encaps_done = 1;
+        //if decaps, keep running to decaps chk state
+        if (mlkem_decaps_process) begin
+          abr_prog_cntr_nxt = MLKEM_DECAPS_CHK;
         end
-        //else, keep running
+        //else, we're done here
         else begin
-            abr_prog_cntr_nxt = MLKEM_DECAPS_CHK;
+          mlkem_encaps_done = 1;
         end
       end
       MLKEM_DECAPS_E : begin // end of decaps
@@ -2206,8 +2209,10 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_RD_CTRL_NOT_STABLE, kv_mlkem_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_MSG_RD_CTRL_NOT_STABLE,  kv_mlkem_msg_read_ctrl_reg , clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
-  `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_NOT_STABLE, mldsa_seed_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
-  `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_NOT_STABLE, mlkem_seed_d_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
+    //Zeroize clears these, some simulators will see this change on the same clock edge
+    //as the assertion becomes enabled and fire. Excluding zeroize phase from the assertion stability check
+  `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_NOT_STABLE, mldsa_seed_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET) || (abr_prog_cntr == ABR_ZEROIZE)) )
+  `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_NOT_STABLE, mlkem_seed_d_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET) || (abr_prog_cntr == ABR_ZEROIZE)) )
 `endif
 
 endmodule
