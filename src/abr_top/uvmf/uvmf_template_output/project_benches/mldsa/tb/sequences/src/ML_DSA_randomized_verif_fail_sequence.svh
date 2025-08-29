@@ -204,6 +204,10 @@ class ML_DSA_randomized_verif_fail_sequence extends mldsa_bench_sequence_base;
 
     // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
     for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
+      if (fail_index == 1156 && i == fail_index) begin
+        fail_bit = fail_bit % 24;
+        `uvm_info("FAIL_TEST_SEQ", $sformatf("For this D-WORD register: %0d, bit: %0d", fail_register, fail_bit), UVM_LOW);
+      end
       if (fail_register == 2 && i == fail_index) begin
         SIG[i] ^= (1 << fail_bit); // Flip the selected bit
       end

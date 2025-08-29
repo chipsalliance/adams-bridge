@@ -216,6 +216,10 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
     for (int i = 0; i < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); i++) begin
       if (fail_register == 2 && i == fail_index) begin
         error_injection_word = SIG[i];
+        if (fail_index == 1156 && i == fail_index) begin
+          fail_bit = fail_bit % 24;
+          `uvm_info("FAIL_TEST_SEQ", $sformatf("For this D-WORD register: %0d, bit: %0d", fail_register, fail_bit), UVM_LOW);
+        end
         error_injection_word ^= (1 << fail_bit); // Flip the selected bit
         reg_model.MLDSA_SIGNATURE.m_mem.write(status, i, error_injection_word, UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
