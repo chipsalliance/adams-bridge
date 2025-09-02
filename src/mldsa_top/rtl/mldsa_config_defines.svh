@@ -52,32 +52,5 @@
         .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
         .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
      );
-   
-   `define CALIPTRA_KV_RD_TIEOFF(sig_prefix, hwif_name = hwif_in)\
-   assign ``hwif_name.``sig_prefix``_rd_status.ERROR.next = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_status.READY.next = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_status.VALID.hwset = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_status.VALID.hwclr = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_ctrl.read_en.hwclr = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_ctrl.read_en.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_ctrl.read_entry.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_ctrl.pcr_hash_extend.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_rd_ctrl.rsvd.swwe = '0;
-
-   `define CALIPTRA_KV_WR_TIEOFF(sig_prefix, hwif_name = hwif_in)\
-   assign ``hwif_name.``sig_prefix``_wr_status.ERROR.next = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_status.READY.next = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_status.VALID.hwset = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_status.VALID.hwclr = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.write_en.hwclr = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.write_en.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.write_entry.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.hmac_key_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.hmac_block_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.mldsa_seed_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.ecc_pkey_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.ecc_seed_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.aes_key_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.rsvd.swwe = '0;
 
 `endif

@@ -185,8 +185,19 @@ module mldsa_ctrl
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
 
-
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_seed, mldsa_reg_hwif_in)
+  always_comb begin: mldsa_kv_ctrl_reg
+    //ready when fsm is not busy
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.ERROR.next = kv_seed_error;
+    //ready when fsm is not busy
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.READY.next = kv_seed_ready;
+    //set valid when fsm is done
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwset = kv_seed_done;
+    //clear valid when new request is made
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_status.VALID.hwclr = kv_seed_read_ctrl_reg.read_en;
+    //clear enable when busy
+    mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
+  end
+  
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
@@ -194,10 +205,10 @@ module mldsa_ctrl
   always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
 
   //lock kv controls
-  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.read_en.swwe         = !kv_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.read_entry.swwe      = !kv_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_seed_rd_ctrl.rsvd.swwe            = !kv_seed_data_present && abr_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.swwe         = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_entry.swwe      = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.swwe = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.rsvd.swwe            = !kv_seed_data_present && mldsa_ready;
 
   //Read SEED
   kv_read_client #(
@@ -253,6 +264,11 @@ always_comb begin: mldsa_kv_ctrl_reg
   //clear enable when busy
   mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
 end
+
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.swwe         = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_entry.swwe      = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.swwe = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.rsvd.swwe            = '0;
 
 always_comb kv_seed_data_present = '0;
 `endif
@@ -1881,8 +1897,8 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_addr <= 0;
     zeroize_mem_done <= 0;
   end
-  else if (abr_prog_cntr == ABR_ZEROIZE) begin
-    if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH) begin
+  else if (prim_prog_cntr == MLDSA_ZEROIZE) begin
+    if (zeroize_mem_addr == MLDSA_MEM_MAX_DEPTH) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
     end else if (!zeroize_mem_done) begin
@@ -1894,7 +1910,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb zeroize_mem_we = (abr_prog_cntr == ABR_ZEROIZE) & !zeroize_mem_done;
+always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE) & !zeroize_mem_done;
 
 always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;
