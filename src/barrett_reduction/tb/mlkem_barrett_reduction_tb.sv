@@ -13,13 +13,15 @@
 // limitations under the License.
 //======================================================================
 //
-// barrett_reduction_tb.sv
+// mlkem_barrett_reduction_tb.sv
 // -----------
 
-module barrett_reduction_tb;
+module mlkem_barrett_reduction_tb;
+
+    import abr_params_pkg::*;
 
     // Test Parameters
-    localparam int prime = 3329;
+    localparam int prime = MLKEM_Q;
     localparam int REG_SIZE = $clog2(prime);  // Automatically set
     int NUM_TESTS;
 
