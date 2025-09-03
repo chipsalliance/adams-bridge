@@ -408,10 +408,10 @@ always_comb kv_seed_data_present = '0;
     always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
   `endif
 
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = '0;
+  always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = MLDSA_CORE_NAME[31:0];
+  always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = MLDSA_CORE_NAME[63:32];
+  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = MLDSA_CORE_VERSION[31:0];
+  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = MLDSA_CORE_VERSION[63:32];    
   
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
