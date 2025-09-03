@@ -6,7 +6,9 @@
 ---
 provides: [barrett_reduction]
 schema_version: 2.4.0
-requires: []
+requires:
+  - abr_defines
+  - ntt_pkg
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -16,4 +18,40 @@ targets:
   rtl_lint:
     directories: []
     waiver_files: []
+---
+provides: [mlkem_barrett_reduction_tb]
+schema_version: 2.4.0
+requires:
+  - barrett_reduction
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/mlkem_barrett_reduction_tb.sv
+    tops: [mlkem_barrett_reduction_tb]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
+---
+provides: [mldsa_barrett_reduction_tb]
+schema_version: 2.4.0
+requires:
+  - barrett_reduction
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/mldsa_barrett_reduction_tb.sv
+    tops: [mldsa_barrett_reduction_tb]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CLP_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
       
