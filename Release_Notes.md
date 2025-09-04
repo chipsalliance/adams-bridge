@@ -14,17 +14,35 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2025/04/29*_
+_*Last Update: 2025/09/04*_
 
-### Rev 1p0 ###
+### Rev 1.0.2 ###
+
+#### Rev 1.0.2 release date: 2025/09/04 ####
+- AdamsBridge Hardware Specification: see docs/ folder
+- AdamsBridge SCA Specification: see docs/ folder
+- AdamsBridge testplan: see docs/ folder
+- [BUG FIX] Harden key vault read logic with swwe, limiting control access during engine operation (#204)
+- [BUG FIX] Fix zeroize logic to prevent read/write collision in SRAMs (#204)
+
+
+## Previous Releases ##
+
+### Rev 1.0.1 ###
+
+#### Rev 1.0.1 release date: 2025/05/23 ####
+- AdamsBridge Hardware Specification: see docs/ folder
+- AdamsBridge SCA Specification: see docs/ folder
+- AdamsBridge testplan: see docs/ folder
+- [BUG FIX] Fix variable message byte drop bug [#145](https://github.com/chipsalliance/adams-bridge/issues/145)
+
+### Rev 1.0 ###
 
 #### Rev 1p0 release date: 2025/04/29 ####
 - AdamsBridge Hardware Specification: see docs/ folder
 - AdamsBridge SCA Specification: see docs/ folder
 - AdamsBridge testplan: see docs/ folder
 - Variable message signing and data swizzling
-
-## Previous Releases ##
 
 ### Rev 1p0-rc1 ###
 

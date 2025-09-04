@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">Adam's Bridge Hardware Specification</p>
 
-<p style="text-align: center;">Version 1.0</p>
+<p style="text-align: center;">Version 1.0.2</p>
 
 <div style="page-break-after: always"></div>
 
@@ -118,7 +118,8 @@ CTRL command field contains two bits indicating:
 ### ZEROIZE
 
 Zeroize all internal registers: Zeroize all internal registers after process to avoid SCA leakage.  
-Software write generates only a single-cycle pulse on the hardware interface and then will be erased.
+Firmware write generates only a single-cycle pulse on the hardware interface and then will be erased.
+Zeroization operation requires 1,408 clock cycles to clear the SRAMs. Firmware must query for the ready status bit to be asserted before issuing another command.
 
 ### PCR_SIGN 
 
