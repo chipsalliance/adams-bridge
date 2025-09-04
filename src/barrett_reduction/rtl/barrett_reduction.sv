@@ -29,7 +29,8 @@ module barrett_reduction #(
     localparam int K = 2*REG_SIZE;
 
     // Compute M = floor(2^K / Q)
-    localparam logic [REG_SIZE:0] m = (1 << K) / prime;
+    localparam logic [2*REG_SIZE:0] pow2K = 1'b1 << K;
+    localparam logic [REG_SIZE:0] m = pow2K / prime;
 
     logic [3*REG_SIZE:0]   mult_full;
     logic [REG_SIZE:0]     u_est, u_plus_one;
