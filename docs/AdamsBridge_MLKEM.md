@@ -718,16 +718,13 @@ In INTT, the coefficients are read and executed in order, i.e., in cycle 0, the 
 
 3. **INTT memory access resolution for ML-KEM**
 
-In ML-KEM, since even and odd coefficients need to be grouped together, the first stage of butterfly operations is bypassed. The inputs are passed onto the second stage after swapping them, which results in correct arithmetic results in ML-KEM INTT operation. The following architecture indicates the passthrough mode for INTT:  
-![](./images/MLKEM/image2.png)
+In ML-KEM, since even and odd coefficients need to be grouped together, the first stage of butterfly operations must be bypassed. However, since the first stage of butterfly units support masking countermeasure, the inputs are swapped in INTT mode and passed onto the first stage and the second butterfly stage is skipped, which results in correct arithmetic results in ML-KEM INTT operation. The following architecture indicates the passthrough mode for INTT and NTT modes of operation:
+
+![](./images/MLKEM/image19.png)
 
 Remaining layers of INTT are similar to ML-KEM NTT where even and odd operations alternate for 16, 4 and 1 clock cycles and both butterfly stages are engaged. Twiddle factors are shared between even and odd operations and in the proposed method, the twiddle factors will be appropriately driven to maintain arithmetic correctness.
 
-The final NTT/INTT architecture is shown in the following figure:
-
-![](./images/MLKEM/image3.png)
-
-The butterfly operation is determined by a mode input that indicates whether current operation is NTT or INTT. The ntt\_passthrough flag is asserted in NTT mode during the last round of operation. The intt\_passthrough flag is asserted in INTT mode during the first round of operation. Once asserted, the appropriate butterfly stage is skipped and the inputs are swapped and directly passed onto outputs.
+The butterfly operation is determined by a mode input that indicates whether current operation is NTT or INTT. The ntt\_passthrough flag is asserted in NTT mode during the last round of operation. The intt\_passthrough flag is asserted in INTT mode during the first round of operation. Once asserted, the second butterfly stage is skipped and the outputs of first stage are appropriately swapped and directly passed onto outputs of the 2x2 architecture.
 
 # Modular Reduction
 
