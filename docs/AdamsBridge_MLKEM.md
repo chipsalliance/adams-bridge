@@ -719,7 +719,7 @@ In INTT, the coefficients are read and executed in order, i.e., in cycle 0, the 
 3. **INTT memory access resolution for ML-KEM**
 
 In ML-KEM, since even and odd coefficients need to be grouped together, the first stage of butterfly operations is bypassed. The inputs are passed onto the second stage after swapping them, which results in correct arithmetic results in ML-KEM INTT operation. The following architecture indicates the passthrough mode for INTT:  
-![](./images/MLKEM/image2.png)
+![](./images/MLKEM/image19.png)
 
 Remaining layers of INTT are similar to ML-KEM NTT where even and odd operations alternate for 16, 4 and 1 clock cycles and both butterfly stages are engaged. Twiddle factors are shared between even and odd operations and in the proposed method, the twiddle factors will be appropriately driven to maintain arithmetic correctness.
 
