@@ -23,7 +23,7 @@ _*Last Update: 2025/09/04*_
 - AdamsBridge SCA Specification: see docs/ folder
 - AdamsBridge testplan: see docs/ folder
 - [BUG FIX] Harden key vault read logic with swwe, limiting control access during engine operation (#204)
-- [BUG FIX] Fix zeroize logic to prevent read/write collision in SRAMs (#204)
+- [BUG FIX] Fix zeroize logic to prevent read/write collision in SRAMs [#203](https://github.com/chipsalliance/adams-bridge/issues/203)
 
 
 ## Previous Releases ##
