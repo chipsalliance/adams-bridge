@@ -68,9 +68,8 @@ package mldsa_params_pkg;
   parameter MLDSA_VERIFY      = 3'b011;
   parameter MLDSA_KEYGEN_SIGN = 3'b100;
 
-  parameter [63  : 0] MLDSA_CORE_NAME        = 64'h3837412D_44534D4C; // "MLDSA-87"
-  parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00000000_3030312e; // "1.00"
-
+  parameter [63  : 0] MLDSA_CORE_NAME    = 64'h3837412D_44534D4C; // "MLDSA-87"
+  parameter [63  : 0] MLDSA_CORE_VERSION = 64'h00000032_2e302e31; // "1.0.2"
   // Implementation parameters
   parameter DATA_WIDTH = 32;
 

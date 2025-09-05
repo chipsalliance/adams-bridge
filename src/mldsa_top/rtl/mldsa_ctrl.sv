@@ -197,12 +197,18 @@ module mldsa_ctrl
     //clear enable when busy
     mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = ~kv_seed_ready;
   end
-
+  
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_seed_read_ctrl_reg, mldsa_kv_rd_seed_ctrl, mldsa_reg_hwif_out)
 
   //Detect keyvault data coming in to lock api registers and protect outputs
   always_comb kv_seed_data_present_set = kv_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_seed_data_present_reset = kv_seed_data_present & mldsa_valid_reg;
+
+  //lock kv controls
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.swwe         = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_entry.swwe      = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.swwe = !kv_seed_data_present && mldsa_ready;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.rsvd.swwe            = !kv_seed_data_present && mldsa_ready;
 
   //Read SEED
   kv_read_client #(
@@ -258,6 +264,11 @@ always_comb begin: mldsa_kv_ctrl_reg
   //clear enable when busy
   mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.hwclr = '0;
 end
+
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_en.swwe         = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.read_entry.swwe      = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.pcr_hash_extend.swwe = '0;
+  always_comb mldsa_reg_hwif_in.mldsa_kv_rd_seed_ctrl.rsvd.swwe            = '0;
 
 always_comb kv_seed_data_present = '0;
 `endif
@@ -397,10 +408,10 @@ always_comb kv_seed_data_present = '0;
     always_comb mldsa_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = '0;
   `endif
 
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = '0;
-  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = '0;
+  always_comb mldsa_reg_hwif_in.MLDSA_NAME[0].NAME.next = MLDSA_CORE_NAME[31:0];
+  always_comb mldsa_reg_hwif_in.MLDSA_NAME[1].NAME.next = MLDSA_CORE_NAME[63:32];
+  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = MLDSA_CORE_VERSION[31:0];
+  always_comb mldsa_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = MLDSA_CORE_VERSION[63:32];    
   
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.READY.next = mldsa_ready;
   always_comb mldsa_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
@@ -535,6 +546,10 @@ always_comb kv_seed_data_present = '0;
       mldsa_privkey_lock <= '1;
     else if (zeroize)
       mldsa_privkey_lock <= '1;
+    else if (|cmd_reg) begin
+      //Re-lock when any command is issued
+      mldsa_privkey_lock <= '1;
+    end
     //Clear the lock only after completing standalone keygen where the seed did not come from the keyvault
     else if (~kv_seed_data_present & (keygen_process & keygen_done))
       mldsa_privkey_lock <= '0;
@@ -1171,7 +1186,7 @@ always_comb kv_seed_data_present = '0;
     update_kappa = 0;
     set_verify_valid = 0;
     set_entropy = 0;
-    prim_prog_cntr_nxt = MLDSA_RESET;
+    prim_prog_cntr_nxt = prim_prog_cntr;
     prim_seq_en = !zeroize;
     external_mu_mode_nxt = 0;
 
@@ -1228,7 +1243,6 @@ always_comb kv_seed_data_present = '0;
         end
       end
       MLDSA_KG_E : begin // end of keygen
-        //prim_prog_cntr_nxt = MLDSA_RESET;
         keygen_done = 1;
       end
       MLDSA_SIGN_CHECK_MODE : begin
@@ -1665,7 +1679,7 @@ mldsa_seq_prim mldsa_seq_prim_inst
 
   //subroutine decode
   always_comb begin
-    sec_prog_cntr_nxt = MLDSA_RESET;
+    sec_prog_cntr_nxt = sec_prog_cntr;
     clear_c_valid = 0;
     clear_y_valid = 0;
     clear_w0_valid = 0;
@@ -1883,15 +1897,11 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_addr <= 0;
     zeroize_mem_done <= 0;
   end
-  else if (zeroize) begin
-    zeroize_mem_addr <= 0;
-    zeroize_mem_done <= 0;
-  end
   else if (prim_prog_cntr == MLDSA_ZEROIZE) begin
     if (zeroize_mem_addr == MLDSA_MEM_MAX_DEPTH) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
-    end else begin
+    end else if (!zeroize_mem_done) begin
       zeroize_mem_addr <= zeroize_mem_addr + 1;
     end
   end else begin
@@ -1900,7 +1910,7 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE);
+always_comb zeroize_mem_we = (prim_prog_cntr == MLDSA_ZEROIZE) & !zeroize_mem_done;
 
 always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;

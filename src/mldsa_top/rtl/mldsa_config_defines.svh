@@ -52,5 +52,5 @@
         .raddr_i(mldsa_memory_export.``_mem_name``_raddr_i),\
         .rdata_o(mldsa_memory_export.``_mem_name``_rdata_o)\
      );
-  
+
 `endif
