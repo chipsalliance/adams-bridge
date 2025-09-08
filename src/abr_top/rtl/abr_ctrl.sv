@@ -81,9 +81,9 @@ module abr_ctrl
   input logic [ABR_NUM_NTT-1:0]             ntt_busy_i,
 
   //aux interfaces
-  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
-  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
-  output logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
+  output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
 
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
@@ -1748,9 +1748,9 @@ end
   always_comb sampler_src_offset = {4'b0, msg_cnt};
 
   always_comb dest_base_addr_o = abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src0_base_addr_o[0] = abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_src1_base_addr_o[0] = abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
-  always_comb aux_dest_base_addr_o[0] = abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src0_base_addr_o = abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_src1_base_addr_o = abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
+  always_comb aux_dest_base_addr_o = abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
   always_comb normcheck_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? abr_instr.imm[1:0] : '0;
   always_comb decompose_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_USEHINT);
