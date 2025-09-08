@@ -43,6 +43,7 @@ module decompose_usehint
     );
 
     logic [3:0] w1_plus_one, w1_minus_one;
+    logic [4:0] w1_plus_one_int, w1_minus_one_int;
     logic [3:0] w1_mux;
     logic ready;
     logic [REG_SIZE-1:0] w0_reg;
@@ -69,7 +70,7 @@ module decompose_usehint
     end
 
     abr_add_sub_mod #(
-        .REG_SIZE(4)
+        .REG_SIZE(5)
     ) 
     usehint_add_inst (
         .clk(clk),
@@ -77,15 +78,15 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b0),
-        .opa_i(w1_i),
-        .opb_i(4'(1)),
-        .prime_i(4'(16)),
-        .res_o(w1_plus_one),
+        .opa_i({1'b0, w1_i}),
+        .opb_i(5'(1)),
+        .prime_i(5'(16)),
+        .res_o(w1_plus_one_int),
         .ready_o()
     );
 
     abr_add_sub_mod #(
-        .REG_SIZE(4)
+        .REG_SIZE(5)
     ) 
     usehint_sub_inst (
         .clk(clk),
@@ -93,12 +94,17 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b1),
-        .opa_i(w1_i),
-        .opb_i(4'(1)),
-        .prime_i(4'(16)),
-        .res_o(w1_minus_one),
+        .opa_i({1'b0, w1_i}),
+        .opb_i(5'(1)),
+        .prime_i(5'(16)),
+        .res_o(w1_minus_one_int),
         .ready_o()
     );
+
+    always_comb begin
+        w1_plus_one = w1_plus_one_int[3:0];
+        w1_minus_one = w1_minus_one_int[3:0];
+    end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
