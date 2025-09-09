@@ -28,20 +28,20 @@ module decompress
 
     logic [3:0] d;
     logic [(2*MLKEM_Q_WIDTH)-1:0] op_mult_add;
-    
-    always_comb begin
-        if (mode == 3) begin
-            op_o = (op_i < MLKEM_Q) ? op_i : '0; // No decompression, just pass through if < MLKEM_Q
-        end else begin
-            unique case(mode)
-                DECOMPRESS1:  d = 1;
-                DECOMPRESS5:  d = 5;
-                DECOMPRESS11: d = 11;
-                default: d = 1;
-            endcase
+    logic [MLKEM_Q_WIDTH-1:0] op;
 
-            op_mult_add = (MLKEM_Q * op_i) + 2**(d - 1);
-            op_o = MLKEM_Q_WIDTH'(op_mult_add >> d);
-        end
+    always_comb begin
+        unique case(mode)
+            DECOMPRESS1:  d = 1;
+            DECOMPRESS5:  d = 5;
+            DECOMPRESS11: d = 11;
+            default: d = 1;
+        endcase
     end
+    
+    always_comb op = (op_i < MLKEM_Q) ? op_i : '0; // Sanitize input to be in range [0, q-1]
+    always_comb op_mult_add = (MLKEM_Q * op_i) + 2**(d - 1);
+    always_comb op_o = (mode == 3) ? op :  MLKEM_Q_WIDTH'(op_mult_add >> d);
+
+
 endmodule
