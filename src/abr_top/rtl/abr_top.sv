@@ -146,9 +146,9 @@ module abr_top
   logic decomp_msg_valid;
   logic [MsgWidth-1:0] decomp_msg_data[Sha3Share];
 
-  logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr;
-  logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr;
-  logic [1:0][ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr;
 
   logic power2round_enable, power2round_done;
   mem_if_t [1:0] pwr2rnd_mem_rd_req;
@@ -688,7 +688,7 @@ power2round_inst (
   .enable(power2round_enable),
   .done(power2round_done),
 
-  .src_base_addr(aux_src0_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
   .mem_a_rd_req(pwr2rnd_mem_rd_req[0]),
   .mem_rd_data_a(pwr2rnd_mem_rd_data[0]),
   .mem_b_rd_req(pwr2rnd_mem_rd_req[1]),
@@ -698,7 +698,7 @@ power2round_inst (
   .pk_t1_wr_addr(pk_t1_wr_addr),
   .pk_t1_wrdata(pk_t1_wrdata),
 
-  .skmem_dest_base_addr(aux_dest_base_addr[0]),
+  .skmem_dest_base_addr(aux_dest_base_addr),
   .skmem_a_wr_req(pwr2rnd_keymem_if[0]),
   .skmem_wr_data_a(pwr2rnd_wr_data[0]),
   .skmem_b_wr_req(pwr2rnd_keymem_if[1]),
@@ -713,9 +713,9 @@ decompose_inst (
 
   .decompose_enable(decompose_enable),
   .dcmp_mode(decompose_mode),
-  .src_base_addr(aux_src0_base_addr[0]),
-  .dest_base_addr(aux_dest_base_addr[0]),
-  .hint_src_base_addr(aux_src1_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
+  .dest_base_addr(aux_dest_base_addr),
+  .hint_src_base_addr(aux_src1_base_addr),
 
   //Output to memory - r0
   .mem_rd_req(decomp_mem_rd_req[0]),
@@ -748,8 +748,8 @@ skencode_inst
   .reset_n(rst_b),
   .zeroize(zeroize_reg),
 
-  .src_base_addr(aux_src0_base_addr[0]),
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
+  .dest_base_addr(aux_dest_base_addr),
 
   .skencode_enable(skencode_enable),
   .skencode_done(skencode_done),
@@ -772,8 +772,8 @@ skdecode_inst
   .skdecode_enable(skdecode_enable),
   .skdecode_done(skdecode_done),
 
-  .keymem_src_base_addr(aux_src0_base_addr[0]), 
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .keymem_src_base_addr(aux_src0_base_addr), 
+  .dest_base_addr(aux_dest_base_addr),
 
   .keymem_a_rd_req(skdecode_keymem_if[0]),
   .keymem_a_rd_data(skdecode_rd_data[0]),
@@ -801,7 +801,7 @@ makehint_inst
   .makehint_enable(makehint_enable),
   .makehint_done(makehint_done),
 
-  .mem_base_addr(aux_src0_base_addr[0]),
+  .mem_base_addr(aux_src0_base_addr),
 
   .mem_rd_req(makehint_mem_rd_req),
   .r(makehint_mem_rd_data),
@@ -831,7 +831,7 @@ norm_check_inst
   .norm_check_ready(),
   .norm_check_done(normcheck_done),
   
-  .mem_base_addr(aux_src0_base_addr[0]),
+  .mem_base_addr(aux_src0_base_addr),
   .mem_rd_req(normcheck_mem_rd_req),
   .mem_rd_data(normcheck_mem_rd_data),
 
@@ -849,8 +849,8 @@ sigencode_z_inst
   .sigencode_z_enable(sigencode_enable),
   .sigencode_z_done(sigencode_done),
 
-  .src_base_addr(aux_src0_base_addr[0]),
-  .sigmem_dest_base_addr(aux_dest_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
+  .sigmem_dest_base_addr(aux_dest_base_addr),
 
   .mem_a_rd_req(sigencode_mem_rd_req[0]),
   .mem_a_rd_data(sigencode_mem_rd_data[0]),
@@ -875,7 +875,7 @@ pkdecode_inst (
   .pkdecode_enable(pkdecode_enable),
   .pkdecode_done(pkdecode_done),
 
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .dest_base_addr(aux_dest_base_addr),
 
   .API_rd_address(pkdecode_rd_addr),
   .API_rd_data(pkdecode_rd_data),
@@ -895,7 +895,7 @@ sigdecode_z_inst (
   .sigdecode_z_enable(sigdecode_z_enable),
   .sigdecode_z_done(sigdecode_z_done),
 
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .dest_base_addr(aux_dest_base_addr),
 
   .mem_a_wr_req(sigdecode_z_mem_wr_req[0]),
   .mem_a_wr_data(sigdecode_z_mem_wr_data[0]),
@@ -917,7 +917,7 @@ sigdecode_h_inst (
   .sigdecode_h_enable(sigdecode_h_enable),
   .sigdecode_h_done(sigdecode_h_done),
 
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .dest_base_addr(aux_dest_base_addr),
 
   .encoded_h_i(signature_h),
   .mem_wr_req(sigdecode_h_mem_wr_req),
@@ -936,8 +936,8 @@ compress_top_inst
   .mode(compress_mode),
   .compare_mode(compress_compare_mode),
   .num_poly(compress_num_poly),
-  .src_base_addr(aux_src0_base_addr[0]),
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
+  .dest_base_addr(aux_dest_base_addr),
 
   .compress_enable(compress_enable),
   .compress_done(compress_done),
@@ -961,8 +961,8 @@ decompress_top_inst
 
   .mode(decompress_mode),
   .num_poly(decompress_num_poly),
-  .src_base_addr(aux_src0_base_addr[0]),
-  .dest_base_addr(aux_dest_base_addr[0]),
+  .src_base_addr(aux_src0_base_addr),
+  .dest_base_addr(aux_dest_base_addr),
 
   .decompress_enable(decompress_enable),
   .decompress_done(decompress_done),

@@ -15,7 +15,7 @@ limitations under the License.*_<BR>
 
 # **Adam's Bridge Hands-On Guide** #
 ## **Post-Quantum Cryptography IP Core**
-_*Last Update: 2025/03/05*_
+_*Last Update: 2025/08/29*_
 
 ## **Release Consumption and Integration** ##
 Prior official releases are available at: https://github.com/chipsalliance/adams-bridge/releases<br>
@@ -103,8 +103,8 @@ adams-bridge
 |   |-- embedded_top
 |   |-- exp_mask
 |   |-- makehint
-|   |-- mldsa_sampler_top
-|   |-- mldsa_top
+|   |-- abr_sampler_top
+|   |-- abr_top
 |   |-- norm_check
 |   |-- ntt_top
 |   |-- pk_decode
@@ -125,7 +125,7 @@ adams-bridge
 The root of the repository is structured as shown above, to a depth of 2 layers.<BR>
 Each sub-component is accompanied by a file list summary (located in src/<component>/config/<name>.vf) that comprises all the filenames required to compile the component, and an optional testbench filelist for unit-level simulation. <BR>
 VF files provide absolute filepaths (prefixed by the `ADAMSBRIDGE_ROOT` environment variable) to each compile target for the associated component.<BR>
-The "mldsa_top" sub-component contains the top-level fileset for AdamsBridge. `src/mldsa_top/config/compile.yml` defines the required filesets and sub-component dependencies for this build target. All of the files/dependencies are explicitly listed in `src/mldsa_top/config/mldsa_top_tb.vf`. Users may compile the entire design using only this VF filelist.<BR>
+The "abr_top" sub-component contains the top-level fileset for AdamsBridge. `src/abr_top/config/compile.yml` defines the required filesets and sub-component dependencies for this build target. All of the files/dependencies are explicitly listed in `src/abr_top/config/abr_top_tb.vf`. Users may compile the entire design using only this VF filelist.<BR>
 
 
 ## **Verilog File Lists** ##
@@ -153,7 +153,8 @@ Follow Caliptra simulation flow as described [here](https://github.com/chipsalli
 
 **Description**:<BR>
 The UVM Framework generation tool was used to create the baseline UVM testbench for verification of each IP component inside AdamsBridge. The following IP blocks have supported UVM testbenches:
-- [MLDSA87](src/mldsa_top/uvmf)
+- [MLDSA87](src/abr_top/uvmf)
+- [MLKEM1024](src/abr_top/uvmf)
 
 **Prerequisites**:<BR>
 - QVIP 2021.2.1 for Mentor Graphics (provides the AHB VIP)
@@ -169,9 +170,9 @@ The UVM Framework generation tool was used to create the baseline UVM testbench 
 1. ALL compilation steps may be completed by using the file-list found at `src/<block>/uvmf_<name>/config/<name>.vf`
 1. NOTE: `adams-bridge/src/<block>/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/testbench/hdl_top.sv` is the top-level TB wrapper for the system
 1. Copy the test generator scripts to the run output directory:
-    - [src/mldsa_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5](src/mldsa_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5)
+    - [src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5](src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5)
         * Necessary for MLDSA87 unittest
-1. Select a test to run from the set of tests in `adams-bridge/src/mldsa_top/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/tests/src`
+1. Select a test to run from the set of tests in `adams-bridge/src/abr_top/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/tests/src`
 1. Provide `+UVM_TESTNAME=<test>` argument to simulation
 
 
@@ -181,6 +182,6 @@ Follow Caliptra Regression tests as described [here](https://github.com/chipsall
 
 ## **NOTES** ##
 
-* The internal registers are auto rendered at the [GitHub page](https://chipsalliance.github.io/caliptra-rtl/main/internal-regs/?p=clp.mldsa_reg)
+* The internal registers are auto rendered at the [GitHub page](https://chipsalliance.github.io/caliptra-rtl/main/internal-regs/?p=clp.abr_reg)
 
 * Important: The rendered documentation is based on the submodule version of Adams Bridge at [caliptra-rtl repo](https://github.com/chipsalliance/caliptra-rtl/tree/main/submodules), NOT the tip of the Adams Bridge main branch. Changes in the main branch may not be reflected in the documentation until the submodule is updated.
