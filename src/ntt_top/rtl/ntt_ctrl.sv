@@ -399,7 +399,7 @@ always_comb begin
     pw_mem_rd_addr_b_nxt = pw_base_addr_b + (4*chunk_count) + (PWO_READ_ADDR_STEP*mem_rd_index_ofst);
 
     pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-2])
-                                      : (pwa_mode | pws_mode) ? pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7])
+                                      : (pwa_mode | pws_mode) ? pw_base_addr_c + (4*chunk_count_reg[UNMASKED_BF_LATENCY-3]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_BF_LATENCY-3])
                                       : pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]); //2
     
     if (pwm_mode) begin
@@ -411,7 +411,7 @@ always_comb begin
                                                    : pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]);
     end
     else if (pwa_mode | pws_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[7]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[7]);
+        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[UNMASKED_BF_LATENCY-3]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_BF_LATENCY-3]); //-3 for chunk count because latency here is measured from mem read to incr_pw_wr_addr
     end
     else
         shuffled_pw_mem_wr_addr_c_nxt = 0;
