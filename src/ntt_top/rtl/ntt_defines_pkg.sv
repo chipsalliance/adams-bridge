@@ -38,9 +38,9 @@ parameter MLKEM_MASKED_WIDTH = 2 * MLKEM_Q_WIDTH;
 //----------------------
 //Latency params for NTT
 //----------------------
-parameter INTT_WRBUF_LATENCY         = 13;
-parameter UNMASKED_BF_LATENCY        = 10;        //5 cycles per butterfly * 2 instances in serial = 10 clks
-parameter UNMASKED_PWM_LATENCY       = 5;         //latency of modular multiplier + modular addition to perform accumulation
+parameter INTT_WRBUF_LATENCY         = 9; //13;
+parameter UNMASKED_BF_LATENCY        = 6; //10;        //5 cycles per butterfly * 2 instances in serial = 10 clks
+parameter UNMASKED_PWM_LATENCY       = 3; //5;         //latency of modular multiplier + modular addition to perform accumulation
 parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;

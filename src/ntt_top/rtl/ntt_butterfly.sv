@@ -59,10 +59,10 @@ module ntt_butterfly
     logic [REG_SIZE-1:0] w_reg, w_reg_d2, w_reg_d3, w_reg_d4; //w_reg_d4 only used in pwm mode
 
     //Multiplier wires
-    logic [(2*REG_SIZE)-1:0] vw, vw_reg, mul_res; 
-    logic [(2*MLKEM_REG_SIZE)-1:0] mul_res_reg; //used in MLKEM
+    logic [(2*REG_SIZE)-1:0] vw, vw_reg, mul_res, mldsa_mul_res_reg; 
+    logic [(2*MLKEM_REG_SIZE)-1:0] mlkem_mul_res_reg; //used in MLKEM
     logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced;
-    logic [22:0] mldsa_mul_res_reduced;
+    logic [22:0] mldsa_mul_res_reduced, mldsa_mul_res_reduced_reg, mldsa_mul_res_reduced_d2;
     logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced_reg; //used in MLKEM
     logic [REG_SIZE-1:0] mul_opa, mul_opb;
 
@@ -89,8 +89,11 @@ module ntt_butterfly
             w_reg_d3 <= 'h0; 
             w_reg_d4 <= 'h0;
 
-            mul_res_reg <= '0;
+            mlkem_mul_res_reg <= '0;
+            mldsa_mul_res_reg <= '0;
             mlkem_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reduced_d2 <= '0;
         end
         else if (zeroize) begin
             u_reg    <= 'h0;
@@ -103,8 +106,11 @@ module ntt_butterfly
             w_reg_d3 <= 'h0; 
             w_reg_d4 <= 'h0;
 
-            mul_res_reg <= '0;
+            mlkem_mul_res_reg <= '0;
+            mldsa_mul_res_reg <= '0;
             mlkem_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reduced_d2 <= '0;
         end
         else begin
             u_reg    <= opu_i;
@@ -119,8 +125,15 @@ module ntt_butterfly
             w_reg_d4 <= w_reg_d3;
 
             //Used in MLKEM
-            mul_res_reg <= (2*MLKEM_REG_SIZE)'(mul_res);
+            mlkem_mul_res_reg <= (2*MLKEM_REG_SIZE)'(mul_res);
+            //Used in MLDSA
+            mldsa_mul_res_reg <= (2*REG_SIZE)'(mul_res);
+            
             mlkem_mul_res_reduced_reg <= mlkem_mul_res_reduced;
+
+            //Used in MLDSA
+            mldsa_mul_res_reduced_reg <= mldsa_mul_res_reduced;
+            mldsa_mul_res_reduced_d2 <= mldsa_mul_res_reduced_reg;
         end
     end
 
@@ -156,13 +169,13 @@ module ntt_butterfly
             end
             gs: begin
                 u_o = mlkem ? REG_SIZE'(mlkem_add_res_div2) : mldsa_add_res_div2;
-                v_o = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]; //_div2;
+                v_o = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced_reg[REG_SIZE-1:0]; //_div2;
                 pwm_res_o = 'h0;
             end
             pwm:begin
                 u_o = 'h0; //accumulate ? add_res : mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]; //TODO: see if pwm_res_o is good enough or reuse u_o to save routing/area
                 v_o = 'h0;
-                pwm_res_o = mlkem ? 'h0 : accumulate ? add_res : mldsa_mul_res_reduced[REG_SIZE-1:0];
+                pwm_res_o = mlkem ? 'h0 : accumulate ? add_res : mldsa_mul_res_reduced_reg[REG_SIZE-1:0];
             end
             pwa:begin
                 u_o = 'h0; //add_res;
@@ -192,8 +205,8 @@ module ntt_butterfly
     always_comb begin
         unique case(mode)
             ct: begin
-                add_opa = mlkem ? u_reg_d2 : u_reg_d4;
-                add_opb = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0];
+                add_opa = mlkem ? u_reg_d2 : u_reg_d2/*_d4*/;
+                add_opb = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced_reg[REG_SIZE-1:0];
                 mul_opa = opv_i;
                 mul_opb = opw_i;
             end
@@ -204,8 +217,8 @@ module ntt_butterfly
                 mul_opb = w_reg;
             end
             pwm:begin
-                add_opa = mlkem ? 'h0 : w_reg_d4;
-                add_opb = mlkem ? 'h0 : mldsa_mul_res_reduced[REG_SIZE-1:0];
+                add_opa = mlkem ? 'h0 : w_reg_d2/*_d4*/;
+                add_opb = mlkem ? 'h0 : mldsa_mul_res_reduced_reg[REG_SIZE-1:0];
                 mul_opa = opu_i;
                 mul_opb = opv_i;
             end
@@ -252,8 +265,8 @@ module ntt_butterfly
         .zeroize(zeroize),
         .add_en_i(1'b1),
         .sub_i(1'b1),
-        .opa_i(mlkem ? u_reg_d2 : u_reg_d4),
-        .opb_i(mlkem ? mlkem_mul_res_reduced_reg : mldsa_mul_res_reduced[REG_SIZE-1:0]),
+        .opa_i(mlkem ? u_reg_d2 : u_reg_d2/*_d4*/),
+        .opb_i(mlkem ? mlkem_mul_res_reduced_reg : mldsa_mul_res_reduced_reg[REG_SIZE-1:0]),
         .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
         .mlkem(mlkem),
         .res_o(sub_res),
@@ -289,17 +302,28 @@ module ntt_butterfly
         .P_o(mul_res)
     );
     
-    ntt_mult_reduction #(
-        .REG_SIZE(23),
-        .PRIME(MLDSA_Q)
+    // ntt_mult_reduction #(
+    //     .REG_SIZE(23),
+    //     .PRIME(MLDSA_Q)
+    //     )
+    //     mldsa_mul_redux_inst_0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .opa_i(mlkem ? '0 : 46'(mul_res)),
+    //     .res_o(mldsa_mul_res_reduced),
+    //     .ready_o()
+    // );
+
+    //no latency
+    barrett_reduction #(
+        .REG_SIZE(REG_SIZE),
+        .prime(MLDSA_Q)
         )
         mldsa_mul_redux_inst_0 (
-        .clk(clk),
-        .reset_n(reset_n),
-        .zeroize(zeroize),
-        .opa_i(mlkem ? '0 : 46'(mul_res)),
-        .res_o(mldsa_mul_res_reduced),
-        .ready_o()
+        .x(mlkem ? '0 : 46'(mldsa_mul_res_reg)),
+        .inv(),
+        .r(mldsa_mul_res_reduced)
     );
 
     barrett_reduction #(
@@ -307,7 +331,7 @@ module ntt_butterfly
         .prime(MLKEM_Q)
         )
         mlkem_mul_redux_inst_0 (
-        .x(mlkem ? mul_res_reg : '0),
+        .x(mlkem ? mlkem_mul_res_reg : '0),
         .inv(),
         .r(mlkem_mul_res_reduced)
     );
@@ -318,7 +342,7 @@ module ntt_butterfly
         .PRIME(MLDSA_Q)
     )
     mldsa_div2_inst_0 (
-        .op_i (add_res_d4),
+        .op_i (add_res_d2/*4*/),
         .res_o (mldsa_add_res_div2)
     );
 
