@@ -254,7 +254,7 @@ module abr_ctrl
   always_comb kv_mldsa_seed_data_present_set = kv_mldsa_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_mlkem_seed_data_present_set = kv_mlkem_seed_read_ctrl_reg.read_en;
   always_comb kv_mlkem_msg_data_present_set = kv_mlkem_msg_read_ctrl_reg.read_en;
-  always_comb kv_data_present_reset = mldsa_valid_reg;
+  always_comb kv_data_present_reset = mldsa_valid_reg | mlkem_valid_reg;
   
   //lock kv controls
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
