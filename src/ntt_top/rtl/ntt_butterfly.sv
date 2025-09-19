@@ -253,7 +253,7 @@ module ntt_butterfly
         .add_en_i(1'b1),
         .sub_i(1'b1),
         .opa_i(mlkem ? u_reg_d2 : u_reg_d4),
-        .opb_i(mlkem ? mlkem_mul_res_reduced_reg : mldsa_mul_res_reduced[REG_SIZE-1:0]),
+        .opb_i(mlkem ?  REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]),
         .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
         .mlkem(mlkem),
         .res_o(sub_res),
