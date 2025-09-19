@@ -48,6 +48,7 @@ module makehint
         input wire zeroize,
 
         input wire makehint_enable,
+        input logic rdata_valid,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
@@ -61,7 +62,6 @@ module makehint
     );
 
     //Internal wires
-    logic hintgen_enable, hintgen_enable_reg;
     logic [3:0] hint;
     logic [MLDSA_K-1:0][7:0] max_index_buffer;
     logic [31:0] max_index_buffer_data;
@@ -114,16 +114,6 @@ module makehint
             busy_reg <= 'b0;
         else
             busy_reg <= (read_fsm_state_ps != MH_IDLE);
-    end
-
-    //Delay adjustment
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            hintgen_enable_reg <= 'b0;
-        else if (zeroize)
-            hintgen_enable_reg <= 'b0;
-        else
-            hintgen_enable_reg <= hintgen_enable;
     end
 
     //Keep count of index. Input is 4 coeffs per cycle. Have a vector that counts
@@ -304,7 +294,6 @@ module makehint
         incr_mem_rd_addr  = 'b0;
         incr_index        = 'b0;
         rst_rd_addr       = 'b0;
-        hintgen_enable    = 'b0;
         max_index_buffer_rd_lo = 'b0;
         max_index_buffer_rd_mid = 'b0;
         max_index_buffer_rd_hi = 'b0;
@@ -320,7 +309,6 @@ module makehint
                 read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT1 ? MH_WAIT1 : MH_RD_MEM;
                 incr_mem_rd_addr    = 'b1;
                 incr_index          = 'b1;
-                hintgen_enable      = 'b1;
             end
             MH_WAIT1: begin
                 read_fsm_state_ns = MH_WAIT2;
@@ -371,7 +359,7 @@ module makehint
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .enable(hintgen_enable_reg),
+                .enable(rdata_valid),
                 .r(r[(REG_SIZE*i)+(REG_SIZE-2):(REG_SIZE*i)]), //remove MSB 0 since coeff coming from memory is 24 bit
                 .z_neq_z(z[i]),
                 .h(hint[i])
