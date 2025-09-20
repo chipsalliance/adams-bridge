@@ -666,7 +666,8 @@ always_comb kv_mlkem_msg_write_data = '0;
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
 
-  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE)) & 
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE) |
+                           mldsa_valid_reg | mlkem_valid_reg) & 
                           ~kv_mlkem_seed_write_en &
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
@@ -676,7 +677,8 @@ always_comb kv_mlkem_msg_write_data = '0;
                                     (mlkem_decaps_process & mlkem_decaps_done));   
   `else
   always_comb abr_ready = (abr_prog_cntr == ABR_RESET);
-  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE));
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE) |
+                           mldsa_valid_reg | mlkem_valid_reg);
   `endif
 
   //without zeroize to make it more complex
