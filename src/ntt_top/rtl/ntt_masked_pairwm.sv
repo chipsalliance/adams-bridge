@@ -273,7 +273,7 @@ abr_masked_N_bit_Arith_adder #(
     .clk(clk),
     .rst_n(reset_n),
     .zeroize(zeroize),
-    .x(u0v0_reduced_reg[0]), //delayed by 25 clks
+    .x(u0v0_reduced_reg[0]), //delayed by 8 clks
     .y(u1v1_reduced),
     .s(uv0)
 );

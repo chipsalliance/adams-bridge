@@ -46,13 +46,25 @@ parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtracti
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
 
 parameter MASKED_ADD_SUB_LATENCY            = 53;      //For 1 masked add/sub operation
-parameter MASKED_PWM_LATENCY                = 211;     //For 1 masked pwm operation
-parameter MASKED_PWM_ACC_LATENCY            = MASKED_PWM_LATENCY + MASKED_ADD_SUB_LATENCY;     //For 1 masked pwm + accumulate operation
+parameter MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY = 7; //For 1 masked add/sub operation with barrett reduction
+
+//MLDSA + Custom reduction latency params
+parameter MLDSA_MASKED_CUSTOM_PWM_LATENCY = 211;
+parameter MLDSA_MASKED_CUSTOM_PWM_ACC_LATENCY = MLDSA_MASKED_CUSTOM_PWM_LATENCY + MASKED_ADD_SUB_LATENCY;
+
+//MLDSA + Barrett latency params
+parameter MLDSA_BARRETT_REDUCTION_LATENCY = 6; //latency of barrett reduction
+parameter MLDSA_MASKED_BARRETT_PWM_LATENCY = 2 + MLDSA_BARRETT_REDUCTION_LATENCY + 1; //latency of masked pwm + masked barrett reduction + 1 output flop
+parameter MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY = MLDSA_MASKED_BARRETT_PWM_LATENCY + 1 + MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY; //latency of masked pwm + accumulate input flop + accumulate with masked barrett reduction
+parameter MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY = 17 + 1; //latency of masked bf stage 1 + 1 output flop
+
+parameter MASKED_PWM_LATENCY                = MLDSA_MASKED_BARRETT_PWM_LATENCY; //= 9 clks //MLDSA_MASKED_CUSTOM_PWM_LATENCY; //211;     //For 1 masked pwm operation
+parameter MASKED_PWM_ACC_LATENCY            = MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY; //= 17 clks //MASKED_PWM_LATENCY + MASKED_ADD_SUB_LATENCY;     //For 1 masked pwm + accumulate operation
 parameter MASKED_BF_STAGE1_LATENCY          = 266;     //For 1 masked butterfly operation
-parameter MASKED_PWM_MASKED_INTT_LATENCY    = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;   //PWM+stage1 INTT latency
-parameter MASKED_INTT_LATENCY               = MASKED_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY;  //masked INTT latency
-parameter MASKED_PWM_INTT_LATENCY           = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1;           //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
-parameter MASKED_INTT_WRBUF_LATENCY         = /*MASKED_PWM_LATENCY +*/ MASKED_INTT_LATENCY + 3;       //masked PWM+INTT latency + mem latency for shuffled reads to begin (does not include PWMA case)
+parameter MASKED_PWM_MASKED_INTT_LATENCY    = MASKED_PWM_LATENCY + MASKED_BF_STAGE1_LATENCY;  //= 275 clks   //PWM+stage1 INTT latency
+parameter MASKED_INTT_LATENCY               = /*MASKED_BF_STAGE1_LATENCY*/MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY + UNMASKED_BF_STAGE1_LATENCY; //= 21 clks  //masked INTT latency
+parameter MASKED_PWM_INTT_LATENCY           = MASKED_PWM_LATENCY + MASKED_INTT_LATENCY + 1; //= 33 clks          //TODO: adjust for PWMA case. Adding 1 cyc as a placeholder for it
+parameter MASKED_INTT_WRBUF_LATENCY         = /*MASKED_PWM_LATENCY +*/ MASKED_INTT_LATENCY + 3; //= 24 clks      //masked PWM+INTT latency + mem latency for shuffled reads to begin (does not include PWMA case)
 
 //----------------------
 //Latency params for MLKEM NTT

@@ -69,6 +69,8 @@ targets:
       - $COMPILE_ROOT/rtl/ntt_hybrid_butterfly_2x2.sv
       - $COMPILE_ROOT/rtl/ntt_karatsuba_pairwm.sv
       - $COMPILE_ROOT/rtl/ntt_masked_pairwm.sv
+      - $COMPILE_ROOT/rtl/ntt_masked_BFU_mult_with_barrett.sv
+      - $COMPILE_ROOT/rtl/ntt_mldsa_masked_BFU_add_sub.sv
   # tb:
   #   directories: [$COMPILE_ROOT/rtl]
   #   files:

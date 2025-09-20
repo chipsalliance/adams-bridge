@@ -74,7 +74,7 @@ logic pairwm_mode;
 //Other internal wires
 logic [UNMASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
 logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg;
-logic [MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
+logic [/*MASKED_BF_STAGE1_LATENCY*/MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] masked_w10_reg, masked_w11_reg;
 logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] mlkem_masked_w10_reg, mlkem_masked_w11_reg;
 logic pwo_mode, masked_pwm_mode;
 
@@ -128,7 +128,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         masked_w10_reg <= 'h0;
     end
     else begin
-        masked_w10_reg <= {bf_shares_uvw_i.w10_i, masked_w10_reg[MASKED_BF_STAGE1_LATENCY-1:1]};
+        masked_w10_reg <= {bf_shares_uvw_i.w10_i, masked_w10_reg[/*MASKED_BF_STAGE1_LATENCY*/MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -382,11 +382,11 @@ always_comb begin
         if (mlkem) begin //during passthrough 2nd stage is not used - assigning inputs to generate noise
             bf_opu10 = mlkem_masked_gs_stage1_uvo.u20_o;
             bf_opv10 = mlkem_masked_gs_stage1_uvo.v20_o;
-            bf_opw10 = masked_w10_reg[MASKED_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY]; //assuming mldsa bf stage 1 latency > mlkem bf stage 1 latency
+            bf_opw10 = masked_w10_reg[/*MASKED_BF_STAGE1_LATENCY*/MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY]; //assuming mldsa bf stage 1 latency > mlkem bf stage 1 latency
 
             bf_opu11 = mlkem_masked_gs_stage1_uvo.u21_o;
             bf_opv11 = mlkem_masked_gs_stage1_uvo.v21_o;
-            bf_opw11 = masked_w11_reg[MASKED_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY];
+            bf_opw11 = masked_w11_reg[/*MASKED_BF_STAGE1_LATENCY*/MLDSA_MASKED_BARRETT_BF_STAGE1_LATENCY-MLKEM_MASKED_BF_STAGE1_LATENCY];
         end
         else begin
             bf_opu10 = mldsa_masked_gs_stage1_uvo.u20_o;
@@ -584,7 +584,7 @@ end
 //ready_o logic
 
 // `ifdef MLDSA_NTT_MASKING //TODO: optimize shift reg size based on masking en/dis
-    logic [MASKED_INTT_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
+    logic [/*MASKED_INTT_LATENCY*/MLKEM_MASKED_PAIRWM_ACC_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
@@ -604,10 +604,10 @@ end
                     pwm: masked_ready_reg <= 'b0;
                     pwa: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
                     pws: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
-                    pairwm: begin
+                    pairwm: begin //TODO: fix delays
                         if (masking_en)
-                            masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-1:1]}
-                                                            : {{(MASKED_INTT_LATENCY-MLKEM_MASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_LATENCY-1:1]};
+                            masked_ready_reg <= accumulate ? {{(/*MASKED_INTT_LATENCY*/274-MLKEM_MASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-1:1]}
+                                                            : {{(/*MASKED_INTT_LATENCY*/274-MLKEM_MASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_MASKED_PAIRWM_LATENCY-1:1]};
                         else
                             masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_ACC_LATENCY-1:1]}
                                                                                : {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1:1]};
@@ -628,9 +628,9 @@ end
                     pwm: begin
                         if (masking_en) begin
                             if (shuffle_en)
-                                masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MASKED_PWM_LATENCY-2:1]};
+                                masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MLDSA_MASKED_BARRETT_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MLDSA_MASKED_BARRETT_PWM_LATENCY-1/*2*/:1]};
                             else
-                                masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MASKED_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MASKED_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MASKED_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MASKED_PWM_LATENCY-2:1]};
+                                masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLDSA_MASKED_BARRETT_PWM_ACC_LATENCY-1:1]} : {{(MASKED_INTT_LATENCY-MLDSA_MASKED_BARRETT_PWM_LATENCY-1){1'b0}}, enable, masked_ready_reg[MLDSA_MASKED_BARRETT_PWM_LATENCY-1/*2*/:1]};
                         end
                         else
                             masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};

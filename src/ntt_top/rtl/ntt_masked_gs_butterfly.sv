@@ -16,7 +16,7 @@
 // ntt_masked_gs_butterfly.sv
 // --------
 // Only performs gs (INTT) mode of operation. All blocks are masked
-// Latency = 264 clks
+//Latency = 7 + 9 + 1 = 17 clk // Latency = 264 clks
 
 module ntt_masked_gs_butterfly
     import abr_params_pkg::*;
@@ -41,11 +41,11 @@ module ntt_masked_gs_butterfly
         output logic [1:0] v_o [WIDTH-1:0]
     );
 
-    logic [MASKED_ADD_SUB_LATENCY-1:0][1:0][WIDTH-1:0] w_reg;
+    logic [/*MASKED_ADD_SUB_LATENCY*/MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY-1:0][1:0][WIDTH-1:0] w_reg;
     logic [1:0] add_res [WIDTH-1:0];
     logic [1:0] sub_res [WIDTH-1:0];
     logic [1:0] mul_res [WIDTH-1:0];
-    logic [1:0][WIDTH-1:0] sub_res_packed;
+    logic [1:0][WIDTH-1:0] add_res_packed, sub_res_packed;
 
     logic [1:0] add_res_reg [WIDTH-1:0];
     logic [WIDTH-1:0] add_res_reg0, add_res_reg1;
@@ -59,7 +59,24 @@ module ntt_masked_gs_butterfly
 
     //MLDSA: 53 clks
     //MLKEM: 21 clks
-    ntt_masked_BFU_add_sub #(
+    // ntt_masked_BFU_add_sub #(
+    //     .WIDTH(WIDTH)
+    // ) add_inst_0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .sub(1'b0),
+    //     .u((pwm_mode & accumulate) ? {mul_res1_reg, mul_res0_reg} : opu_i),
+    //     .v((pwm_mode & accumulate) ? opw_i : opv_i),
+    //     .rnd0(rnd_i[0]),
+    //     .rnd1(rnd_i[1]),
+    //     .rnd2(rnd_i[2]),
+    //     .rnd3(rnd_i[3]),
+    //     .res(add_res) //pwm_mode & accumulate ? uv+w : u+v
+    // );
+
+    //7 clks
+    ntt_mldsa_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) add_inst_0 (
         .clk(clk),
@@ -67,13 +84,18 @@ module ntt_masked_gs_butterfly
         .zeroize(zeroize),
         .sub(1'b0),
         .u((pwm_mode & accumulate) ? {mul_res1_reg, mul_res0_reg} : opu_i),
-        .v((pwm_mode & accumulate) ? opw_i : opv_i),
-        .rnd0(rnd_i[0]),
-        .rnd1(rnd_i[1]),
-        .rnd2(rnd_i[2]),
-        .rnd3(rnd_i[3]),
-        .res(add_res) //pwm_mode & accumulate ? uv+w : u+v
+        .v((pwm_mode & accumulate) ? /*opw_i*/w_reg[MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY-1] : opv_i),
+        .rnd({rnd_i[3], rnd_i[2], rnd_i[1], rnd_i[0]}),
+        .rnd_24bit(rnd_i[4]),
+        .res(add_res_packed) //pwm_mode & accumulate ? uv+w : u+v
     );
+
+    always_comb begin
+        for (int i = 0; i < WIDTH; i++) begin
+            add_res[i][0] = add_res_packed[0][i];
+            add_res[i][1] = add_res_packed[1][i];
+        end
+    end
 
     abr_delay_masked_shares #(
         .WIDTH(WIDTH),
@@ -88,7 +110,24 @@ module ntt_masked_gs_butterfly
 
     //MLDSA: 53 clks
     //MLKEM: 21 clks
-    ntt_masked_BFU_add_sub #(
+    // ntt_masked_BFU_add_sub #(
+    //     .WIDTH(WIDTH)
+    // ) sub_inst_0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .sub(1'b1),
+    //     .u(opu_i),
+    //     .v(opv_i),
+    //     .rnd0(rnd_i[1]), //Different rand order
+    //     .rnd1(rnd_i[2]),
+    //     .rnd2(rnd_i[3]),
+    //     .rnd3(rnd_i[0]),
+    //     .res(sub_res) //u-v
+    // );
+
+    //7 clks
+    ntt_mldsa_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) sub_inst_0 (
         .clk(clk),
@@ -97,19 +136,17 @@ module ntt_masked_gs_butterfly
         .sub(1'b1),
         .u(opu_i),
         .v(opv_i),
-        .rnd0(rnd_i[1]), //Different rand order
-        .rnd1(rnd_i[2]),
-        .rnd2(rnd_i[3]),
-        .rnd3(rnd_i[0]),
-        .res(sub_res) //u-v
+        .rnd({rnd_i[4], rnd_i[3], rnd_i[2], rnd_i[1]}),
+        .rnd_24bit(rnd_i[0]),
+        .res(sub_res_packed) //u-v
     );
 
     always_comb begin
         for (int i = 0; i < WIDTH; i++) begin
             add_res0[i] = add_res[i][0];
             add_res1[i] = add_res[i][1];
-            sub_res_packed[0][i] = sub_res[i][0];
-            sub_res_packed[1][i] = sub_res[i][1];
+            // sub_res_packed[0][i] = sub_res[i][0];
+            // sub_res_packed[1][i] = sub_res[i][1];
 
             add_res_reg0[i] = add_res_reg[i][0];
             add_res_reg1[i] = add_res_reg[i][1];
@@ -119,22 +156,39 @@ module ntt_masked_gs_butterfly
     //w delay flops
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            for (int i = 0; i < MASKED_ADD_SUB_LATENCY; i++) begin
+            for (int i = 0; i < /*MASKED_ADD_SUB_LATENCY*/MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY; i++) begin
                 w_reg[i] <= 'h0;
             end
         end
         else if (zeroize) begin
-            for (int i = 0; i < MASKED_ADD_SUB_LATENCY; i++) begin
+            for (int i = 0; i < /*MASKED_ADD_SUB_LATENCY*/MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY; i++) begin
                 w_reg[i] <= 'h0;
             end
         end
         else begin
-            w_reg <= {opw_i, w_reg[MASKED_ADD_SUB_LATENCY-1:1]};
+            w_reg <= {opw_i, w_reg[/*MASKED_ADD_SUB_LATENCY*/MLDSA_MASKED_BARRETT_ADD_SUB_LATENCY-1:1]};
         end
     end
 
     //MLDSA: 210 clks
-    ntt_masked_BFU_mult #(
+    // ntt_masked_BFU_mult #(
+    //     .WIDTH(WIDTH)
+    // ) mult_inst_0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .u(pwm_mode ? opu_i : sub_res_packed),
+    //     .v(pwm_mode ? opv_i : w_reg[0]),
+    //     .rnd0(rnd_i[2]),
+    //     .rnd1(rnd_i[3]),
+    //     .rnd2(rnd_i[0]),
+    //     .rnd3(rnd_i[1]),
+    //     .rnd4(WIDTH'(rnd_i[2]+rnd_i[3])),
+    //     .res(mul_res)
+    // );
+
+    //9 clks
+    ntt_masked_BFU_mult_with_barrett #(
         .WIDTH(WIDTH)
     ) mult_inst_0 (
         .clk(clk),

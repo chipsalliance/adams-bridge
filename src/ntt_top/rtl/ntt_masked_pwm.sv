@@ -20,6 +20,7 @@
 // on input shares. Always performs (u*v)+w (top level needs to drive 0
 // to the w input if not in accumulate mode)
 // 210 clks if PWM, 264 clks if PWMA
+// Barrett: latency = 9 clks if PWM, 16+1 clks if PWMA //61 clks if PWMA
 
 module ntt_masked_pwm
     import abr_params_pkg::*;
@@ -42,7 +43,7 @@ module ntt_masked_pwm
     logic [1:0] mul_res [WIDTH-1:0];
     logic [1:0][WIDTH-1:0] w_reg;
 
-    logic [1:0][WIDTH-1:0] mul_res_packed;
+    logic [1:0][WIDTH-1:0] mul_res_packed, res_packed;
     logic [1:0] res_unpacked [WIDTH-1:0];
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -65,7 +66,24 @@ module ntt_masked_pwm
     end
 
     //210 clks
-    ntt_masked_BFU_mult #(
+    // ntt_masked_BFU_mult #(
+    //     .WIDTH(WIDTH)
+    // ) mult_inst0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .u(u),
+    //     .v(v),
+    //     .rnd0(rnd[0]),
+    //     .rnd1(rnd[1]),
+    //     .rnd2(rnd[2]),
+    //     .rnd3(rnd[3]),
+    //     .rnd4(rnd[4]),
+    //     .res(mul_res)
+    // );
+
+    //9 clks
+    ntt_masked_BFU_mult_with_barrett #(
         .WIDTH(WIDTH)
     ) mult_inst0 (
         .clk(clk),
@@ -81,8 +99,25 @@ module ntt_masked_pwm
         .res(mul_res)
     );
 
-    //53 clks (accumulate case)
-    ntt_masked_BFU_add_sub #(
+    // //53 clks (accumulate case)
+    // ntt_masked_BFU_add_sub #(
+    //     .WIDTH(WIDTH)
+    // ) add_inst0 (
+    //     .clk(clk),
+    //     .reset_n(reset_n),
+    //     .zeroize(zeroize),
+    //     .sub(1'b0),
+    //     .u(mul_res_packed),
+    //     .v(w),
+    //     .rnd0(rnd[0]),
+    //     .rnd1(rnd[1]),
+    //     .rnd2(rnd[2]),
+    //     .rnd3(rnd[3]),
+    //     .res(res_unpacked)
+    // );
+
+    //7 clks (accumulate case)
+    ntt_mldsa_masked_BFU_add_sub #(
         .WIDTH(WIDTH)
     ) add_inst0 (
         .clk(clk),
@@ -90,18 +125,16 @@ module ntt_masked_pwm
         .zeroize(zeroize),
         .sub(1'b0),
         .u(mul_res_packed),
-        .v(w),
-        .rnd0(rnd[0]),
-        .rnd1(rnd[1]),
-        .rnd2(rnd[2]),
-        .rnd3(rnd[3]),
-        .res(res_unpacked)
+        .v(w_reg),
+        .rnd({rnd[3], rnd[2], rnd[1], rnd[0]}), //TODO: fix rnd inputs - using mlkem version for poc
+        .rnd_24bit(rnd[4]),
+        .res(res_packed)
     );
 
     always_comb begin
         for (int i = 0; i < WIDTH; i++) begin
-            res[0][i] = accumulate ? res_unpacked[i][0] : mul_res[i][0];
-            res[1][i] = accumulate ? res_unpacked[i][1] : mul_res[i][1];
+            res[0][i] = accumulate ? /*res_unpacked[i][0]*/ res_packed[0][i] : mul_res[i][0];
+            res[1][i] = accumulate ? /*res_unpacked[i][1]*/ res_packed[1][i] : mul_res[i][1];
         end
     end
 

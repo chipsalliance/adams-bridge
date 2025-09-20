@@ -17,6 +17,8 @@ targets:
       # - $COMPILE_ROOT/rtl/masked_barrett_if_cond.sv
       - $COMPILE_ROOT/rtl/masked_barrett_reduction.sv
       - $COMPILE_ROOT/rtl/masked_barrett_if_cond_v2.sv
+      - $COMPILE_ROOT/rtl/mldsa_masked_barrett_if_cond_v2.sv
+      - $COMPILE_ROOT/rtl/mldsa_masked_barrett_reduction.sv
     tops: [barrett_reduction]
   rtl_lint:
     directories: []

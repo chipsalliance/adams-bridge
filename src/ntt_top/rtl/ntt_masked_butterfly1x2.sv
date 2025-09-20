@@ -19,6 +19,7 @@
 // 2. Combines output shares
 // 3. Performs div2 on combined outputs (unmasked)
 // Total latency = 264 clks
+// Total latency = 17 + 1 = 18 clks
 
 module ntt_masked_butterfly1x2
     import abr_params_pkg::*;
