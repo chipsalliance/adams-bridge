@@ -161,15 +161,17 @@ module ntt_wrapper
     );
 
     always_comb begin
-        mem_rd_data = (mlkem & (mode == gs) & ntt_top_inst0.ntt_ctrl_inst0.masking_en_ctrl) ? {MLDSA_SHARE_WIDTH'(0),
-                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[95:72]),
-                                                                                               MLDSA_SHARE_WIDTH'(0),
-                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[71:48]),
-                                                                                               MLDSA_SHARE_WIDTH'(0),
-                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[47:24]),
-                                                                                               MLDSA_SHARE_WIDTH'(0),
-                                                                                               MLDSA_SHARE_WIDTH'(mem_rd_data_int[23:0])}  
-                                                                                            : mem_rd_data_int;
+        // mem_rd_data = (mlkem & (mode == gs) & ntt_top_inst0.ntt_ctrl_inst0.masking_en_ctrl) ? {MLDSA_SHARE_WIDTH'(0),
+        //                                                                                        MLDSA_SHARE_WIDTH'(mem_rd_data_int[95:72]),
+        //                                                                                        MLDSA_SHARE_WIDTH'(0),
+        //                                                                                        MLDSA_SHARE_WIDTH'(mem_rd_data_int[71:48]),
+        //                                                                                        MLDSA_SHARE_WIDTH'(0),
+        //                                                                                        MLDSA_SHARE_WIDTH'(mem_rd_data_int[47:24]),
+        //                                                                                        MLDSA_SHARE_WIDTH'(0),
+        //                                                                                        MLDSA_SHARE_WIDTH'(mem_rd_data_int[23:0])}  
+                                                                                            // : mem_rd_data_int;
+
+        mem_rd_data = mem_rd_data_int;
     end
 
     ntt_top #(
