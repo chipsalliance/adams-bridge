@@ -115,7 +115,7 @@ logic [3:0] chunk_count;
 logic [1:0] index_rand_offset, index_count, mem_rd_index_ofst;
 logic [2:0][1:0] index_rand_offset_reg, index_count_reg;
 logic [1:0] buf_rdptr_int;
-logic [1:0] buf_rdptr_f;
+logic [1:0] buf_rdptr_f, buf_rdptr_reg_d1;
 
 logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_rdptr_reg;
 logic [MASKED_INTT_WRBUF_LATENCY-1:0][1:0] buf_wrptr_reg;
@@ -123,6 +123,7 @@ logic [1:0] buf_wrptr_reg_d1;
 // logic [MASKED_INTT_WRBUF_LATENCY-3:0][3:0] chunk_count_reg; //buf latency not rqd
 logic [(MLKEM_MASKED_PAIRWM_ACC_LATENCY+4)-1:0][3:0] chunk_count_reg;
 logic [1:0] masked_pwm_buf_rdptr_d1, masked_pwm_buf_rdptr_d2, masked_pwm_buf_rdptr_d3, masked_pwm_buf_rdptr_d4; //TODO clean up
+logic [3:0] chunk_count_reg_d1; //Used in mlkem pairwm acc + shuffling mode //TODO: clean up chunk_count_reg shifting so this can be avoided
 
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
@@ -410,8 +411,8 @@ always_comb begin
                                                    :  pw_base_addr_c + (4*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]);
     end
     else if (pairwm_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1])
-                                                   : pw_base_addr_c + (4*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]);
+        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (4*chunk_count_reg_d1/*[MLKEM_UNMASKED_PAIRWM_LATENCY-1]*/) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg_d1/*[MLKEM_UNMASKED_PAIRWM_LATENCY-1]*/)
+                                                   : pw_base_addr_c + (4*chunk_count_reg[0]/*[MLKEM_UNMASKED_PAIRWM_LATENCY]*/) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[0]/*[MLKEM_UNMASKED_PAIRWM_LATENCY]*/);
     end
     else if (pwa_mode | pws_mode) begin
         shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (4*chunk_count_reg[UNMASKED_BF_LATENCY-3]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_BF_LATENCY-3]); //-3 for chunk count because latency here is measured from mem read to incr_pw_wr_addr
@@ -740,12 +741,18 @@ end
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         buf_rdptr_f <= 'h0;
+        chunk_count_reg_d1 <= 'h0;
+        buf_rdptr_reg_d1 <= 'h0;
     end
     else if (zeroize) begin
         buf_rdptr_f <= 'h0;
-        end
+        chunk_count_reg_d1 <= 'h0;
+        buf_rdptr_reg_d1 <= 'h0;
+    end
     else begin
         buf_rdptr_f <= buf_rdptr_int;
+        chunk_count_reg_d1 <= chunk_count_reg[0];
+        buf_rdptr_reg_d1 <= buf_rdptr_reg[0];
     end
 end
 
