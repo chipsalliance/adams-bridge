@@ -1620,20 +1620,24 @@ end
           {MLKEM_KEYGEN,MLDSA_NONE} : begin  // MLKEM KEYGEN
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_process_nxt  = 1;
+            set_entropy = 1;
           end                    
           {MLKEM_ENCAPS,MLDSA_NONE} : begin  // MLKEM ENCAPS
             abr_prog_cntr_nxt = MLKEM_ENCAPS_S;
             mlkem_encaps_process_nxt  = 1;
+            set_entropy = 1;
           end
           {MLKEM_DECAPS,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_DECAPS_S;
             mlkem_decaps_process_nxt = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           {MLKEM_KEYGEN_DEC,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_decaps_process_nxt  = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           default : begin
             abr_prog_cntr_nxt = ABR_RESET;
