@@ -1311,7 +1311,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
-        MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
+        ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
         MLKEM_SEED_D_ID:      msg_data <= msg_last ? {48'b0,sampler_imm} : {mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b1}],mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b0}]};
         MLKEM_SIGMA_ID:       msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.sigma[sampler_src_offset[1:0]];
         MLKEM_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.rho[sampler_src_offset[1:0]];
@@ -1319,7 +1319,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLKEM_R_ID:           msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.sigma[sampler_src_offset[1:0]];
         MLKEM_TR_ID:          msg_data <= abr_scratch_reg.mlkem_enc.tr[sampler_src_offset[1:0]];
         MLKEM_SEED_Z_ID:      msg_data <= {abr_scratch_reg.mlkem_enc.seed_z[{sampler_src_offset[1:0],1'b1}],abr_scratch_reg.mlkem_enc.seed_z[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_CNT_ID:         msg_data <= counter_reg;
+        ABR_CNT_ID:           msg_data <= counter_reg;
         default:              msg_data <= '0;
       endcase
     end 
@@ -1417,7 +1417,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
-      if (abr_instr.operand3 == MLDSA_DEST_LFSR_SEED_REG_ID) begin
+      if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o <= sampler_state_data_i[0][2*LFSR_W-1:0];
           lfsr_entropy_reg <= sampler_state_data_i[0][2*LFSR_W+511:2*LFSR_W];
       end
@@ -1620,20 +1620,24 @@ end
           {MLKEM_KEYGEN,MLDSA_NONE} : begin  // MLKEM KEYGEN
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_process_nxt  = 1;
+            set_entropy = 1;
           end                    
           {MLKEM_ENCAPS,MLDSA_NONE} : begin  // MLKEM ENCAPS
             abr_prog_cntr_nxt = MLKEM_ENCAPS_S;
             mlkem_encaps_process_nxt  = 1;
+            set_entropy = 1;
           end
           {MLKEM_DECAPS,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_DECAPS_S;
             mlkem_decaps_process_nxt = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           {MLKEM_KEYGEN_DEC,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_decaps_process_nxt  = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           default : begin
             abr_prog_cntr_nxt = ABR_RESET;
