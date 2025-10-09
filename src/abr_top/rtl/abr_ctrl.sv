@@ -233,7 +233,6 @@ module abr_ctrl
   logic kv_mldsa_seed_data_present_set;
   logic kv_mlkem_seed_data_present_set;
   logic kv_mlkem_msg_data_present_set;
-  logic kv_data_present_reset;
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
   logic dest_keyvault;
@@ -254,7 +253,6 @@ module abr_ctrl
   always_comb kv_mldsa_seed_data_present_set = kv_mldsa_seed_read_ctrl_reg.read_en | pcr_sign_mode;
   always_comb kv_mlkem_seed_data_present_set = kv_mlkem_seed_read_ctrl_reg.read_en;
   always_comb kv_mlkem_msg_data_present_set = kv_mlkem_msg_read_ctrl_reg.read_en;
-  always_comb kv_data_present_reset = mldsa_valid_reg;
   
   //lock kv controls
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
@@ -436,7 +434,7 @@ always_ff @(posedge clk or negedge rst_b) begin : abr_kv_reg
     kv_mldsa_seed_data_present <= '0;
     kv_mlkem_seed_data_present <= '0;
     kv_mlkem_msg_data_present <= '0;
-  end else if (zeroize | kv_data_present_reset) begin
+  end else if (zeroize) begin
     kv_mldsa_seed_data_present <= '0;
     kv_mlkem_seed_data_present <= '0;
     kv_mlkem_msg_data_present <= '0;
@@ -666,7 +664,8 @@ always_comb kv_mlkem_msg_write_data = '0;
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
 
-  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE)) & 
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE) |
+                           mldsa_valid_reg | mlkem_valid_reg) & 
                           ~kv_mlkem_seed_write_en &
                           ~kv_mlkem_msg_write_en &
                           ~kv_mldsa_seed_write_en;
@@ -676,7 +675,8 @@ always_comb kv_mlkem_msg_write_data = '0;
                                     (mlkem_decaps_process & mlkem_decaps_done));   
   `else
   always_comb abr_ready = (abr_prog_cntr == ABR_RESET);
-  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE));
+  always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE) |
+                           mldsa_valid_reg | mlkem_valid_reg);
   `endif
 
   //without zeroize to make it more complex
@@ -740,7 +740,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_mldsa_seed_write_en & (kv_mldsa_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
                                                       kv_mldsa_seed_write_data;
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | kv_data_present_reset | (kv_mldsa_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | (kv_mldsa_seed_error == KV_READ_FAIL);
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = abr_ready & ~kv_mldsa_seed_data_present;
       `else
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
@@ -807,7 +807,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == dword))) & ~zeroize;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = kv_mlkem_seed_write_data;
-      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | kv_data_present_reset | (kv_mlkem_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | (kv_mlkem_seed_error == KV_READ_FAIL);
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready & ~kv_mlkem_seed_data_present;
       `else
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
@@ -1309,7 +1309,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
-        MLDSA_ENTROPY_ID:     msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
+        ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
         MLKEM_SEED_D_ID:      msg_data <= msg_last ? {48'b0,sampler_imm} : {mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b1}],mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b0}]};
         MLKEM_SIGMA_ID:       msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.sigma[sampler_src_offset[1:0]];
         MLKEM_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.rho[sampler_src_offset[1:0]];
@@ -1317,7 +1317,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLKEM_R_ID:           msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mlkem_enc.sigma[sampler_src_offset[1:0]];
         MLKEM_TR_ID:          msg_data <= abr_scratch_reg.mlkem_enc.tr[sampler_src_offset[1:0]];
         MLKEM_SEED_Z_ID:      msg_data <= {abr_scratch_reg.mlkem_enc.seed_z[{sampler_src_offset[1:0],1'b1}],abr_scratch_reg.mlkem_enc.seed_z[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_CNT_ID:         msg_data <= counter_reg;
+        ABR_CNT_ID:           msg_data <= counter_reg;
         default:              msg_data <= '0;
       endcase
     end 
@@ -1415,7 +1415,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
-      if (abr_instr.operand3 == MLDSA_DEST_LFSR_SEED_REG_ID) begin
+      if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o <= sampler_state_data_i[0][2*LFSR_W-1:0];
           lfsr_entropy_reg <= sampler_state_data_i[0][2*LFSR_W+511:2*LFSR_W];
       end
@@ -1618,20 +1618,24 @@ end
           {MLKEM_KEYGEN,MLDSA_NONE} : begin  // MLKEM KEYGEN
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_process_nxt  = 1;
+            set_entropy = 1;
           end                    
           {MLKEM_ENCAPS,MLDSA_NONE} : begin  // MLKEM ENCAPS
             abr_prog_cntr_nxt = MLKEM_ENCAPS_S;
             mlkem_encaps_process_nxt  = 1;
+            set_entropy = 1;
           end
           {MLKEM_DECAPS,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_DECAPS_S;
             mlkem_decaps_process_nxt = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           {MLKEM_KEYGEN_DEC,MLDSA_NONE} : begin  // MLKEM DECAPS
             abr_prog_cntr_nxt = MLKEM_KG_S;
             mlkem_keygen_decaps_process_nxt  = 1;
             set_decaps_valid = 1;
+            set_entropy = 1;
           end
           default : begin
             abr_prog_cntr_nxt = ABR_RESET;

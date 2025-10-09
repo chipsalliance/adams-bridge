@@ -740,7 +740,7 @@ generate
     .pwm_a_rd_req(pwm_a_rd_req[g_inst]),
     .pwm_b_rd_req(pwm_b_rd_req[g_inst]),
     .pwm_a_rd_data(pwm_a_rd_data[g_inst]),
-    .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? sampler_ntt_data : pwm_b_rd_data[g_inst]),
+    .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? ABR_MEM_MASKED_DATA_WIDTH'(sampler_ntt_data) : pwm_b_rd_data[g_inst]),
     .ntt_busy(ntt_busy[g_inst]),
     .ntt_done()
   );
