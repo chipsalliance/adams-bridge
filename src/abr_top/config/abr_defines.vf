@@ -2,4 +2,3 @@
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv

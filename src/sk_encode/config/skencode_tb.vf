@@ -39,4 +39,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_encode/rtl/skencode.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_encode/tb/skencode_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv

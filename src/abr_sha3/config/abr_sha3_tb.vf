@@ -84,4 +84,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3pad.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/tb/abr_sha3_tb_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/tb/abr_sha3_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
