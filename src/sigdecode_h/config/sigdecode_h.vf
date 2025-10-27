@@ -37,4 +37,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h.sv
 ${ADAMSBRIDGE_ROOT}/src/sigdecode_h/rtl/sigdecode_h_ctrl.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv

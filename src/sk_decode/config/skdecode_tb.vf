@@ -73,4 +73,3 @@ ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_s1s2_unpack.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_t0_unpack.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/tb/skdecode_tb.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv

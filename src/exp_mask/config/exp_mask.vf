@@ -36,4 +36,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/exp_mask/rtl/exp_mask_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/exp_mask/rtl/exp_mask.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv

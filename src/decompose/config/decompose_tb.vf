@@ -76,4 +76,3 @@ ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_w1_encode.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_usehint.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/tb/decompose_tb.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_defines_pkg.sv
