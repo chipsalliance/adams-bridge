@@ -19,6 +19,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_piso.sv
       - $COMPILE_ROOT/rtl/abr_sample_buffer.sv
       - $COMPILE_ROOT/rtl/abr_msg_buffer.sv
+      - $COMPILE_ROOT/rtl/abr_rd_lat_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
       - $COMPILE_ROOT/rtl/abr_masked_AND.sv

@@ -76,7 +76,7 @@ package abr_ctrl_pkg;
     localparam SK_MEM_DEPTH = 1192;
     localparam SK_MEM_BANK_DEPTH = SK_MEM_DEPTH/2;
     localparam SK_MEM_BANK_ADDR_W = $clog2(SK_MEM_BANK_DEPTH);
-    localparam SK_MEM_BANK_DATA_W = DATA_WIDTH;
+    localparam SK_MEM_BANK_DATA_W = ABR_REG_WIDTH;
 
     localparam SIG_Z_MEM_DATA_W = 160;
     localparam SIG_Z_MEM_NUM_DWORD = SIG_Z_MEM_DATA_W/32;

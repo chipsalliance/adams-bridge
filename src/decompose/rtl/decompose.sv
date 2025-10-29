@@ -55,6 +55,7 @@ module decompose
         output mem_if_t mem_rd_req,
         output mem_if_t mem_wr_req,
         input wire [(4*REG_SIZE)-1:0] mem_rd_data,
+        input wire mem_rd_data_valid,
         output logic [(4*REG_SIZE)-1:0] mem_wr_data,
 
         //Output to memory - h (sigDecode)
@@ -79,13 +80,12 @@ module decompose
     logic [3:0] r_corner, r_corner_reg;
     logic [3:0][18:0] r0_mod_2gamma2;
     logic [3:0][REG_SIZE-2:0] r0_mod_q, r0, r0_reg; //23-bit value
+    logic mem_rd_data_valid_reg;
     logic [(4*REG_SIZE)-1:0] mem_rd_data_reg, mem_hint_rd_data_reg, mem_wr_data_int;
-    mem_if_t mem_wr_req_int, mem_hint_rd_req_int, z_mem_wr_req_int;
+    mem_if_t mem_wr_req_int, z_mem_wr_req_int;
     logic [3:0] z_neq_z_d1, z_neq_z_d2, z_neq_z_int, z_neq_z_mux;
 
     //Control wires
-    logic mod_enable; 
-    logic [1:0] enable_reg;
     logic [3:0] mod_ready;
     logic verify;
     logic [3:0] usehint_ready;
@@ -94,17 +94,14 @@ module decompose
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            enable_reg <= 'b0;
-            z_neq_z_d1 <= 'h0;
-            z_neq_z_d2 <= 'h0;
+            z_neq_z_d1 <= '0;
+            z_neq_z_d2 <= '0;
         end
         else if (zeroize) begin
-            enable_reg <= 'b0;
-            z_neq_z_d1 <= 'h0;
-            z_neq_z_d2 <= 'h0;
+            z_neq_z_d1 <= '0;
+            z_neq_z_d2 <= '0;
         end
         else begin
-            enable_reg <= {mod_enable, enable_reg[1]};
             z_neq_z_d1 <= z_neq_z_int;
             z_neq_z_d2 <= z_neq_z_d1;
         end
@@ -121,7 +118,6 @@ module decompose
         .r0_ready(&mod_ready), //all redux units must be ready at the same time
         .mem_rd_req(mem_rd_req),
         .mem_wr_req(mem_wr_req_int),
-        .mod_enable(mod_enable),
         .decompose_done(decompose_done)
     );
 
@@ -148,7 +144,7 @@ module decompose
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .add_en_i(enable_reg[1]), //delayed by 1 clk
+                .add_en_i(mem_rd_data_valid),
                 .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .res_o(r0_mod_2gamma2[i]),
                 .ready_o(mod_ready[i])
@@ -167,25 +163,28 @@ module decompose
     //Delay flops
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            r_corner_reg         <= 'h0;
-            mem_rd_data_reg      <= 'h0;
-            r0_reg               <= 'h0;
-            r1_reg               <= 'h0;
-            mem_hint_rd_data_reg <= 'h0;
+            r_corner_reg         <= '0;
+            mem_rd_data_valid_reg <= '0;
+            mem_rd_data_reg      <= '0;
+            r0_reg               <= '0;
+            r1_reg               <= '0;
+            mem_hint_rd_data_reg <= '0;
         end
         else if (zeroize) begin
-            r_corner_reg         <= 'h0;
-            mem_rd_data_reg      <= 'h0;
-            r0_reg               <= 'h0;
-            r1_reg               <= 'h0;
-            mem_hint_rd_data_reg <= 'h0;
+            r_corner_reg          <= '0;
+            mem_rd_data_valid_reg <= '0;
+            mem_rd_data_reg       <= '0;
+            r0_reg                <= '0;
+            r1_reg                <= '0;
+            mem_hint_rd_data_reg  <= '0;
         end
         else begin
-            r_corner_reg         <= r_corner;
-            mem_rd_data_reg      <= mem_rd_data;
-            r0_reg               <= r0;
-            r1_reg               <= r1;
-            mem_hint_rd_data_reg <= mem_hint_rd_data;
+            r_corner_reg          <= r_corner;
+            mem_rd_data_valid_reg <= mem_rd_data_valid;
+            mem_rd_data_reg       <= mem_rd_data;
+            r0_reg                <= r0;
+            r1_reg                <= r1;
+            mem_hint_rd_data_reg  <= mem_hint_rd_data;
         end
     end
 
@@ -193,7 +192,7 @@ module decompose
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
                 r0[i] = r_corner_reg[i] ? mem_rd_data_reg[i*REG_SIZE+(REG_SIZE-2):i*REG_SIZE] : r0_mod_q[i];
-                mem_wr_data_int[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] = verify ? 'h0 : {1'b0, r0_reg[i]};
+                mem_wr_data_int[i*REG_SIZE+(REG_SIZE-1):i*REG_SIZE] = verify ? '0 : {1'b0, r0_reg[i]};
             end
         end
     endgenerate
@@ -207,7 +206,7 @@ module decompose
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .usehint_enable(verify & enable_reg[0]), //delayed by 2 clks to match addr input flops
+                .usehint_enable(verify & mem_rd_data_valid_reg),
                 .w0_i(r0[i]),
                 .w1_i(r1_reg[i]),
                 .hint_i(mem_hint_rd_data_reg[i*REG_SIZE]), //LSB is the hint, rest are 0s
@@ -219,12 +218,12 @@ module decompose
     endgenerate
 
     always_comb begin
-        z_neq_z_mux               = verify ? 'h0 : z_neq_z_d2;
+        z_neq_z_mux               = verify ? '0 : z_neq_z_d2;
         z_mem_wr_req_int.rd_wr_en = verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
-        z_mem_wr_req_int.addr     = verify ? 'h0 : ABR_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
+        z_mem_wr_req_int.addr     = verify ? '0 : ABR_MEM_ADDR_WIDTH'(mem_wr_req_int.addr - dest_base_addr);
         r1_mux                    = verify & (&usehint_ready) ? r1_usehint : r1_reg;
 
-        mem_hint_rd_req.addr     = verify ? ABR_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : 'h0;
+        mem_hint_rd_req.addr     = verify ? ABR_MEM_ADDR_WIDTH'(mem_rd_req.addr - src_base_addr + hint_src_base_addr) : '0;
         mem_hint_rd_req.rd_wr_en = verify ? mem_rd_req.rd_wr_en : RW_IDLE;
     end
 
@@ -246,7 +245,7 @@ module decompose
         end
         else begin
             z_mem_wr_req        <= z_mem_wr_req_int;
-            mem_wr_req.addr     <= verify ? 'h0 : mem_wr_req_int.addr;
+            mem_wr_req.addr     <= verify ? '0 : mem_wr_req_int.addr;
             mem_wr_req.rd_wr_en <= verify ? RW_IDLE : mem_wr_req_int.rd_wr_en;
 
             z_neq_z             <= z_neq_z_mux;

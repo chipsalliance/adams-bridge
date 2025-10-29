@@ -27,6 +27,7 @@
 module ntt_ctrl
     import ntt_defines_pkg::*;
 #(
+    parameter SRAM_LATENCY = 1,
     parameter REG_SIZE = 23,
     parameter RADIX = 23,
     parameter MLDSA_Q = 23'd8380417,
@@ -53,6 +54,7 @@ module ntt_ctrl
     input wire   [5:0] random, //4+2 bits
     input wire masking_en,
     input wire mlkem,
+    input wire mem_rd_data_valid,
 
     output logic bf_enable,
     output logic [2:0] opcode,
@@ -102,7 +104,7 @@ ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
 
 //BF enable flags
 logic bf_enable_fsm;
-logic [2:0] bf_enable_reg;
+logic [SRAM_LATENCY+1:0] bf_enable_reg;
 
 //Buffer signals
 logic buf_wr_rst_count_ntt, buf_rd_rst_count_ntt;
@@ -204,7 +206,7 @@ logic arc_RD_STAGE_RD_EXEC_OPT;
 logic arc_EXEC_WAIT_RD_EXEC;
 
 //Other signals
-logic buf_wren_ntt, buf_wren_ntt_reg;
+logic buf_wren_ntt;
 logic buf_wren_intt, buf_wren_intt_reg;
 logic buf_rden_ntt, buf_rden_ntt_reg;
 logic buf_rden_intt;
@@ -879,8 +881,8 @@ always_comb begin
         end
         RD_STAGE: begin
             read_fsm_state_ns       = arc_RD_STAGE_RD_BUF       ? RD_BUF : 
-                                        arc_RD_STAGE_RD_EXEC    ? RD_EXEC :
-                                        arc_RD_STAGE_IDLE       ? RD_IDLE : RD_STAGE;
+                                      arc_RD_STAGE_RD_EXEC      ? RD_EXEC :
+                                      arc_RD_STAGE_IDLE         ? RD_IDLE : RD_STAGE;
             rst_rd_addr             = 1'b1;
             rst_rd_valid_count      = 1'b1;
             //reset if in ntt mode, since writes won't use the buffer, it's safe to reset buffer
@@ -890,7 +892,7 @@ always_comb begin
         end
         RD_BUF: begin
             read_fsm_state_ns       = arc_RD_BUF_RD_EXEC ? RD_EXEC : RD_BUF;
-            buf_wren_ntt            = 1'b1;
+            buf_wren_ntt            = ct_mode & mem_rd_data_valid;
             buf_rden_ntt            = buf0_valid;
             incr_mem_rd_addr        = 1'b1;
             mem_rd_en_fsm           = 1'b1;
@@ -899,10 +901,10 @@ always_comb begin
             rd_addr_step            = NTT_READ_ADDR_STEP;
         end
         RD_EXEC: begin
-            read_fsm_state_ns       = arc_RD_EXEC_RD_BUF ? RD_BUF :
-                                        arc_RD_EXEC_EXEC_WAIT ? EXEC_WAIT :
-                                        arc_RD_EXEC_RD_STAGE ? RD_STAGE : RD_EXEC;
-            buf_wren_ntt            = ct_mode;
+            read_fsm_state_ns       = arc_RD_EXEC_RD_BUF    ? RD_BUF :
+                                      arc_RD_EXEC_EXEC_WAIT ? EXEC_WAIT :
+                                      arc_RD_EXEC_RD_STAGE  ? RD_STAGE : RD_EXEC;
+            buf_wren_ntt            = ct_mode & mem_rd_data_valid;
             buf_rden_ntt            = ct_mode;
             incr_mem_rd_addr        = (ntt_mode inside {ct, gs});
             mem_rd_en_fsm           = (ntt_mode inside {ct, gs}) ? (mem_rd_addr <= MEM_LAST_ADDR + mem_rd_base_addr) & ~arc_RD_EXEC_EXEC_WAIT : 1'b0;
@@ -914,7 +916,7 @@ always_comb begin
         end
         EXEC_WAIT: begin
             read_fsm_state_ns       = arc_EXEC_WAIT_RD_STAGE ? RD_STAGE : arc_EXEC_WAIT_RD_EXEC ? RD_EXEC : EXEC_WAIT;
-            buf_wren_ntt            = (buf_count < 3) && !pwo_mode;
+            buf_wren_ntt            = !pwo_mode;
             buf_rden_ntt            = !pwo_mode;
             buf_wr_rst_count_ntt    = 1'b1; //There are no more mem reads, so buf writes need to halt
             buf_rd_rst_count_ntt    = 1'b0; //There are still some entries in buf that BF2x2 needs to pick up
@@ -1087,7 +1089,7 @@ always_comb begin
     rst_rounds       = (read_fsm_state_ps == RD_IDLE) && (write_fsm_state_ps == WR_IDLE);
     incr_rounds      = arc_WR_MEM_WR_STAGE | arc_WR_WAIT_WR_STAGE; //TODO: revisit for high-perf mode (if we go with above opt)
     if (shuffle_en) begin
-        buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt_reg;
+        buf_wren         = pwo_mode ? 1'b0 : buf_wren_ntt | buf_wren_intt_reg;
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         mem_wr_en        = gs_mode  ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = gs_mode ? mem_rd_en_reg : mem_rd_en_fsm;
@@ -1097,7 +1099,7 @@ always_comb begin
         pw_wren          = pw_wren_reg;
     end
     else begin
-        buf_wren = pwo_mode ? 1'b0 : buf_wren_ntt_reg | buf_wren_intt;
+        buf_wren = pwo_mode ? 1'b0 : buf_wren_ntt | buf_wren_intt;
         buf_rden = pwo_mode ? 1'b0 : buf_rden_ntt | buf_rden_intt;
         mem_wr_en = mem_wr_en_fsm;
         mem_rd_en = mem_rd_en_fsm;
@@ -1111,45 +1113,45 @@ always_comb begin
 
     if(shuffle_en & ~masking_en) begin //only shuffling
         case(ntt_mode)
-            ct: bf_enable = bf_enable_reg[0];
-            gs: bf_enable = bf_enable_reg[1];
-            pwm:bf_enable = bf_enable_reg[1];
-            pwa:bf_enable = bf_enable_reg[1];
-            pws:bf_enable = bf_enable_reg[1];
-            pairwm: bf_enable = bf_enable_reg[1];
+            ct: bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            gs: bf_enable = bf_enable_reg[SRAM_LATENCY];
+            pwm:bf_enable = bf_enable_reg[SRAM_LATENCY];
+            pwa:bf_enable = bf_enable_reg[SRAM_LATENCY];
+            pws:bf_enable = bf_enable_reg[SRAM_LATENCY];
+            pairwm: bf_enable = bf_enable_reg[SRAM_LATENCY];
             default: bf_enable = 0;
         endcase
     end
     else if (shuffle_en & masking_en) begin //both
         case(ntt_mode)
             ct: bf_enable = 0;
-            gs: bf_enable = bf_enable_reg[1];
-            pwm:bf_enable = bf_enable_reg[2];
+            gs: bf_enable = bf_enable_reg[SRAM_LATENCY];
+            pwm:bf_enable = bf_enable_reg[SRAM_LATENCY+1];
             pwa:bf_enable = 0;
             pws:bf_enable = 0;
-            pairwm: bf_enable = bf_enable_reg[2];
+            pairwm: bf_enable = bf_enable_reg[SRAM_LATENCY+1];
             default: bf_enable = 0;
         endcase
     end
     else if (~shuffle_en & masking_en) begin //only masking
         case(ntt_mode)
             ct: bf_enable = 0;
-            gs: bf_enable = bf_enable_reg[0];
-            pwm:bf_enable = bf_enable_reg[0];
+            gs: bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            pwm:bf_enable = bf_enable_reg[SRAM_LATENCY-1];
             pwa:bf_enable = 0;
             pws:bf_enable = 0;
-            pairwm: bf_enable = bf_enable_reg[0];
+            pairwm: bf_enable = bf_enable_reg[SRAM_LATENCY-1];
             default: bf_enable = 0;
         endcase
     end
     else begin //none
         case(ntt_mode)
             ct: bf_enable = bf_enable_fsm;
-            gs: bf_enable = bf_enable_reg[0];
-            pwm:bf_enable = bf_enable_reg[0];
-            pwa:bf_enable = bf_enable_reg[0];
-            pws:bf_enable = bf_enable_reg[0];
-            pairwm: bf_enable = bf_enable_reg[0];
+            gs: bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            pwm:bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            pwa:bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            pws:bf_enable = bf_enable_reg[SRAM_LATENCY-1];
+            pairwm: bf_enable = bf_enable_reg[SRAM_LATENCY-1];
             default: bf_enable = 0;
         endcase
     end
@@ -1180,7 +1182,6 @@ end
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-        buf_wren_ntt_reg <= 'b0;
         buf_wren_intt_reg <= 'b0;
         buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= '0;
@@ -1197,7 +1198,6 @@ always_ff @(posedge clk or negedge reset_n) begin
         index_rand_offset_reg <= '0;
     end
     else if (zeroize) begin
-        buf_wren_ntt_reg <= 'b0;
         buf_wren_intt_reg <= 'b0;
         buf_rden_ntt_reg <= 'b0;
         bf_enable_reg <= '0;
@@ -1214,10 +1214,9 @@ always_ff @(posedge clk or negedge reset_n) begin
         index_rand_offset_reg <= '0;
     end
     else begin
-        buf_wren_ntt_reg <= buf_wren_ntt;
         buf_wren_intt_reg <= buf_wren_intt;
         buf_rden_ntt_reg <= buf_rden_ntt;
-        bf_enable_reg <= {bf_enable_reg[1:0], bf_enable_fsm};
+        bf_enable_reg <= {bf_enable_reg[SRAM_LATENCY:0], bf_enable_fsm};
         mem_wr_en_reg <= mem_wr_en_fsm;
         mem_rd_en_reg <= mem_rd_en_fsm;
         twiddle_addr_reg_d2 <= twiddle_addr_int;

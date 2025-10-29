@@ -37,7 +37,7 @@ module decompress_top
 
         output logic api_rd_en,
         output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rd_addr,
-        input  logic [1:0][DATA_WIDTH-1:0] api_rd_data,
+        input  logic [1:0][ABR_REG_WIDTH-1:0] api_rd_data,
 
         output logic decompress_done
     );

@@ -33,6 +33,7 @@ module ntt_top
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
 #(
+    parameter SRAM_LATENCY = 1,
     parameter REG_SIZE = 24,
     parameter NTT_REG_SIZE = REG_SIZE-1,
     parameter MLDSA_Q = 23'd8380417,
@@ -76,13 +77,16 @@ module ntt_top
     output mem_if_t mem_wr_req,
     output mem_if_t mem_rd_req,
     output logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_wr_data,
+    input logic mem_rd_data_valid,
     input  wire  [ABR_MEM_MASKED_DATA_WIDTH-1:0] mem_rd_data,
 
     //Memory IF for PWM
     output mem_if_t pwm_a_rd_req,
     output mem_if_t pwm_b_rd_req,
+    input logic pwm_a_rd_data_valid,
     input wire [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_a_rd_data,
     //Reuse between pwm mem data or sampler data (mux should be outside)
+    input logic pwm_b_rd_data_valid,
     input wire [ABR_MEM_MASKED_DATA_WIDTH-1:0] pwm_b_rd_data,
 
     output logic ntt_busy,
@@ -109,7 +113,7 @@ module ntt_top
     bf_uvwi_t uvw_i;
     bf_uvo_t  uv_o, uv_o_reg;
     logic bf_enable, bf_enable_mux;
-    logic [2:0] bf_enable_reg;
+    logic [SRAM_LATENCY+1:0] bf_enable_reg;
     logic bf_ready;
     logic buf0_valid;
 
@@ -303,6 +307,7 @@ module ntt_top
 
     
     ntt_ctrl #(
+        .SRAM_LATENCY(SRAM_LATENCY),
         .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
     )
     ntt_ctrl_inst0 (
@@ -317,6 +322,7 @@ module ntt_top
         .shuffle_en(shuffle_en),
         .random(random),
         .mlkem(mlkem),
+        .mem_rd_data_valid(mem_rd_data_valid),
 
         .ntt_mem_base_addr(ntt_mem_base_addr),
         .pwo_mem_base_addr(pwo_mem_base_addr),
@@ -571,7 +577,7 @@ module ntt_top
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
-            bf_enable_reg       <= {bf_enable_reg[1:0], bf_enable};
+            bf_enable_reg       <= {bf_enable_reg[SRAM_LATENCY:0], bf_enable};
             twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
@@ -651,8 +657,9 @@ module ntt_top
     end
 
     //Buffer (input or output side)
-    assign buf_data_i = ct_mode ? mem_rd_data[MEM_DATA_WIDTH-1:0] : shuffle_en ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.u20_o}
-                                                            : {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
+    assign buf_data_i = ct_mode ? mem_rd_data[MEM_DATA_WIDTH-1:0] : 
+                        shuffle_en ? {1'b0, uv_o_reg.v21_o, 1'b0, uv_o_reg.v20_o, 1'b0, uv_o_reg.u21_o, 1'b0, uv_o_reg.u20_o} : 
+                                     {1'b0, uv_o.v21_o, 1'b0, uv_o.v20_o, 1'b0, uv_o.u21_o, 1'b0, uv_o.u20_o};
 
     always_comb begin
         unique case(opcode)
@@ -815,8 +822,8 @@ module ntt_top
     always_comb hybrid_pw_uvw_i = {pw_uvw_i, uvw_i.w00_i, uvw_i.w01_i, uvw_i.w10_i, uvw_i.w11_i};
 
     assign bf_enable_mux    = ct_mode ? bf_enable       
-                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg[1] : bf_enable_reg[0]) 
-                                                :  ((pwm_mode | pairwm_mode) & masking_en & ~shuffle_en) ? bf_enable_reg[2] : bf_enable_reg[0];
+                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg[SRAM_LATENCY] : bf_enable_reg[SRAM_LATENCY-1]) 
+                                                :  ((pwm_mode | pairwm_mode) & masking_en & ~shuffle_en) ? bf_enable_reg[SRAM_LATENCY+1] : bf_enable_reg[SRAM_LATENCY-1];
     assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
     assign mem_wr_addr_mux  = ~shuffle_en & ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 

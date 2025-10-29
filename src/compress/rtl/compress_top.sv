@@ -37,11 +37,12 @@ module compress_top
 
         output mem_if_t mem_rd_req,
         input wire [COEFF_PER_CLK-1:0][REG_SIZE-1:0] mem_rd_data,
+        input wire mem_rd_data_valid,
 
         output logic [1:0] api_rw_en,
         output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rw_addr,
-        output logic [DATA_WIDTH-1:0] api_wr_data,
-        input  logic [DATA_WIDTH-1:0] api_rd_data,
+        output logic [ABR_REG_WIDTH-1:0] api_wr_data,
+        input  logic [ABR_REG_WIDTH-1:0] api_rd_data,
         output logic compare_failed,
         output logic compress_done
     );
@@ -52,10 +53,9 @@ module compress_top
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] mem_rd_data_stalled;
     logic [COMP_DATA_W-1:0] compress_data_valid;
     logic read_done;
-    logic mem_rd_data_valid;
     logic mem_rd_data_hold,mem_rd_data_hold_f ;
     logic buffer_valid, buffer_valid_f;
-    logic [DATA_WIDTH-1:0] buffer_data, buffer_data_f;
+    logic [ABR_REG_WIDTH-1:0] buffer_data, buffer_data_f;
     logic compress_busy;
 
     always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | buffer_valid | buffer_valid_f);
@@ -72,7 +72,7 @@ module compress_top
         else begin
             compress_busy <= compress_enable ? '1 :
                              compress_done ? '0 : compress_busy;
-            mem_rd_data_hold_f <= mem_rd_data_hold;
+            mem_rd_data_hold_f <= 0;
         end
     end
 
@@ -81,11 +81,10 @@ module compress_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .cmp_enable(compress_enable),
+        .mode(mode),
         .num_poly(num_poly),
         .src_base_addr(src_base_addr),
         .mem_rd_req(mem_rd_req),
-        .mem_rd_data_valid(mem_rd_data_valid),
-        .mem_rd_data_hold(mem_rd_data_hold),
         .done(read_done)
     );
 
@@ -115,7 +114,7 @@ module compress_top
     endgenerate
 
     always_comb begin
-        unique case (mode)
+        unique case (mode) inside
             compress1: begin
                 compress_data = {44'b0, compress_data_o[3][0:0], compress_data_o[2][0:0], compress_data_o[1][0:0],compress_data_o[0][0:0]};
                 compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 11);
