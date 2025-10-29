@@ -45,6 +45,7 @@ module sigencode_z_top
         output mem_if_t mem_b_rd_req,
         input wire [3:0][REG_SIZE-1:0] mem_a_rd_data,
         input wire [3:0][REG_SIZE-1:0] mem_b_rd_data,
+        input logic mem_rd_data_valid,
 
         // Output API ports
         input wire [MEM_ADDR_WIDTH-1:0] sigmem_dest_base_addr,
@@ -60,27 +61,24 @@ module sigencode_z_top
 
     localparam THE_LAST_ADDR = ((MLDSA_N)/4)-1;
     // State Machine States
-    localparam  IDLE                = 3'b000,
-                READ                = 3'b001,
-                READ_and_EXEC       = 3'b010,
-                READ_EXEC_and_WRITE = 3'b011,
-                EXEC_and_WRITE      = 3'b100,
-                WRITE               = 3'b101,
-                DONE                = 3'b110;
+    localparam  SIGENCODE_IDLE                = 2'b00,
+                SIGENCODE_READ                = 2'b01,
+                SIGENCODE_WRITE               = 2'b10,
+                SIGENCODE_DONE                = 2'b11;
 
 
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr, locked_src_addr; // this ensures that addresses are captured when the block is enabled
-    logic [2:0] state, next_state;
+    logic [1:0] state, next_state;
 
 
     // State Machine
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            state <= IDLE;
+            state <= SIGENCODE_IDLE;
         end
         else if (zeroize) begin
-            state <= IDLE;
+            state <= SIGENCODE_IDLE;
         end
         else begin
             state <= next_state;
@@ -88,38 +86,29 @@ module sigencode_z_top
     end
 
     always_comb begin
-        case (state)
-            IDLE: begin
+        next_state = state;
+        unique case (state) inside
+            SIGENCODE_IDLE: begin
                 if (sigencode_z_enable)
-                    next_state = READ;
+                    next_state = SIGENCODE_READ;
                 else
-                    next_state = IDLE;
+                    next_state = SIGENCODE_IDLE;
             end
-            READ: begin
-                next_state = READ_and_EXEC;
-            end
-            READ_and_EXEC: begin
-                next_state = READ_EXEC_and_WRITE;
-            end
-            READ_EXEC_and_WRITE: begin
-                if ((num_mem_operands+1) == THE_LAST_ADDR) begin
-                    next_state = EXEC_and_WRITE;
-                end
-                else begin
-                    next_state = READ_EXEC_and_WRITE;
+            SIGENCODE_READ: begin
+                if (num_mem_operands == THE_LAST_ADDR-1) begin
+                    next_state = SIGENCODE_WRITE;
                 end
             end
-            EXEC_and_WRITE: begin
-                next_state = WRITE;
+            SIGENCODE_WRITE: begin
+                if (~mem_rd_data_valid) begin
+                    next_state = SIGENCODE_DONE;
+                end
             end
-            WRITE: begin
-                next_state = DONE;
-            end
-            DONE: begin
-                next_state = IDLE;
+            SIGENCODE_DONE: begin
+                next_state = SIGENCODE_IDLE;
             end
             default: begin
-                next_state = IDLE;
+                next_state = SIGENCODE_IDLE;
             end
         endcase
     end
@@ -128,18 +117,18 @@ module sigencode_z_top
     // Assert the done signal when it is needed
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
-            sigencode_z_done      <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            locked_src_addr     <= '0;
+            sigencode_z_done    <= '0;
         end
         else if (zeroize) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            locked_src_addr     <= 'h0;
-            sigencode_z_done      <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            locked_src_addr     <= '0;
+            sigencode_z_done    <= '0;
         end
         else begin
             if (sigencode_z_enable) begin
@@ -148,23 +137,23 @@ module sigencode_z_top
             end
 
             
-            if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
+            if (state == SIGENCODE_READ) begin
                 num_mem_operands    <= num_mem_operands +2'h2;
             end
             else begin
-                num_mem_operands    <= 'h0;
+                num_mem_operands    <= '0;
             end
-            if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
+            if (mem_rd_data_valid) begin
                 num_api_operands    <= num_api_operands +2'h2;
             end
             else begin
-                num_api_operands    <= 'h0;
+                num_api_operands    <= '0;
             end
-            if (state == DONE) begin
-                sigencode_z_done      <= 'h1;
+            if (state == SIGENCODE_DONE) begin
+                sigencode_z_done      <= 1'b1;
             end
             else begin
-                sigencode_z_done      <= 'h0;
+                sigencode_z_done      <= 1'b0;
             end
         end
     end
@@ -179,7 +168,7 @@ module sigencode_z_top
             sigmem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             sigmem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
-        else if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
+        else if (mem_rd_data_valid) begin
             sigmem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_api_operands};
             sigmem_b_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_api_operands + 1};
         end
@@ -199,7 +188,7 @@ module sigencode_z_top
             mem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
-        else if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
+        else if (state == SIGENCODE_READ) begin
             mem_a_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_mem_operands};
             mem_b_rd_req <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_mem_operands + 1};
         end else begin

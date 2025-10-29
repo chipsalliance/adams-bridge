@@ -32,7 +32,6 @@ module decompose_ctrl
 
         output mem_if_t mem_rd_req,
         output mem_if_t mem_wr_req,
-        output logic mod_enable,
         output logic decompose_done
     );
 
@@ -60,19 +59,19 @@ module decompose_ctrl
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            mem_rd_addr <= 'h0;
-            src_base_addr_reg <= 'h0;
+            mem_rd_addr <= '0;
+            src_base_addr_reg <= '0;
         end
         else if (zeroize) begin
-            mem_rd_addr <= 'h0;
-            src_base_addr_reg <= 'h0;
+            mem_rd_addr <= '0;
+            src_base_addr_reg <= '0;
         end
         else if (rst_rd_addr) begin
             mem_rd_addr <= src_base_addr;
             src_base_addr_reg <= src_base_addr;
         end
         else if (incr_rd_addr) begin
-            mem_rd_addr <= last_poly_last_addr_rd ? 'h0 : mem_rd_addr_nxt;
+            mem_rd_addr <= last_poly_last_addr_rd ? '0 : mem_rd_addr_nxt;
         end
     end
 
@@ -81,19 +80,19 @@ module decompose_ctrl
     
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            mem_wr_addr <= 'h0;
-            dest_base_addr_reg <= 'h0;
+            mem_wr_addr <= '0;
+            dest_base_addr_reg <= '0;
         end
         else if (zeroize) begin
-            mem_wr_addr <= 'h0;
-            dest_base_addr_reg <= 'h0;
+            mem_wr_addr <= '0;
+            dest_base_addr_reg <= '0;
         end
         else if (rst_wr_addr) begin
             mem_wr_addr <= dest_base_addr;
             dest_base_addr_reg <= dest_base_addr;
         end
         else if (incr_wr_addr) begin
-            mem_wr_addr <= last_poly_last_addr_wr ? 'h0 : mem_wr_addr_nxt;
+            mem_wr_addr <= last_poly_last_addr_wr ? '0 : mem_wr_addr_nxt;
         end
     end
 
@@ -119,19 +118,17 @@ module decompose_ctrl
     end
 
     always_comb begin
-        incr_rd_addr = 'b0;
-        rst_rd_addr = 'b0;
-        mod_enable = 'b0;
+        incr_rd_addr = '0;
+        rst_rd_addr = '0;
 
         case(read_fsm_state_ps)
             DCMP_RD_IDLE: begin
                 read_fsm_state_ns = arc_DCMP_RD_IDLE_DCMP_RD_MEM ? DCMP_RD_MEM : DCMP_RD_IDLE;
-                rst_rd_addr = 'b1;
+                rst_rd_addr = 1'b1;
             end
             DCMP_RD_MEM: begin
                 read_fsm_state_ns = arc_DCMP_RD_MEM_DCMP_RD_IDLE ? DCMP_RD_IDLE : DCMP_RD_MEM;
-                incr_rd_addr = 'b1;
-                mod_enable = 'b1;
+                incr_rd_addr = 1'b1;
             end
         endcase
     end

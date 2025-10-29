@@ -19,7 +19,6 @@
 // Each set of 10 bits represents a single coefficient, which is then shifted left by 
 // 13 bits to produce a 24-bit output with the MSB set to zero. This module supports
 // parallel processing of coefficients and interfaces with memory for storing the results.
-// One cycle read and write latency
 //======================================================================
 
 module pkdecode
@@ -39,7 +38,9 @@ module pkdecode
         input wire pkdecode_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [8*INPUT_COEFF_SIZE-1:0] API_rd_data,
+        input wire API_rd_data_valid,
 
+        output logic API_rd_en,
         output logic [API_ADDR_WIDTH-1:0] API_rd_address,
         output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
         output logic [3:0][REG_SIZE-1:0] mem_b_wr_data,
@@ -54,28 +55,26 @@ module pkdecode
     localparam NUM_COEFFS_PER_CYCLE = 8;
     localparam THE_LAST_ADDR = (MLDSA_K * MLDSA_N)/8;
     // State Machine States
-    localparam  IDLE                = 3'b000,
-                READ                = 3'b001,
-                READ_and_EXEC       = 3'b010,
-                READ_and_WRITE      = 3'b011,
-                WRITE               = 3'b100,
-                DONE                = 3'b101;
+    localparam  PKDECODE_IDLE  = 2'b00,
+                PKDECODE_READ  = 2'b01,
+                PKDECODE_WRITE = 2'b10,
+                PKDECODE_DONE  = 2'b11;
 
     // Internal signals
     logic [7:0][REG_SIZE-1:0] coefficients;  // Extracted 10-bit coefficients
     logic [7:0][REG_SIZE-1:0] encoded_coeffs; // Encoded 24-bit coefficients
     logic [ABR_MEM_ADDR_WIDTH-1:0] locked_dest_addr;
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
-    logic [2:0] state, next_state;
+    logic [1:0] state, next_state;
 
 
     // State Machine
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            state <= IDLE;
+            state <= PKDECODE_IDLE;
         end
         else if (zeroize) begin
-            state <= IDLE;
+            state <= PKDECODE_IDLE;
         end
         else begin
             state <= next_state;
@@ -83,35 +82,30 @@ module pkdecode
     end
 
     always_comb begin
-        case (state)
-            IDLE: begin
+        next_state = state;
+        unique case (state) inside
+            PKDECODE_IDLE: begin
                 if (pkdecode_enable)
-                    next_state = READ;
+                    next_state = PKDECODE_READ;
                 else
-                    next_state = IDLE;
+                    next_state = PKDECODE_IDLE;
             end
-            READ: begin
-                next_state = READ_and_EXEC;
-            end
-            READ_and_EXEC: begin
-                next_state = READ_and_WRITE;
-            end
-            READ_and_WRITE: begin
-                if (num_api_operands == THE_LAST_ADDR) begin
-                    next_state = WRITE;
-                end
-                else begin
-                    next_state = READ_and_WRITE;
+            PKDECODE_READ: begin
+                if (num_api_operands == THE_LAST_ADDR-1) begin
+                    next_state = PKDECODE_WRITE;
                 end
             end
-            WRITE: begin
-                next_state = DONE;
+            //Done reading, only writes remaining
+            PKDECODE_WRITE: begin
+                if (~API_rd_data_valid) begin
+                    next_state = PKDECODE_DONE;
+                end
             end
-            DONE: begin
-                next_state = IDLE;
+            PKDECODE_DONE: begin
+                next_state = PKDECODE_IDLE;
             end
             default: begin
-                next_state = IDLE;
+                next_state = PKDECODE_IDLE;
             end
         endcase
     end
@@ -120,7 +114,7 @@ module pkdecode
     // Extract 10-bit coefficients from API_rd_data
     always_comb begin
         for (int i = 0; i < NUM_COEFFS_PER_CYCLE; i++) begin
-            coefficients[i] = {24'h0, API_rd_data[COEFF_WIDTH*i +: COEFF_WIDTH]};
+            coefficients[i] = {14'h0, API_rd_data[COEFF_WIDTH*i +: COEFF_WIDTH]};
         end
     end
 
@@ -141,7 +135,7 @@ module pkdecode
             mem_a_wr_data <= '{default: 0};
             mem_b_wr_data <= '{default: 0};
         end
-        else begin
+        else if (API_rd_data_valid) begin
             mem_a_wr_data <= '{encoded_coeffs[3], encoded_coeffs[2], encoded_coeffs[1], encoded_coeffs[0]};
             mem_b_wr_data <= '{encoded_coeffs[7], encoded_coeffs[6], encoded_coeffs[5], encoded_coeffs[4]};
         end
@@ -157,7 +151,7 @@ module pkdecode
             mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
-        else if (state == READ_and_WRITE || state == WRITE) begin
+        else if (API_rd_data_valid) begin
             mem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands};
             mem_b_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands + 1};
         end
@@ -170,14 +164,18 @@ module pkdecode
     // Memory read request generation
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            API_rd_en <= 1'b0;
             API_rd_address <= '0;
         end
         else if (zeroize) begin
+            API_rd_en <= 1'b0;
             API_rd_address <= '0;
         end
-        else if (state == READ || state == READ_and_EXEC || state == READ_and_WRITE) begin
+        else if (state == PKDECODE_READ) begin
+            API_rd_en <= 1'b1;
             API_rd_address <= API_ADDR_WIDTH'(num_api_operands);
         end else begin
+            API_rd_en <= 1'b0;
             API_rd_address <= '0;
         end
     end
@@ -186,39 +184,39 @@ module pkdecode
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            pkdecode_done       <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            pkdecode_done       <= '0;
         end
         else if (zeroize) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            pkdecode_done       <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            pkdecode_done       <= '0;
         end
         else begin
             if (pkdecode_enable) begin
                 locked_dest_addr    <= dest_base_addr;
             end
-            if (state == READ || state == READ_and_EXEC || state == READ_and_WRITE) begin
-                num_api_operands    <= num_api_operands +1'h1;
+            if (state == PKDECODE_READ) begin
+                num_api_operands    <= num_api_operands + 1'h1;
             end
             else begin
-                num_api_operands    <= 'h0;
+                num_api_operands    <= '0;
             end
-            if (state == READ_and_WRITE || state == WRITE) begin
-                num_mem_operands    <= num_mem_operands +2'h2;
+            if (API_rd_data_valid) begin
+                num_mem_operands    <= num_mem_operands + 2'h2;
             end
             else begin
-                num_mem_operands    <= 'h0;
+                num_mem_operands    <= '0;
             end
             
-            if (state == DONE) begin
-                pkdecode_done      <= 'h1;
+            if (state == PKDECODE_DONE) begin
+                pkdecode_done      <= 1'b1;
             end
             else begin
-                pkdecode_done      <= 'h0;
+                pkdecode_done      <= 1'b0;
             end
         end
     end
