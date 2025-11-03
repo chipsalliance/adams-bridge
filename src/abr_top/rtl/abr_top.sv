@@ -180,7 +180,7 @@ module abr_top
   logic skdecode_enable, skdecode_done;
   mem_if_t [1:0] skdecode_keymem_if;
   logic [1:0][ABR_REG_WIDTH-1:0] skdecode_rd_data;
-  logic skdecode_rd_data_valid;
+  logic [1:0] skdecode_rd_data_valid;
   mem_if_t [1:0] skdecode_mem_wr_req;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] skdecode_mem_wr_data;
   logic skdecode_error;
@@ -565,7 +565,11 @@ always_comb zeroize_mem_addr = zeroize_mem.addr;
 logic [MsgWidth-1:0] msg_data_i[Sha3Share];
 assign msg_data_i = decomp_msg_valid ? decomp_msg_data : msg_data;
 
-abr_sampler_top sampler_top_inst
+abr_sampler_top
+#(
+  .SRAM_LATENCY(SRAM_LATENCY)
+)
+sampler_top_inst
 (
   .clk(clk),
   .rst_b(rst_b),
@@ -739,9 +743,9 @@ generate
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
-    .random(rand_bits[5:0]),
+    .random('0),//rand_bits[5:0]),
     .masking_en(ntt_masking_en_q[g_inst]),
-    .rnd_i(ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)), //(ntt_rand_bits & {(RND_W-6){ntt_random_en[g_inst]}}),
+    .rnd_i('0),//ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)), //(ntt_rand_bits & {(RND_W-6){ntt_random_en[g_inst]}}),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
@@ -861,10 +865,8 @@ skdecode_inst
   .keymem_src_base_addr(aux_src0_base_addr), 
   .dest_base_addr(aux_dest_base_addr),
 
-  .keymem_a_rd_req(skdecode_keymem_if[0]),
-  .keymem_a_rd_data(skdecode_rd_data[0]),
-  .keymem_b_rd_req(skdecode_keymem_if[1]),
-  .keymem_b_rd_data(skdecode_rd_data[1]),
+  .keymem_rd_req(skdecode_keymem_if),
+  .keymem_rd_data(skdecode_rd_data),
   .keymem_rd_data_valid(skdecode_rd_data_valid),
 
   .mem_a_wr_req(skdecode_mem_wr_req[0]),

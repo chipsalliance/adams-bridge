@@ -192,7 +192,7 @@ module abr_sha3pad
   ) u_wrmsg_count (
     .clk_i,
     .rst_b,
-    .clr_i(clr_wrmsg | zeroize),
+    .clr_i(rst_serial_buffer),
     .set_i(new_block),
     .set_cnt_i(MsgCountW'(1)),
     .incr_en_i(inc_wrmsg),
@@ -204,7 +204,7 @@ module abr_sha3pad
   );
 
   assign inc_wrmsg = update_serial_buffer;
-  assign rst_serial_buffer = zeroize;
+  assign rst_serial_buffer = clr_wrmsg | zeroize;
   // Prefix index to slice the `prefix` n-bits into multiple of 64bit.
   logic [MsgAddrW-1:0] prefix_index;
   assign prefix_index = (wr_message < block_addr_limit) ? wr_message : '0;
@@ -376,7 +376,10 @@ module abr_sha3pad
           st_d = StMessage;
 
           keccak_run_o = 1'b 1;
-          new_block = 1'b 1;
+          if (msg_valid_i && ~msg_partial)
+            new_block = 1'b1;
+          else
+            clr_wrmsg = 1'b1;
         end else if (sent_blocksize & ~keccak_ack) begin
           // Check block completion first even process is set.
           st_d = StMessage;
@@ -409,7 +412,6 @@ module abr_sha3pad
 
           // always clear the latched msgbuf
           clr_msgbuf = 1'b 1;
-          //clr_wrmsg = 1'b 1;
         end else if (end_of_block && ~keccak_ack) begin
           // Wait until Keccak is available
           st_d = StPad;
