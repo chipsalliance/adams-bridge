@@ -43,12 +43,10 @@ module skdecode_top
         input wire skdecode_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [ABR_REG_WIDTH-1:0] keymem_a_rd_data,
-        input wire [ABR_REG_WIDTH-1:0] keymem_b_rd_data,
-        input logic keymem_rd_data_valid,
+        input wire [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
+        input logic [1:0] keymem_rd_data_valid,
 
-        output mem_if_t keymem_a_rd_req,
-        output mem_if_t keymem_b_rd_req,
+        output mem_if_t [1:0] keymem_rd_req,
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
         output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
@@ -73,7 +71,7 @@ module skdecode_top
     logic [7:0][ETA_SIZE-1:0] s1s2_buf_data;
     logic [3:0][MLDSA_D-1:0] t0_buf_data;
     logic [3:0][REG_SIZE-1:0] mem_a_wr_data_int, mem_b_wr_data_int, mem_a_wr_data_reg, mem_b_wr_data_reg;
-    logic [ABR_REG_WIDTH-1:0] keymem_a_rd_data_reg, keymem_b_rd_data_reg;
+    logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data_reg;
 
     logic t0_data_valid;
     logic s1s2_data_valid;
@@ -89,7 +87,6 @@ module skdecode_top
             mem_b_wr_req_reg.addr       <= '0;
             mem_a_wr_data_reg           <= '0;
             mem_b_wr_data_reg           <= '0;
-            s1s2_keymem_b_valid         <= '0;
             keymem_rd_data_valid_f      <= '0;
         end
         else if (zeroize) begin
@@ -99,7 +96,6 @@ module skdecode_top
             mem_b_wr_req_reg.addr       <= '0;
             mem_a_wr_data_reg           <= '0;
             mem_b_wr_data_reg           <= '0;
-            s1s2_keymem_b_valid         <= '0;
             keymem_rd_data_valid_f      <= '0;
         end
         else begin
@@ -107,25 +103,25 @@ module skdecode_top
             mem_b_wr_req_reg            <= mem_b_wr_req_int;
             mem_a_wr_data_reg           <= mem_a_wr_data_int;
             mem_b_wr_data_reg           <= mem_b_wr_data_int;
-            s1s2_keymem_b_valid         <= s1s2_enable & keymem_rd_data_valid;
-            keymem_rd_data_valid_f      <= keymem_rd_data_valid;
+            keymem_rd_data_valid_f      <= (|keymem_rd_data_valid);
         end
     end
+
+    always_comb s1s2_keymem_b_valid = s1s2_enable & keymem_rd_data_valid[1];
 
     //Data flop with enable to sync with buf full
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            keymem_a_rd_data_reg <= '0;
-            keymem_b_rd_data_reg <= '0;
+            keymem_rd_data_reg <= '0;
         end
         else if (zeroize) begin
-            keymem_a_rd_data_reg <= '0;
-            keymem_b_rd_data_reg <= '0;
+            keymem_rd_data_reg <= '0;
         end
-        else if (keymem_rd_data_valid) begin
-            keymem_a_rd_data_reg <= s1s2_keymem_b_valid ? keymem_b_rd_data: keymem_a_rd_data;
-            keymem_b_rd_data_reg <= keymem_b_rd_data;
-
+        else begin
+            if (keymem_rd_data_valid[0] | s1s2_keymem_b_valid)
+                keymem_rd_data_reg[0] <= s1s2_keymem_b_valid ? keymem_rd_data[1]: keymem_rd_data[0];
+            if (keymem_rd_data_valid[1] & ~s1s2_enable)
+                keymem_rd_data_reg[1] <= keymem_rd_data[1];
         end
     end
 
@@ -188,7 +184,7 @@ module skdecode_top
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_i({keymem_b_rd_data_reg, keymem_a_rd_data_reg}),
+        .data_i(keymem_rd_data_reg),
         .data_valid_i(keymem_rd_data_valid_f & t0_enable),
         .data_o(t0_buf_data),
         .data_valid_o(t0_data_valid)
@@ -202,7 +198,7 @@ module skdecode_top
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_i(keymem_a_rd_data_reg),
+        .data_i(keymem_rd_data_reg[0]),
         .data_valid_i(keymem_rd_data_valid_f & s1s2_enable),
         .data_o(s1s2_buf_data),
         .data_valid_o(s1s2_data_valid)
@@ -221,8 +217,8 @@ module skdecode_top
         .s1s2_error(|s1s2_error), //TODO: enable later when tb is fixed to drive input values within range
         .mem_a_wr_req(mem_a_wr_req_int),
         .mem_b_wr_req(mem_b_wr_req_int),
-        .kmem_a_rd_req(keymem_a_rd_req),
-        .kmem_b_rd_req(keymem_b_rd_req),
+        .kmem_a_rd_req(keymem_rd_req[0]),
+        .kmem_b_rd_req(keymem_rd_req[1]),
         .s1s2_enable(s1s2_enable),
         .t0_enable(t0_enable),
         .skdecode_done(skdecode_done),

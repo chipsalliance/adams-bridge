@@ -113,7 +113,7 @@ module ntt_top
     bf_uvwi_t uvw_i;
     bf_uvo_t  uv_o, uv_o_reg;
     logic bf_enable, bf_enable_mux;
-    logic [SRAM_LATENCY+1:0] bf_enable_reg;
+    logic [2:0] bf_enable_reg;
     logic bf_ready;
     logic buf0_valid;
 
@@ -577,7 +577,7 @@ module ntt_top
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
-            bf_enable_reg       <= {bf_enable_reg[SRAM_LATENCY:0], bf_enable};
+            bf_enable_reg       <= {bf_enable_reg[1:0], bf_enable};
             twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
@@ -822,8 +822,8 @@ module ntt_top
     always_comb hybrid_pw_uvw_i = {pw_uvw_i, uvw_i.w00_i, uvw_i.w01_i, uvw_i.w10_i, uvw_i.w11_i};
 
     assign bf_enable_mux    = ct_mode ? bf_enable       
-                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg[SRAM_LATENCY] : bf_enable_reg[SRAM_LATENCY-1]) 
-                                                :  ((pwm_mode | pairwm_mode) & masking_en & ~shuffle_en) ? bf_enable_reg[SRAM_LATENCY+1] : bf_enable_reg[SRAM_LATENCY-1];
+                                      : gs_mode ? (masking_en_ctrl ? bf_enable_reg[1] : bf_enable_reg[0]) 
+                                                :  ((pwm_mode | pairwm_mode) & masking_en & ~shuffle_en) ? bf_enable_reg[2] : bf_enable_reg[0];
     assign mem_wren_mux     = ~shuffle_en & ct_mode ? mem_wren_reg    : mem_wren;
     assign mem_wr_addr_mux  = ~shuffle_en & ct_mode ? mem_wr_addr_reg : mem_wr_addr;
 

@@ -104,7 +104,7 @@ import kv_defines_pkg::*;
   abr_mem_if abr_memory_export();
 
   // SRAM Latency
-  localparam SRAM_LATENCY = 1;
+  localparam SRAM_LATENCY = 2;
 
   // SRAM module
   abr_mem_top #(

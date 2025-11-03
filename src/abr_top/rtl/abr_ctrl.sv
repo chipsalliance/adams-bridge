@@ -106,7 +106,7 @@ module abr_ctrl
   output logic skdecode_enable_o,
   input mem_if_t [1:0] skdecode_keymem_if_i,
   output logic [1:0][ABR_REG_WIDTH-1:0] skdecode_rd_data_o,
-  output logic skdecode_rd_data_valid_o,
+  output logic [1:0] skdecode_rd_data_valid_o,
   input logic skdecode_done_i,
   input logic skdecode_error_i,
 
@@ -533,7 +533,6 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [MsgStrbW-1:0] msg_strobe_nxt, last_msg_strobe;
   logic [ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt_nxt, msg_cnt;
   logic msg_valid_nxt;
-  logic msg_hold;
 
   logic error_flag;
   logic error_flag_reg;
@@ -541,7 +540,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic subcomponent_busy;
 
   abr_ctrl_fsm_state_e abr_ctrl_fsm_ps, abr_ctrl_fsm_ns;
-  logic msg_valid;
+  logic msg_valid, msg_valid_stg;
 
   mldsa_signature_u signature_reg;
 
@@ -956,9 +955,9 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
   
-  always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) & ~msg_hold |
-                                    (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) & ~msg_hold |
-                                    (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]}) & ~msg_hold;
+  always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) |
+                                    (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) |
+                                    (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]});
 
   always_comb sampler_sk_rd_offset = (sampler_src == MLKEM_EK_REG_ID) ? MLKEM_DEST_EK_MEM_OFFSET/2 :
                                      (sampler_src == MLKEM_MSG_ID) ? MLKEM_DEST_MSG_MEM_OFFSET/2 :
@@ -1033,7 +1032,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sk_reg_re[0] =  api_sk_reg_rd_dec | (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) | (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec);
 
   always_comb skdecode_rd_data_o = sk_ram_rdata;
-  always_comb skdecode_rd_data_valid_o = (|skdecode_re_bank[SRAM_LATENCY]);
+  always_comb skdecode_rd_data_valid_o = skdecode_re_bank[SRAM_LATENCY];
   always_comb decompress_api_rd_data_o = sk_ram_rdata;
   always_comb compress_api_rd_data_o = {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
                                        {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1];
@@ -1170,8 +1169,6 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_pubkey_mem_addr[0].addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
   always_comb api_pubkey_mem_addr[0].offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS;
 
-  always_comb sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
-  always_comb sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
   always_comb api_pk_reg_raddr = {3'b0,api_pubkey_addr[2:0]};
   always_comb api_pk_reg_waddr = {3'b0,api_pubkey_addr[2:0]};
 
@@ -1191,8 +1188,19 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb pkdecode_rd_en[0] = pkdecode_rd_en_i;
 
-  always_comb sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]}) & ~msg_hold;
-
+  //For longer SRAM latency, start reading a cycle earlier to hide the latency
+  always_comb begin
+    //if (SRAM_LATENCY == 1) begin
+      sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]});
+      sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
+      sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
+    //end
+    //if (SRAM_LATENCY == 2) begin
+    //  sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[3:323]});
+    //  sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 3)/(PK_MEM_NUM_DWORDS/2));
+    //  sampler_pubkey_mem_addr.offset = (sampler_src_offset- 3)%(PK_MEM_NUM_DWORDS/2);
+    //end
+  end
   //read requests
   always_comb pubkey_ram_re = sampler_pk_rd_en[0] | pkdecode_rd_en[0] | api_pubkey_re[0];
   always_comb pubkey_ram_raddr = ({PK_MEM_ADDR_W{sampler_pk_rd_en[0]}} & sampler_pubkey_mem_addr.addr) |
@@ -1284,9 +1292,9 @@ always_comb kv_mlkem_msg_write_data = '0;
           api_pubkey_mem_addr[g_stage] <= api_pubkey_mem_addr[g_stage-1];
           pkdecode_rd_en[g_stage] <= pkdecode_rd_en[g_stage-1];
           pkdecode_rd_offset[g_stage] <= pkdecode_rd_offset[g_stage-1];
-          sampler_pk_rd_en[g_stage] <= msg_hold ? sampler_pk_rd_en[g_stage] : sampler_pk_rd_en[g_stage-1];
-          sampler_sk_rd_en[g_stage] <= msg_hold ? sampler_sk_rd_en[g_stage] : sampler_sk_rd_en[g_stage-1];
-          sampler_src_offset_stg[g_stage] <= msg_hold ? sampler_src_offset_stg[g_stage] : sampler_src_offset_stg[g_stage-1];
+          sampler_pk_rd_en[g_stage] <= sampler_pk_rd_en[g_stage-1];
+          sampler_sk_rd_en[g_stage] <=sampler_sk_rd_en[g_stage-1];
+          sampler_src_offset_stg[g_stage] <= sampler_src_offset_stg[g_stage-1];
           sigdecode_z_ram_re[g_stage] <= sigdecode_z_ram_re[g_stage-1];
           api_sig_z_re[g_stage] <= api_sig_z_re[g_stage-1];
           api_sig_z_addr[g_stage] <= api_sig_z_addr[g_stage-1];
@@ -1317,7 +1325,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       msg_data <= '0;
     end else if (zeroize) begin
       msg_data <= '0;
-    end else if (~msg_hold) begin
+    end else begin
       unique case (sampler_src) inside
         MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {mldsa_seed_reg[{sampler_src_offset[1:0],1'b1}],mldsa_seed_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
@@ -1912,21 +1920,41 @@ always_comb stream_msg_buffer_valid = stream_msg_buffer_flush ? (|stream_msg_buf
 //operand 2 contains the length of the message being fed to sha3
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << abr_instr.length[$clog2(MsgStrbW)-1:0]);
- 
-always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
-
-//Last cycle when msg count is equal to length
-//length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_last = stream_msg_ip ? '0 : (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
-always_comb msg_done = stream_msg_ip ? stream_msg_done : (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 //overload msg interface with stream msg interface
 always_comb msg_cnt_nxt = stream_msg_ip ? '0 :
                           msg_done ? '0 :
-                          msg_valid ? msg_cnt + 'd1 : msg_cnt;
+                          (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) ? msg_cnt + 'd1 : msg_cnt;
 always_comb msg_valid_nxt = stream_msg_ip ? stream_msg_buffer_valid : msg_valid;
 always_comb msg_strobe_nxt = stream_msg_ip ? stream_msg_buffer_strobe :
                              msg_last ? last_msg_strobe : '1;
+
+//Computing the msg interfaces signals
+//Last cycle when msg count is equal to length - add a cnt for extra SRAM latency
+always_comb begin
+  msg_valid_stg = 0;
+  msg_last = 0;
+  msg_done = 0;
+  if (stream_msg_ip) begin
+    msg_last = 0;
+    msg_done = stream_msg_done;
+  end
+  else if (sampler_src inside {MLKEM_EK_REG_ID,MLKEM_MSG_ID,MLKEM_CIPHERTEXT_ID}) begin
+    msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
+    msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+  end
+  else if (sampler_src inside {MLDSA_PK_REG_ID} && sampler_src_offset >= 4) begin
+    msg_valid_stg = sampler_pk_rd_en[SRAM_LATENCY-1];
+    msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+  end
+  else begin
+    msg_valid_stg = 1;
+    msg_last = (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+    msg_done = (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+  end
+end
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1940,9 +1968,9 @@ always_ff @(posedge clk or negedge rst_b) begin
     msg_strobe_o <= 0;
   end
   else begin
-    msg_cnt <= msg_hold ? msg_cnt : msg_cnt_nxt;
-    msg_valid_o <= msg_hold ? msg_valid_o : msg_valid_nxt;
-    msg_strobe_o <= msg_hold ? msg_strobe_o : msg_strobe_nxt;
+    msg_cnt <= msg_cnt_nxt;
+    msg_valid_o <= msg_valid_nxt;
+    msg_strobe_o <= msg_strobe_nxt;
   end
 end
 
@@ -1990,11 +2018,11 @@ always_comb begin : ctrl_fsm_out_combo
         msg_start_o = 1;
       end
       ABR_CTRL_MSG_LOAD: begin
-        msg_valid = 1; //FIXME pipeline SRAM this is hard, might need to pace reads
+        msg_valid = msg_valid_stg;
         sampler_src = abr_instr.operand1;
         sampler_imm = abr_instr.imm;
-        if (msg_done & ~msg_hold) begin
-          msg_valid = 0;
+        if (msg_done) begin
+          msg_valid =0;
           if (abr_instr.opcode.ntt_en & ntt_busy[0]) abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
           else if (abr_instr.opcode.sampler_en | abr_instr.opcode.aux_en | abr_instr.opcode.ntt_en) abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
 	  else abr_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
@@ -2227,8 +2255,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (mldsa_seed_reg === '0), clk, !rst_b)
-  //Assumption that stream message is never fast enough to get stalled
-  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, !(stream_msg_fsm_ps inside {MLDSA_MSG_IDLE}) & msg_hold, clk, !rst_b)
 
 `ifdef CALIPTRA
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )

@@ -80,12 +80,9 @@ module skdecode_ctrl
 
     //Read FSM arcs
     logic arc_SKDEC_RD_IDLE_SKDEC_RD_S1;
-    logic arc_SKDEC_RD_S1_SKDEC_RD_STAGE;
-    logic arc_SKDEC_RD_S2_SKDEC_RD_STAGE;
-    logic arc_SKDEC_RD_T0_SKDEC_RD_STAGE;
-    logic arc_SKDEC_RD_STAGE_SKDEC_RD_S2;
-    logic arc_SKDEC_RD_STAGE_SKDEC_RD_T0;
-    logic arc_SKDEC_RD_STAGE_SKDEC_RD_IDLE;
+    logic arc_SKDEC_RD_S1_SKDEC_RD_S2;
+    logic arc_SKDEC_RD_S2_SKDEC_RD_T0;
+    logic arc_SKDEC_RD_T0_SKDEC_RD_IDLE;
 
     //skdecode counter
     always_ff @(posedge clk or negedge reset_n) begin
@@ -116,10 +113,10 @@ module skdecode_ctrl
         else if (arc_SKDEC_RD_IDLE_SKDEC_RD_S1) begin
             mem_rd_pace <= 16'b0111011101110111;
         end
-        else if (arc_SKDEC_RD_STAGE_SKDEC_RD_T0) begin
+        else if (arc_SKDEC_RD_S2_SKDEC_RD_T0) begin
             mem_rd_pace <= 16'b0111101111011111;
         end
-        else if (read_fsm_state_ps inside {SKDEC_RD_T0, SKDEC_RD_S2, SKDEC_RD_S1})
+        else if (incr_rd_addr)
             mem_rd_pace <= {mem_rd_pace[0], mem_rd_pace[15:1]};
     end
 
@@ -211,15 +208,9 @@ module skdecode_ctrl
     //---------------------------------
     always_comb begin
         arc_SKDEC_RD_IDLE_SKDEC_RD_S1  = (read_fsm_state_ps == SKDEC_RD_IDLE) & skdecode_enable;
-        arc_SKDEC_RD_S1_SKDEC_RD_STAGE = (read_fsm_state_ps == SKDEC_RD_S1) & last_poly_last_addr;
-        arc_SKDEC_RD_S2_SKDEC_RD_STAGE = (read_fsm_state_ps == SKDEC_RD_S2) & last_poly_last_addr;
-        arc_SKDEC_RD_T0_SKDEC_RD_STAGE = (read_fsm_state_ps == SKDEC_RD_T0) & last_poly_last_addr;
-
-        arc_SKDEC_RD_STAGE_SKDEC_RD_S2   = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & ~s2_done & ~t0_done;
-        arc_SKDEC_RD_STAGE_SKDEC_RD_T0   = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & s2_done & ~t0_done;
-        arc_SKDEC_RD_STAGE_SKDEC_RD_IDLE = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & s2_done & t0_done;
-
-        //TODO error conditions
+        arc_SKDEC_RD_S1_SKDEC_RD_S2 = (read_fsm_state_ps == SKDEC_RD_S1) & last_poly_last_addr & s1_done & ~s2_done & ~t0_done;
+        arc_SKDEC_RD_S2_SKDEC_RD_T0 = (read_fsm_state_ps == SKDEC_RD_S2) & last_poly_last_addr & s1_done & s2_done & ~t0_done;
+        arc_SKDEC_RD_T0_SKDEC_RD_IDLE = (read_fsm_state_ps == SKDEC_RD_T0) & last_poly_last_addr & s1_done & s2_done & t0_done;
     end
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -241,8 +232,8 @@ module skdecode_ctrl
         rst_skdec_count     = 1'b0;
         s1s2_enable_fsm     = 1'b0;
         t0_enable_fsm       = 1'b0;
-        num_poly            = '0;
-        num_inst            = '0;
+        num_poly            = MLDSA_L;
+        num_inst            = 4'd8;
 
         unique case(read_fsm_state_ps)
             SKDEC_RD_IDLE: begin
@@ -251,39 +242,34 @@ module skdecode_ctrl
                 rst_skdec_count     = 1'b1;
             end
             SKDEC_RD_S1: begin
-                read_fsm_state_ns   = arc_SKDEC_RD_S1_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_S1;
-                incr_rd_addr        = mem_rd_pace[0];
-                kmem_a_rw_mode      = mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                kmem_b_rw_mode      = mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                incr_skdec_count    = 1'b1;
+                read_fsm_state_ns   = arc_SKDEC_RD_S1_SKDEC_RD_S2 ? SKDEC_RD_S2 : SKDEC_RD_S1;
+                incr_rd_addr        = ~last_poly_last_addr & mem_rd_pace[0];
+                kmem_a_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = MLDSA_L;
-                num_inst            = 'd8;
+                num_inst            = 4'd8;
             end
             SKDEC_RD_S2: begin
-                read_fsm_state_ns   = arc_SKDEC_RD_S2_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_S2;
-                incr_rd_addr        = mem_rd_pace[0];
-                kmem_a_rw_mode      = mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                kmem_b_rw_mode      = mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                incr_skdec_count    = 1'b1;
+                read_fsm_state_ns   = arc_SKDEC_RD_S2_SKDEC_RD_T0 ? SKDEC_RD_T0 : SKDEC_RD_S2;
+                incr_rd_addr        = ~last_poly_last_addr & mem_rd_pace[0];
+                kmem_a_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = MLDSA_K;
-                num_inst            = 'd8;
+                num_inst            = 4'd8;
             end
             SKDEC_RD_T0: begin
-                read_fsm_state_ns   = arc_SKDEC_RD_T0_SKDEC_RD_STAGE ? SKDEC_RD_STAGE : SKDEC_RD_T0;
-                incr_rd_addr        = mem_rd_pace[0];
-                kmem_a_rw_mode      = mem_rd_pace[0] ? RW_READ : RW_IDLE;
-                kmem_b_rw_mode      = mem_rd_pace[0] ? RW_READ : RW_IDLE;
-                incr_skdec_count    = 1'b1;
+                read_fsm_state_ns   = arc_SKDEC_RD_T0_SKDEC_RD_IDLE ? SKDEC_RD_IDLE : SKDEC_RD_T0;
+                incr_rd_addr        = ~last_poly_last_addr & mem_rd_pace[0];
+                kmem_a_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] ? RW_READ : RW_IDLE;
+                incr_skdec_count    = ~last_poly_last_addr;
                 t0_enable_fsm       = 1'b1;
                 num_poly            = MLDSA_K;
-                num_inst            = 'd4;
-            end
-            SKDEC_RD_STAGE: begin
-                read_fsm_state_ns   = arc_SKDEC_RD_STAGE_SKDEC_RD_S2 ? SKDEC_RD_S2 :
-                                      arc_SKDEC_RD_STAGE_SKDEC_RD_T0 ? SKDEC_RD_T0 :
-                                      arc_SKDEC_RD_STAGE_SKDEC_RD_IDLE ? SKDEC_RD_IDLE : SKDEC_RD_STAGE;
+                num_inst            = 4'd4;
             end
             default: begin
                 read_fsm_state_ns = SKDEC_RD_IDLE;
@@ -297,9 +283,9 @@ module skdecode_ctrl
     always_comb begin
         //TODO add error conditions
         arc_SKDEC_WR_IDLE_SKDEC_WR_S1    = (write_fsm_state_ps == SKDEC_WR_IDLE) & skdecode_enable;
-        arc_SKDEC_WR_S1_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_S1) & (read_fsm_state_ps == SKDEC_RD_STAGE) & !s1s2_valid;
-        arc_SKDEC_WR_S2_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_S2) & (read_fsm_state_ps == SKDEC_RD_STAGE) & !s1s2_valid;
-        arc_SKDEC_WR_T0_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_T0) & (read_fsm_state_ps == SKDEC_RD_STAGE) & !t0_valid;
+        arc_SKDEC_WR_S1_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_S1) & (read_fsm_state_ps == SKDEC_RD_S1) & last_poly_last_addr & !s1s2_valid;
+        arc_SKDEC_WR_S2_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_S2) & (read_fsm_state_ps == SKDEC_RD_S2) & last_poly_last_addr & !s1s2_valid;
+        arc_SKDEC_WR_T0_SKDEC_WR_STAGE   = (write_fsm_state_ps == SKDEC_WR_T0) & (read_fsm_state_ps == SKDEC_RD_T0) & last_poly_last_addr & !t0_valid;
         arc_SKDEC_WR_STAGE_SKDEC_WR_S2   = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & ~s2_done & ~t0_done;
         arc_SKDEC_WR_STAGE_SKDEC_WR_T0   = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & s2_done & ~t0_done;
         arc_SKDEC_WR_STAGE_SKDEC_WR_IDLE = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & s2_done & t0_done;
