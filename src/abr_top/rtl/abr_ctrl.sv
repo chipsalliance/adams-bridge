@@ -155,6 +155,7 @@ module abr_ctrl
   input logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_rw_addr_i,
   input logic [ABR_REG_WIDTH-1:0] compress_api_wr_data_i,
   output logic [ABR_REG_WIDTH-1:0] compress_api_rd_data_o,
+  output logic compress_api_rd_data_valid_o,
 
   output logic decompress_enable_o,
   input logic decompress_done_i,
@@ -163,6 +164,7 @@ module abr_ctrl
   input logic decompress_api_rd_en_i,
   input logic [ABR_MEM_ADDR_WIDTH-1:0] decompress_api_rd_addr_i,
   output logic [1:0][ABR_REG_WIDTH-1:0] decompress_api_rd_data_o,
+  output logic decompress_api_rd_data_valid_o,
 
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
@@ -541,6 +543,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   abr_ctrl_fsm_state_e abr_ctrl_fsm_ps, abr_ctrl_fsm_ns;
   logic msg_valid, msg_valid_stg;
+  logic msg_cnt_inc;
 
   mldsa_signature_u signature_reg;
 
@@ -578,7 +581,9 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [1:0] skencode_keymem_we_bank, pwr2rnd_keymem_we_bank, api_keymem_we_bank;
   logic [1:0] mlkem_api_dk_we_bank, mlkem_api_ek_we_bank, mlkem_api_ct_we_bank, mlkem_api_msg_we_bank;
   logic [ABR_REG_WIDTH-1:0] mlkem_msg_wdata;
-  logic [1:0] compress_keymem_we_bank, compress_keymem_re_bank;
+  logic [1:0] compress_keymem_we_bank;
+  logic [SRAM_LATENCY:0][1:0] compress_keymem_re_bank; 
+  logic [SRAM_LATENCY:0] decompress_keymem_re;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_waddr, api_sk_raddr;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_mem_waddr, api_sk_mem_raddr;
   logic [5:0] api_sk_reg_waddr, api_sk_reg_raddr;
@@ -1000,6 +1005,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   end     
   
   //Secret Key Read Interface
+  always_comb decompress_keymem_re[0] = decompress_api_rd_en_i;
+
   always_comb begin
     for (int i = 0; i < 2; i++) begin
       api_sk_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
@@ -1011,31 +1018,33 @@ always_comb kv_mlkem_msg_write_data = '0;
 
       skdecode_rdaddr[i] = skdecode_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:0];
 
-      compress_keymem_re_bank[i] = compress_api_rw_en_i[1] & (compress_api_rw_addr_i[0] == i);
+      compress_keymem_re_bank[0][i] = compress_api_rw_en_i[1] & (compress_api_rw_addr_i[0] == i);
 
       sk_ram_re_bank[i] = skdecode_re_bank[0][i] | api_sk_re_bank[i] | mlkem_api_dk_re_bank[i] |  mlkem_api_ek_re_bank[i] |
-                          mlkem_api_ct_re_bank[i] | sampler_sk_rd_en[0] | decompress_api_rd_en_i | compress_keymem_re_bank[i];
+                          mlkem_api_ct_re_bank[i] | sampler_sk_rd_en[0] | decompress_keymem_re[0] | compress_keymem_re_bank[0][i];
 
       sk_ram_raddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skdecode_re_bank[0][i]}} & skdecode_rdaddr[i][SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{api_sk_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_re_bank[i]}} & mlkem_api_dk_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_re_bank[i]}} & mlkem_api_ek_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_re_bank[i]}} & mlkem_api_ct_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{decompress_api_rd_en_i}} & decompress_api_rd_addr_i[SK_MEM_BANK_ADDR_W-1:0]) |
-                             ({SK_MEM_BANK_ADDR_W{compress_keymem_re_bank[i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{decompress_keymem_re[0]}} & decompress_api_rd_addr_i[SK_MEM_BANK_ADDR_W-1:0]) |
+                             ({SK_MEM_BANK_ADDR_W{compress_keymem_re_bank[0][i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{sampler_sk_rd_en[0]}} & (sampler_src_offset[SK_MEM_BANK_ADDR_W-1:0] + sampler_sk_rd_offset));
 
     end
   end
 
-  always_comb api_keymem_re_bank[0] = api_sk_re_bank | mlkem_api_dk_re_bank | mlkem_api_ek_re_bank | mlkem_api_ct_re_bank | compress_keymem_re_bank;
+  always_comb api_keymem_re_bank[0] = api_sk_re_bank | mlkem_api_dk_re_bank | mlkem_api_ek_re_bank | mlkem_api_ct_re_bank;
   always_comb api_sk_reg_re[0] =  api_sk_reg_rd_dec | (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) | (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec);
 
   always_comb skdecode_rd_data_o = sk_ram_rdata;
   always_comb skdecode_rd_data_valid_o = skdecode_re_bank[SRAM_LATENCY];
   always_comb decompress_api_rd_data_o = sk_ram_rdata;
-  always_comb compress_api_rd_data_o = {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
-                                       {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1];
+  always_comb decompress_api_rd_data_valid_o = decompress_keymem_re[SRAM_LATENCY];
+  always_comb compress_api_rd_data_o = {ABR_REG_WIDTH{compress_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
+                                       {ABR_REG_WIDTH{compress_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1];
+  always_comb compress_api_rd_data_valid_o = |compress_keymem_re_bank[SRAM_LATENCY];                      
   always_comb privkey_out_rdata = {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
                                   {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1] |
                                   {ABR_REG_WIDTH{api_sk_reg_re[SRAM_LATENCY]}} & api_reg_rdata;
@@ -1188,18 +1197,10 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb pkdecode_rd_en[0] = pkdecode_rd_en_i;
 
-  //For longer SRAM latency, start reading a cycle earlier to hide the latency
   always_comb begin
-    //if (SRAM_LATENCY == 1) begin
       sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]});
       sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
       sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
-    //end
-    //if (SRAM_LATENCY == 2) begin
-    //  sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[3:323]});
-    //  sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 3)/(PK_MEM_NUM_DWORDS/2));
-    //  sampler_pubkey_mem_addr.offset = (sampler_src_offset- 3)%(PK_MEM_NUM_DWORDS/2);
-    //end
   end
   //read requests
   always_comb pubkey_ram_re = sampler_pk_rd_en[0] | pkdecode_rd_en[0] | api_pubkey_re[0];
@@ -1267,6 +1268,8 @@ always_comb kv_mlkem_msg_write_data = '0;
           decapskey_rd_ack[g_stage] <= '0;
           ciphertext_rd_ack[g_stage] <= '0;
           api_sk_reg_re[g_stage] <= '0;
+          compress_keymem_re_bank[g_stage] <= '0;
+          decompress_keymem_re[g_stage] <= '0;
         end else if (zeroize) begin
           api_pubkey_re[g_stage] <= '0;
           api_pubkey_mem_addr[g_stage] <= '0;
@@ -1287,6 +1290,8 @@ always_comb kv_mlkem_msg_write_data = '0;
           decapskey_rd_ack[g_stage] <= '0;
           ciphertext_rd_ack[g_stage] <= '0;
           api_sk_reg_re[g_stage] <= '0;
+          compress_keymem_re_bank[g_stage] <= '0;
+          decompress_keymem_re[g_stage] <= '0;
         end else begin
           api_pubkey_re[g_stage] <= api_pubkey_re[g_stage-1];
           api_pubkey_mem_addr[g_stage] <= api_pubkey_mem_addr[g_stage-1];
@@ -1307,6 +1312,8 @@ always_comb kv_mlkem_msg_write_data = '0;
           decapskey_rd_ack[g_stage] <= decapskey_rd_ack[g_stage-1];
           ciphertext_rd_ack[g_stage] <= ciphertext_rd_ack[g_stage-1];
           api_sk_reg_re[g_stage] <= api_sk_reg_re[g_stage-1];
+          compress_keymem_re_bank[g_stage] <= compress_keymem_re_bank[g_stage-1];
+          decompress_keymem_re[g_stage] <= decompress_keymem_re[g_stage-1];
         end
       end
     end
@@ -1924,35 +1931,58 @@ always_comb last_msg_strobe = ~(MsgStrbW'('1) << abr_instr.length[$clog2(MsgStrb
 //overload msg interface with stream msg interface
 always_comb msg_cnt_nxt = stream_msg_ip ? '0 :
                           msg_done ? '0 :
-                          (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) ? msg_cnt + 'd1 : msg_cnt;
+                          msg_cnt_inc ? msg_cnt + 'd1 : msg_cnt;
 always_comb msg_valid_nxt = stream_msg_ip ? stream_msg_buffer_valid : msg_valid;
 always_comb msg_strobe_nxt = stream_msg_ip ? stream_msg_buffer_strobe :
                              msg_last ? last_msg_strobe : '1;
 
 //Computing the msg interfaces signals
 //Last cycle when msg count is equal to length - add a cnt for extra SRAM latency
+//EK requires waiting for SRAM latency to drain before reading the flops
+//Need to ensure that we increment the msg count 
 always_comb begin
   msg_valid_stg = 0;
   msg_last = 0;
   msg_done = 0;
+  msg_cnt_inc = 0;
   if (stream_msg_ip) begin
     msg_last = 0;
     msg_done = stream_msg_done;
   end
-  else if (sampler_src inside {MLKEM_EK_REG_ID,MLKEM_MSG_ID,MLKEM_CIPHERTEXT_ID}) begin
-    msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
-    msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
-    msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
-  end
-  else if (sampler_src inside {MLDSA_PK_REG_ID} && sampler_src_offset >= 4) begin
-    msg_valid_stg = sampler_pk_rd_en[SRAM_LATENCY-1];
-    msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
-    msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
-  end
-  else begin
-    msg_valid_stg = 1;
-    msg_last = (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
-    msg_done = (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+  else if (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) begin
+    if (sampler_src inside {MLKEM_EK_REG_ID}) begin
+      if (sampler_src_offset inside {[0:191]}) begin //Delay the part from SRAM reads
+        msg_cnt_inc = 1;
+        msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
+      end else if (sampler_sk_rd_en[SRAM_LATENCY-1]) begin //Dont increment msg cnt until SRAM reads have drained
+        msg_cnt_inc = 0;
+        msg_valid_stg = 1;
+      end else begin //Read the data stored in flops
+        msg_cnt_inc = 1;
+        msg_valid_stg = 1;
+      end
+
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]));
+    end
+    else if (sampler_src inside {MLKEM_MSG_ID,MLKEM_CIPHERTEXT_ID}) begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    end
+    else if (sampler_src inside {MLDSA_PK_REG_ID} && sampler_src_offset >= 4) begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = sampler_pk_rd_en[SRAM_LATENCY-1];
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    end
+    else begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = 1;
+      msg_last = (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+      msg_done = (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+    end
   end
 end
 

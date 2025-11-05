@@ -51,7 +51,8 @@ module abr_piso_multi #(
   end
 
   // Flow control
-  always_comb hold_o  = buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate);
+  always_comb hold_o  = buffer_rd ? buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate + current_output_rate) :
+                                    buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate);
   always_comb data_o  = buffer[PISO_ACT_OUTPUT_RATE-1:0];
   always_comb valid_o = buffer_wr_ptr >= current_output_rate;
 
