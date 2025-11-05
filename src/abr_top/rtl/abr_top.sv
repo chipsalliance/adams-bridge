@@ -215,6 +215,7 @@ module abr_top
   logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_rw_addr;
   logic [ABR_REG_WIDTH-1:0] compress_api_wr_data;
   logic [ABR_REG_WIDTH-1:0] compress_api_rd_data;
+  logic compress_api_rd_data_valid;
 
   logic decompress_enable;
   logic decompress_done;
@@ -225,6 +226,7 @@ module abr_top
   logic decompress_api_rd_en;
   logic [ABR_MEM_ADDR_WIDTH-1:0] decompress_api_rd_addr;
   logic [1:0][ABR_REG_WIDTH-1:0] decompress_api_rd_data;
+  logic decompress_api_rd_data_valid;
 
   logic sigencode_enable, sigencode_done;
   mem_if_t [1:0] sigencode_mem_rd_req;
@@ -403,8 +405,7 @@ abr_reg abr_reg_inst (
   .hwif_out(abr_reg_hwif_out)
 );
 
-abr_ctrl
-#(
+abr_ctrl #(
   .SRAM_LATENCY(SRAM_LATENCY)
 )
 abr_ctrl_inst
@@ -537,6 +538,7 @@ abr_ctrl_inst
   .compress_api_rw_addr_i(compress_api_rw_addr),
   .compress_api_wr_data_i(compress_api_wr_data),
   .compress_api_rd_data_o(compress_api_rd_data),
+  .compress_api_rd_data_valid_o(compress_api_rd_data_valid),
 
   .decompress_enable_o(decompress_enable),
   .decompress_mode_o(decompress_mode),
@@ -545,6 +547,7 @@ abr_ctrl_inst
   .decompress_api_rd_en_i(decompress_api_rd_en),
   .decompress_api_rd_addr_i(decompress_api_rd_addr),
   .decompress_api_rd_data_o(decompress_api_rd_data),
+  .decompress_api_rd_data_valid_o(decompress_api_rd_data_valid),
 
   .lfsr_enable_o(lfsr_enable),
   .lfsr_seed_o(lfsr_seed),
@@ -565,8 +568,7 @@ always_comb zeroize_mem_addr = zeroize_mem.addr;
 logic [MsgWidth-1:0] msg_data_i[Sha3Share];
 assign msg_data_i = decomp_msg_valid ? decomp_msg_data : msg_data;
 
-abr_sampler_top
-#(
+abr_sampler_top #(
   .SRAM_LATENCY(SRAM_LATENCY)
 )
 sampler_top_inst
@@ -1019,7 +1021,9 @@ sigdecode_h_inst (
   .sigdecode_h_error(sigdecode_h_invalid)
 );
 
-compress_top
+compress_top #(
+  .SRAM_LATENCY(SRAM_LATENCY)
+)
 compress_top_inst
 (
   .clk(clk),
@@ -1043,7 +1047,8 @@ compress_top_inst
   .api_rw_en(compress_api_rw_en),
   .api_rw_addr(compress_api_rw_addr),
   .api_wr_data(compress_api_wr_data),
-  .api_rd_data(compress_api_rd_data)
+  .api_rd_data(compress_api_rd_data),
+  .api_rd_data_valid(compress_api_rd_data_valid)
 );
 
 decompress_top
@@ -1065,7 +1070,8 @@ decompress_top_inst
   .mem_wr_data(decompress_mem_wr_data),
   .api_rd_en(decompress_api_rd_en),
   .api_rd_addr(decompress_api_rd_addr),
-  .api_rd_data(decompress_api_rd_data)
+  .api_rd_data(decompress_api_rd_data),
+  .api_rd_data_valid(decompress_api_rd_data_valid)
 );
 
 abr_prim_lfsr

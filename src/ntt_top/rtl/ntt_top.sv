@@ -164,7 +164,7 @@ module ntt_top
     //PWM input shares
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg, pwm_rd_data_b_shares_reg;
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg_d1, pwm_rd_data_b_shares_reg_d1; //delayed by a cycle
-    logic [1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg, twiddle_factor_shares_reg_d1, twiddle_factor_shares_reg_d2; //only 2 required since only 1st stage of INTT is masked and needs this
+    logic [SRAM_LATENCY+1:0][1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg;
     //PWM output shares
     pwm_shares_uvo_t pwm_shares_uvo, pwm_shares_uvo_reg;
 
@@ -412,11 +412,11 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][0]); //In masked + shuffled mode, twiddle addr increments 2 clks before 2x2 receives enable. Using d1 version ensures additional 2 clk delay to match latency of a/b inputs to pairwm modules. (a/b require 4 cycles from incr_rd_addr to shares going to pairwm inputs)
-                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[0][1]); //In masked only mode, twiddle addr increments 3 clks before 2x2 receives enable, hence use d2 version
+                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][0][0]); //In masked + shuffled mode, twiddle addr increments 2 clks before 2x2 receives enable. Using d1 version ensures additional 2 clk delay to match latency of a/b inputs to pairwm modules. (a/b require 4 cycles from incr_rd_addr to shares going to pairwm inputs)
+                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][0][1]); //In masked only mode, twiddle addr increments 3 clks before 2x2 receives enable, hence use d2 version
                 
-                mlkem_shares_pairwm_zeta13_i.z1_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][0]);
-                mlkem_shares_pairwm_zeta13_i.z1_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d1[1][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg_d2[1][1]); 
+                mlkem_shares_pairwm_zeta13_i.z1_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][1][0]);
+                mlkem_shares_pairwm_zeta13_i.z1_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][1][1]); 
                 
                 mlkem_pairwm_zeta13_i = '0;
             end
@@ -502,11 +502,7 @@ module ntt_top
             pwm_rd_data_b_shares_reg_d1 <= '0;
 
             //INTT twiddle shares
-            for (int i = 0; i < 2; i++) begin
-                for (int j = 0; j < 2; j++) begin
-                    twiddle_factor_shares_reg[i][j] <= '0;
-                end
-            end
+            twiddle_factor_shares_reg <= '0;
 
             pw_rden_reg          <= '0;
             pw_mem_rd_addr_a_reg <= '0;
@@ -515,8 +511,6 @@ module ntt_top
 
             w10_reg <= '0;
             w11_reg <= '0;
-            twiddle_factor_shares_reg_d1 <= '0;
-            twiddle_factor_shares_reg_d2 <= '0;
             
         end
         else if (zeroize) begin
@@ -559,11 +553,7 @@ module ntt_top
             pwm_rd_data_b_shares_reg_d1 <= '0;
 
             //INTT twiddle shares
-            for (int i = 0; i < 2; i++) begin
-                for (int j = 0; j < 2; j++) begin
-                    twiddle_factor_shares_reg[i][j] <= '0;
-                end
-            end
+            twiddle_factor_shares_reg <= '0;
 
             pw_rden_reg          <= '0;
             pw_mem_rd_addr_a_reg <= '0;
@@ -572,8 +562,6 @@ module ntt_top
 
             w10_reg <= '0;
             w11_reg <= '0;
-            twiddle_factor_shares_reg_d1 <= '0;
-            twiddle_factor_shares_reg_d2 <= '0;
         end
         else begin
             mem_rd_data_reg     <= mem_rd_data[MEM_DATA_WIDTH-1:0];
@@ -637,11 +625,11 @@ module ntt_top
             pwm_shares_uvo_reg <= pwm_shares_uvo;
 
             //INTT shares
-            twiddle_factor_shares_reg[0][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(2*MLKEM_Q_WIDTH)-1:MLKEM_Q_WIDTH]) - (rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
-            twiddle_factor_shares_reg[0][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[2];
+            twiddle_factor_shares_reg[0][0][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(2*MLKEM_Q_WIDTH)-1:MLKEM_Q_WIDTH]) - (rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[NTT_REG_SIZE-1:0]) - rnd_i[2];
+            twiddle_factor_shares_reg[0][0][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[2][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[2];
 
-            twiddle_factor_shares_reg[1][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(3*MLKEM_Q_WIDTH)-1:(2*MLKEM_Q_WIDTH)]) - (rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
-            twiddle_factor_shares_reg[1][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[3];
+            twiddle_factor_shares_reg[0][1][0] <= mlkem ? (MASKED_WIDTH)'((2*MLKEM_Q_WIDTH)'(twiddle_factor[(3*MLKEM_Q_WIDTH)-1:(2*MLKEM_Q_WIDTH)]) - (rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0])) : MASKED_WIDTH'(twiddle_factor[(2*NTT_REG_SIZE)-1:NTT_REG_SIZE]) - rnd_i[3];
+            twiddle_factor_shares_reg[0][1][1] <= mlkem ? (MASKED_WIDTH)'(rnd_i[3][(2*MLKEM_Q_WIDTH)-1:0]) : rnd_i[3];
 
             pw_rden_reg          <= pw_rden;
             pw_mem_rd_addr_a_reg <= pw_mem_rd_addr_a;
@@ -650,8 +638,7 @@ module ntt_top
 
             w10_reg <= uvw_i.w10_i;
             w11_reg <= uvw_i.w11_i;
-            twiddle_factor_shares_reg_d1 <= twiddle_factor_shares_reg;
-            twiddle_factor_shares_reg_d2 <= twiddle_factor_shares_reg_d1;
+            twiddle_factor_shares_reg[SRAM_LATENCY+1:1] <= twiddle_factor_shares_reg[SRAM_LATENCY:0]; //shift the shares for latency cycles
             
         end
     end
@@ -765,8 +752,8 @@ module ntt_top
                                  u01_i: share_mem_rd_data_reg_d1[2], 
                                  v00_i: share_mem_rd_data_reg_d1[1], 
                                  v01_i: share_mem_rd_data_reg_d1[3], 
-                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0] : twiddle_factor_shares_reg_d1[0], // shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
-                                 w01_i: shuffle_en ? twiddle_factor_shares_reg[1] : twiddle_factor_shares_reg_d1[1],
+                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0][0] : twiddle_factor_shares_reg[SRAM_LATENCY][0], // shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
+                                 w01_i: shuffle_en ? twiddle_factor_shares_reg[0][1] : twiddle_factor_shares_reg[SRAM_LATENCY][1],
                                  w10_i: w10_reg,
                                  w11_i: w11_reg};
         end

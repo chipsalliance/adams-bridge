@@ -286,7 +286,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_wrptr_reg_d1 <= '0;
     end
     else begin
-        buf_wrptr_reg_d1 <= mlkem ? buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MLKEM_MASKED_INTT_WRBUF_LATENCY] : buf_wrptr_reg[0];
+        buf_wrptr_reg_d1 <= mlkem ? buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-(MLKEM_MASKED_INTT_WRBUF_LATENCY+SRAM_DELAY)] : buf_wrptr_reg[0];
     end
 end
 
@@ -429,7 +429,7 @@ always_comb begin
     shuffled_pw_mem_rd_addr_c_nxt_accumulate = pw_base_addr_c + ((4*chunk_count)+(PWO_READ_ADDR_STEP*mem_rd_index_ofst));
     masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[MASKED_INTT_LATENCY-MASKED_PWM_LATENCY]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MASKED_PWM_ACC_LATENCY-MASKED_PWM_LATENCY])) : 'h0;
 
-    mlkem_masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pairwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[(MLKEM_MASKED_PAIRWM_ACC_LATENCY+3)-(MLKEM_MASKED_PAIRWM_LATENCY-MLKEM_BARRETT_REDUCTION_LATENCY)]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-MLKEM_BARRETT_REDUCTION_LATENCY)])) : 'h0; //+3 to account for flop delay in chunk count reg, -6 to remove reduction latency since w input is required before reduction is done in pairwm, //-1 in buf_rdptr because there are n+1 entries in the reg
+    mlkem_masked_shuffled_pw_mem_rd_addr_c_nxt_accumulate = (pairwm_mode & masking_en) ? pw_base_addr_c + ((4*chunk_count_reg[(MLKEM_MASKED_PAIRWM_ACC_LATENCY+SRAM_DELAY+3)-(MLKEM_MASKED_PAIRWM_LATENCY-MLKEM_BARRETT_REDUCTION_LATENCY)]) + (PWO_READ_ADDR_STEP*buf_rdptr_reg[(MLKEM_MASKED_PAIRWM_ACC_LATENCY+SRAM_DELAY)-(MLKEM_MASKED_PAIRWM_LATENCY-MLKEM_BARRETT_REDUCTION_LATENCY)])) : 'h0; //+3 to account for flop delay in chunk count reg, -6 to remove reduction latency since w input is required before reduction is done in pairwm, //-1 in buf_rdptr because there are n+1 entries in the reg
 
     if ((pwm_mode | pairwm_mode) & accumulate) begin
         unique case({masking_en, shuffle_en})
@@ -519,7 +519,7 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = pairwm_mode ? 'd63 : ct_mode ? 'd0 : 'd63;
             twiddle_offset      = pairwm_mode ? 'd21 : 'h0;
-            twiddle_rand_offset = pairwm_mode ? 7'((chunk_count % 'd16)*4 + buf_rdptr_int) : ct_mode ? 'h0 : (gs_mode & masking_en_ctrl) ? 7'((4*chunk_count_reg[MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-3]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-1]) : 7'((4*chunk_count_reg[UNMASKED_BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]); //gs mode & masking only applies to round 0. Other rounds follow gs calc
+            twiddle_rand_offset = pairwm_mode ? 7'((chunk_count % 'd16)*4 + buf_rdptr_int) : ct_mode ? 'h0 : (gs_mode & masking_en_ctrl) ? 7'((4*chunk_count_reg[MASKED_INTT_WRBUF_LATENCY-3]) + buf_wrptr_reg[MASKED_INTT_WRBUF_LATENCY-1]) : 7'((4*chunk_count_reg[UNMASKED_BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]); //gs mode & masking only applies to round 0. Other rounds follow gs calc
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
@@ -707,9 +707,9 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if ((pairwm_mode & masking_en & masked_pwm_exec_in_progress)) begin
         if (accumulate)
-            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MLKEM_MASKED_PAIRWM_ACC_LATENCY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY:1]};
+            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MLKEM_MASKED_PAIRWM_ACC_LATENCY-SRAM_DELAY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY+SRAM_DELAY:1]};
         else
-            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MLKEM_MASKED_PAIRWM_LATENCY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MLKEM_MASKED_PAIRWM_LATENCY:1]};
+            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MLKEM_MASKED_PAIRWM_LATENCY-SRAM_DELAY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MLKEM_MASKED_PAIRWM_LATENCY+SRAM_DELAY:1]};
 
         masked_pwm_buf_rdptr_d1 <= buf_rdptr_reg[0];
         masked_pwm_buf_rdptr_d2 <= masked_pwm_buf_rdptr_d1; //Delay buf_rdptr_reg[0] by 2 cycles to accommodate delay of incr_pw_wr_addr - this delay is needed to correctly calculate wr addr in masking scenario in pairwm
@@ -759,8 +759,8 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-3:1]};
     end
     else if ((pairwm_mode & masking_en & masked_pwm_exec_in_progress)) begin
-        chunk_count_reg <= accumulate ? {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_ACC_LATENCY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY+3:1]} : 
-                                        {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_LATENCY+3:1]}; //incr_pw_rd_addr is asserted 4 cycles before 2x2 gets enabled, where chunk_count starts incrementing, so we need to shift chunk_count_reg by 4 cycles to account for this delay + pairwm acc delay
+        chunk_count_reg <= accumulate ? {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_ACC_LATENCY+SRAM_DELAY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_ACC_LATENCY+SRAM_DELAY+3:1]} : 
+                                        {{(MASKED_INTT_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY+SRAM_DELAY+3)){4'h0}}, chunk_count, chunk_count_reg[MLKEM_MASKED_PAIRWM_LATENCY+SRAM_DELAY+3:1]}; //incr_pw_rd_addr is asserted 4 cycles before 2x2 gets enabled, where chunk_count starts incrementing, so we need to shift chunk_count_reg by 4 cycles to account for this delay + pairwm acc delay
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
         chunk_count_reg <= {{(MASKED_BF_STAGE1_LATENCY+1-UNMASKED_BF_LATENCY){4'h0}}, chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
@@ -1204,7 +1204,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else begin
         buf_wren_intt_reg <= buf_wren_intt;
         buf_rden_ntt_reg <= buf_rden_ntt;
-        bf_enable_reg <= {bf_enable_reg[1:0], bf_enable_fsm};
+        bf_enable_reg <= {bf_enable_reg[SRAM_LATENCY:0], bf_enable_fsm};
         mem_wr_en_reg <= mem_wr_en_fsm;
         mem_rd_en_reg <= mem_rd_en_fsm;
         twiddle_addr_reg[SRAM_LATENCY+1:1] <= {twiddle_addr_reg[SRAM_LATENCY:1],twiddle_addr_int};

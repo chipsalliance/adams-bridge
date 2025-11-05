@@ -75,8 +75,10 @@ module compress_ctrl
             mem_rd_pace <= '0;
         else if (ld_rd_addr)
             mem_rd_pace <= mem_rd_pace_init;
-        else if (read_fsm_state_ps == CMP_RD_MEM)
+        else if ((read_fsm_state_ps == CMP_RD_MEM) && (mode == compress12))
             mem_rd_pace <= {mem_rd_pace[0], mem_rd_pace[11:1]};
+        else if ((read_fsm_state_ps == CMP_RD_MEM) && (mode == compress11))
+            mem_rd_pace <= {1'b0, mem_rd_pace[0], mem_rd_pace[10:1]};
     end
 
     //Read addr counter
