@@ -565,16 +565,16 @@ assign incr_twiddle_addr = ct_mode ? incr_twiddle_addr_fsm : incr_twiddle_addr_r
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)
-        twiddle_addr_reg[0] <= '0;
+        twiddle_addr_int <= '0;
     else if (zeroize)
-        twiddle_addr_reg[0] <= '0;
+        twiddle_addr_int <= '0;
     else if (incr_twiddle_addr)
-        twiddle_addr_reg[0] <= shuffle_en ? twiddle_rand_offset : (twiddle_addr_reg[0] == twiddle_end_addr) ? '0 : twiddle_addr_reg[0] + 1;
+        twiddle_addr_int <= shuffle_en ? twiddle_rand_offset : (twiddle_addr_int == twiddle_end_addr) ? '0 : twiddle_addr_int + 1;
     else if (rst_twiddle_addr)
-        twiddle_addr_reg[0] <= '0;
+        twiddle_addr_int <= '0;
 end
 
-assign twiddle_addr_int = (~shuffle_en | ct_mode) ? twiddle_addr_reg[0] + twiddle_offset : (shuffle_en & pairwm_mode) ? twiddle_rand_offset + 2'(index_count + index_rand_offset) + twiddle_offset : twiddle_rand_offset + twiddle_offset;
+assign twiddle_addr_reg[0] = (~shuffle_en | ct_mode) ? twiddle_addr_int + twiddle_offset : (shuffle_en & pairwm_mode) ? twiddle_rand_offset + 2'(index_count + index_rand_offset) + twiddle_offset : twiddle_rand_offset + twiddle_offset;
 
 //------------------------------------------
 //Busy logic
@@ -1087,7 +1087,7 @@ always_comb begin
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         mem_wr_en        = gs_mode  ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = gs_mode ? mem_rd_en_reg : mem_rd_en_fsm;
-        twiddle_addr     = (gs_mode | pairwm_mode) ? twiddle_addr_reg[2] : twiddle_addr_int;
+        twiddle_addr     = (gs_mode | pairwm_mode) ? twiddle_addr_reg[2] : twiddle_addr_reg[0];
         pw_rden          = pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
         pw_wren          = pw_wren_reg;
@@ -1097,7 +1097,7 @@ always_comb begin
         buf_rden = pwo_mode ? 1'b0 : buf_rden_ntt | buf_rden_intt;
         mem_wr_en = mem_wr_en_fsm;
         mem_rd_en = mem_rd_en_fsm;
-        twiddle_addr = twiddle_addr_int;
+        twiddle_addr = pairwm_mode ? twiddle_addr_reg[SRAM_LATENCY-1] : twiddle_addr_reg[0];
         pw_rden  = pw_rden_fsm;
         pw_share_mem_rden = accumulate ? masking_en ? mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : pw_rden_fsm_reg[0] : pw_rden_fsm : '0; //-6 to remove reduction latency since reduction happens at the end
         pw_wren = pw_wren_fsm;
@@ -1207,7 +1207,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         bf_enable_reg <= {bf_enable_reg[SRAM_LATENCY:0], bf_enable_fsm};
         mem_wr_en_reg <= mem_wr_en_fsm;
         mem_rd_en_reg <= mem_rd_en_fsm;
-        twiddle_addr_reg[SRAM_LATENCY+1:1] <= {twiddle_addr_reg[SRAM_LATENCY:1],twiddle_addr_int};
+        twiddle_addr_reg[SRAM_LATENCY+1:1] <= {twiddle_addr_reg[SRAM_LATENCY:1],twiddle_addr_reg[0]};
         pw_rden_reg <= pw_rden_fsm;
         pw_wren_reg <= pw_wren_fsm;
 

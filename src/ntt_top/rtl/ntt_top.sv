@@ -412,11 +412,11 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][0][0]); //In masked + shuffled mode, twiddle addr increments 2 clks before 2x2 receives enable. Using d1 version ensures additional 2 clk delay to match latency of a/b inputs to pairwm modules. (a/b require 4 cycles from incr_rd_addr to shares going to pairwm inputs)
-                mlkem_shares_pairwm_zeta13_i.z0_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][0][1]); //In masked only mode, twiddle addr increments 3 clks before 2x2 receives enable, hence use d2 version
+                mlkem_shares_pairwm_zeta13_i.z0_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][0]); 
+                mlkem_shares_pairwm_zeta13_i.z0_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][1]);
                 
-                mlkem_shares_pairwm_zeta13_i.z1_i[0] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][0]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][1][0]);
-                mlkem_shares_pairwm_zeta13_i.z1_i[1] = shuffle_en ? (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][1]) : (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY+1][1][1]); 
+                mlkem_shares_pairwm_zeta13_i.z1_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][0]);
+                mlkem_shares_pairwm_zeta13_i.z1_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][1]); 
                 
                 mlkem_pairwm_zeta13_i = '0;
             end
@@ -752,8 +752,8 @@ module ntt_top
                                  u01_i: share_mem_rd_data_reg_d1[2], 
                                  v00_i: share_mem_rd_data_reg_d1[1], 
                                  v01_i: share_mem_rd_data_reg_d1[3], 
-                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0][0] : twiddle_factor_shares_reg[SRAM_LATENCY][0], // shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
-                                 w01_i: shuffle_en ? twiddle_factor_shares_reg[0][1] : twiddle_factor_shares_reg[SRAM_LATENCY][1],
+                                 w00_i: shuffle_en ? twiddle_factor_shares_reg[0][0] : twiddle_factor_shares_reg[1][0], // shuffle mode needs twiddle to be delayed by a cycle. But here, non-shuffle mode is also delayed due to splitting. Hence other inputs are adjusted to match latency
+                                 w01_i: shuffle_en ? twiddle_factor_shares_reg[0][1] : twiddle_factor_shares_reg[1][1],
                                  w10_i: w10_reg,
                                  w11_i: w11_reg};
         end
