@@ -79,7 +79,7 @@ module makehint
     //Index counter
     logic [3:0][7:0] index;
     logic [7:0] index_count;
-    logic incr_index, incr_index_d1, incr_index_d2;
+    logic incr_index;
 
     //Polynomial counter
     logic [$clog2(MLDSA_K)-1:0] poly_count;
@@ -117,23 +117,8 @@ module makehint
     end
 
     //Keep count of index. Input is 4 coeffs per cycle. Have a vector that counts
-    //(0, 1, 2, 3), (4, 5, 6, 7), etc
-    //Flop incr_index twice to account for 1 cycle of mem read latency + 1 cycle of hintgen latency
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            incr_index_d1 <= '0;
-            incr_index_d2 <= '0;
-        end
-        else if (zeroize | makehint_done) begin
-            incr_index_d1 <= '0;
-            incr_index_d2 <= '0;
-        end
-        else begin
-            incr_index_d1 <= incr_index;
-            incr_index_d2 <= incr_index_d1;
-        end
-    end
-    
+    always_comb incr_index = mem_rd_data_valid;
+
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             index_count <= '0;
@@ -141,16 +126,16 @@ module makehint
         else if (zeroize | makehint_done) begin
             index_count <= '0;
         end
-        else if (incr_index_d1) begin
+        else if (incr_index) begin
             index_count <= index_count + 'h4;
         end
     end
 
     always_comb begin
-        index[0] = incr_index_d1 ? index_count       : '0;
-        index[1] = incr_index_d1 ? index_count + 'h1 : '0;
-        index[2] = incr_index_d1 ? index_count + 'h2 : '0;
-        index[3] = incr_index_d1 ? index_count + 'h3 : '0;
+        index[0] = incr_index ? index_count       : '0;
+        index[1] = incr_index ? index_count + 'h1 : '0;
+        index[2] = incr_index ? index_count + 'h2 : '0;
+        index[3] = incr_index ? index_count + 'h3 : '0;
     end
 
     //Keep count of polynomial. 1 polynomial needs 64 memory addr accesses == 256 index count (0 to 255)
@@ -292,7 +277,6 @@ module makehint
     always_comb begin
         read_fsm_state_ns = read_fsm_state_ps;
         incr_mem_rd_addr  = '0;
-        incr_index        = '0;
         rst_rd_addr       = '0;
         max_index_buffer_rd_lo = '0;
         max_index_buffer_rd_mid = '0;
@@ -308,7 +292,6 @@ module makehint
                 //Read memory and produce hints for (r,z)
                 read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT1 ? MH_WAIT1 : MH_RD_MEM;
                 incr_mem_rd_addr    = 1'b1;
-                incr_index          = 1'b1;
             end
             MH_WAIT1: begin
                 read_fsm_state_ns = MH_WAIT2;

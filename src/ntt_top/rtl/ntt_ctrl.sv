@@ -697,9 +697,9 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else if ((pwm_mode & masking_en & masked_pwm_exec_in_progress)) begin
         if (accumulate)
-            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MASKED_PWM_ACC_LATENCY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MASKED_PWM_ACC_LATENCY:1]};
+            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MASKED_PWM_ACC_LATENCY-SRAM_DELAY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MASKED_PWM_ACC_LATENCY+SRAM_DELAY:1]};
         else
-            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MASKED_PWM_LATENCY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MASKED_PWM_LATENCY:1]};
+            buf_rdptr_reg <= {{(MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY-MASKED_PWM_LATENCY-SRAM_DELAY){1'b0}}, mem_rd_index_ofst, buf_rdptr_reg[MASKED_PWM_LATENCY+SRAM_DELAY:1]};
 
         masked_pwm_buf_rdptr_d1 <= buf_rdptr_reg[0];
         masked_pwm_buf_rdptr_d2 <= masked_pwm_buf_rdptr_d1; //Delay buf_rdptr_reg[0] by 2 cycles to accommodate delay of incr_pw_wr_addr - this delay is needed to correctly calculate wr addr in masking scenario in pwm

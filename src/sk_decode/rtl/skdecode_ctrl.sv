@@ -110,13 +110,13 @@ module skdecode_ctrl
         else if (zeroize)
             mem_rd_pace <= '0;
         //S1S2 pace
-        else if (arc_SKDEC_RD_IDLE_SKDEC_RD_S1) begin
+        else if (arc_SKDEC_RD_IDLE_SKDEC_RD_S1 | arc_SKDEC_RD_S1_SKDEC_RD_S2) begin
             mem_rd_pace <= 16'b0111011101110111;
         end
         else if (arc_SKDEC_RD_S2_SKDEC_RD_T0) begin
             mem_rd_pace <= 16'b0111101111011111;
         end
-        else if (incr_rd_addr)
+        else if (read_fsm_state_ps != SKDEC_RD_IDLE)
             mem_rd_pace <= {mem_rd_pace[0], mem_rd_pace[15:1]};
     end
 
@@ -250,6 +250,7 @@ module skdecode_ctrl
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = MLDSA_L;
                 num_inst            = 4'd8;
+                rst_skdec_count     = arc_SKDEC_RD_S1_SKDEC_RD_S2;
             end
             SKDEC_RD_S2: begin
                 read_fsm_state_ns   = arc_SKDEC_RD_S2_SKDEC_RD_T0 ? SKDEC_RD_T0 : SKDEC_RD_S2;
@@ -260,6 +261,7 @@ module skdecode_ctrl
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = MLDSA_K;
                 num_inst            = 4'd8;
+                rst_skdec_count     = arc_SKDEC_RD_S2_SKDEC_RD_T0;
             end
             SKDEC_RD_T0: begin
                 read_fsm_state_ns   = arc_SKDEC_RD_T0_SKDEC_RD_IDLE ? SKDEC_RD_IDLE : SKDEC_RD_T0;
@@ -270,6 +272,7 @@ module skdecode_ctrl
                 t0_enable_fsm       = 1'b1;
                 num_poly            = MLDSA_K;
                 num_inst            = 4'd4;
+                rst_skdec_count     = arc_SKDEC_RD_T0_SKDEC_RD_IDLE;
             end
             default: begin
                 read_fsm_state_ns = SKDEC_RD_IDLE;

@@ -105,6 +105,7 @@ import kv_defines_pkg::*;
 
   // SRAM Latency
   localparam SRAM_LATENCY = 2;
+  localparam MASKING_EN = 1;
 
   // SRAM module
   abr_mem_top #(
@@ -119,6 +120,7 @@ import kv_defines_pkg::*;
   // DUT
   abr_top #(
     .SRAM_LATENCY(SRAM_LATENCY),
+    .MASKING_EN(MASKING_EN),
     .AHB_ADDR_WIDTH(18),
     .AHB_DATA_WIDTH(ahb_lite_slave_0_params::AHB_WDATA_WIDTH),
     .CLIENT_DATA_WIDTH(32)
