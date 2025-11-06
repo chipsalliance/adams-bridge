@@ -164,7 +164,7 @@ module ntt_top
     //PWM input shares
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg, pwm_rd_data_b_shares_reg;
     logic [3:0][1:0][MASKED_WIDTH-1:0] pwm_rd_data_a_shares_reg_d1, pwm_rd_data_b_shares_reg_d1; //delayed by a cycle
-    logic [SRAM_LATENCY+1:0][1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg;
+    logic [1:0][1:0][1:0][MASKED_WIDTH-1:0] twiddle_factor_shares_reg;
     //PWM output shares
     pwm_shares_uvo_t pwm_shares_uvo, pwm_shares_uvo_reg;
 
@@ -412,11 +412,11 @@ module ntt_top
     always_comb begin
         if (mlkem & (mode == pairwm)) begin
             if (masking_en) begin
-                mlkem_shares_pairwm_zeta13_i.z0_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][0]); 
-                mlkem_shares_pairwm_zeta13_i.z0_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][0][1]);
+                mlkem_shares_pairwm_zeta13_i.z0_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[1][0][0]); 
+                mlkem_shares_pairwm_zeta13_i.z0_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[1][0][1]);
                 
-                mlkem_shares_pairwm_zeta13_i.z1_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][0]);
-                mlkem_shares_pairwm_zeta13_i.z1_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[SRAM_LATENCY][1][1]); 
+                mlkem_shares_pairwm_zeta13_i.z1_i[0] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[1][1][0]);
+                mlkem_shares_pairwm_zeta13_i.z1_i[1] = (MLKEM_MASKED_WIDTH)'(twiddle_factor_shares_reg[1][1][1]); 
                 
                 mlkem_pairwm_zeta13_i = '0;
             end
@@ -638,7 +638,7 @@ module ntt_top
 
             w10_reg <= uvw_i.w10_i;
             w11_reg <= uvw_i.w11_i;
-            twiddle_factor_shares_reg[SRAM_LATENCY+1:1] <= twiddle_factor_shares_reg[SRAM_LATENCY:0]; //shift the shares for latency cycles
+            twiddle_factor_shares_reg[1] <= twiddle_factor_shares_reg[0]; //Delay the shares by 1 clk for pairwm use
             
         end
     end
