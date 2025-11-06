@@ -96,10 +96,9 @@ module makehint
     //Read fsm
     mh_read_state_e read_fsm_state_ps, read_fsm_state_ns;
     logic arc_MH_IDLE_MH_RD_MEM;
-    logic arc_MH_RD_MEM_MH_WAIT1;
-    logic arc_MH_WAIT2_MH_IDLE;
-    // logic arc_MH_WAIT_MH_RD_MEM; //TODO don't need wait if we do all polys back to back? check this later
-    logic arc_MH_WAIT2_MH_FLUSH;
+    logic arc_MH_RD_MEM_MH_WAIT;
+    logic arc_MH_WAIT_MH_RD_MEM;
+    logic arc_MH_WAIT_MH_FLUSH;
 
     //Hint sum
     logic [7:0] hintsum;
@@ -151,7 +150,7 @@ module makehint
 
     always_comb begin
         poly_done = incr_poly; //last_addr_read;
-        poly_last = (poly_count == 'h7);
+        poly_last = (poly_count == MLDSA_K-1);
         flush_buffer = (read_fsm_state_ps == MH_FLUSH_SBUF); //poly_last & poly_done; //TODO: check to make sure all indexes have been processed before this flag goes high
     end
 
@@ -267,11 +266,10 @@ module makehint
         //Start makehint upon seeing enable trigger
         arc_MH_IDLE_MH_RD_MEM = (read_fsm_state_ps == MH_IDLE) && makehint_enable;
         //When any poly is done (last or not), wait for 1 cyc to give time for sample buffer to process last coeffs
-        arc_MH_RD_MEM_MH_WAIT1 = (read_fsm_state_ps == MH_RD_MEM) && last_addr_read;
-        //When non-last poly is done, move to IDLE and wait for next enable. Opt - if we know all 8 poly will be back to back, we can remain in RD_MEM and wrap addr around + take new base addr if needed, calc hints and continue execution without waiting in IDLE for HLC to give enable
-        arc_MH_WAIT2_MH_IDLE = (read_fsm_state_ps == MH_WAIT2) && !poly_last;
+        arc_MH_RD_MEM_MH_WAIT = (read_fsm_state_ps == MH_RD_MEM) && last_addr_read;
+        arc_MH_WAIT_MH_RD_MEM = (read_fsm_state_ps == MH_WAIT) && ~mem_rd_data_valid && ~poly_last;
         //When non-last poly is done, go back to RD_MEM and continue executing
-        arc_MH_WAIT2_MH_FLUSH = (read_fsm_state_ps == MH_WAIT2) && (poly_count == MLDSA_K-1);
+        arc_MH_WAIT_MH_FLUSH = (read_fsm_state_ps == MH_WAIT) && ~mem_rd_data_valid && poly_last;
     end
 
     always_comb begin
@@ -290,16 +288,14 @@ module makehint
             end
             MH_RD_MEM: begin
                 //Read memory and produce hints for (r,z)
-                read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT1 ? MH_WAIT1 : MH_RD_MEM;
+                read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT ? MH_WAIT : MH_RD_MEM;
                 incr_mem_rd_addr    = 1'b1;
             end
-            MH_WAIT1: begin
-                read_fsm_state_ns = MH_WAIT2;
-            end
-            MH_WAIT2: begin
-                //After all 64 addr are done, wait for 1 clk to let sample buffer finish last coeff
-                read_fsm_state_ns   = arc_MH_WAIT2_MH_FLUSH ? MH_FLUSH_SBUF : MH_RD_MEM; //arc_MH_WAIT2_MH_RD_MEM ? MH_RD_MEM : MH_FLUSH_SBUF_LOW;
-                incr_poly           = 1'b1;
+            MH_WAIT: begin
+                //After all 64 addr are done, wait for sample buffer finish last coeff
+                read_fsm_state_ns   = arc_MH_WAIT_MH_FLUSH ? MH_FLUSH_SBUF : 
+                                      arc_MH_WAIT_MH_RD_MEM ? MH_RD_MEM : MH_WAIT;
+                incr_poly           = ~mem_rd_data_valid;
             end
             MH_FLUSH_SBUF: begin
                 //If last poly, flush sample buffer

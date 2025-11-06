@@ -23,7 +23,7 @@
 
 package makehint_defines_pkg;
 
-    typedef enum logic [2:0] {MH_IDLE, MH_RD_MEM, MH_WAIT1, MH_WAIT2, MH_FLUSH_SBUF, MH_RD_IBUF_LOW, MH_RD_IBUF_HIGH, MH_RD_IBUF_MID} mh_read_state_e;
+    typedef enum logic [2:0] {MH_IDLE, MH_RD_MEM, MH_WAIT, MH_FLUSH_SBUF, MH_RD_IBUF_LOW, MH_RD_IBUF_HIGH, MH_RD_IBUF_MID} mh_read_state_e;
 
 endpackage
 
