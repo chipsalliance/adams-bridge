@@ -126,7 +126,7 @@ module power2round_top
         .WR_WIDTH(104), //rate of sk encode
         .RD_WIDTH(64), //rate of sk mem writes
         .BUFFER_DEPTH( ((13*8)-(8*8)) * 4 ) //worst case depth
-    )sk_rd_lat_buffer_inst (
+    )p2r_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
