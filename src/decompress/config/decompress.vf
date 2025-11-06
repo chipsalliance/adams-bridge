@@ -38,3 +38,4 @@ ${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_top.sv
 ${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress.sv
 ${ADAMSBRIDGE_ROOT}/src/decompress/rtl/decompress_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

@@ -198,4 +198,5 @@ ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_seq.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_top.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/tb/abr_top_tb.sv

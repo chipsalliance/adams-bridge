@@ -264,6 +264,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/qvip_ahb_lite
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/hdl_qvip_ahb_lite_slave.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_clk_gen.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_uvm.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/coverage/abr_top_cov_if.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/coverage/abr_top_cov_bind.sv

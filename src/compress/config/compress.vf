@@ -43,3 +43,4 @@ ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/masked_barrett_if_cond_v2.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_top.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_ctrl.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

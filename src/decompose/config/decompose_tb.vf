@@ -76,3 +76,4 @@ ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_w1_encode.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/rtl/decompose_usehint.sv
 ${ADAMSBRIDGE_ROOT}/src/decompose/tb/decompose_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

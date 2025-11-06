@@ -71,3 +71,4 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_top.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_unit.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/tb/sigencode_z_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

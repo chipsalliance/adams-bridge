@@ -71,3 +71,4 @@ ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_top.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_s1s2_unpack.sv
 ${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_t0_unpack.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

@@ -37,3 +37,4 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/pk_decode/rtl/pkdecode.sv
 ${ADAMSBRIDGE_ROOT}/src/pk_decode/tb/pkdecode_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

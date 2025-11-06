@@ -68,3 +68,4 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_masked_mult_redux46_tb.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_masked_mult_redux46_auto_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

@@ -65,3 +65,4 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv

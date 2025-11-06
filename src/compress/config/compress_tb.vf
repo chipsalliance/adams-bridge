@@ -45,3 +45,4 @@ ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_top.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/rtl/compress_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/compress/tb/compress_tb.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
