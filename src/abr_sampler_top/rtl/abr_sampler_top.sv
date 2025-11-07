@@ -18,7 +18,7 @@ module abr_sampler_top
   import abr_params_pkg::*;
   import abr_prim_alert_pkg::*;
   #(
-  //top level params
+    parameter SRAM_LATENCY = 1
   )
   (
   input logic clk,
@@ -151,6 +151,8 @@ module abr_sampler_top
   logic [REJS_PISO_OUTPUT_RATE-1:0] piso_data;
 
   abr_sampler_fsm_state_e sampler_fsm_ps, sampler_fsm_ns;
+
+  logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data[SRAM_LATENCY:0];
 
   //Sampler mode muxes
   always_comb begin
@@ -298,10 +300,10 @@ always_ff @(posedge clk or negedge rst_b) begin
     dest_addr <= 0;
   end
   else begin
-    coeff_cnt <= sampler_start_i ? 'd0 :
-                 vld_cycle ? coeff_cnt + 'd1 : coeff_cnt;
+    coeff_cnt <= sampler_start_i ? 0 :
+                 vld_cycle ? coeff_cnt + 1 : coeff_cnt;
     dest_addr <= sampler_start_i ? dest_base_addr_i :
-                 vld_cycle ? dest_addr + 'd1 : dest_addr;
+                 vld_cycle ? dest_addr + 1 : dest_addr;
   end
 end
 
@@ -501,23 +503,34 @@ end
   );
 
 //optimization - align sampler data in ntt
-always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
-  if (!rst_b) begin
-    sampler_ntt_data_o <= 0;
-  end
-  else if (zeroize) begin
-    sampler_ntt_data_o <= 0;
-  end
-  else begin
+  always_comb begin
     for (int i = 0; i < COEFF_PER_CLK; i++) begin
-      sampler_ntt_data_o[i] <= {MLDSA_Q_WIDTH{(sampler_mode_i == MLDSA_REJ_SAMPLER)}} & mldsa_rejs_data_q[i] | 
+      sampler_ntt_data[0][i] = {MLDSA_Q_WIDTH{(sampler_mode_i == MLDSA_REJ_SAMPLER)}} & mldsa_rejs_data_q[i] | 
                                {MLDSA_Q_WIDTH{(sampler_mode_i == MLKEM_REJ_SAMPLER)}} & {{MLDSA_Q_WIDTH-MLKEM_Q_WIDTH{1'b0}},mlkem_rejs_data_q[i]};
     end
   end
-end  
+
+generate
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : ntt_data_stage
+    always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
+      if (!rst_b) begin
+        sampler_ntt_data[g_stage] <= '0;
+      end
+      else if (zeroize) begin
+        sampler_ntt_data[g_stage] <= '0;
+      end
+      else if (sampler_mode_i inside {MLDSA_REJ_SAMPLER,MLKEM_REJ_SAMPLER})begin
+        for (int i = 0; i < COEFF_PER_CLK; i++) begin
+          sampler_ntt_data[g_stage][i] <= sampler_ntt_data[g_stage-1][i];
+        end
+      end
+    end  
+  end
+endgenerate
 
 //rej sampler output gets sent to NTT
 always_comb sampler_ntt_dv_o = mldsa_rejs_dv | mlkem_rejs_dv;
+always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
 
 //rej bounded
   rej_bounded_ctrl #(

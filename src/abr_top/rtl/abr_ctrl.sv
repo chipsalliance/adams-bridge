@@ -39,6 +39,7 @@ module abr_ctrl
   import kv_defines_pkg::*; 
   `endif
   #(
+    parameter SRAM_LATENCY = 1
   )
   (
   input logic clk,
@@ -87,7 +88,7 @@ module abr_ctrl
 
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
-  input logic [1:0] [DATA_WIDTH-1:0] pwr2rnd_wr_data_i,
+  input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
   input logic pk_t1_wren_i,
   input logic [7:0][T1_COEFF_W-1:0] pk_t1_wrdata_i,
   input logic [7:0] pk_t1_wr_addr_i,
@@ -99,12 +100,13 @@ module abr_ctrl
 
   output logic skencode_enable_o,
   input mem_if_t skencode_keymem_if_i,
-  input logic [DATA_WIDTH-1:0] skencode_wr_data_i,
+  input logic [ABR_REG_WIDTH-1:0] skencode_wr_data_i,
   input logic skencode_done_i,
 
   output logic skdecode_enable_o,
   input mem_if_t [1:0] skdecode_keymem_if_i,
-  output logic [1:0][DATA_WIDTH-1:0] skdecode_rd_data_o,
+  output logic [1:0][ABR_REG_WIDTH-1:0] skdecode_rd_data_o,
+  output logic [1:0] skdecode_rd_data_valid_o,
   input logic skdecode_done_i,
   input logic skdecode_error_i,
 
@@ -126,8 +128,10 @@ module abr_ctrl
   input logic sigencode_done_i,
 
   output logic pkdecode_enable_o,
+  input logic pkdecode_rd_en_i,
   input logic [7:0] pkdecode_rd_addr_i,
   output logic [7:0][T1_COEFF_W-1:0] pkdecode_rd_data_o,
+  output logic pkdecode_rd_data_valid_o,
   input logic pkdecode_done_i,
 
   output logic sigdecode_h_enable_o, 
@@ -138,6 +142,7 @@ module abr_ctrl
   output logic sigdecode_z_enable_o, 
   input mem_if_t sigdecode_z_rd_req_i,
   output logic [1:0][3:0][19:0] sigdecode_z_rd_data_o,
+  output logic sigdecode_z_rd_data_valid_o,
   input logic sigdecode_z_done_i,
 
   output logic compress_enable_o,
@@ -148,8 +153,9 @@ module abr_ctrl
   input logic compress_compare_failed_i,
   input logic [1:0] compress_api_rw_en_i,
   input logic [ABR_MEM_ADDR_WIDTH-1:0] compress_api_rw_addr_i,
-  input logic [DATA_WIDTH-1:0] compress_api_wr_data_i,
-  output logic [DATA_WIDTH-1:0] compress_api_rd_data_o,
+  input logic [ABR_REG_WIDTH-1:0] compress_api_wr_data_i,
+  output logic [ABR_REG_WIDTH-1:0] compress_api_rd_data_o,
+  output logic compress_api_rd_data_valid_o,
 
   output logic decompress_enable_o,
   input logic decompress_done_i,
@@ -157,7 +163,8 @@ module abr_ctrl
   output logic [2:0] decompress_num_poly_o,
   input logic decompress_api_rd_en_i,
   input logic [ABR_MEM_ADDR_WIDTH-1:0] decompress_api_rd_addr_i,
-  output logic [1:0][DATA_WIDTH-1:0] decompress_api_rd_data_o,
+  output logic [1:0][ABR_REG_WIDTH-1:0] decompress_api_rd_data_o,
+  output logic decompress_api_rd_data_valid_o,
 
   output logic lfsr_enable_o,
   output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
@@ -201,7 +208,7 @@ module abr_ctrl
   logic kv_mldsa_seed_data_present, kv_mlkem_seed_data_present, kv_mlkem_msg_data_present;
   logic kv_mlkem_msg_write_en;
   logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset;
-  logic [DATA_WIDTH-1:0] kv_mlkem_msg_write_data;
+  logic [ABR_REG_WIDTH-1:0] kv_mlkem_msg_write_data;
 
   logic external_mu;
   logic external_mu_mode, external_mu_mode_nxt;
@@ -210,10 +217,10 @@ module abr_ctrl
   //Custom keyvault logic for Caliptra
   logic kv_mldsa_seed_write_en;
   logic [$clog2(SEED_NUM_DWORDS)-1:0] kv_mldsa_seed_write_offset;
-  logic [DATA_WIDTH-1:0] kv_mldsa_seed_write_data;
+  logic [ABR_REG_WIDTH-1:0] kv_mldsa_seed_write_data;
   logic kv_mlkem_seed_write_en;
   logic [$clog2(2*SEED_NUM_DWORDS)-1:0] kv_mlkem_seed_write_offset;
-  logic [DATA_WIDTH-1:0] kv_mlkem_seed_write_data;
+  logic [ABR_REG_WIDTH-1:0] kv_mlkem_seed_write_data;
   kv_read_ctrl_reg_t kv_mldsa_seed_read_ctrl_reg;
   kv_read_ctrl_reg_t kv_mlkem_seed_read_ctrl_reg;
   kv_read_ctrl_reg_t kv_mlkem_msg_read_ctrl_reg;
@@ -481,17 +488,17 @@ always_comb kv_mlkem_msg_write_data = '0;
   //assign appropriate data to msg interface
   logic [ABR_OPR_WIDTH-1:0]  sampler_src;
   logic [15:0]               sampler_src_offset;
-  logic [2:0]                sampler_src_offset_f;
+  logic [SRAM_LATENCY:0][2:0] sampler_src_offset_stg;
   logic [15:0]               sampler_imm;
   
-  logic [ENTROPY_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] entropy_reg;
-  logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] mldsa_seed_reg;
-  logic [SEED_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] mlkem_seed_d_reg;
-  logic [MLDSA_MSG_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] msg_reg;
+  logic [ENTROPY_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] entropy_reg;
+  logic [SEED_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] mldsa_seed_reg;
+  logic [SEED_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] mlkem_seed_d_reg;
+  logic [MLDSA_MSG_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] msg_reg;
   logic internal_mu_we;
-  logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] internal_mu_reg;
-  logic [MU_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] external_mu_reg;
-  logic [SIGN_RND_NUM_DWORDS-1 : 0][DATA_WIDTH-1:0] sign_rnd_reg;
+  logic [MU_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] internal_mu_reg;
+  logic [MU_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] external_mu_reg;
+  logic [SIGN_RND_NUM_DWORDS-1 : 0][ABR_REG_WIDTH-1:0] sign_rnd_reg;
   logic [7:0][63:0] mu_reg;
   logic [15:0] kappa_reg;
   logic update_kappa;
@@ -511,7 +518,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [7:0]  stream_msg_buffer_strobe;
   logic        stream_msg_buffer_flush;
 
-  logic [CTX_NUM_DWORDS-1:0][DATA_WIDTH-1:0] ctx_reg;
+  logic [CTX_NUM_DWORDS-1:0][ABR_REG_WIDTH-1:0] ctx_reg;
   logic [CTX_SIZE_W-1:0] ctx_size;
   logic [CTX_SIZE_W-$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt_required;
   logic [$clog2(STREAM_MSG_STROBE_W)-1:0] ctx_cnt_offset;
@@ -528,7 +535,6 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [MsgStrbW-1:0] msg_strobe_nxt, last_msg_strobe;
   logic [ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] msg_cnt_nxt, msg_cnt;
   logic msg_valid_nxt;
-  logic msg_hold;
 
   logic error_flag;
   logic error_flag_reg;
@@ -536,7 +542,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic subcomponent_busy;
 
   abr_ctrl_fsm_state_e abr_ctrl_fsm_ps, abr_ctrl_fsm_ns;
-  logic msg_valid;
+  logic msg_valid, msg_valid_stg;
+  logic msg_cnt_inc;
 
   mldsa_signature_u signature_reg;
 
@@ -569,22 +576,26 @@ always_comb kv_mlkem_msg_write_data = '0;
   //Request muxing
   logic [1:0] sk_ram_we_bank, sk_ram_re_bank;
   logic [1:0][SK_MEM_BANK_ADDR_W-1:0] sk_ram_waddr_bank, sk_ram_raddr_bank;
-  logic [1:0][DATA_WIDTH-1:0] sk_ram_wdata, sk_ram_rdata;
+  logic [1:0][ABR_REG_WIDTH-1:0] sk_ram_wdata, sk_ram_rdata;
 
   logic [1:0] skencode_keymem_we_bank, pwr2rnd_keymem_we_bank, api_keymem_we_bank;
   logic [1:0] mlkem_api_dk_we_bank, mlkem_api_ek_we_bank, mlkem_api_ct_we_bank, mlkem_api_msg_we_bank;
-  logic [DATA_WIDTH-1:0] mlkem_msg_wdata;
-  logic [1:0] compress_keymem_we_bank, compress_keymem_re_bank;
+  logic [ABR_REG_WIDTH-1:0] mlkem_msg_wdata;
+  logic [1:0] compress_keymem_we_bank;
+  logic [SRAM_LATENCY:0][1:0] compress_keymem_re_bank; 
+  logic [SRAM_LATENCY:0] decompress_keymem_re;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_waddr, api_sk_raddr;
   logic [SK_MEM_BANK_ADDR_W:0] api_sk_mem_waddr, api_sk_mem_raddr;
   logic [5:0] api_sk_reg_waddr, api_sk_reg_raddr;
-  logic [1:0] api_keymem_re_bank, api_keymem_re_bank_f;
+  logic [1:0] api_sk_re_bank;
+  logic [SRAM_LATENCY:0][1:0] api_keymem_re_bank;
+  logic [SRAM_LATENCY:0] api_sk_reg_re;
 
   logic api_keymem_wr_dec, api_sk_reg_wr_dec;
-  logic api_keymem_rd_dec, api_sk_reg_rd_dec, api_sk_reg_rd_dec_f;
+  logic api_keymem_rd_dec, api_sk_reg_rd_dec;
   logic api_keymem_rd_vld;
 
-  logic [1:0] skdecode_re_bank;
+  logic [SRAM_LATENCY:0][1:0] skdecode_re_bank;
   logic [1:0][SK_MEM_BANK_ADDR_W:0] skdecode_rdaddr;
 
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_addr;
@@ -613,27 +624,28 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_msg_mem_waddr;
   logic mlkem_api_msg_mem_wr_dec;
 
-  logic privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
-  logic encapskey_rd_ack, decapskey_rd_ack, ciphertext_rd_ack;
+  logic [SRAM_LATENCY:0] privkey_out_rd_ack, signature_rd_ack, pubkey_rd_ack;
+  logic [SRAM_LATENCY:0] encapskey_rd_ack, decapskey_rd_ack, ciphertext_rd_ack;
 
-  logic [DATA_WIDTH-1:0] privkey_out_rdata;
+  logic [ABR_REG_WIDTH-1:0] privkey_out_rdata;
 
-  logic [DATA_WIDTH-1:0] api_reg_rdata;
+  logic [ABR_REG_WIDTH-1:0] api_reg_rdata;
 
   //Signature external mem
   logic sig_z_ram_we, sig_z_ram_re;
+  logic [SRAM_LATENCY:0] sigdecode_z_ram_re;
   logic [SIG_Z_MEM_ADDR_W-1:0] sig_z_ram_waddr, sig_z_ram_raddr;
   logic [SIG_Z_MEM_NUM_DWORD-1:0][31:0] sig_z_ram_wdata, sig_z_ram_rdata;
   logic [SIG_Z_MEM_WSTROBE_W-1:0] sig_z_ram_wstrobe;
   logic api_sig_z_dec, api_sig_h_dec, api_sig_c_dec;
-  logic api_sig_z_re, api_sig_z_re_f, api_sig_z_we;
+  logic [SRAM_LATENCY:0] api_sig_z_re;
+  logic api_sig_z_we;
   logic api_sig_reg_re;
   logic [SIG_ADDR_W-1:0] api_sig_addr;
-  mldsa_signature_z_addr_t api_sig_z_addr;
-  mldsa_signature_z_addr_t api_sig_z_addr_f;
+  mldsa_signature_z_addr_t [SRAM_LATENCY:0] api_sig_z_addr;
   logic [SIG_C_REG_ADDR_W-1:0] api_sig_c_addr;
   logic [SIG_H_REG_ADDR_W-1:0] api_sig_h_addr;
-  logic [DATA_WIDTH-1:0] signature_reg_rdata;
+  logic [ABR_REG_WIDTH-1:0] signature_reg_rdata;
 
 //public key memory
   logic pubkey_ram_we, pubkey_ram_re;
@@ -642,16 +654,17 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [31:0][T1_COEFF_W-1:0] pubkey_ram_rdata_t1;
   logic [PK_MEM_WSTROBE_W-1:0] pubkey_ram_wstrobe;
   logic api_pubkey_dec, api_pubkey_rho_dec;
-  logic api_pubkey_re, api_pubkey_re_f, api_pubkey_we;
+  logic [SRAM_LATENCY:0] api_pubkey_re;
+  logic api_pubkey_we;
   logic [PK_ADDR_W-1:0] api_pubkey_addr;
-  mldsa_pubkey_mem_addr_t api_pubkey_mem_addr;
-  mldsa_pubkey_mem_addr_t api_pubkey_mem_addr_f;
+  mldsa_pubkey_mem_addr_t api_pubkey_mem_addr[SRAM_LATENCY:0];
   mldsa_pubkey_mem_addr_t sampler_pubkey_mem_addr;
   logic [5:0] api_pk_reg_raddr,api_pk_reg_waddr;
-  logic sampler_pk_rd_en, sampler_pk_rd_en_f, pkdecode_rd_en;
-  logic sampler_sk_rd_en, sampler_sk_rd_en_f;
+  logic [SRAM_LATENCY:0] sampler_pk_rd_en;
+  logic [SRAM_LATENCY:0] pkdecode_rd_en;
+  logic [SRAM_LATENCY:0] sampler_sk_rd_en;
   logic [SK_MEM_BANK_ADDR_W-1:0] sampler_sk_rd_offset;
-  logic [1:0] pkdecode_rd_offset_f;
+  logic [SRAM_LATENCY:0][1:0] pkdecode_rd_offset;
 
   assign abr_reg_hwif_in_o = abr_reg_hwif_in;
   assign abr_reg_hwif_out = abr_reg_hwif_out_i;
@@ -838,25 +851,25 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
     abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req_is_wr;
     abr_reg_hwif_in.MLDSA_PRIVKEY_IN.rd_data = '0; //NO READ PORT
-    abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack;
+    abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
-    abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
-    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack;
-    abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = abr_reg_hwif_out.MLDSA_SIGNATURE.req &  abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re_f ? sig_z_ram_rdata[api_sig_z_addr_f.offset] : api_reg_rdata;
-    abr_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack;
+    abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack[SRAM_LATENCY] & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
+    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack[SRAM_LATENCY];
+    abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = abr_reg_hwif_out.MLDSA_SIGNATURE.req & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re[SRAM_LATENCY] ? sig_z_ram_rdata[api_sig_z_addr[SRAM_LATENCY].offset] : api_reg_rdata;
+    abr_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack = abr_reg_hwif_out.MLDSA_PUBKEY.req &  abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
-    abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re_f ? pubkey_ram_rdata[api_pubkey_mem_addr_f.offset] : api_reg_rdata;
+    abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re[SRAM_LATENCY] ? pubkey_ram_rdata[api_pubkey_mem_addr[SRAM_LATENCY].offset] : api_reg_rdata;
     //MLKEM
-    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_ack = ciphertext_rd_ack;
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_ack = ciphertext_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
-    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = ciphertext_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
-    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_ack = decapskey_rd_ack;
+    abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_data = ciphertext_rd_ack[SRAM_LATENCY] & mlkem_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_ack = decapskey_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLKEM_DECAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
-    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack & mlkem_valid_reg & ~mlkem_dk_lock ? privkey_out_rdata : '0;
-    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = encapskey_rd_ack;
+    abr_reg_hwif_in.MLKEM_DECAPS_KEY.rd_data = decapskey_rd_ack[SRAM_LATENCY] & mlkem_valid_reg & ~mlkem_dk_lock ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_ack = encapskey_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLKEM_ENCAPS_KEY.wr_ack = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
-    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = encapskey_rd_ack & mlkem_valid_reg ? privkey_out_rdata : '0;
+    abr_reg_hwif_in.MLKEM_ENCAPS_KEY.rd_data = encapskey_rd_ack[SRAM_LATENCY] & mlkem_valid_reg ? privkey_out_rdata : '0;
     abr_reg_hwif_in.MLKEM_MSG.rd_ack = abr_reg_hwif_out.MLKEM_MSG.req & ~abr_reg_hwif_out.MLKEM_MSG.req_is_wr;
     abr_reg_hwif_in.MLKEM_MSG.wr_ack = abr_reg_hwif_out.MLKEM_MSG.req & abr_reg_hwif_out.MLKEM_MSG.req_is_wr;
     abr_reg_hwif_in.MLKEM_MSG.rd_data = '0; //NO READ PORT
@@ -947,13 +960,13 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
   
-  always_comb sampler_sk_rd_en = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) & ~msg_hold |
-                                 (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) & ~msg_hold |
-                                 (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]}) & ~msg_hold;
+  always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) |
+                                    (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) |
+                                    (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]});
 
   always_comb sampler_sk_rd_offset = (sampler_src == MLKEM_EK_REG_ID) ? MLKEM_DEST_EK_MEM_OFFSET/2 :
                                      (sampler_src == MLKEM_MSG_ID) ? MLKEM_DEST_MSG_MEM_OFFSET/2 :
-                                     (sampler_src == MLKEM_CIPHERTEXT_ID) ? MLKEM_DEST_C1_MEM_OFFSET/2 : 'd0;
+                                     (sampler_src == MLKEM_CIPHERTEXT_ID) ? MLKEM_DEST_C1_MEM_OFFSET/2 : '0;
 
   //Secret Key Write Interface
   always_comb begin
@@ -980,66 +993,61 @@ always_comb kv_mlkem_msg_write_data = '0;
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_msg_we_bank[i]}} & mlkem_api_msg_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_BANK_ADDR_W-1:0]);
                  
-      sk_ram_wdata[i] = ({DATA_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
-                        ({DATA_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
-                        ({DATA_WIDTH{compress_keymem_we_bank[i]}} & compress_api_wr_data_i) |
-                        ({DATA_WIDTH{api_keymem_we_bank[i]}} & abr_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data) |
-                        ({DATA_WIDTH{mlkem_api_dk_we_bank[i]}} & abr_reg_hwif_out.MLKEM_DECAPS_KEY.wr_data) |
-                        ({DATA_WIDTH{mlkem_api_ek_we_bank[i]}} & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.wr_data) |
-                        ({DATA_WIDTH{mlkem_api_ct_we_bank[i]}} & abr_reg_hwif_out.MLKEM_CIPHERTEXT.wr_data) |
-                        ({DATA_WIDTH{mlkem_api_msg_we_bank[i]}} & mlkem_msg_wdata);         
+      sk_ram_wdata[i] = ({ABR_REG_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
+                        ({ABR_REG_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
+                        ({ABR_REG_WIDTH{compress_keymem_we_bank[i]}} & compress_api_wr_data_i) |
+                        ({ABR_REG_WIDTH{api_keymem_we_bank[i]}} & abr_reg_hwif_out.MLDSA_PRIVKEY_IN.wr_data) |
+                        ({ABR_REG_WIDTH{mlkem_api_dk_we_bank[i]}} & abr_reg_hwif_out.MLKEM_DECAPS_KEY.wr_data) |
+                        ({ABR_REG_WIDTH{mlkem_api_ek_we_bank[i]}} & abr_reg_hwif_out.MLKEM_ENCAPS_KEY.wr_data) |
+                        ({ABR_REG_WIDTH{mlkem_api_ct_we_bank[i]}} & abr_reg_hwif_out.MLKEM_CIPHERTEXT.wr_data) |
+                        ({ABR_REG_WIDTH{mlkem_api_msg_we_bank[i]}} & mlkem_msg_wdata);         
     end
   end     
   
   //Secret Key Read Interface
+  always_comb decompress_keymem_re[0] = decompress_api_rd_en_i;
+
   always_comb begin
     for (int i = 0; i < 2; i++) begin
-      api_keymem_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
+      api_sk_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
       mlkem_api_dk_re_bank[i] = mlkem_api_dk_rd_vld & mlkem_api_dk_mem_dec & (mlkem_api_dk_mem_addr[0] == i);
       mlkem_api_ek_re_bank[i] = mlkem_api_ek_rd_vld & mlkem_api_ek_mem_dec & (mlkem_api_ek_mem_addr[0] == i);
       mlkem_api_ct_re_bank[i] = mlkem_api_ct_rd_vld & mlkem_api_ct_mem_dec & (mlkem_api_ct_mem_addr[0] == i);
 
-      skdecode_re_bank[i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
+      skdecode_re_bank[0][i] = (skdecode_keymem_if_i[i].rd_wr_en == RW_READ);
 
       skdecode_rdaddr[i] = skdecode_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:0];
 
-      compress_keymem_re_bank[i] = compress_api_rw_en_i[1] & (compress_api_rw_addr_i[0] == i);
+      compress_keymem_re_bank[0][i] = compress_api_rw_en_i[1] & (compress_api_rw_addr_i[0] == i);
 
-      sk_ram_re_bank[i] = skdecode_re_bank[i] | api_keymem_re_bank[i] | mlkem_api_dk_re_bank[i] |  mlkem_api_ek_re_bank[i] |
-                          mlkem_api_ct_re_bank[i] | sampler_sk_rd_en | decompress_api_rd_en_i | compress_keymem_re_bank[i];
+      sk_ram_re_bank[i] = skdecode_re_bank[0][i] | api_sk_re_bank[i] | mlkem_api_dk_re_bank[i] |  mlkem_api_ek_re_bank[i] |
+                          mlkem_api_ct_re_bank[i] | sampler_sk_rd_en[0] | decompress_keymem_re[0] | compress_keymem_re_bank[0][i];
 
-      sk_ram_raddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skdecode_re_bank[i]}} & skdecode_rdaddr[i][SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{api_keymem_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
+      sk_ram_raddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skdecode_re_bank[0][i]}} & skdecode_rdaddr[i][SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{api_sk_re_bank[i]}} & api_sk_mem_raddr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_dk_re_bank[i]}} & mlkem_api_dk_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_re_bank[i]}} & mlkem_api_ek_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_re_bank[i]}} & mlkem_api_ct_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{decompress_api_rd_en_i}} & decompress_api_rd_addr_i[SK_MEM_BANK_ADDR_W-1:0]) |
-                             ({SK_MEM_BANK_ADDR_W{compress_keymem_re_bank[i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{sampler_sk_rd_en}} & (sampler_src_offset[SK_MEM_BANK_ADDR_W-1:0] + sampler_sk_rd_offset));
+                             ({SK_MEM_BANK_ADDR_W{decompress_keymem_re[0]}} & decompress_api_rd_addr_i[SK_MEM_BANK_ADDR_W-1:0]) |
+                             ({SK_MEM_BANK_ADDR_W{compress_keymem_re_bank[0][i]}} & compress_api_rw_addr_i[SK_MEM_BANK_ADDR_W:1]) |
+                             ({SK_MEM_BANK_ADDR_W{sampler_sk_rd_en[0]}} & (sampler_src_offset[SK_MEM_BANK_ADDR_W-1:0] + sampler_sk_rd_offset));
 
     end
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      api_keymem_re_bank_f <= '0;
-      api_sk_reg_rd_dec_f <= '0;
-    end else if (zeroize) begin
-      api_keymem_re_bank_f <= '0;
-      api_sk_reg_rd_dec_f <= '0;
-    end else begin
-      api_keymem_re_bank_f <= api_keymem_re_bank | mlkem_api_dk_re_bank | mlkem_api_ek_re_bank | mlkem_api_ct_re_bank | compress_keymem_re_bank;
-      api_sk_reg_rd_dec_f <= api_sk_reg_rd_dec | (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) | (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec);
-    end
-  end
+  always_comb api_keymem_re_bank[0] = api_sk_re_bank | mlkem_api_dk_re_bank | mlkem_api_ek_re_bank | mlkem_api_ct_re_bank;
+  always_comb api_sk_reg_re[0] =  api_sk_reg_rd_dec | (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) | (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec);
 
   always_comb skdecode_rd_data_o = sk_ram_rdata;
+  always_comb skdecode_rd_data_valid_o = skdecode_re_bank[SRAM_LATENCY];
   always_comb decompress_api_rd_data_o = sk_ram_rdata;
-  always_comb compress_api_rd_data_o = {DATA_WIDTH{api_keymem_re_bank_f[0]}} & sk_ram_rdata[0] |
-                                       {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1];
-  always_comb privkey_out_rdata = {DATA_WIDTH{api_keymem_re_bank_f[0]}} & sk_ram_rdata[0] |
-                                  {DATA_WIDTH{api_keymem_re_bank_f[1]}} & sk_ram_rdata[1] |
-                                  {DATA_WIDTH{api_sk_reg_rd_dec_f}} & api_reg_rdata;
+  always_comb decompress_api_rd_data_valid_o = decompress_keymem_re[SRAM_LATENCY];
+  always_comb compress_api_rd_data_o = {ABR_REG_WIDTH{compress_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
+                                       {ABR_REG_WIDTH{compress_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1];
+  always_comb compress_api_rd_data_valid_o = |compress_keymem_re_bank[SRAM_LATENCY];                      
+  always_comb privkey_out_rdata = {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][0]}} & sk_ram_rdata[0] |
+                                  {ABR_REG_WIDTH{api_keymem_re_bank[SRAM_LATENCY][1]}} & sk_ram_rdata[1] |
+                                  {ABR_REG_WIDTH{api_sk_reg_re[SRAM_LATENCY]}} & api_reg_rdata;
 
   always_comb sk_bank0_mem_if.we_i = (sk_ram_we_bank[0]);
   always_comb sk_bank0_mem_if.waddr_i = (sk_ram_waddr_bank[0]);
@@ -1067,49 +1075,6 @@ always_comb kv_mlkem_msg_write_data = '0;
       else if (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_addr];    
       else if (mldsa_valid_reg & api_pubkey_rho_dec)       api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
       else if (mldsa_valid_reg & api_sig_reg_re)           api_reg_rdata <= signature_reg_rdata;
-      else                                                 api_reg_rdata <= '0;
-    end
-  end
-
-  //ack the read request one clock later
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      privkey_out_rd_ack <= 0;
-      signature_rd_ack <= 0;
-      pubkey_rd_ack <= 0;
-      encapskey_rd_ack <= 0;
-      decapskey_rd_ack <= 0;
-      ciphertext_rd_ack <= 0;
-    end
-    else if (zeroize) begin
-      privkey_out_rd_ack <= 0;
-      signature_rd_ack <= 0;
-      pubkey_rd_ack <= 0;
-      encapskey_rd_ack <= 0;
-      decapskey_rd_ack <= 0;
-      ciphertext_rd_ack <= 0;
-    end
-    else begin
-      privkey_out_rd_ack <= abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
-      signature_rd_ack <= abr_reg_hwif_out.MLDSA_SIGNATURE.req & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-      pubkey_rd_ack <= abr_reg_hwif_out.MLDSA_PUBKEY.req & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
-      encapskey_rd_ack <= abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
-      decapskey_rd_ack <= abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
-      ciphertext_rd_ack <= abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
-    end
-  end
-
-  //Signature external mem
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      api_sig_z_re_f <= '0;
-      api_sig_z_addr_f <= '0;
-    end else if (zeroize) begin
-      api_sig_z_re_f <= '0;
-      api_sig_z_addr_f <= '0;
-    end else begin
-      api_sig_z_re_f <= api_sig_z_re;
-      api_sig_z_addr_f <= api_sig_z_addr;
     end
   end
 
@@ -1119,14 +1084,14 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sig_z_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
   always_comb api_sig_h_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
 
-  always_comb api_sig_z_addr.addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
-  always_comb api_sig_z_addr.offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD;
+  always_comb api_sig_z_addr[0].addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
+  always_comb api_sig_z_addr[0].offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD;
   always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
   always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
 
   always_comb api_sig_z_we = abr_ready & api_sig_z_dec & abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
 
-  always_comb api_sig_z_re = mldsa_valid_reg & api_sig_z_dec & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb api_sig_z_re[0] = mldsa_valid_reg & api_sig_z_dec & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
   always_comb api_sig_reg_re = (api_sig_c_dec | api_sig_h_dec) & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
   always_comb sig_z_mem_if.we_i = (sig_z_ram_we);
@@ -1138,28 +1103,30 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb sig_z_ram_rdata = sig_z_mem_if.rdata_o;
 
   //read requests
-  always_comb sig_z_ram_re = (sigdecode_z_rd_req_i.rd_wr_en == RW_READ) | api_sig_z_re;
-  always_comb sig_z_ram_raddr = ({SIG_Z_MEM_ADDR_W{(sigdecode_z_rd_req_i.rd_wr_en == RW_READ)}} & sigdecode_z_rd_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
-                                ({SIG_Z_MEM_ADDR_W{api_sig_z_re}} & api_sig_z_addr.addr);
+  always_comb sigdecode_z_ram_re[0] = sigdecode_z_rd_req_i.rd_wr_en == RW_READ;
+  always_comb sig_z_ram_re = sigdecode_z_ram_re[0] | api_sig_z_re[0];
+  always_comb sig_z_ram_raddr = ({SIG_Z_MEM_ADDR_W{sigdecode_z_ram_re[0]}} & sigdecode_z_rd_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_re[0]}} & api_sig_z_addr[0].addr);
 
   always_comb sigdecode_z_rd_data_o = sig_z_ram_rdata;
+  always_comb sigdecode_z_rd_data_valid_o = sigdecode_z_ram_re[SRAM_LATENCY];
 
   //write requests
   always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we;
   always_comb sig_z_ram_waddr = ({SIG_Z_MEM_ADDR_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
-                                ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr.addr) |
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr[0].addr) |
                                 ({SIG_Z_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]);
 
   always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
-                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr.offset*4)) |
+                                  ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr[0].offset*4)) |
                                   ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we}});
 
 
   always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
-                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr.offset*32));
+                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr[0].offset*32));
 
-  always_comb signature_reg_rdata = {DATA_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
-                                    {DATA_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
+  always_comb signature_reg_rdata = {ABR_REG_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
+                                    {ABR_REG_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
@@ -1196,49 +1163,27 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   end
 
-
-//public key memory
-  always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b) begin
-      api_pubkey_re_f <= '0;
-      api_pubkey_mem_addr_f <= '0;
-      sampler_pk_rd_en_f <= '0;
-      sampler_sk_rd_en_f <= '0;
-      sampler_src_offset_f <= '0;
-      pkdecode_rd_offset_f <= '0;
-    end else if (zeroize) begin
-      api_pubkey_re_f <= '0;
-      api_pubkey_mem_addr_f <= '0;
-      sampler_pk_rd_en_f <= '0;
-      sampler_sk_rd_en_f <= '0;
-      sampler_src_offset_f <= '0;
-      pkdecode_rd_offset_f <= '0;
-    end else begin
-      api_pubkey_re_f <= api_pubkey_re;
-      api_pubkey_mem_addr_f <= api_pubkey_mem_addr;
-      sampler_pk_rd_en_f <= msg_hold ? sampler_pk_rd_en_f : sampler_pk_rd_en;
-      sampler_sk_rd_en_f <= msg_hold ? sampler_sk_rd_en_f : sampler_sk_rd_en;
-      sampler_src_offset_f <= msg_hold ? sampler_src_offset_f : sampler_pubkey_mem_addr.offset[2:0];
-      pkdecode_rd_offset_f <= pkdecode_rd_addr_i[1:0];
-    end
+  always_comb begin
+    sampler_src_offset_stg[0] = sampler_pubkey_mem_addr.offset[2:0];
+    pkdecode_rd_offset[0] = pkdecode_rd_addr_i[1:0];
   end
+
+
 
   always_comb api_pubkey_addr = abr_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
 
   always_comb api_pubkey_rho_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
   always_comb api_pubkey_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
 
-  always_comb api_pubkey_mem_addr.addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
-  always_comb api_pubkey_mem_addr.offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS;
+  always_comb api_pubkey_mem_addr[0].addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
+  always_comb api_pubkey_mem_addr[0].offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS;
 
-  always_comb sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
-  always_comb sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
   always_comb api_pk_reg_raddr = {3'b0,api_pubkey_addr[2:0]};
   always_comb api_pk_reg_waddr = {3'b0,api_pubkey_addr[2:0]};
 
   always_comb api_pubkey_we = abr_ready & api_pubkey_dec & abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
 
-  always_comb api_pubkey_re = mldsa_valid_reg & api_pubkey_dec & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_re[0] = mldsa_valid_reg & api_pubkey_dec & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
 
   always_comb pk_mem_if.we_i = (pubkey_ram_we);
   always_comb pk_mem_if.waddr_i = (pubkey_ram_waddr);
@@ -1250,18 +1195,21 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   assign pubkey_ram_rdata_t1 = pubkey_ram_rdata;
 
-  always_comb pkdecode_rd_en = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_PKDECODE);
-
-  always_comb sampler_pk_rd_en = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]}) & ~msg_hold;
-
-  //read requests
-  always_comb pubkey_ram_re = sampler_pk_rd_en | pkdecode_rd_en | api_pubkey_re;
-  always_comb pubkey_ram_raddr = ({PK_MEM_ADDR_W{sampler_pk_rd_en}} & sampler_pubkey_mem_addr.addr) |
-                                 ({PK_MEM_ADDR_W{pkdecode_rd_en}} & pkdecode_rd_addr_i[PK_MEM_ADDR_W+1:2]) |
-                                 ({PK_MEM_ADDR_W{api_pubkey_re}} & api_pubkey_mem_addr.addr);
+  always_comb pkdecode_rd_en[0] = pkdecode_rd_en_i;
 
   always_comb begin
-    unique case (pkdecode_rd_offset_f[1:0])
+      sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]});
+      sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
+      sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
+  end
+  //read requests
+  always_comb pubkey_ram_re = sampler_pk_rd_en[0] | pkdecode_rd_en[0] | api_pubkey_re[0];
+  always_comb pubkey_ram_raddr = ({PK_MEM_ADDR_W{sampler_pk_rd_en[0]}} & sampler_pubkey_mem_addr.addr) |
+                                 ({PK_MEM_ADDR_W{pkdecode_rd_en[0]}} & pkdecode_rd_addr_i[PK_MEM_ADDR_W+1:2]) |
+                                 ({PK_MEM_ADDR_W{api_pubkey_re[0]}} & api_pubkey_mem_addr[0].addr);
+
+  always_comb begin
+    unique case (pkdecode_rd_offset[SRAM_LATENCY][1:0])
       2'b00:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[7:0];
       2'b01:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[15:8];
       2'b10:   pkdecode_rd_data_o = pubkey_ram_rdata_t1[23:16];
@@ -1269,23 +1217,111 @@ always_comb kv_mlkem_msg_write_data = '0;
     endcase
   end
 
+  always_comb pkdecode_rd_data_valid_o = pkdecode_rd_en[SRAM_LATENCY];
+
   //write requests
   always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we | zeroize_mem_we;
   always_comb pubkey_ram_waddr = ({PK_MEM_ADDR_W{pk_t1_wren_i}} & pk_t1_wr_addr_i[PK_MEM_ADDR_W+1:2]) |
-                                ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr.addr) |
+                                ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr[0].addr) |
                                 ({PK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[PK_MEM_ADDR_W-1:0]);
 
   always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & PK_MEM_WSTROBE_W'('h3FF << pk_t1_wr_addr_i[1:0]*10)) |
-                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & PK_MEM_WSTROBE_W'('hF << api_pubkey_mem_addr.offset*4)) |
+                                   ({PK_MEM_WSTROBE_W{api_pubkey_we}} & PK_MEM_WSTROBE_W'('hF << api_pubkey_mem_addr[0].offset*4)) |
                                    ({PK_MEM_WSTROBE_W{zeroize_mem_we}});
 
 
   always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
-                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_PUBKEY.wr_data << api_pubkey_mem_addr.offset*32));
+                                 ({PK_MEM_DATA_W{(api_pubkey_we)}} & PK_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_PUBKEY.wr_data << api_pubkey_mem_addr[0].offset*32));
+
+  //pipeline the read ack
+  always_comb begin
+      privkey_out_rd_ack[0] = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & ~abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
+      signature_rd_ack[0]   = abr_reg_hwif_out.MLDSA_SIGNATURE.req & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+      pubkey_rd_ack[0]      = abr_reg_hwif_out.MLDSA_PUBKEY.req & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+      encapskey_rd_ack[0]   = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr;
+      decapskey_rd_ack[0]   = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr;
+      ciphertext_rd_ack[0]  = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & ~abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
+  end
+
+  //Stage the read enables into read data valids
+  generate
+    for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : read_en_stage
+    //public key memory
+      always_ff @(posedge clk or negedge rst_b) begin
+        if (!rst_b) begin
+          api_pubkey_re[g_stage] <= '0;
+          api_pubkey_mem_addr[g_stage] <= '0;
+          pkdecode_rd_en[g_stage] <= '0;
+          pkdecode_rd_offset[g_stage] <= '0;
+          sampler_pk_rd_en[g_stage] <= '0;
+          sampler_sk_rd_en[g_stage] <= '0;
+          sampler_src_offset_stg[g_stage] <= '0;
+          sigdecode_z_ram_re[g_stage] <= '0;
+          api_sig_z_re[g_stage] <= '0;
+          api_sig_z_addr[g_stage] <= '0;
+          skdecode_re_bank[g_stage] <= '0;
+          api_keymem_re_bank[g_stage] <= '0;
+          privkey_out_rd_ack[g_stage] <= '0;
+          signature_rd_ack[g_stage] <= '0;
+          pubkey_rd_ack[g_stage] <= '0;
+          encapskey_rd_ack[g_stage] <= '0;
+          decapskey_rd_ack[g_stage] <= '0;
+          ciphertext_rd_ack[g_stage] <= '0;
+          api_sk_reg_re[g_stage] <= '0;
+          compress_keymem_re_bank[g_stage] <= '0;
+          decompress_keymem_re[g_stage] <= '0;
+        end else if (zeroize) begin
+          api_pubkey_re[g_stage] <= '0;
+          api_pubkey_mem_addr[g_stage] <= '0;
+          pkdecode_rd_en[g_stage] <= '0;
+          pkdecode_rd_offset[g_stage] <= '0;
+          sampler_pk_rd_en[g_stage] <= '0;
+          sampler_sk_rd_en[g_stage] <= '0;
+          sampler_src_offset_stg[g_stage] <= '0;
+          sigdecode_z_ram_re[g_stage] <= '0;
+          api_sig_z_re[g_stage] <= '0;
+          api_sig_z_addr[g_stage] <= '0;
+          skdecode_re_bank[g_stage] <= '0;
+          api_keymem_re_bank[g_stage] <= '0;
+          privkey_out_rd_ack[g_stage] <= '0;
+          signature_rd_ack[g_stage] <= '0;
+          pubkey_rd_ack[g_stage] <= '0;
+          encapskey_rd_ack[g_stage] <= '0;
+          decapskey_rd_ack[g_stage] <= '0;
+          ciphertext_rd_ack[g_stage] <= '0;
+          api_sk_reg_re[g_stage] <= '0;
+          compress_keymem_re_bank[g_stage] <= '0;
+          decompress_keymem_re[g_stage] <= '0;
+        end else begin
+          api_pubkey_re[g_stage] <= api_pubkey_re[g_stage-1];
+          api_pubkey_mem_addr[g_stage] <= api_pubkey_mem_addr[g_stage-1];
+          pkdecode_rd_en[g_stage] <= pkdecode_rd_en[g_stage-1];
+          pkdecode_rd_offset[g_stage] <= pkdecode_rd_offset[g_stage-1];
+          sampler_pk_rd_en[g_stage] <= sampler_pk_rd_en[g_stage-1];
+          sampler_sk_rd_en[g_stage] <=sampler_sk_rd_en[g_stage-1];
+          sampler_src_offset_stg[g_stage] <= sampler_src_offset_stg[g_stage-1];
+          sigdecode_z_ram_re[g_stage] <= sigdecode_z_ram_re[g_stage-1];
+          api_sig_z_re[g_stage] <= api_sig_z_re[g_stage-1];
+          api_sig_z_addr[g_stage] <= api_sig_z_addr[g_stage-1];
+          skdecode_re_bank[g_stage] <= skdecode_re_bank[g_stage-1];
+          api_keymem_re_bank[g_stage] <= api_keymem_re_bank[g_stage-1];
+          privkey_out_rd_ack[g_stage] <= privkey_out_rd_ack[g_stage-1];
+          signature_rd_ack[g_stage] <= signature_rd_ack[g_stage-1];
+          pubkey_rd_ack[g_stage] <= pubkey_rd_ack[g_stage-1];
+          encapskey_rd_ack[g_stage] <= encapskey_rd_ack[g_stage-1];
+          decapskey_rd_ack[g_stage] <= decapskey_rd_ack[g_stage-1];
+          ciphertext_rd_ack[g_stage] <= ciphertext_rd_ack[g_stage-1];
+          api_sk_reg_re[g_stage] <= api_sk_reg_re[g_stage-1];
+          compress_keymem_re_bank[g_stage] <= compress_keymem_re_bank[g_stage-1];
+          decompress_keymem_re[g_stage] <= decompress_keymem_re[g_stage-1];
+        end
+      end
+    end
+  endgenerate
 
   //pure-MLDSA assuming 512-bit input msg and empty ctx
   //padding zeroes for highest dword to prevent x prop
-  logic [MLDSA_MSG_NUM_DWORDS-1+2 : 0][DATA_WIDTH-1:0] msg_p_reg;
+  logic [MLDSA_MSG_NUM_DWORDS-1+2 : 0][ABR_REG_WIDTH-1:0] msg_p_reg;
   always_comb begin
     if (stream_msg_mode) msg_p_reg = {512'b0,stream_msg_buffer_data};
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
@@ -1296,7 +1332,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       msg_data <= '0;
     end else if (zeroize) begin
       msg_data <= '0;
-    end else if (~msg_hold) begin
+    end else begin
       unique case (sampler_src) inside
         MLDSA_SEED_ID:        msg_data <= msg_last ? {48'b0,sampler_imm} : {mldsa_seed_reg[{sampler_src_offset[1:0],1'b1}],mldsa_seed_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_ID:         msg_data <= msg_last ? {48'b0,sampler_imm} : abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
@@ -1324,8 +1360,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   always_comb begin
-    msg_data_o[0] = sampler_pk_rd_en_f ? {pubkey_ram_rdata[{sampler_src_offset_f[2:0],1'b1}],pubkey_ram_rdata[{sampler_src_offset_f[2:0],1'b0}]} :
-                    sampler_sk_rd_en_f ? sk_ram_rdata : msg_data;
+    msg_data_o[0] = sampler_pk_rd_en[SRAM_LATENCY] ? {pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b1}],pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b0}]} :
+                    sampler_sk_rd_en[SRAM_LATENCY] ? sk_ram_rdata : msg_data;
   end
 
   //If we're storing state directly into registers, do that here
@@ -1891,21 +1927,64 @@ always_comb stream_msg_buffer_valid = stream_msg_buffer_flush ? (|stream_msg_buf
 //operand 2 contains the length of the message being fed to sha3
 //shift a zero into the strobe for each byte, and invert to get the valid bytes
 always_comb last_msg_strobe = ~(MsgStrbW'('1) << abr_instr.length[$clog2(MsgStrbW)-1:0]);
- 
-always_comb msg_hold = msg_valid_o & ~msg_rdy_i;
-
-//Last cycle when msg count is equal to length
-//length is in bytes - compare against MSB from strobe width gets us the length in msg interface chunks
-always_comb msg_last = stream_msg_ip ? '0 : (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
-always_comb msg_done = stream_msg_ip ? stream_msg_done : (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
 
 //overload msg interface with stream msg interface
 always_comb msg_cnt_nxt = stream_msg_ip ? '0 :
                           msg_done ? '0 :
-                          msg_valid ? msg_cnt + 'd1 : msg_cnt;
+                          msg_cnt_inc ? msg_cnt + 'd1 : msg_cnt;
 always_comb msg_valid_nxt = stream_msg_ip ? stream_msg_buffer_valid : msg_valid;
 always_comb msg_strobe_nxt = stream_msg_ip ? stream_msg_buffer_strobe :
                              msg_last ? last_msg_strobe : '1;
+
+//Computing the msg interfaces signals
+//Last cycle when msg count is equal to length - add a cnt for extra SRAM latency
+//EK requires waiting for SRAM latency to drain before reading the flops
+//Need to ensure that we increment the msg count 
+always_comb begin
+  msg_valid_stg = 0;
+  msg_last = 0;
+  msg_done = 0;
+  msg_cnt_inc = 0;
+  if (stream_msg_ip) begin
+    msg_last = 0;
+    msg_done = stream_msg_done;
+  end
+  else if (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) begin
+    if (sampler_src inside {MLKEM_EK_REG_ID}) begin
+      if (sampler_src_offset inside {[0:191]}) begin //Delay the part from SRAM reads
+        msg_cnt_inc = 1;
+        msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
+      end else if (sampler_sk_rd_en[SRAM_LATENCY-1]) begin //Dont increment msg cnt until SRAM reads have drained
+        msg_cnt_inc = 0;
+        msg_valid_stg = 1;
+      end else begin //Read the data stored in flops
+        msg_cnt_inc = 1;
+        msg_valid_stg = 1;
+      end
+
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]));
+    end
+    else if (sampler_src inside {MLKEM_MSG_ID,MLKEM_CIPHERTEXT_ID}) begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    end
+    else if (sampler_src inside {MLDSA_PK_REG_ID} && sampler_src_offset >= 4) begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = sampler_pk_rd_en[SRAM_LATENCY-1];
+      msg_last = (msg_cnt == (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+      msg_done = (msg_cnt > (abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)] + (SRAM_LATENCY-1)));
+    end
+    else begin
+      msg_cnt_inc = 1;
+      msg_valid_stg = 1;
+      msg_last = (msg_cnt == abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+      msg_done = (msg_cnt > abr_instr.length[ABR_OPR_WIDTH-1:$clog2(MsgStrbW)]);
+    end
+  end
+end
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -1919,9 +1998,9 @@ always_ff @(posedge clk or negedge rst_b) begin
     msg_strobe_o <= 0;
   end
   else begin
-    msg_cnt <= msg_hold ? msg_cnt : msg_cnt_nxt;
-    msg_valid_o <= msg_hold ? msg_valid_o : msg_valid_nxt;
-    msg_strobe_o <= msg_hold ? msg_strobe_o : msg_strobe_nxt;
+    msg_cnt <= msg_cnt_nxt;
+    msg_valid_o <= msg_valid_nxt;
+    msg_strobe_o <= msg_strobe_nxt;
   end
 end
 
@@ -1969,11 +2048,11 @@ always_comb begin : ctrl_fsm_out_combo
         msg_start_o = 1;
       end
       ABR_CTRL_MSG_LOAD: begin
-        msg_valid = 1;
+        msg_valid = msg_valid_stg;
         sampler_src = abr_instr.operand1;
         sampler_imm = abr_instr.imm;
-        if (msg_done & ~msg_hold) begin
-          msg_valid = 0;
+        if (msg_done) begin
+          msg_valid =0;
           if (abr_instr.opcode.ntt_en & ntt_busy[0]) abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
           else if (abr_instr.opcode.sampler_en | abr_instr.opcode.aux_en | abr_instr.opcode.ntt_en) abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
 	  else abr_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
@@ -2206,8 +2285,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (mldsa_seed_reg === '0), clk, !rst_b)
-  //Assumption that stream message is never fast enough to get stalled
-  `ABR_ASSERT_NEVER(ERR_STREAM_MSG_STALLED, !(stream_msg_fsm_ps inside {MLDSA_MSG_IDLE}) & msg_hold, clk, !rst_b)
 
 `ifdef CALIPTRA
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )

@@ -19,23 +19,19 @@
 //======================================================================
 
 module power2round_core
-    #(
-        parameter REG_SIZE = 23,
-        parameter MLDSA_Q = 23'd8380417,
-        parameter MLDSA_D = 13
-    )
+    import abr_params_pkg::*;
     (
-        input wire [REG_SIZE-1:0] r,
+        input wire [REG_SIZE-2:0] r,
         output logic [MLDSA_D-1:0] r0,
-        output logic [REG_SIZE-MLDSA_D-1:0] r1
+        output logic [REG_SIZE-1-MLDSA_D-1:0] r1
     );
 
     localparam power2_d_minus_one = (1 << (MLDSA_D-1)) - 1;
 
-    logic [REG_SIZE : 0] sum0;
-    logic [REG_SIZE : 0] sum1;
-    logic [REG_SIZE-MLDSA_D-1:0] r1_temp;
-    logic [MLDSA_D-1 : 0] r0_temp;
+    logic [REG_SIZE-1:0] sum0;
+    logic [REG_SIZE-1:0] sum1;
+    logic [REG_SIZE-1-MLDSA_D-1:0] r1_temp;
+    logic [MLDSA_D-1:0] r0_temp;
 
     always_comb begin
         sum0 = r + power2_d_minus_one;
