@@ -429,7 +429,7 @@ always_comb begin
   end
 end
 
-always_ff @(posedge clk or negedge rst_b) begin : abr_kv_reg
+always_ff @(posedge clk) begin : abr_kv_reg
   if (!rst_b) begin
     kv_mldsa_seed_data_present <= '0;
     kv_mlkem_seed_data_present <= '0;
@@ -680,7 +680,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   `endif
 
   //without zeroize to make it more complex
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b)
       counter_reg <= '0;
     else
@@ -875,7 +875,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   //Private Key and Decaps Key External Memory
-  always_ff @(posedge clk or negedge rst_b) begin : mldsa_privkey_lock_reg
+  always_ff @(posedge clk) begin : mldsa_privkey_lock_reg
     if (!rst_b) begin
       mldsa_privkey_lock <= '1;
       mlkem_dk_lock <= '1;
@@ -1020,7 +1020,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       api_keymem_re_bank_f <= '0;
       api_sk_reg_rd_dec_f <= '0;
@@ -1056,7 +1056,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb sk_ram_rdata[1] = sk_bank1_mem_if.rdata_o;
 
   //private key read ports
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       api_reg_rdata <= '0;
     end else if (zeroize) begin
@@ -1072,7 +1072,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   //ack the read request one clock later
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       privkey_out_rd_ack <= 0;
       signature_rd_ack <= 0;
@@ -1100,7 +1100,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   //Signature external mem
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       api_sig_z_re_f <= '0;
       api_sig_z_addr_f <= '0;
@@ -1161,7 +1161,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb signature_reg_rdata = {DATA_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
                                     {DATA_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       signature_reg <= '0;
     end else if (zeroize) begin
@@ -1198,7 +1198,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
 
 //public key memory
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       api_pubkey_re_f <= '0;
       api_pubkey_mem_addr_f <= '0;
@@ -1291,7 +1291,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       msg_data <= '0;
     end else if (zeroize) begin
@@ -1330,7 +1330,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   //If we're storing state directly into registers, do that here
   //Scratch register is a common set of flops used by all flows
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       abr_scratch_reg <= '0;
     end
@@ -1406,7 +1406,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   // without zeroize to make it more complex
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       lfsr_seed_o <= '0;
       lfsr_entropy_reg <= '0;
@@ -1422,7 +1422,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       kappa_reg <= '0;
     end
@@ -1434,7 +1434,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   end
   
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       mldsa_valid_reg <= '0;
       mlkem_valid_reg <= '0;
@@ -1496,7 +1496,7 @@ always_comb kv_mlkem_msg_write_data = '0;
                                    (mlkem_encaps_process & mlkem_encaps_done) |
                                    (mlkem_decaps_process & mlkem_decaps_done);
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b)
       external_mu_mode <= 0;  
     else if (zeroize | mldsa_process_done)
@@ -1534,7 +1534,7 @@ always_comb begin
   `endif
 end                              
 
-  always_ff @(posedge clk or negedge rst_b) 
+  always_ff @(posedge clk) 
   begin : error_detection
       if(!rst_b)
           error_flag_reg <= 1'b0;
@@ -1547,7 +1547,7 @@ end
   always_comb error_flag_edge = error_flag & (!error_flag_reg);
 
   //program counter
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if(!rst_b) begin
       abr_prog_cntr <= ABR_RESET;
     end
@@ -1767,7 +1767,7 @@ end
   
 //Message streaming mode
 //new input data available
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     stream_msg_valid <= 0;
   end
@@ -1783,7 +1783,7 @@ end
 always_comb stream_msg_ip = stream_msg_mode & (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) & (sampler_src == MLDSA_MSG_ID);
 
 //count how many dwords of ctx sent
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     ctx_cnt <= 0;
   end
@@ -1853,7 +1853,7 @@ always_comb begin
 end
 
 //State flop
-always_ff @(posedge clk or negedge rst_b) begin : stream_msg_fsm_flops
+always_ff @(posedge clk) begin : stream_msg_fsm_flops
   if (!rst_b) begin
     stream_msg_fsm_ps <= MLDSA_MSG_IDLE;
   end
@@ -1907,7 +1907,7 @@ always_comb msg_valid_nxt = stream_msg_ip ? stream_msg_buffer_valid : msg_valid;
 always_comb msg_strobe_nxt = stream_msg_ip ? stream_msg_buffer_strobe :
                              msg_last ? last_msg_strobe : '1;
 
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     msg_cnt <= 0;
     msg_valid_o <= 0;
@@ -2040,7 +2040,7 @@ always_comb begin : ctrl_fsm_out_combo
 end
 
 //State flop
-always_ff @(posedge clk or negedge rst_b) begin : ctrl_fsm_flops
+always_ff @(posedge clk) begin : ctrl_fsm_flops
   if (!rst_b) begin
       abr_ctrl_fsm_ps <= ABR_CTRL_IDLE;
   end
@@ -2087,7 +2087,7 @@ end
 //Zeroizer
 always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
 
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     zeroize_mem_addr <= 0;
     zeroize_mem_done <= 0;
@@ -2149,7 +2149,7 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
         .trigger_pulse(INTT_trigger)
     );
 
-    always_ff @(posedge clk or negedge rst_b) begin
+    always_ff @(posedge clk) begin
         if (!rst_b) begin
             NTT_raw_signal <= 'h0;
             PWM_raw_signal <= 'h0;

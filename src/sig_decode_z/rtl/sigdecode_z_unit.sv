@@ -75,7 +75,7 @@ module sigdecode_z_unit
         .cout_o(carry1)
     );
 
-    always_ff @(posedge clk or negedge reset_n) 
+    always_ff @(posedge clk) 
     begin
         if(!reset_n) begin
             r0_reg      <= '0;

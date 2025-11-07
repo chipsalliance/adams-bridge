@@ -78,7 +78,7 @@ module abr_add_sub_mod #(
 
     assign opb0 = sub_i ? ~opb_i : opb_i;
 
-    always_ff @(posedge clk or negedge reset_n) 
+    always_ff @(posedge clk) 
     begin
         if(!reset_n) begin
             r0_reg <= '0;
@@ -104,7 +104,7 @@ module abr_add_sub_mod #(
     end
 
     // Determines when results are ready
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             push_result_reg <= 2'b0;
         else if (zeroize)

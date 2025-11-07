@@ -84,7 +84,7 @@ module sigdecode_h_ctrl
     //Write addr counter
     always_comb mem_wr_addr_nxt = mem_wr_addr + 'h1;
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_wr_addr <= 'h0;
         end
@@ -102,7 +102,7 @@ module sigdecode_h_ctrl
     always_comb poly_done_wr = (mem_wr_addr[5:0] == ((MLDSA_N/4 - 1)));
 
     //Poly counter
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             poly_count <= 'h0;
         end
@@ -114,7 +114,7 @@ module sigdecode_h_ctrl
     end
 
     //bitmap ptr counter
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             bitmap_ptr <= 'h0;
         end
@@ -150,7 +150,7 @@ module sigdecode_h_ctrl
     end
     
     //Hintsum logic
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             rem_hintsum     <= 'h0;
             curr_poly_map   <= 'h0;
@@ -176,7 +176,7 @@ module sigdecode_h_ctrl
     always_comb poly_done_rd = (read_fsm_state_ps == SDH_RD_EXEC) & (rem_hintsum == 'h0);
 
     //Rd ptr logic
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             rd_ptr <= 'h0;
         end
@@ -199,7 +199,7 @@ module sigdecode_h_ctrl
         arc_SDH_RD_EXEC_SDH_RD_IDLE     = (read_fsm_state_ps == SDH_RD_EXEC) & ((last_poly & poly_done_rd) | sigdecode_h_error);
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= SDH_RD_IDLE;
         else if (zeroize)
@@ -209,7 +209,7 @@ module sigdecode_h_ctrl
     end
 
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             hint_rd_en_f <= '0;
         else if (zeroize)
@@ -259,7 +259,7 @@ module sigdecode_h_ctrl
         arc_SDH_WR_MEM_SDH_WR_IDLE  = (write_fsm_state_ps == SDH_WR_MEM) & ((last_poly & poly_done_wr) | sigdecode_h_error);
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             write_fsm_state_ps <= SDH_WR_IDLE;
         else if (zeroize)

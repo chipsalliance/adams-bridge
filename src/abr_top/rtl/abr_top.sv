@@ -526,7 +526,7 @@ abr_sampler_top sampler_top_inst
 //no sampler connect for ntt 1 if present
 assign sampler_ntt_dv[1] = 0;
 
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     sampler_ntt_dv_f <= 0;
   end
@@ -1251,7 +1251,7 @@ always_comb begin
 end
 
 //Align read enables
-always_ff @(posedge clk or negedge rst_b) begin : read_mux_flops
+always_ff @(posedge clk) begin : read_mux_flops
   if (!rst_b) begin
     ntt_mem_re_f <= 0;
     pwo_a_mem_re_f <= 0;

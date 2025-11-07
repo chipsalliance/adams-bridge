@@ -74,7 +74,7 @@ module sigdecode_h
     //and it's ok for this operation to be non-constant time.
 
     //Delay flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             hintsum             <= 'h0;
             hintsum_prev_poly   <= 'h0;
@@ -147,7 +147,7 @@ module sigdecode_h
     end
     
     //bitmap construction
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             bitmap <= 'h0;
         end

@@ -94,7 +94,7 @@ module skencode
     
     
     // State Machine: Updates main_state and write_state based on current conditions and next states.
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             main_state  <= IDLE;
             write_state <= IDLE;
@@ -198,7 +198,7 @@ module skencode
     end
 
     // Write request generation
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             keymem_a_wr_req     <= '{rd_wr_en: RW_IDLE, addr: '0};
             num_api_operands    <= 'h0;
@@ -237,7 +237,7 @@ module skencode
     // Manages write_buffer and producer_selector based on the main state machine.
     // Issues read requests to memory and increments num_mem_operands during appropriate states.
     // Signals completion (skencode_done) based on operation progress.
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             write_buffer        <= 'h0;
             producer_selector   <= 'h0;
@@ -298,7 +298,7 @@ module skencode
     
     // Manages the 96-bit buffer register based on the write_buffer signal and producer_selector state.
     // Accumulates 24-bit encoded strings into the 96-bit buffer, preparing data for further processing or output.
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             buffer  <= 'h0;
         end

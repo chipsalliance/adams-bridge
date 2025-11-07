@@ -60,7 +60,7 @@ module compress_top
 
     always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | buffer_valid | buffer_valid_f);
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             compress_busy <= '0;
             mem_rd_data_hold_f <= '0;
@@ -92,7 +92,7 @@ module compress_top
     generate
         for (genvar i = 0; i < COEFF_PER_CLK; i++) begin : gen_mem_rd_data_stalled
 
-            always_ff @(posedge clk or negedge reset_n) begin
+            always_ff @(posedge clk) begin
                 if (!reset_n) begin
                     mem_rd_data_stalled[i] <= '0;
                 end
@@ -155,7 +155,7 @@ module compress_top
     );
 
     //Compute API write address
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             api_rw_addr <= '0;
         end
@@ -176,7 +176,7 @@ module compress_top
     always_comb api_rw_en[1] = buffer_valid & compare_mode;
     always_comb compare_failed = compare_mode & buffer_valid_f & (buffer_data_f != api_rd_data);
 
-    always_ff@(posedge clk or negedge reset_n) begin
+    always_ff@(posedge clk) begin
         if (!reset_n) begin
             buffer_valid_f <= '0;
             buffer_data_f <= '0;

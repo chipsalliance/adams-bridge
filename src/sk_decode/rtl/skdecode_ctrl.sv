@@ -94,7 +94,7 @@ module skdecode_ctrl
     logic arc_SKDEC_RD_STAGE_SKDEC_RD_IDLE;
 
     //skdecode counter
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             skdecode_count <= 'h0;
         else if (zeroize)
@@ -111,7 +111,7 @@ module skdecode_ctrl
     //Write addr counter
     always_comb mem_wr_addr_nxt = mem_wr_addr + 'h1;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             mem_wr_addr <= 'h0;
         else if (zeroize)
@@ -127,7 +127,7 @@ module skdecode_ctrl
     //Read addr counter
     always_comb kmem_rd_addr_nxt = t0_enable_fsm ? kmem_rd_addr + 'h2 : kmem_rd_addr + 'h1;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             kmem_rd_addr <= 'h0;
         else if (zeroize)
@@ -139,7 +139,7 @@ module skdecode_ctrl
     end
 
     //Stall counter - needed only for s1s2 unpacking. For t0, sample buffer generates full that is used as stall condition
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             stall_count <= 'h0;
         else if (zeroize)
@@ -154,7 +154,7 @@ module skdecode_ctrl
     always_comb s1s2_buf_stall_fsm = (s1s2_enable_fsm) & (stall_count == 'h3);
 
     //Flags
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             s1_mode <= 'b0;
             s2_mode <= 'b0;
@@ -185,7 +185,7 @@ module skdecode_ctrl
         last_poly_last_addr = (skdecode_count == (((num_poly * MLDSA_N)/num_inst)-1));
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             s1_done <= 'b0;
             s2_done <= 'b0;
@@ -222,7 +222,7 @@ module skdecode_ctrl
         //TODO error conditions
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= SKDEC_RD_IDLE;
         else if (zeroize)
@@ -311,7 +311,7 @@ module skdecode_ctrl
         arc_SKDEC_WR_STAGE_SKDEC_WR_IDLE = (write_fsm_state_ps == SKDEC_WR_STAGE) & s1_done & s2_done & t0_done;
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             write_fsm_state_ps <= SKDEC_WR_IDLE;
         else if (zeroize)
@@ -373,7 +373,7 @@ module skdecode_ctrl
 
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             s1s2_enable     <= 'b0;
             t0_enable       <= 'b0;

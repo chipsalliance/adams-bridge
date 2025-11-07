@@ -56,7 +56,7 @@ module ntt_buffer
 
     
     //Write/read
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             buf0 <= 'h0;
             buf1 <= 'h0;
@@ -79,7 +79,7 @@ module ntt_buffer
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             data_o_count <= 'h0;
         else if (zeroize)
@@ -90,7 +90,7 @@ module ntt_buffer
             data_o_count <= data_o_count + 'h1;
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             data_i_count <= 'h0;
             data_i_count_reg <= 'h0;

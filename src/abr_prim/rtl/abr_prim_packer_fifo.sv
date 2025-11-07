@@ -77,7 +77,7 @@ module abr_prim_packer_fifo #(
   logic [MaxW-1:0] data_q, data_d;
   logic            clr_q, clr_d;
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       depth_q <= '0;
       data_q  <= '0;
@@ -122,7 +122,7 @@ module abr_prim_packer_fifo #(
     logic [DepthW:0] lsb_is_one;
     logic [DepthW:0] max_value;
 
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         ptr_q   <= '0;
       end else begin

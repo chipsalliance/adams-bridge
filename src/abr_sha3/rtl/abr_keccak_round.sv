@@ -368,7 +368,7 @@ module abr_keccak_round
   logic [Width-1:0] storage_datapath[RoundsPerClock:0][Share];
   logic [Width-1:0] storage   [Share];
   logic [Width-1:0] storage_d [Share];
-  always_ff @(posedge clk_i or negedge rst_n) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_n) begin
       storage <= '{default:'0};
     end else if (zeroize) begin
@@ -461,7 +461,7 @@ module abr_keccak_round
   );
 
   // completion signal
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       complete_o <= 1'b 0;
     end else if (zeroize) begin

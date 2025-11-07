@@ -126,7 +126,7 @@ module ntt_mlkem_masked_butterfly1x2
     );
 
     //1 clk
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             uv_o <= 'h0;
         end

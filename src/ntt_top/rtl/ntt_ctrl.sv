@@ -247,7 +247,7 @@ always_comb begin
     pws_mode = (ntt_mode == pws);
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         opcode <= ct; //default
         masking_en_ctrl <= 'b0;
@@ -274,7 +274,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         buf_wrptr_reg_d1 <= '0;
     end
@@ -289,7 +289,7 @@ end
 //------------------------------------------
 //Rounds counter
 //------------------------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         rounds_count <= 'h0;
     else if (zeroize)
@@ -351,7 +351,7 @@ always_comb begin
 end
 
 //Read addr
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         mem_rd_addr <= 'h0;
     end
@@ -373,7 +373,7 @@ always_ff @(posedge clk or negedge reset_n) begin
 end
 
 //Write addr
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         mem_wr_addr <= 'h0;
     end
@@ -440,7 +440,7 @@ always_comb begin
         pw_mem_rd_addr_c_nxt = 'h0;
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         incr_pw_rd_addr_reg <= '0;
         incr_pw_wr_addr_reg <= '0;
@@ -459,7 +459,7 @@ always_ff @(posedge clk or negedge reset_n) begin
 end
 
 //PWO addr
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         pw_mem_rd_addr_a <= '0;
         pw_mem_rd_addr_b <= '0;
@@ -541,7 +541,7 @@ always_comb begin
 end
 
 //Flop the incr and twiddle_addr to align with memory read latency
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         incr_twiddle_addr_reg <= 'b0;
         incr_twiddle_addr_reg_d2 <= 'b0;
@@ -562,7 +562,7 @@ end
 assign incr_twiddle_addr = ct_mode ? incr_twiddle_addr_fsm : incr_twiddle_addr_reg;
 
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         twiddle_addr_reg <= 'h0;
     else if (zeroize)
@@ -588,7 +588,7 @@ assign pwo_busy = (read_fsm_state_ps != RD_IDLE) && (write_fsm_state_ps != WR_ID
 always_comb wr_data_valid = gs_mode ? buf0_valid : butterfly_ready; //ct or pwo mode - look for bf_ready
 always_comb rd_data_valid = ct_mode ? buf0_valid : gs_mode ? bf_enable_fsm : sampler_valid;
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         wr_valid_count <= 'h0;
     else if (zeroize)
@@ -600,7 +600,7 @@ always_ff @(posedge clk or negedge reset_n) begin
                                     : wr_valid_count + 'h1;
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         rd_valid_count <= 'h0;
     else if (zeroize)
@@ -618,7 +618,7 @@ end
 //Once counter starts, count until 3 to signify that all 4 buffers
 //are valid. Then wait at 0 until next buf0_valid comes in
 //------------------------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         buf_count <= 'h0;
     else if (zeroize)
@@ -634,7 +634,7 @@ end
 //------------------------------------------
 //Shuffle buffer
 //------------------------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         chunk_rand_offset <= 'h0;
         chunk_count <= 'h0;
@@ -652,7 +652,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         index_rand_offset <= 'h0;
         
@@ -667,7 +667,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         buf_rdptr_reg <= 'h0;
         buf_wrptr_reg <= 'h0;
@@ -723,7 +723,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         buf_rdptr_f <= 'h0;
     end
@@ -735,7 +735,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         index_count <= 'h0;
     end
@@ -747,7 +747,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         chunk_count_reg <= 'h0;
     end
@@ -765,7 +765,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         buf_wrptr <= 'h0;
     end
@@ -799,7 +799,7 @@ end
 //------------------------------------------
 //NTT/INTT Read FSM 
 //------------------------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         read_fsm_state_ps <= RD_IDLE;
     else if (zeroize)
@@ -933,7 +933,7 @@ end
 //------------------------------------------
 //NTT/INTT Write FSM 
 //------------------------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         write_fsm_state_ps <= WR_IDLE;
     else if (zeroize)
@@ -1074,7 +1074,7 @@ always_comb begin
     endcase
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n)
         twiddle_addr_sampler_mode <= '0;
     else if (zeroize)
@@ -1160,7 +1160,7 @@ always_comb begin
     
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         pw_rden_fsm_reg <= '0;
         pw_wren_fsm_reg <= '0;
@@ -1178,7 +1178,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         buf_wren_ntt_reg <= 'b0;
         buf_wren_intt_reg <= 'b0;

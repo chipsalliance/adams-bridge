@@ -30,6 +30,16 @@
     end                                               \
   end
 
+// Register with synchronous reset.
+`define ABR_PRIM_FLOP(__d, __q, __resval = `ABR_PRIM_FLOP_RESVAL, __clk = `ABR_PRIM_FLOP_CLK, __rst_n = `ABR_PRIM_FLOP_RST) \
+  always_ff @(posedge __clk) begin \
+    if (!__rst_n) begin                               \
+      __q <= __resval;                                \
+    end else begin                                    \
+      __q <= __d;                                     \
+    end                                               \
+  end
+
 ///////////////////////////
 // Macro for Sparse FSMs //
 ///////////////////////////
@@ -55,7 +65,7 @@
       .state_i ( __d     ),                           \
       .state_o (         )                            \
     );                                                \
-    `ABR_PRIM_FLOP_A(__d, __q, __resval, __clk, __rst_n)  \
+    `ABR_PRIM_FLOP(__d, __q, __resval, __clk, __rst_n)  \
     `ABR_ASSERT(``__name``_A, __q === ``__name``.state_o) \
   `else                                               \
     abr_prim_sparse_fsm_flop #(                           \

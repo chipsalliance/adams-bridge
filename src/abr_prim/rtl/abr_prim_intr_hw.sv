@@ -59,7 +59,7 @@ module abr_prim_intr_hw # (
   else if (IntrT == "Status") begin : g_intr_status
     logic [Width-1:0] test_q; // Storing test. Cleared by SW
 
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) test_q <= '0;
       else if (reg2hw_intr_test_qe_i) test_q <= reg2hw_intr_test_q_i;
     end
@@ -79,7 +79,7 @@ module abr_prim_intr_hw # (
 
   if (FlopOutput == 1) begin : gen_flop_intr_output
     // flop the interrupt output
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         intr_o <= '0;
       end else begin

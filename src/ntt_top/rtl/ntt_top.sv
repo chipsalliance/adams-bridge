@@ -179,7 +179,7 @@ module ntt_top
 
     logic ntt_passthrough, intt_passthrough;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             ct_mode <= 0;
             gs_mode <= 0;
@@ -236,7 +236,7 @@ module ntt_top
             mem_wr_data      = gs_mode ? ABR_MEM_MASKED_DATA_WIDTH'(mem_wr_data_int) : (pwm_mode | pairwm_mode) ? shuffle_en ? share_mem_wr_data : share_mem_wr_data_comb : '0; //In masking, only gs_mode will have mem wr data. PWM mode will write only shares
     end
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             share_mem_wr_data <= '0;
             share_mem_wr_data_reg <= '0;
@@ -352,7 +352,7 @@ module ntt_top
         .intt_passthrough(intt_passthrough)
     );
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             ntt_done <= 'b0;
         else if (zeroize)
@@ -454,7 +454,7 @@ module ntt_top
         .ready_o(bf_ready)
     );
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;

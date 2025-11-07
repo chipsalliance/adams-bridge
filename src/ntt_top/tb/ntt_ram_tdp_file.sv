@@ -61,7 +61,7 @@ module ntt_ram_tdp_file
     end
     
 
-    always_ff @ (posedge clk or negedge reset_n) 
+    always_ff @ (posedge clk) 
     begin : reading_memory
         if (!reset_n) begin
             douta <= '0;
@@ -80,7 +80,7 @@ module ntt_ram_tdp_file
         end
     end // reading_memory
 
-    always_ff @ (posedge clk or negedge reset_n) 
+    always_ff @ (posedge clk) 
     begin : writing_memory
         if (!reset_n) begin
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)

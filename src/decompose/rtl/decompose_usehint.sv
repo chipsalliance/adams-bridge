@@ -50,7 +50,7 @@ module decompose_usehint
     logic hint_reg;
 
     //Delay flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             w0_reg <= 'h0;
             w1_reg <= 'h0;
@@ -100,7 +100,7 @@ module decompose_usehint
         .ready_o()
     );
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             ready <= 'b0;
         else if (zeroize)

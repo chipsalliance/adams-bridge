@@ -22,8 +22,8 @@ addrmap abr_reg {
                  // SystemRDL 2.0 sections 9.1 and 13.4
 
     default hw = na;
-    signal {activelow; async; cpuif_reset; field_reset;} reset_b;
-    signal {activelow; async;} hard_reset_b;
+    signal {activelow;  cpuif_reset; field_reset;} reset_b;
+    signal {activelow; } hard_reset_b;
     signal {} abr_ready;
 
 

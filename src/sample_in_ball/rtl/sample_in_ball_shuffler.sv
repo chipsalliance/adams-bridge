@@ -55,7 +55,7 @@ module sample_in_ball_shuffler
   always_comb addr_o[0] = indexj_i[7:2];
   always_comb addr_o[1] = indexi_i[7:2];
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b)begin
       read_valid <= 0;
     end else if (zeroize) begin

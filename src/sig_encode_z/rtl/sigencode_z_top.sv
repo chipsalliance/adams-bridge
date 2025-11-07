@@ -75,7 +75,7 @@ module sigencode_z_top
 
 
     // State Machine
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             state <= IDLE;
         end
@@ -126,7 +126,7 @@ module sigencode_z_top
 
     // Lock the src and dest addresses and initialize the counter
     // Assert the done signal when it is needed
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;
@@ -170,7 +170,7 @@ module sigencode_z_top
     end
 
     // Write request generation
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             sigmem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             sigmem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
@@ -190,7 +190,7 @@ module sigencode_z_top
     end
 
     // Memory read request generation
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};

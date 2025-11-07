@@ -85,7 +85,7 @@ module abr_prim_lc_sync
     // or nothing at all.
     // This logic will be removed for sythesis since it is unloaded.
     lc_ctrl_pkg::lc_tx_t unused_logic;
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
          unused_logic <= lc_ctrl_pkg::Off;
       end else begin

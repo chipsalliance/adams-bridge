@@ -70,7 +70,7 @@ module power2round_ctrl
     always_comb skmem_wr_addr_nxt = skmem_wr_addr + 'h2;
     always_comb pk_wr_addr_nxt = pk_wr_addr + 'h1;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_addr <= 'h0;
             mem_rd_addr_delay <= 'h0;
@@ -108,7 +108,7 @@ module power2round_ctrl
     assign last_pk_wr_addr = (pk_wr_addr == MAX_PK_ADDR); //pk_dest_base_addr = 'h0;
 
     // READ FSM
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= T_RD_IDLE;
         else if (zeroize)
@@ -138,7 +138,7 @@ module power2round_ctrl
     end
 
     // SK MEM WRITE FSM
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             sk_write_fsm_state_ps <= SK_WR_IDLE;
         else if (zeroize)
@@ -172,7 +172,7 @@ module power2round_ctrl
 
 
     // PK WRITE FSM
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             pk_write_fsm_state_ps <= PK_WR_IDLE;
         else if (zeroize)
@@ -227,7 +227,7 @@ module power2round_ctrl
 
     assign pk_t1_wren = pk_t1_wren_tmp;
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             done <= 'h0;
         else if (zeroize)

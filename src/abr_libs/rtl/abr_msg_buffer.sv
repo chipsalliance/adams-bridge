@@ -107,7 +107,7 @@ module abr_msg_buffer
     buffer_valid_d = buffer_valid_shift | buffer_wr_valid_shift;
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       buffer <= '0;
       buffer_valid <= '0;

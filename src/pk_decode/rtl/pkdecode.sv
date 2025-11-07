@@ -70,7 +70,7 @@ module pkdecode
 
 
     // State Machine
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             state <= IDLE;
         end
@@ -132,7 +132,7 @@ module pkdecode
     end
 
     // Assign encoded data to memory write ports
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_a_wr_data <= '{default: 0};
             mem_b_wr_data <= '{default: 0};
@@ -148,7 +148,7 @@ module pkdecode
     end
 
     // Write request generation
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
@@ -168,7 +168,7 @@ module pkdecode
     end
 
     // Memory read request generation
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             API_rd_address <= '0;
         end
@@ -184,7 +184,7 @@ module pkdecode
 
 
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             num_mem_operands    <= 'h0;
             num_api_operands    <= 'h0;

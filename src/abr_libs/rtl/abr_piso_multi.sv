@@ -60,7 +60,7 @@ module abr_piso_multi #(
   always_comb update_buffer = buffer_rd | buffer_wr;
 
   // Storage element
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       buffer <= '0;
       buffer_wr_ptr <= '0;

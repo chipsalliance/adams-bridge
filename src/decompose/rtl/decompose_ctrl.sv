@@ -58,7 +58,7 @@ module decompose_ctrl
     //Read addr counter
     always_comb mem_rd_addr_nxt = mem_rd_addr + 'h1;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_addr <= 'h0;
             src_base_addr_reg <= 'h0;
@@ -79,7 +79,7 @@ module decompose_ctrl
     //Write addr counter
     always_comb mem_wr_addr_nxt = mem_wr_addr + 'h1;
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_wr_addr <= 'h0;
             dest_base_addr_reg <= 'h0;
@@ -109,7 +109,7 @@ module decompose_ctrl
         arc_DCMP_RD_MEM_DCMP_RD_IDLE = (read_fsm_state_ps == DCMP_RD_MEM) && last_poly_last_addr_rd;
     end
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= DCMP_RD_IDLE;
         else if (zeroize)
@@ -143,7 +143,7 @@ module decompose_ctrl
         arc_DCMP_WR_MEM_DCMP_WR_IDLE = (write_fsm_state_ps == DCMP_WR_MEM) && last_poly_last_addr_wr;
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             write_fsm_state_ps <= DCMP_WR_IDLE;
         else if (zeroize)

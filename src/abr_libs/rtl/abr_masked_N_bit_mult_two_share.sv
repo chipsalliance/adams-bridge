@@ -55,7 +55,7 @@
         calculation[2] = WIDTH'(x[0] * y[1]); // Multiplication of the first share x and second share y
         calculation[3] = WIDTH'(x[1] * y[1]); // Multiplication of the second share x and second share y
     end
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             for (int i = 0; i < 2; i++) begin
                 calculation_rand[i] <= 'h0;
@@ -81,7 +81,7 @@
     end
 
     // Final output assignment
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             for (int i = 0; i < WIDTH; i++)
                 z[i] <= 2'h0;

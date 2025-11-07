@@ -82,7 +82,7 @@ module ntt_butterfly2x2
     //So, worst case latency = 4 + 1 = 5 clks
 
     //Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mldsa_w10_reg <= 'h0;
             mldsa_w11_reg <= 'h0;
@@ -282,7 +282,7 @@ module ntt_butterfly2x2
     //ntt_top controller will disable bf2x2 and that will reset ready while transitioning 
     //from one stage to next after all writes of current stage have finished.
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             ready_reg <= 'b0;
         else if (zeroize)

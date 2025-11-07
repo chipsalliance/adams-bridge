@@ -49,7 +49,7 @@ module abr_masked_N_bit_Boolean_sub #(
     generate
         for (i = 0; i < WIDTH; i = i + 1) begin : gen_full_adders
             // Pipeline registers for x and y inputs
-            always_ff @(posedge clk or negedge rst_n) begin
+            always_ff @(posedge clk) begin
                 if (!rst_n) begin
                     x_reg[i] <= '0;
                     y_reg[i] <= '0;
@@ -73,7 +73,7 @@ module abr_masked_N_bit_Boolean_sub #(
             end
 
             // Pipeline registers for sum output
-            always_ff @(posedge clk or negedge rst_n) begin
+            always_ff @(posedge clk) begin
                 if (!rst_n) begin
                     sum_reg[i] <= '0;
                 end
@@ -111,7 +111,7 @@ module abr_masked_N_bit_Boolean_sub #(
         end
     endgenerate
 
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             the_last_sum    <= 2'b00;
         end

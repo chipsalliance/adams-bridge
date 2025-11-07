@@ -85,7 +85,7 @@ mul_redux_inst_0 (
 logic [2:0][MLKEM_REG_SIZE-1:0] uv00_reduced_reg, uv11_reduced_reg, z1_reg;
 logic [3:0][MLKEM_REG_SIZE-1:0] w0_reg, w1_reg;
 logic [REG_SIZE-1:0] uv0_o_int, uv1_o_int, uv1_o_int_reg, uv0_o_acc, uv1_o_acc;
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         uv00_reduced_reg <= '0;
         uv11_reduced_reg <= '0;

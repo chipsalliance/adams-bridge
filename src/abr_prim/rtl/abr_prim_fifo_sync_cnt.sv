@@ -70,7 +70,7 @@ module abr_prim_fifo_sync_cnt #(
     assign err_o = wptr_err | rptr_err;
 
   end else begin : gen_normal_ptrs
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         wptr_o <= {(Width){1'b0}};
       end else if (clr_i) begin
@@ -82,7 +82,7 @@ module abr_prim_fifo_sync_cnt #(
       end
     end
 
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         rptr_o <= {(Width){1'b0}};
       end else if (clr_i) begin

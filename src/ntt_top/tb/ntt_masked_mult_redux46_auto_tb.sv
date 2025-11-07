@@ -81,7 +81,7 @@ module ntt_masked_mult_redux46_auto_tb;
     always #5 clk = ~clk;
 
     // Testbench logic
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) begin
             cycle_count <= 0;
             // Initialize shift registers

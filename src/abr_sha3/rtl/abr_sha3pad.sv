@@ -257,7 +257,7 @@ module abr_sha3pad
   // FSM.
   logic process_latched;
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       process_latched <= 1'b 0;
     end else if (process_i) begin
@@ -283,7 +283,7 @@ module abr_sha3pad
   // Next logic and output logic ==============================================
   // SEC_CM: ABSORBED.CTRL.MUBI
   abr_prim_mubi_pkg::mubi4_t absorbed_d;
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
     else if (zeroize) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
     else              absorbed_o <= absorbed_d;
@@ -672,7 +672,7 @@ module abr_sha3pad
   logic [MsgWidth-8-1:0] msg_buf [Share];
   logic [MsgStrbW-1-1:0] msg_strb;
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       msg_buf  <= '{default:'0};
       msg_strb <= '0;
@@ -771,7 +771,7 @@ module abr_sha3pad
 
   // Serial input buffer
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       serial_buffer <= '{default:'0};
     end else if (rst_serial_buffer) begin
@@ -832,7 +832,7 @@ module abr_sha3pad
   // qualifiers in RTL form is easier.
   logic start_valid, process_valid, absorb_valid, done_valid;
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       start_valid <= 1'b 1;
     end else if (zeroize) begin
@@ -843,7 +843,7 @@ module abr_sha3pad
       start_valid <= 1'b 1;
     end
   end
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       process_valid <= 1'b 0;
     end else if (zeroize) begin

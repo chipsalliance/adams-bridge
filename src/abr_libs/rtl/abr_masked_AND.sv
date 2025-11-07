@@ -51,7 +51,7 @@
     end
 
     // Resharing logic to apply masking
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             for (int i = 0; i < 4; i++) begin
                 resharing[i] <= 1'b0;

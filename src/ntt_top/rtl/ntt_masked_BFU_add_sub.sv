@@ -71,7 +71,7 @@ module ntt_masked_BFU_add_sub
     );
 
     //Adder delay flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i <= WIDTH+4; i++) begin
                 add_res_reg[i] <= 'h0;
@@ -114,7 +114,7 @@ module ntt_masked_BFU_add_sub
     logic [1:0] temp0 [WIDTH-1:0]; 
 
     //Convert 1 bit to 46 bit to pass to B2A converter - 1 clk
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < WIDTH; i++) begin
                 temp0[i] <= 2'b0;
@@ -168,7 +168,7 @@ module ntt_masked_BFU_add_sub
     end
 
     //Output flop - 1 clk
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < WIDTH; i++)
                 res[i] <= 2'h0;

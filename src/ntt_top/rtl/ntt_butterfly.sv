@@ -77,7 +77,7 @@ module ntt_butterfly
     logic [MLKEM_REG_SIZE-1:0] mlkem_add_res_div2;
 
     //Flop u input to match multiplier output (4 cycle delay)
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             u_reg    <= 'h0;
             u_reg_d2 <= 'h0;
@@ -125,7 +125,7 @@ module ntt_butterfly
     end
 
     //4 cycle delay to match critical path
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             add_res_d1 <= 'h0;
             add_res_d2 <= 'h0;

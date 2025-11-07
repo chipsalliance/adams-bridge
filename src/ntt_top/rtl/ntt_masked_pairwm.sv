@@ -65,7 +65,7 @@ logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u0v0_reduced_reg;
 logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u0v1_reduced_reg;
 logic [MLKEM_MASKED_MULT_LATENCY-1:0][1:0][MASKED_WIDTH-1:0] u1v0_reduced_reg;
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         for (int i = 0; i < MLKEM_MASKED_MULT_LATENCY; i++) begin
             u1_reg[i] <= '0;

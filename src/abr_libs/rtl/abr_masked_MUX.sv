@@ -100,7 +100,7 @@ module abr_masked_MUX #(
 
     // Compute the final masked result
     // Resharing logic to apply masking
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             for (int i = 0; i < WIDTH; i++) begin
                 res_o_masked[i] <= 2'b0;
