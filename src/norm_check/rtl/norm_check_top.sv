@@ -67,7 +67,7 @@ module norm_check_top
         end
     endgenerate
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             norm_check_done <= 'b0;
         else if (zeroize)
@@ -76,7 +76,7 @@ module norm_check_top
             norm_check_done <= norm_check_done_int;
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if  (!reset_n) 
             invalid <= 'b0;
         else if (zeroize | norm_check_done) 
@@ -87,7 +87,7 @@ module norm_check_top
 
     //Delay flops
     //Give one cycle for HLC to capture invalid flag
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)  begin
             norm_check_ready         <= 'b0;
             check_enable_reg         <= 'b0;

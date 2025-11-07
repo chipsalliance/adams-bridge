@@ -117,7 +117,7 @@ module ntt_masked_gs_butterfly
     end
 
     //w delay flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < MASKED_ADD_SUB_LATENCY; i++) begin
                 w_reg[i] <= 'h0;
@@ -157,7 +157,7 @@ module ntt_masked_gs_butterfly
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < WIDTH; i++) begin
                 u_o_reg[i] <= 2'b0;

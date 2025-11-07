@@ -50,7 +50,7 @@ module compress_ctrl
     //Go back and read previous address if mem_rd_data_hold is set, else increment by 1
     always_comb mem_rd_addr_nxt = mem_rd_data_hold ? mem_rd_addr : mem_rd_addr + 'h1;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_addr <= '0;
         end
@@ -65,7 +65,7 @@ module compress_ctrl
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_data_valid <= '0;
         end
@@ -91,7 +91,7 @@ module compress_ctrl
         arc_CMP_RD_MEM_CMD_RD_IDLE = (read_fsm_state_ps == CMP_RD_MEM) & last_poly_last_addr_rd;
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= CMP_RD_IDLE;
         else if (zeroize)

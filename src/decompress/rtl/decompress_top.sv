@@ -58,7 +58,7 @@ module decompress_top
 
     always_comb decompress_done = decompress_busy & write_done;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             decompress_busy <= '0;
         end
@@ -136,7 +136,7 @@ module decompress_top
 
     always_comb api_rd_en = decompress_busy & ~read_done & ~piso_hold_o;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             api_rd_en_f <= '0;
         end
@@ -149,7 +149,7 @@ module decompress_top
     end
 
     //Compute API read address
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             api_rd_addr <= '0;
         end

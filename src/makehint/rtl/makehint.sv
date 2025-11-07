@@ -107,7 +107,7 @@ module makehint
     logic latch_hintsum_addr;
 
     //Busy flag
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             busy_reg <= 'b0;
         else if (zeroize)
@@ -117,7 +117,7 @@ module makehint
     end
 
     //Delay adjustment
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             hintgen_enable_reg <= 'b0;
         else if (zeroize)
@@ -129,7 +129,7 @@ module makehint
     //Keep count of index. Input is 4 coeffs per cycle. Have a vector that counts
     //(0, 1, 2, 3), (4, 5, 6, 7), etc
     //Flop incr_index twice to account for 1 cycle of mem read latency + 1 cycle of hintgen latency
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             incr_index_d1 <= 'h0;
             incr_index_d2 <= 'h0;
@@ -144,7 +144,7 @@ module makehint
         end
     end
     
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             index_count <= 'h0;
         end
@@ -165,7 +165,7 @@ module makehint
 
     //Keep count of polynomial. 1 polynomial needs 64 memory addr accesses == 256 index count (0 to 255)
     //After each poly_done, record the last index into max_index_buffer
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             poly_count <= 'h0;
         else if (zeroize | makehint_done)
@@ -180,7 +180,7 @@ module makehint
         flush_buffer = (read_fsm_state_ps == MH_FLUSH_SBUF); //poly_last & poly_done; //TODO: check to make sure all indexes have been processed before this flag goes high
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             poly_last_reg <= 'b0;
             flush_buffer_reg <= 'b0;
@@ -200,7 +200,7 @@ module makehint
     //-----------------------
     //Sample_data from sample buffer also gives this, but we don't know where the last index would be in the 4 bytes of data received from the buffer
     //Instead count 1s manually and store sum into max_index_buffer for every poly_done
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             hintsum <= 'h0;
         else if (zeroize | makehint_done)
@@ -215,7 +215,7 @@ module makehint
     //-----------------------
     always_comb max_index_buffer_rd = max_index_buffer_rd_lo | max_index_buffer_rd_mid | max_index_buffer_rd_hi;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             max_index_buffer <= 'h0;
         else if (zeroize | makehint_done)
@@ -236,7 +236,7 @@ module makehint
 
     always_comb reg_wr_addr_nxt = latch_hintsum_addr ? (OMEGA/4) : reg_wr_addr + 'h1; //Latch hintsum dword addr at the end of hint processing
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             reg_wr_addr <= 'h0;
         end
@@ -253,7 +253,7 @@ module makehint
     //----------------------------
     //Read addr counter
     //----------------------------
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_rd_addr <= 'h0;
             z_rd_addr <= 'h0;
@@ -278,7 +278,7 @@ module makehint
     //Read fsm
     //----------------------------
     //State machine to control memory rd addr/en and buffer read
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= MH_IDLE;
         else if (zeroize)

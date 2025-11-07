@@ -45,7 +45,7 @@ module ntt_masked_pwm
     logic [1:0][WIDTH-1:0] mul_res_packed;
     logic [1:0] res_unpacked [WIDTH-1:0];
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mul_res_packed <= '0;
             w_reg <= '0;

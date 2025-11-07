@@ -141,7 +141,7 @@ module abr_prim_mubi4_sync
     // for modules where clock and reset are used for assertions only
     // This logic will be removed for synthesis since it is unloaded.
     mubi4_t unused_logic;
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
          unused_logic <= MuBi4False;
       end else begin

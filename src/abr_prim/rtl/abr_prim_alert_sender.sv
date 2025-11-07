@@ -272,7 +272,7 @@ module abr_prim_alert_sender
     .q_o({alert_nq, alert_pq})
   );
 
-  always_ff @(posedge clk_i or negedge rst_b) begin : p_reg
+  always_ff @(posedge clk_i) begin : p_reg
     if (!rst_b) begin
       state_q          <= Idle;
       alert_set_q      <= 1'b0;

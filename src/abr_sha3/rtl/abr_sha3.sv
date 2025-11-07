@@ -161,7 +161,7 @@ module abr_sha3
   // Latch absorbed signal as kmac_keymgr asserts `CmdDone` when it sees
   // `absorbed` signal. When this signal goes out, the state is still in
   // `StAbsorb`. Next state is `StSqueeze`.
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
     else if (zeroize) absorbed_o <= abr_prim_mubi_pkg::MuBi4False;
     else              absorbed_o <= absorbed;
@@ -171,7 +171,7 @@ module abr_sha3
   assign squeezing_o = squeezing;
 
   // processing
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b)         processing <= 1'b 0;
     else if (zeroize)   processing <= 1'b 0;
     else if (process_i) processing <= 1'b 1;
@@ -180,7 +180,7 @@ module abr_sha3
     end
   end
 
-  always_ff  @(posedge clk_i or negedge rst_b) begin
+  always_ff  @(posedge clk_i) begin
     if      (!rst_b)                                                state_valid <= 1'b0; //reset
     else if (zeroize)                                               state_valid <= 1'b0; //zeroize
     else if ((st_d == StSqueeze_sparse) & (st != StSqueeze_sparse)) state_valid <= 1'b1; //assert on transition to squeeze

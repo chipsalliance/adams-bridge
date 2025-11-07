@@ -136,7 +136,7 @@ module ntt_masked_BFU_mult
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < WIDTH; i++)
                 res[i] <= 2'h0;

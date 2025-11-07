@@ -69,7 +69,7 @@ module power2round_top
     logic sk_buff_enable;
     logic sk_buff_valid;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             mem_rd_data_valid <= 'h0;
         else if (zeroize)
@@ -78,7 +78,7 @@ module power2round_top
             mem_rd_data_valid <= (mem_a_rd_req.rd_wr_en == RW_READ); //assuming data is valid 1 cycle after read request
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_data_reg <= 'h0;
             mem_data_reg_valid <= 'h0;
@@ -126,7 +126,7 @@ module power2round_top
 
     generate
         for (genvar i = 0; i < 8; i++) begin
-            always_ff @(posedge clk or negedge reset_n) begin
+            always_ff @(posedge clk) begin
                 if (!reset_n) begin
                     r0_packed_reg[i] <= 'h0;
                     r1_reg[i] <= 'h0;
@@ -143,7 +143,7 @@ module power2round_top
         end
     endgenerate
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) 
             r_valid <= 'h0;
         else if (zeroize)

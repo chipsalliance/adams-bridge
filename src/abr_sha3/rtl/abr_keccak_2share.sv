@@ -170,7 +170,7 @@ module abr_keccak_2share
     assign low_then_high_d =
         mubi4_test_false_strict(phase_sel_i) ? rand_aux_i : low_then_high_q;
 
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         low_then_high_q <= 1'b 0;
       end else begin

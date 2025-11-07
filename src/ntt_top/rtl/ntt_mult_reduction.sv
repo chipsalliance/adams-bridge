@@ -55,7 +55,7 @@ module ntt_mult_reduction #(
     //-----------------------------------------
 
     //Flop mult result
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             z_f <= 'h0;
         end
@@ -131,7 +131,7 @@ module ntt_mult_reduction #(
     );
 
     //Flop res to avoid timing issues
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             res_o <= 'h0;
         end

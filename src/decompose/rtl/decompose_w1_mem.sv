@@ -43,7 +43,7 @@ module decompose_w1_mem #(
     reg [DATA_WIDTH-1:0]    mem[ADDR_LENGTH-1:0];
    
 
-    always_ff @ (posedge clk or negedge reset_n) 
+    always_ff @ (posedge clk) 
     begin : reading_memory
         if (!reset_n) begin
             dout <= '0;
@@ -57,7 +57,7 @@ module decompose_w1_mem #(
         end
     end // reading_memory
 
-    always_ff @ (posedge clk or negedge reset_n) 
+    always_ff @ (posedge clk) 
     begin : writing_memory
         if (!reset_n) begin
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)

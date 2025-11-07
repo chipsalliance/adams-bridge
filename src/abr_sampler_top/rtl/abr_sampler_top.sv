@@ -288,7 +288,7 @@ module abr_sampler_top
 
 //Count coefficients
 //Load and increment dest address
-always_ff @(posedge clk or negedge rst_b) begin
+always_ff @(posedge clk) begin
   if (!rst_b) begin
     coeff_cnt <= 0;
     dest_addr <= 0;
@@ -352,7 +352,7 @@ always_comb begin : sampler_fsm_out_comb
 end
 
 //State flop
-always_ff @(posedge clk or negedge rst_b) begin : sampler_fsm_flops
+always_ff @(posedge clk) begin : sampler_fsm_flops
   if (!rst_b) begin
       sampler_fsm_ps <= ABR_SAMPLER_IDLE;
   end
@@ -501,7 +501,7 @@ end
   );
 
 //optimization - align sampler data in ntt
-always_ff  @(posedge clk or negedge rst_b) begin : delay_rejs_data
+always_ff  @(posedge clk) begin : delay_rejs_data
   if (!rst_b) begin
     sampler_ntt_data_o <= 0;
   end

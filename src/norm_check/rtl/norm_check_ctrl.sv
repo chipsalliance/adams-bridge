@@ -59,7 +59,7 @@ module norm_check_ctrl
     logic [4:0] increment_addr;
     logic [6:0] neutral_cnt;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             latched_out_randomness  <= 'h0;
             latched_in_randomness   <= 'h0;
@@ -118,7 +118,7 @@ module norm_check_ctrl
     end
 
     //FSM
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             read_fsm_state_ps <= CHK_IDLE;
         else if (zeroize)

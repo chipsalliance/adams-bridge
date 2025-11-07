@@ -93,7 +93,7 @@ module skdecode_top
 
 
     //IO flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             s1s2_enable_reg             <= 'h0;
             t0_enable_reg               <= 'h0;
@@ -137,7 +137,7 @@ module skdecode_top
     end
 
     //Data flop with enable to sync with buf full
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             keymem_a_rd_data_reg <= 'h0;
             keymem_b_rd_data_reg <= 'h0;
@@ -204,7 +204,7 @@ module skdecode_top
         end
     endgenerate
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             s1s2_buf_stall_reg <= 'b0;
         else if (zeroize)

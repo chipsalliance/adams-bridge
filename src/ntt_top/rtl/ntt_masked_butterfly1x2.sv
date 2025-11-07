@@ -147,7 +147,7 @@ module ntt_masked_butterfly1x2
         .res_o(v11_div2)
     );
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             uv_o <= 'h0;
             u10_packed_reg <= '0;

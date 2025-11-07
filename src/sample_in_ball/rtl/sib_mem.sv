@@ -34,7 +34,7 @@ module sib_mem #(
     //storage element
     logic [DEPTH-1:0][DATA_WIDTH-1:0] mem;
 
-    always @(posedge clk_i or negedge rst_b) begin
+    always @(posedge clk_i) begin
         if (!rst_b) begin
             mem <= '0;
         end
@@ -49,7 +49,7 @@ module sib_mem #(
         end
     end
 
-    always @(posedge clk_i or negedge rst_b) begin
+    always @(posedge clk_i) begin
         if (!rst_b) begin
             rdata_o <= '0;
         end

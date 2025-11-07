@@ -88,7 +88,7 @@ module masked_barrett_reduction
     end
 
     //Flop t0 and t1
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             t <= '0;
             x_reg <= '0;
@@ -161,7 +161,7 @@ module masked_barrett_reduction
         carry_y_int_ext = {carry_y_int, {(MLKEM_Q_WIDTH){1'b0}}};
     end
 
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             y <= '0;
         end

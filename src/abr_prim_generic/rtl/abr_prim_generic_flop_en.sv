@@ -28,7 +28,7 @@ module abr_prim_generic_flop_en #(
     assign en = en_i;
   end
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       q_o <= ResetValue;
     end else if (en) begin

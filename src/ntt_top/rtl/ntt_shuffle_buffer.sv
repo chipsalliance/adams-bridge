@@ -58,7 +58,7 @@ module ntt_shuffle_buffer
         logic lo_hi, lo_hi_reg, lo_hi_rd; //0 - lo, 1 - hi
 
         //Write
-        always_ff @(posedge clk or negedge reset_n) begin
+        always_ff @(posedge clk) begin
             if (!reset_n) begin
                 buffer <= 'h0;
             end
@@ -71,7 +71,7 @@ module ntt_shuffle_buffer
         end
 
         //Buffer valid
-        always_ff @(posedge clk or negedge reset_n) begin
+        always_ff @(posedge clk) begin
             if (!reset_n) begin
                 data_i_count <= 'h0;
                 data_i_count_reg <= 'h0;
@@ -97,7 +97,7 @@ module ntt_shuffle_buffer
         end
 
         //lo hi
-        always_ff @(posedge clk or negedge reset_n) begin
+        always_ff @(posedge clk) begin
             if (!reset_n)
                 lo_hi_reg <= 'b0;
             else if (zeroize)

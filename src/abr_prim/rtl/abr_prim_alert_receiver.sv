@@ -249,7 +249,7 @@ module abr_prim_alert_receiver
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_b) begin : p_reg
+  always_ff @(posedge clk_i) begin : p_reg
     if (!rst_b) begin
       // Reset into the init request so that an alert handler reset implicitly
       // triggers an in-band reset of all alert channels.

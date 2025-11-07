@@ -44,7 +44,7 @@ module abr_prim_edge_detector #(
 
   assign q_sync_o = q_sync_d;
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) q_sync_q <= ResetValue;
     else         q_sync_q <= q_sync_d;
   end

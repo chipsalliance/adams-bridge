@@ -159,7 +159,7 @@ module abr_prim_diff_decode #(
       endcase
     end
 
-    always_ff @(posedge clk_i or negedge rst_b) begin : p_sync_reg
+    always_ff @(posedge clk_i) begin : p_sync_reg
       if (!rst_b) begin
         state_q  <= IsStd;
         diff_pq  <= 1'b0;
@@ -193,7 +193,7 @@ module abr_prim_diff_decode #(
     assign fall_o  = ( diff_pq & ~diff_pi) & ~sigint_o;
     assign event_o = rise_o | fall_o;
 
-    always_ff @(posedge clk_i or negedge rst_b) begin : p_edge_reg
+    always_ff @(posedge clk_i) begin : p_edge_reg
       if (!rst_b) begin
         diff_pq  <= 1'b0;
         level_q  <= 1'b0;

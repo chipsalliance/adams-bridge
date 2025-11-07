@@ -24,7 +24,7 @@ module abr_2ff_sync  #( parameter WIDTH=1,
 
 logic din_ff;
 
-always_ff@(posedge clk or negedge rst_b) begin
+always_ff@(posedge clk) begin
     if(!rst_b) begin
         dout <= RST_VAL;
         din_ff <= RST_VAL;

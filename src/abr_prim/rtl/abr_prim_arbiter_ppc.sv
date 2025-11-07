@@ -92,7 +92,7 @@ module abr_prim_arbiter_ppc #(
     assign valid_o = |req_i;
     // Mask Generation
     assign mask_next = {ppc_out[N-2:0], 1'b0};
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         mask <= '0;
       end else if (valid_o && ready_i) begin
@@ -208,7 +208,7 @@ end
         $countones(req_i) == n |->
         ##n gnt_cnt == $past(gnt_cnt, n) + 1)
 
-    always_ff @(posedge clk_i or negedge rst_b) begin : p_cnt
+    always_ff @(posedge clk_i) begin : p_cnt
       if (!rst_b) begin
         gnt_cnt <= 0;
       end else begin

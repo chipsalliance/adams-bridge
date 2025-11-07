@@ -45,7 +45,7 @@ module hintgen
     logic or1_res, or2_res, and_res, not_res;
 
     //TODO: need flop here? commenting out for now
-    // always_ff @(posedge clk or negedge reset_n) begin
+    // always_ff @(posedge clk) begin
     //     if (!reset_n)
     //         h <= 'b0;
     //     else if (zeroize)

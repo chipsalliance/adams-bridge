@@ -35,7 +35,7 @@ module abr_delay_masked_shares
     logic [N-1:0][WIDTH-1:0][1:0] shift_reg ;
 
     // Use an always_ff block to implement the shift register
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             // Reset all shift register values to 0
             for (int j = 0; j < N; j = j + 1) begin

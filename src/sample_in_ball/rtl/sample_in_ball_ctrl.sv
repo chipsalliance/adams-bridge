@@ -129,7 +129,7 @@ module sample_in_ball_ctrl
     endcase
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin : sib_fsm_state_reg
+  always_ff @(posedge clk) begin : sib_fsm_state_reg
     if (!rst_b)       sib_fsm_ps <= SIB_IDLE;
     else if (zeroize) sib_fsm_ps <= SIB_IDLE;
     else              sib_fsm_ps <= sib_fsm_ns;
@@ -141,7 +141,7 @@ module sample_in_ball_ctrl
   always_comb sign_buffer_d = sign_buffer | sign_buffer_nxt[SIB_TAU-1:0];
                               
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b)begin
       sign_buffer <= '0;
     end else if (zeroize) begin
@@ -159,7 +159,7 @@ module sample_in_ball_ctrl
 
   //Initialize rejection value to 256 - TAU
   //Increment the rejection value whenever a valid sample is found
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b) begin
       rej_value <= SIB_NUM_COEFF - SIB_TAU;
     end else if (zeroize) begin
@@ -189,7 +189,7 @@ module sample_in_ball_ctrl
     end
   end
 
-  always_ff @(posedge clk or negedge rst_b) begin
+  always_ff @(posedge clk) begin
     if (!rst_b)begin
       sampler_mask <= '1;
     end else if (zeroize | sampler_mask_clear) begin

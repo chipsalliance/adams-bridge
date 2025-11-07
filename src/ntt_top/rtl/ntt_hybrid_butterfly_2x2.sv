@@ -97,7 +97,7 @@ logic [1:0][MLKEM_MASKED_WIDTH-1:0] mlkem_uv0_share, mlkem_uv1_share, mlkem_uv2_
 
 //w delay flops
 //Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         mldsa_w10_reg <= 'h0;
         mldsa_w11_reg <= 'h0;
@@ -120,7 +120,7 @@ always_ff @(posedge clk or negedge reset_n) begin
 end
 
 //TODO: optimize by removing this flop and delaying twiddle addr?
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         masked_w10_reg <= 'h0;
     end
@@ -231,7 +231,7 @@ ntt_masked_pwm #(
 //---------------------------
 //Refresh randomness
 //---------------------------
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         for (int i = 0; i < 2; i++) begin
             uv00_share_reg[i] <= 'h0;
@@ -349,7 +349,7 @@ logic [HALF_WIDTH-1:0] u20_int, v20_int, u21_int, v21_int;
 logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] u10_reg, u11_reg;
 logic [MLKEM_MASKED_BF_STAGE1_LATENCY-1:0][HALF_WIDTH-1:0] v10_reg, v11_reg;
 
-always_ff @(posedge clk or negedge reset_n) begin
+always_ff @(posedge clk) begin
     if (!reset_n) begin
         u10_reg <= '0;
         u11_reg <= '0;
@@ -586,7 +586,7 @@ end
 // `ifdef MLDSA_NTT_MASKING //TODO: optimize shift reg size based on masking en/dis
     logic [MASKED_INTT_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             masked_ready_reg <= 'b0;
         else if (zeroize)

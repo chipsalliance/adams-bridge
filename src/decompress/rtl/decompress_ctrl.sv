@@ -36,7 +36,7 @@ module decompress_ctrl
     //Internals
     logic last_poly_last_addr_wr;
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             mem_wr_addr <= '0;
         end
@@ -56,7 +56,7 @@ module decompress_ctrl
 
     always_comb last_poly_last_addr_wr = (mem_wr_addr == (dest_base_addr + ((num_poly * (MLKEM_N/4))-1)));
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             done <= '0;
         else if (zeroize)

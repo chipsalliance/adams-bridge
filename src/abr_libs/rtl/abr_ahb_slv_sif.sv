@@ -112,7 +112,7 @@ generate
 
 endgenerate
 
-    always_ff @(posedge hclk or negedge hreset_n) begin
+    always_ff @(posedge hclk) begin
         if(!hreset_n) begin
             dv <= 1'b0;
             write <= 1'b0;

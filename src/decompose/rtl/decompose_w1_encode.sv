@@ -53,7 +53,7 @@ module decompose_w1_encode
     logic decr_buf_count;
 
     //Generate a pulse to init counters
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             w1_en_reg <= 'b0;
         else if (zeroize)
@@ -67,7 +67,7 @@ module decompose_w1_encode
     assign decr_buf_count = w1_en_reg;
 
     //Buffer enable counter
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             buffer_count <= 'h0;
         else if (zeroize)
@@ -81,7 +81,7 @@ module decompose_w1_encode
     assign buffer_en        = w1_en_reg && (buffer_count == 'h0);
 
     //r1 shift reg
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             w1_o <= 'h0;
         else if (zeroize)

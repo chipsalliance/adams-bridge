@@ -66,7 +66,7 @@ module abr_prim_fifo_sync #(
 
     // module under reset flag
     logic under_rst;
-    always_ff @(posedge clk_i or negedge rst_b) begin
+    always_ff @(posedge clk_i) begin
       if (!rst_b) begin
         under_rst <= 1'b1;
       end else if (under_rst) begin
@@ -114,7 +114,7 @@ module abr_prim_fifo_sync #(
       .err_o
     );
 
-    //always_ff @(posedge clk_i or negedge rst_b) begin
+    //always_ff @(posedge clk_i) begin
     //  if (!rst_b) begin
     //    fifo_wptr <= {(PTR_WIDTH){1'b0}};
     //  end else if (clr_i) begin
@@ -128,7 +128,7 @@ module abr_prim_fifo_sync #(
     //  end
     //end
     //
-    //always_ff @(posedge clk_i or negedge rst_b) begin
+    //always_ff @(posedge clk_i) begin
     //  if (!rst_b) begin
     //    fifo_rptr <= {(PTR_WIDTH){1'b0}};
     //  end else if (clr_i) begin

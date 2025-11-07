@@ -50,7 +50,7 @@ module abr_prim_subreg
     .wr_data
   );
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
+  always_ff @(posedge clk_i) begin
     if (!rst_b) begin
       q <= RESVAL;
     end else if (wr_en) begin

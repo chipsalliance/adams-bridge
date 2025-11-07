@@ -92,7 +92,7 @@ module decompose
 
     always_comb verify = (dcmp_mode == verify_op);
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             enable_reg <= 'b0;
             z_neq_z_d1 <= 'h0;
@@ -165,7 +165,7 @@ module decompose
     endgenerate
 
     //Delay flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             r_corner_reg         <= 'h0;
             mem_rd_data_reg      <= 'h0;
@@ -229,7 +229,7 @@ module decompose
     end
 
     //Output flops
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) begin
             z_mem_wr_req    <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_wr_req      <= '{rd_wr_en: RW_IDLE, addr: '0};

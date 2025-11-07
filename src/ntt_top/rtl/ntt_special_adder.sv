@@ -66,7 +66,7 @@ module ntt_special_adder #(
         .cout_o(carry1)
     );
 
-    always_ff @(posedge clk or negedge reset_n) 
+    always_ff @(posedge clk) 
     begin
         if(!reset_n) begin
             r0_reg <= '0;
@@ -83,7 +83,7 @@ module ntt_special_adder #(
     end
 
     // Determines when results are ready
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n)
             push_result_reg <= 2'b0;
         else if (zeroize)

@@ -38,11 +38,11 @@ def scrub_line_by_line(fname):
         has_unpacked = re.search(r'\[\d+\]', line)
         has_struct = re.search(r'\bstruct\b\s*(?:unpacked)?', line)
         is_endmodule = re.search(r'\bendmodule\b', line)
-        has_reset = re.search(r'\bnegedge\b', line)
+        has_reset = re.search(r'hwif_in.hard_reset|hwif_in.*pwrgood|hwif_in.error_reset|hwif_in.*rst_b', line)
         has_enum = re.search(r'\btypedef enum\b', line)
         if (has_reset is not None and found_hard_reset is None):
-            substring = re.search(r"negedge (\w+.\w+)", line)
-            reset_name = substring.group(1)
+            substring = re.search(r"hwif_in.(\w+)", line)
+            reset_name = substring.group(0)
             # Find the hard reset if it exists
             # hard_reset_b, error_reset_b and cptra_pwrgood are used interchangeably
             found_hard_reset = re.search(r'hard_reset|pwrgood|error_reset',reset_name)

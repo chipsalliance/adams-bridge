@@ -69,7 +69,7 @@
     // Pipeline registers to buffer inputs and intermediate sum
     logic [1:0] buffered_x;
     logic [1:0] buffered_sum;
-    always_ff @(posedge clk or negedge rst_n) begin : pipeline_inputs
+    always_ff @(posedge clk) begin : pipeline_inputs
         if (!rst_n) begin
             for (int i = 0; i < 2; i++) begin
                 buffered_x[i] <= 1'b0;

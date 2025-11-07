@@ -75,7 +75,7 @@ module decompose_mod_2gamma2
     );
 
 
-    always_ff @(posedge clk or negedge reset_n) 
+    always_ff @(posedge clk) 
     begin
         if(!reset_n) begin
             r0_reg <= '0;
@@ -94,7 +94,7 @@ module decompose_mod_2gamma2
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) ready_o <= 'b0;
         else if (zeroize) ready_o <= 'b0;
         else ready_o <= add_en_i;

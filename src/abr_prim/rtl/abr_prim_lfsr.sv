@@ -548,7 +548,7 @@ module abr_prim_lfsr #(
     assign state_o = StateOutDw'(sbox_out);
   end
 
-  always_ff @(posedge clk_i or negedge rst_b) begin : p_reg
+  always_ff @(posedge clk_i) begin : p_reg
     if (!rst_b) begin
       lfsr_q <= DefaultSeedLocal;
     end else begin
@@ -679,7 +679,7 @@ module abr_prim_lfsr #(
 
     assign perturbed_d = perturbed_q | (|entropy_i) | seed_en_i;
 
-    always_ff @(posedge clk_i or negedge rst_b) begin : p_max_len
+    always_ff @(posedge clk_i) begin : p_max_len
       if (!rst_b) begin
         cnt_q       <= '0;
         perturbed_q <= 1'b0;

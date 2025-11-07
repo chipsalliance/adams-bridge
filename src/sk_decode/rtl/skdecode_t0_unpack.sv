@@ -75,7 +75,7 @@ module skdecode_t0_unpack
         .cout_o(carry1)
     );
 
-    always_ff @(posedge clk or negedge reset_n) 
+    always_ff @(posedge clk) 
     begin
         if(!reset_n) begin
             r0_reg      <= '0;
@@ -97,7 +97,7 @@ module skdecode_t0_unpack
         end
     end
 
-    always_ff @(posedge clk or negedge reset_n) begin
+    always_ff @(posedge clk) begin
         if (!reset_n) 
             valid_o <= 'b0;
         else if (zeroize) 
