@@ -745,9 +745,9 @@ generate
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
-    .random('0),//rand_bits[5:0]),
+    .random(rand_bits[5:0]),
     .masking_en(ntt_masking_en_q[g_inst]),
-    .rnd_i('0),//ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)),
+    .rnd_i(ntt_random_en[g_inst] ? ntt_rand_bits : (RND_W-6)'(0)),
     //NTT mem IF
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
