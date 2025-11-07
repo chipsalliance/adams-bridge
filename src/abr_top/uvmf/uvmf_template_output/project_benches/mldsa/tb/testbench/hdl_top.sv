@@ -103,9 +103,19 @@ import kv_defines_pkg::*;
 
   abr_mem_if abr_memory_export();
 
-  // SRAM Latency
-  localparam SRAM_LATENCY = 2;
+  // MASKING_EN
+`ifdef ABR_MASKING_DISABLED
+  localparam MASKING_EN = 0;
+`else
   localparam MASKING_EN = 1;
+`endif
+
+  // SRAM Latency
+`ifdef ABR_SRAM_2CLK_LATENCY
+  localparam SRAM_LATENCY = 2;
+`else
+  localparam SRAM_LATENCY = 1;
+`endif  
 
   // SRAM module
   abr_mem_top #(
@@ -119,6 +129,7 @@ import kv_defines_pkg::*;
 
   // DUT
   abr_top #(
+    .MASKING_EN(MASKING_EN),
     .SRAM_LATENCY(SRAM_LATENCY),
     .MASKING_EN(MASKING_EN),
     .AHB_ADDR_WIDTH(18),
