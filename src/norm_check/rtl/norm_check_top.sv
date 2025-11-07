@@ -54,7 +54,7 @@ module norm_check_top
     );
 
     logic [3:0] check_a_invalid;
-    logic norm_check_done_int;
+    logic norm_check_done_rd;
 
     generate 
         for (genvar i = 0; i < 4; i++) begin : gen_check_a_invalid
@@ -73,7 +73,8 @@ module norm_check_top
         else if (zeroize)
             norm_check_done <= '0;
         else
-            norm_check_done <= norm_check_done_int;
+            //signal done once reads have all been issued and processed
+            norm_check_done <= norm_check_done_rd & ~mem_rd_data_valid;
     end
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -109,7 +110,8 @@ module norm_check_top
         .randomness(randomness),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),
-        .norm_check_done(norm_check_done_int)
+        .mem_rd_data_valid(mem_rd_data_valid),
+        .norm_check_done(norm_check_done_rd)
     );
 
 

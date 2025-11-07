@@ -39,6 +39,7 @@ module norm_check_ctrl
         input wire [5:0] randomness,
 
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input logic mem_rd_data_valid,
         output mem_if_t mem_rd_req,
         output logic norm_check_done
     );
@@ -143,7 +144,7 @@ module norm_check_ctrl
                 incr_rd_addr = 1'b1;
             end
             CHK_DONE: begin
-                read_fsm_state_ns = CHK_IDLE;
+                read_fsm_state_ns = mem_rd_data_valid ? CHK_DONE: CHK_IDLE;
                 norm_check_done = 1'b1;
             end
             default begin

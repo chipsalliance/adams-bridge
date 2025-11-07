@@ -61,16 +61,14 @@ module skencode
     localparam THE_LAST_ADDR = ((MLDSA_K * MLDSA_N)/4)+((MLDSA_L * MLDSA_N)/4)-1;
     localparam THE_LAST_API = ((MLDSA_K +MLDSA_L)*MLDSA_N*3)/32;
 
-    // Main State Machine States
-    localparam  SKENC_IDLE                    = 2'b00,
-                SKENC_READ                    = 2'b01,
-                SKENC_DONE                    = 2'b10;
-    
-    // Main State Machine States
-    localparam  SKENC_WAIT_BUFFER             = 2'b00,
-                SKENC_WRITE                   = 2'b01,
-                SKENC_STALL                   = 2'b10,
-                SKENC_GET_LAST                = 2'b11;
+    // State Machine States
+    localparam  SKENC_IDLE                    = 3'b000,
+                SKENC_READ                    = 3'b001,
+                SKENC_WAIT_BUFFER             = 3'b010,
+                SKENC_WRITE                   = 3'b011,
+                SKENC_STALL                   = 3'b100,
+                SKENC_GET_LAST                = 3'b101,
+                SKENC_DONE                    = 3'b111;
 
     
     logic [2:0] main_state, next_main_state, write_state, next_write_state;

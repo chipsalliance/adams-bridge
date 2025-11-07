@@ -1070,11 +1070,11 @@ always_comb kv_mlkem_msg_write_data = '0;
     end else if (zeroize) begin
       api_reg_rdata <= '0;
     end else begin
-      if      (api_keymem_rd_vld & api_sk_reg_rd_dec)      api_reg_rdata <= abr_scratch_reg.raw[api_sk_reg_raddr];
-      else if (mlkem_api_dk_rd_vld & mlkem_api_dk_reg_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_dk_reg_addr];
-      else if (mlkem_api_ek_rd_vld & mlkem_api_ek_reg_dec) api_reg_rdata <= abr_scratch_reg.raw[mlkem_api_ek_reg_addr];    
-      else if (mldsa_valid_reg & api_pubkey_rho_dec)       api_reg_rdata <= abr_scratch_reg.raw[api_pk_reg_raddr];
-      else if (mldsa_valid_reg & api_sig_reg_re)           api_reg_rdata <= signature_reg_rdata;
+      if      (api_sk_reg_rd_dec)    api_reg_rdata <= {ABR_REG_WIDTH{api_keymem_rd_vld}} & abr_scratch_reg.raw[api_sk_reg_raddr];
+      else if (mlkem_api_dk_reg_dec) api_reg_rdata <= {ABR_REG_WIDTH{mlkem_api_dk_rd_vld}} & abr_scratch_reg.raw[mlkem_api_dk_reg_addr];
+      else if (mlkem_api_ek_reg_dec) api_reg_rdata <= {ABR_REG_WIDTH{mlkem_api_ek_rd_vld}} & abr_scratch_reg.raw[mlkem_api_ek_reg_addr];    
+      else if (api_pubkey_rho_dec)   api_reg_rdata <= {ABR_REG_WIDTH{mldsa_valid_reg}} & abr_scratch_reg.raw[api_pk_reg_raddr];
+      else if (api_sig_reg_re)       api_reg_rdata <= {ABR_REG_WIDTH{mldsa_valid_reg}} & signature_reg_rdata;
     end
   end
 
