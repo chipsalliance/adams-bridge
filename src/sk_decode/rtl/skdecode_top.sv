@@ -180,7 +180,7 @@ module skdecode_top
         .WR_WIDTH(64), //rate of sk reads
         .RD_WIDTH(52), //rate of sk mem writes
         .BUFFER_DEPTH(112) //worst case depth
-    )skdec_t0_rd_lat_buffer_inst (
+    ) skdec_t0_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
@@ -194,7 +194,7 @@ module skdecode_top
         .WR_WIDTH(32), //rate of sk reads
         .RD_WIDTH(24), //rate of sk mem writes
         .BUFFER_DEPTH(48) //worst case depth
-    )skdec_s1s2_rd_lat_buffer_inst (
+    ) skdec_s1s2_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),

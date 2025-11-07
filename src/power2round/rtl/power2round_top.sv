@@ -125,8 +125,8 @@ module power2round_top
     abr_rd_lat_buffer #(
         .WR_WIDTH(104), //rate of sk encode
         .RD_WIDTH(64), //rate of sk mem writes
-        .BUFFER_DEPTH( ((13*8)-(8*8)) * 4 ) //worst case depth
-    )p2r_rd_lat_buffer_inst (
+        .BUFFER_DEPTH(160) //worst case depth
+    ) p2r_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),

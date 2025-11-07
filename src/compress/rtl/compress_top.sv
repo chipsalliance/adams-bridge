@@ -53,7 +53,6 @@ module compress_top
 
     localparam COMP_DATA_W = MLKEM_Q_WIDTH;
 
-    logic mem_rd_f;
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_o, compress_data;
     logic [COMP_DATA_W-1:0] compress_data_valid;
     logic read_done;
@@ -63,21 +62,18 @@ module compress_top
     logic last_poly_last_addr_wr;
     logic compress_busy;
 
-    always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | buffer_valid);
+    always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | (|buffer_valid));
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             compress_busy <= '0;
-            mem_rd_f <= '0;
         end
         else if (zeroize) begin
             compress_busy <= '0;
-            mem_rd_f <= '0;
         end
         else begin
             compress_busy <= compress_enable ? '1 :
                              compress_done ? '0 : compress_busy;
-            mem_rd_f <= (mem_rd_req.rd_wr_en == RW_READ);
         end
     end
 

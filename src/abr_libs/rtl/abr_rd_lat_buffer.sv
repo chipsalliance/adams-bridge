@@ -23,7 +23,7 @@
 module abr_rd_lat_buffer
   #(
    parameter WR_WIDTH = 128
-  ,parameter RD_WIDTH  = 64
+  ,parameter RD_WIDTH = 64
   ,parameter BUFFER_DEPTH = WR_WIDTH + RD_WIDTH
   )
   (
@@ -70,8 +70,8 @@ module abr_rd_lat_buffer
   //Shift the buffer contents and append new samples
   always_comb begin
     //shift the write data left by the wr_ptr, or wr_ptr - RD_WIDTH if there is a read
-    buffer_wr_data_shift = buffer_wr & buffer_rd ? (data_i << (wr_ptr - RD_WIDTH)) : 
-                           buffer_wr             ? (data_i << wr_ptr) : '0;
+    buffer_wr_data_shift = buffer_wr & buffer_rd ? BUFFER_DEPTH'(data_i << (wr_ptr - RD_WIDTH)) : 
+                           buffer_wr             ? BUFFER_DEPTH'(data_i << wr_ptr) : '0;
 
     //shift the buffer data right by NUM_RD if there is a read
     buffer_shift = buffer_rd ? BUFFER_DEPTH'(buffer >> RD_WIDTH) : buffer;

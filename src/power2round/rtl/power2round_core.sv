@@ -35,7 +35,7 @@ module power2round_core
 
     always_comb begin
         sum0 = r + power2_d_minus_one;
-        r1_temp = sum0[REG_SIZE-1:MLDSA_D];
+        r1_temp = sum0[REG_SIZE-2:MLDSA_D];
         sum1 = r - (r1_temp << MLDSA_D);
         r0_temp = sum1[MLDSA_D-1 : 0];
     end
