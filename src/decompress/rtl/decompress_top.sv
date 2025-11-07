@@ -45,7 +45,6 @@ module decompress_top
 
     localparam DECOMP_DATA_W = MLKEM_Q_WIDTH;
 
-    logic api_rd_en_f;
     logic read_done;
     logic [15:0] mem_rd_pace, mem_rd_pace_init;
     logic [3:0] d; // Decompression count
@@ -73,9 +72,11 @@ module decompress_top
     end
 
     //Multi-rate piso
+    //Worst case is 3 writes and 2 reads at 44 bit read pace
+    //Buffer size needs to be 104 bits to accomodate that
     abr_piso_multi #(
         .NUM_MODES(4),
-        .PISO_BUFFER_W(104), //104 so far
+        .PISO_BUFFER_W(104),
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
         `ifdef VERILATOR
@@ -121,6 +122,9 @@ module decompress_top
         end
     end
 
+    // Pace the memory reads to never overflow the buffer
+    // Ensures that buffer is always supplied
+    // Rotate the pacer each clock we are reading
     always_comb begin
         unique case (mode)
             DECOMPRESS1: begin
