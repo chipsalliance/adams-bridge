@@ -18,6 +18,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso_multi.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sample_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_msg_buffer.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_slv_sif.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_AND.sv
@@ -71,4 +72,3 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_ram_tdp_file.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_wrapper.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/mlkem_hybrid_bf_tb.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/mlkem_karatsuba_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
