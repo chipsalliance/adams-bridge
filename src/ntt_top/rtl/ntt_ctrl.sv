@@ -1088,8 +1088,7 @@ always_comb begin
         buf_rden         = pwo_mode ? 1'b0 : ct_mode ? buf_rden_ntt_reg : buf_rden_intt;
         mem_wr_en        = gs_mode  ? mem_wr_en_fsm : mem_wr_en_reg;
         mem_rd_en        = gs_mode ? mem_rd_en_reg : mem_rd_en_fsm;
-        twiddle_addr     = masked_pairwm_mode ? twiddle_addr_reg[SRAM_LATENCY+1] : 
-                           pairwm_mode ? twiddle_addr_reg[SRAM_LATENCY+1] :
+        twiddle_addr     = pairwm_mode ? twiddle_addr_reg[SRAM_LATENCY+1] : 
                            gs_mode ? twiddle_addr_reg[2] : twiddle_addr_reg[0];
         pw_rden          = pw_rden_reg;
         pw_share_mem_rden= accumulate ? masking_en ? mlkem ? pw_rden_fsm_reg[MASKED_PWM_LATENCY-(MLKEM_MASKED_PAIRWM_LATENCY-6+1)] : shuffled_pw_rden_fsm_reg : pw_rden_reg : '0;
