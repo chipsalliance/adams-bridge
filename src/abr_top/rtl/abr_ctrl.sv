@@ -961,7 +961,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
   
   always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) |
-                                    (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:7]}) |
+                                    (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:3]}) |
                                     (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]});
 
   always_comb sampler_sk_rd_offset = (sampler_src == MLKEM_EK_REG_ID) ? MLKEM_DEST_EK_MEM_OFFSET/2 :
