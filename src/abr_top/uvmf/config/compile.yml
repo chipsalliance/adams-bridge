@@ -61,7 +61,7 @@ global:
         - '+QVIP_UVM_REPORTING'
         - '+UVM_VERBOSITY=UVM_LOW'  # Adding UVM verbosity level here
 ---
-provides: [uvmf_mldsa_sram_pipeline]
+provides: [uvmf_mldsa_sram2clk_nomasking]
 schema_version: 2.4.0
 requires:
   - mldsa_uvmf_lib
