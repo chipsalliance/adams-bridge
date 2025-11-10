@@ -131,7 +131,6 @@ import kv_defines_pkg::*;
   abr_top #(
     .MASKING_EN(MASKING_EN),
     .SRAM_LATENCY(SRAM_LATENCY),
-    .MASKING_EN(MASKING_EN),
     .AHB_ADDR_WIDTH(18),
     .AHB_DATA_WIDTH(ahb_lite_slave_0_params::AHB_WDATA_WIDTH),
     .CLIENT_DATA_WIDTH(32)
