@@ -1536,9 +1536,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     if (!rst_b)
       external_mu_mode <= 0;  
     else if (zeroize | mldsa_process_done)
-      external_mu_mode <= 0;  
-    else if (mldsa_process_done)
-      external_mu_mode <= 0;
+      external_mu_mode <= 0; 
     else 
       external_mu_mode <= external_mu_mode | external_mu_mode_nxt;
   end
