@@ -13,7 +13,7 @@ module abr_prim_sparse_fsm_flop
   // This should only be disabled in special circumstances, for example
   // in non-comportable IPs where an error does not trigger an alert.
   parameter bit               EnableAlertTriggerSVA = 1
-`ifdef ABR_SIMULATION
+`ifdef SIMULATION
   ,
   // In case this parameter is set to a non-empty string, the
   // abr_prim_sparse_fsm_flop_if will also force the signal with this name
