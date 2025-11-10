@@ -23,6 +23,9 @@
 module compress_top
     import abr_params_pkg::*;
     import compress_defines_pkg::*;
+    #(
+        parameter SRAM_LATENCY = 1
+    )
     (
         input wire clk,
         input wire reset_n,
@@ -37,42 +40,40 @@ module compress_top
 
         output mem_if_t mem_rd_req,
         input wire [COEFF_PER_CLK-1:0][REG_SIZE-1:0] mem_rd_data,
+        input wire mem_rd_data_valid,
 
         output logic [1:0] api_rw_en,
         output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rw_addr,
-        output logic [DATA_WIDTH-1:0] api_wr_data,
-        input  logic [DATA_WIDTH-1:0] api_rd_data,
+        output logic [ABR_REG_WIDTH-1:0] api_wr_data,
+        input  logic [ABR_REG_WIDTH-1:0] api_rd_data,
+        input  logic api_rd_data_valid,
         output logic compare_failed,
         output logic compress_done
     );
 
     localparam COMP_DATA_W = MLKEM_Q_WIDTH;
 
-    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_i, compress_data_o, compress_data;
-    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] mem_rd_data_stalled;
+    logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_o, compress_data;
     logic [COMP_DATA_W-1:0] compress_data_valid;
     logic read_done;
-    logic mem_rd_data_valid;
-    logic mem_rd_data_hold,mem_rd_data_hold_f ;
-    logic buffer_valid, buffer_valid_f;
-    logic [DATA_WIDTH-1:0] buffer_data, buffer_data_f;
+    logic [SRAM_LATENCY:0]buffer_valid;
+    logic [SRAM_LATENCY:0][ABR_REG_WIDTH-1:0] buffer_data;
+    logic [3:0] d;
+    logic last_poly_last_addr_wr;
     logic compress_busy;
 
-    always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | buffer_valid | buffer_valid_f);
+    always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | (|buffer_valid));
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             compress_busy <= '0;
-            mem_rd_data_hold_f <= '0;
         end
         else if (zeroize) begin
             compress_busy <= '0;
-            mem_rd_data_hold_f <= '0;
         end
         else begin
             compress_busy <= compress_enable ? '1 :
                              compress_done ? '0 : compress_busy;
-            mem_rd_data_hold_f <= mem_rd_data_hold;
         end
     end
 
@@ -81,33 +82,17 @@ module compress_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .cmp_enable(compress_enable),
+        .mode(mode),
         .num_poly(num_poly),
         .src_base_addr(src_base_addr),
         .mem_rd_req(mem_rd_req),
-        .mem_rd_data_valid(mem_rd_data_valid),
-        .mem_rd_data_hold(mem_rd_data_hold),
         .done(read_done)
     );
 
     generate
         for (genvar i = 0; i < COEFF_PER_CLK; i++) begin : gen_mem_rd_data_stalled
-
-            always_ff @(posedge clk or negedge reset_n) begin
-                if (!reset_n) begin
-                    mem_rd_data_stalled[i] <= '0;
-                end
-                else if (zeroize) begin
-                    mem_rd_data_stalled[i] <= '0;
-                end
-                else begin
-                    mem_rd_data_stalled[i] <= mem_rd_data[i][MLKEM_Q_WIDTH-1:0];
-                end
-            end
-
-            always_comb compress_data_i[i] = mem_rd_data_hold_f ? mem_rd_data_stalled[i] : mem_rd_data[i][MLKEM_Q_WIDTH-1:0];
-
             compress cmp_inst (
-                .op_i(compress_data_i[i]),
+                .op_i(mem_rd_data[i][MLKEM_Q_WIDTH-1:0]),
                 .mode(mode),
                 .op_o(compress_data_o[i])
             );
@@ -115,24 +100,29 @@ module compress_top
     endgenerate
 
     always_comb begin
-        unique case (mode)
+        unique case (mode) inside
             compress1: begin
+                d = 1;
                 compress_data = {44'b0, compress_data_o[3][0:0], compress_data_o[2][0:0], compress_data_o[1][0:0],compress_data_o[0][0:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 11);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 11);
             end
             compress5: begin
+                d = 5;
                 compress_data = {28'b0, compress_data_o[3][4:0], compress_data_o[2][4:0], compress_data_o[1][4:0],compress_data_o[0][4:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 7);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 7);
             end
             compress11: begin
+                d = 11;
                 compress_data = {4'b0, compress_data_o[3][10:0], compress_data_o[2][10:0], compress_data_o[1][10:0],compress_data_o[0][10:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}} >> 1);
+                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 1);
             end
             compress12: begin
+                d = 12;
                 compress_data = compress_data_o;
-                compress_data_valid = {COMP_DATA_W{mem_rd_data_valid | mem_rd_data_hold_f}};
+                compress_data_valid = {COMP_DATA_W{mem_rd_data_valid}};
             end
             default: begin
+                d = 0;
                 compress_data = compress_data_o; // Default case
                 compress_data_valid = '0;
             end
@@ -149,9 +139,9 @@ module compress_top
         .zeroize(zeroize),
         .data_i(compress_data),
         .data_valid_i(compress_data_valid),
-        .buffer_full_o(mem_rd_data_hold),
-        .data_valid_o(buffer_valid),
-        .data_o(buffer_data)
+        .buffer_full_o(),
+        .data_valid_o(buffer_valid[0]),
+        .data_o(buffer_data[0])
     );
 
     //Compute API write address
@@ -169,26 +159,37 @@ module compress_top
             api_rw_addr <= api_rw_addr + 'd1;
         end
     end
-    //api write interface
-    always_comb api_rw_en[0] = buffer_valid & ~compare_mode;
-    always_comb api_wr_data = buffer_data;
-    //api read interface for compare mode
-    always_comb api_rw_en[1] = buffer_valid & compare_mode;
-    always_comb compare_failed = compare_mode & buffer_valid_f & (buffer_data_f != api_rd_data);
 
+    always_comb last_poly_last_addr_wr = (api_rw_addr == (dest_base_addr + (((num_poly * MLKEM_N)/ABR_REG_WIDTH)*d)));
+
+    //api write interface
+    always_comb api_rw_en[0] = buffer_valid[0] & ~compare_mode & ~last_poly_last_addr_wr;
+    always_comb api_wr_data = buffer_data[0];
+    //api read interface for compare mode
+    //Read one cycle after we read memory to account for buffer latency
+    //Buffer is designed to be supplied with data every cycle after initial reads
+    always_comb api_rw_en[1] = buffer_valid[0] & compare_mode & ~last_poly_last_addr_wr;
+    always_comb compare_failed = compare_mode & api_rd_data_valid & (buffer_data[SRAM_LATENCY] != api_rd_data);
+
+    
+generate
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : buffer_stage
     always_ff@(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            buffer_valid_f <= '0;
-            buffer_data_f <= '0;
+            buffer_valid[g_stage] <= '0;
+            buffer_data[g_stage] <= '0;
         end
         else if (zeroize) begin
-            buffer_valid_f <= '0;
-            buffer_data_f <= '0;
+            buffer_valid[g_stage] <= '0;
+            buffer_data[g_stage] <= '0;
         end
         else begin
-            buffer_valid_f <= buffer_valid;
-            buffer_data_f <= buffer_valid ? buffer_data : buffer_data_f;
+            buffer_valid[g_stage] <= buffer_valid[g_stage-1];
+            buffer_data[g_stage] <= buffer_data[g_stage-1];
         end
     end
+    end
+endgenerate
+
 
 endmodule

@@ -37,16 +37,16 @@ module decompress_top
 
         output logic api_rd_en,
         output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rd_addr,
-        input  logic [1:0][DATA_WIDTH-1:0] api_rd_data,
+        input  logic [1:0][ABR_REG_WIDTH-1:0] api_rd_data,
+        input  logic api_rd_data_valid,
 
         output logic decompress_done
     );
 
     localparam DECOMP_DATA_W = MLKEM_Q_WIDTH;
 
-    logic api_rd_en_f;
-    logic piso_hold_o;
     logic read_done;
+    logic [15:0] mem_rd_pace, mem_rd_pace_init;
     logic [3:0] d; // Decompression count
     logic piso_data_valid;
     logic [(COEFF_PER_CLK*DECOMP_DATA_W)-1:0] piso_data_o;
@@ -72,6 +72,8 @@ module decompress_top
     end
 
     //Multi-rate piso
+    //Worst case is 3 writes and 2 reads at 44 bit read pace
+    //Buffer size needs to be 104 bits to accomodate that
     abr_piso_multi #(
         .NUM_MODES(4),
         .PISO_BUFFER_W(104),
@@ -89,8 +91,8 @@ module decompress_top
         .rst_b(reset_n),
         .zeroize(zeroize),
         .mode(mode),
-        .valid_i(api_rd_en_f),
-        .hold_o(piso_hold_o),
+        .valid_i(api_rd_data_valid),
+        .hold_o( ),
         .data_i(api_rd_data),
         .valid_o(piso_data_valid),
         .hold_i('0),
@@ -120,6 +122,29 @@ module decompress_top
         end
     end
 
+    // Pace the memory reads to never overflow the buffer
+    // Ensures that buffer is always supplied
+    // Rotate the pacer each clock we are reading
+    always_comb begin
+        unique case (mode)
+            DECOMPRESS1: begin
+                mem_rd_pace_init = 16'b0000000000000001;
+            end
+            DECOMPRESS5: begin
+                mem_rd_pace_init = 16'b0001001001001001;
+            end
+            DECOMPRESS11: begin
+                mem_rd_pace_init = 16'b0110110110110111;
+            end
+            DECOMPRESS12: begin
+                mem_rd_pace_init = 16'b0111011101110111;
+            end
+            default: begin
+                mem_rd_pace_init = '0;
+            end
+        endcase
+    end
+
     generate
         for (genvar i = 0; i < COEFF_PER_CLK; i++) begin : gen_decompress_data_o
             decompress decompress_inst (
@@ -134,19 +159,8 @@ module decompress_top
         end
     endgenerate
 
-    always_comb api_rd_en = decompress_busy & ~read_done & ~piso_hold_o;
+    always_comb api_rd_en = mem_rd_pace[0] & decompress_busy & ~read_done;
 
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            api_rd_en_f <= '0;
-        end
-        else if (zeroize) begin
-            api_rd_en_f <= '0;
-        end
-        else begin
-            api_rd_en_f <= api_rd_en | (api_rd_en_f & piso_hold_o);
-        end
-    end
 
     //Compute API read address
     always_ff @(posedge clk or negedge reset_n) begin
@@ -161,6 +175,22 @@ module decompress_top
         end 
         else if (api_rd_en) begin
             api_rd_addr <= api_rd_addr + 'd1;
+        end
+    end
+
+    //Compute API read pace
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            mem_rd_pace <= '0;
+        end
+        else if (zeroize) begin
+            mem_rd_pace <= '0;
+        end
+        else if (decompress_enable) begin
+            mem_rd_pace <= mem_rd_pace_init;
+        end 
+        else if (decompress_busy & ~read_done) begin
+            mem_rd_pace <= {mem_rd_pace[0], mem_rd_pace[15:1]};
         end
     end
 

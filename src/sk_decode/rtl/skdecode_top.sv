@@ -33,11 +33,7 @@ module skdecode_top
     import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
     #(
-        parameter MLDSA_ETA = 2,
-        parameter MLDSA_D = 13,
-        parameter ETA_SIZE = 3,
-        parameter REG_SIZE = 24,
-        parameter AHB_DATA_WIDTH = 32
+        parameter ETA_SIZE = 3
     )
     (
         input wire clk,
@@ -47,11 +43,10 @@ module skdecode_top
         input wire skdecode_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [AHB_DATA_WIDTH-1:0] keymem_a_rd_data,
-        input wire [AHB_DATA_WIDTH-1:0] keymem_b_rd_data,
+        input wire [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
+        input logic [1:0] keymem_rd_data_valid,
 
-        output mem_if_t keymem_a_rd_req,
-        output mem_if_t keymem_b_rd_req,
+        output mem_if_t [1:0] keymem_rd_req,
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
         output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
@@ -63,100 +58,77 @@ module skdecode_top
         output logic t0_done
     );
 
-    logic s1s2_enable, t0_enable, s1s2_enable_reg, t0_enable_reg;
-    logic s1s2_enable_reg_d2, t0_enable_reg_d2;
+    logic s1s2_enable, t0_enable;
     logic [7:0] s1s2_valid;
     logic [3:0] t0_valid;
     logic [7:0] s1s2_error;
     logic [7:0][REG_SIZE-1:0] s1s2_data;
     logic [3:0][REG_SIZE-1:0] t0_data;
-    logic t0_done_reg;
+    logic keymem_rd_data_valid_f;
 
     //IO flops
     mem_if_t mem_a_wr_req_int, mem_b_wr_req_int, mem_a_wr_req_reg, mem_b_wr_req_reg;
     logic [7:0][ETA_SIZE-1:0] s1s2_buf_data;
     logic [3:0][MLDSA_D-1:0] t0_buf_data;
     logic [3:0][REG_SIZE-1:0] mem_a_wr_data_int, mem_b_wr_data_int, mem_a_wr_data_reg, mem_b_wr_data_reg;
-    logic [AHB_DATA_WIDTH-1:0] keymem_a_rd_data_reg, keymem_b_rd_data_reg;
+    logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data_reg;
 
-    logic s1s2_buf_stall, t0_buf_stall;
     logic t0_data_valid;
     logic s1s2_data_valid;
-    logic t0_buf_full;
-    logic s1s2_buf_stall_reg;
-    logic s1s2_buf_full;
 
     logic s1s2_keymem_b_valid;
-
-    //Read address counters
-    logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_rd_addr, keymem_rd_addr_nxt;
-
 
     //IO flops
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            s1s2_enable_reg             <= 'h0;
-            t0_enable_reg               <= 'h0;
-            s1s2_enable_reg_d2          <= 'h0;
-            t0_enable_reg_d2            <= 'h0;
             mem_a_wr_req_reg.rd_wr_en   <= RW_IDLE;
             mem_b_wr_req_reg.rd_wr_en   <= RW_IDLE;
-            mem_a_wr_req_reg.addr       <= 'h0;
-            mem_b_wr_req_reg.addr       <= 'h0;
-            mem_a_wr_data_reg           <= 'h0;
-            mem_b_wr_data_reg           <= 'h0;
-            t0_done_reg                 <= 'b0;
-            s1s2_keymem_b_valid         <= 'b0;
+            mem_a_wr_req_reg.addr       <= '0;
+            mem_b_wr_req_reg.addr       <= '0;
+            mem_a_wr_data_reg           <= '0;
+            mem_b_wr_data_reg           <= '0;
+            keymem_rd_data_valid_f      <= '0;
         end
         else if (zeroize) begin
-            s1s2_enable_reg             <= 'h0;
-            t0_enable_reg               <= 'h0;
-            s1s2_enable_reg_d2          <= 'h0;
-            t0_enable_reg_d2            <= 'h0;
             mem_a_wr_req_reg.rd_wr_en   <= RW_IDLE;
             mem_b_wr_req_reg.rd_wr_en   <= RW_IDLE;
-            mem_a_wr_req_reg.addr       <= 'h0;
-            mem_b_wr_req_reg.addr       <= 'h0;
-            mem_a_wr_data_reg           <= 'h0;
-            mem_b_wr_data_reg           <= 'h0;
-            t0_done_reg                 <= 'b0;
-            s1s2_keymem_b_valid         <= 'b0;
+            mem_a_wr_req_reg.addr       <= '0;
+            mem_b_wr_req_reg.addr       <= '0;
+            mem_a_wr_data_reg           <= '0;
+            mem_b_wr_data_reg           <= '0;
+            keymem_rd_data_valid_f      <= '0;
         end
         else begin
-            s1s2_enable_reg             <= s1s2_enable;
-            t0_enable_reg               <= t0_enable;
-            s1s2_enable_reg_d2          <= s1s2_enable_reg;
-            t0_enable_reg_d2            <= t0_enable_reg;
             mem_a_wr_req_reg            <= mem_a_wr_req_int;
             mem_b_wr_req_reg            <= mem_b_wr_req_int;
             mem_a_wr_data_reg           <= mem_a_wr_data_int;
             mem_b_wr_data_reg           <= mem_b_wr_data_int;
-            t0_done_reg                 <= t0_done;
-            s1s2_keymem_b_valid         <= s1s2_enable & (keymem_b_rd_req.rd_wr_en == RW_READ);
+            keymem_rd_data_valid_f      <= (|keymem_rd_data_valid);
         end
     end
+
+    always_comb s1s2_keymem_b_valid = s1s2_enable & keymem_rd_data_valid[1];
 
     //Data flop with enable to sync with buf full
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            keymem_a_rd_data_reg <= 'h0;
-            keymem_b_rd_data_reg <= 'h0;
+            keymem_rd_data_reg <= '0;
         end
         else if (zeroize) begin
-            keymem_a_rd_data_reg <= 'h0;
-            keymem_b_rd_data_reg <= 'h0;
+            keymem_rd_data_reg <= '0;
         end
-        else if (~t0_buf_full & ~s1s2_buf_full) begin
-            keymem_a_rd_data_reg <= s1s2_keymem_b_valid ? keymem_b_rd_data: keymem_a_rd_data;
-            keymem_b_rd_data_reg <= keymem_b_rd_data;
-
+        else begin
+            if (keymem_rd_data_valid[0] | s1s2_keymem_b_valid)
+                keymem_rd_data_reg[0] <= s1s2_keymem_b_valid ? keymem_rd_data[1]: keymem_rd_data[0];
+            if (keymem_rd_data_valid[1] & ~s1s2_enable)
+                keymem_rd_data_reg[1] <= keymem_rd_data[1];
         end
     end
 
     //Flags
     always_comb begin
-        mem_a_wr_data_int  = |s1s2_valid ? s1s2_data[3:0] : |t0_valid ? t0_data[3:0] : 'h0;
-        mem_b_wr_data_int  = |s1s2_valid ? s1s2_data[7:4] : |t0_valid ? t0_data[3:0] : 'h0;
+        mem_a_wr_data_int  = |s1s2_valid ? s1s2_data[3:0] : |t0_valid ? t0_data[3:0] : '0;
+        mem_b_wr_data_int  = |s1s2_valid ? s1s2_data[7:4] : |t0_valid ? t0_data[3:0] : '0;
         skdecode_error     = |s1s2_error;
     end
 
@@ -204,49 +176,32 @@ module skdecode_top
         end
     endgenerate
 
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            s1s2_buf_stall_reg <= 'b0;
-        else if (zeroize)
-            s1s2_buf_stall_reg <= 'b0;
-        else
-            s1s2_buf_stall_reg <= s1s2_buf_stall;
-    end
-
-    always_comb begin
-        t0_buf_stall = t0_buf_full; //(t0_buf_full & t0_enable_reg);
-    end
-
-    abr_sample_buffer #(
-        .NUM_WR(16),
-        .NUM_RD(13),
-        .BUFFER_DATA_W(4)
-    )
-    t0_sample_buffer_inst (
+    abr_rd_lat_buffer #(
+        .WR_WIDTH(64), //rate of sk reads
+        .RD_WIDTH(52), //rate of sk mem writes
+        .BUFFER_DEPTH(112) //worst case depth
+    ) skdec_t0_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i((t0_buf_full | ~t0_enable) ? 16'h0 : {16{t0_enable_reg}}),
-        .data_i({keymem_b_rd_data_reg, keymem_a_rd_data_reg}),
-        .buffer_full_o(t0_buf_full),
-        .data_valid_o(t0_data_valid),
-        .data_o(t0_buf_data)
+        .data_i(keymem_rd_data_reg),
+        .data_valid_i(keymem_rd_data_valid_f & t0_enable),
+        .data_o(t0_buf_data),
+        .data_valid_o(t0_data_valid)
     );
 
-    abr_sample_buffer #(
-        .NUM_WR(4),
-        .NUM_RD(3),
-        .BUFFER_DATA_W(8)
-    )
-    s1s2_sample_buffer_inst (
+    abr_rd_lat_buffer #(
+        .WR_WIDTH(32), //rate of sk reads
+        .RD_WIDTH(24), //rate of sk mem writes
+        .BUFFER_DEPTH(48) //worst case depth
+    ) skdec_s1s2_rd_lat_buffer_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
-        .data_valid_i(s1s2_buf_stall_reg/*(s1s2_buf_full | ~s1s2_enable)*/ ? 4'h0 : {4{s1s2_enable_reg}}),
-        .data_i(keymem_a_rd_data_reg),
-        .buffer_full_o(s1s2_buf_full),
-        .data_valid_o(s1s2_data_valid),
-        .data_o(s1s2_buf_data)
+        .data_i(keymem_rd_data_reg[0]),
+        .data_valid_i(keymem_rd_data_valid_f & s1s2_enable),
+        .data_o(s1s2_buf_data),
+        .data_valid_o(s1s2_data_valid)
     );
 
     skdecode_ctrl
@@ -260,18 +215,16 @@ module skdecode_top
         .s1s2_valid(|s1s2_valid),
         .t0_valid(|t0_valid),
         .s1s2_error(|s1s2_error), //TODO: enable later when tb is fixed to drive input values within range
-        .t0_buf_stall(t0_buf_stall), //input from buffer to ctrl
         .mem_a_wr_req(mem_a_wr_req_int),
         .mem_b_wr_req(mem_b_wr_req_int),
-        .kmem_a_rd_req(keymem_a_rd_req),
-        .kmem_b_rd_req(keymem_b_rd_req),
+        .kmem_a_rd_req(keymem_rd_req[0]),
+        .kmem_b_rd_req(keymem_rd_req[1]),
         .s1s2_enable(s1s2_enable),
         .t0_enable(t0_enable),
         .skdecode_done(skdecode_done),
         .s1_done(s1_done),
         .s2_done(s2_done),
-        .t0_done(t0_done),
-        .s1s2_buf_stall(s1s2_buf_stall)//(s1s2_buf_full)
+        .t0_done(t0_done)
     );
 
 endmodule

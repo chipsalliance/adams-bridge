@@ -17,12 +17,10 @@
 // Outputs are presented valid once NUM_RD entries are valid in the buffer
 
 module abr_sample_buffer
-  //    import ::*;
   #(
    parameter NUM_WR = 5
   ,parameter NUM_RD  = 4
   ,parameter BUFFER_DATA_W = 32
-  ,parameter OPT_BUFFER_DEPTH = 0
   ,localparam BUFFER_DEPTH = (NUM_WR + NUM_RD)
   ,localparam BUF_W = BUFFER_DEPTH*BUFFER_DATA_W
   )

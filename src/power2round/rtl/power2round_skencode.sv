@@ -19,11 +19,7 @@
 //======================================================================
 
 module power2round_skencode
-    #(
-        parameter REG_SIZE = 23,
-        parameter MLDSA_Q = 23'd8380417,
-        parameter MLDSA_D = 13
-    )
+    import abr_params_pkg::*;
     (
         input logic  [MLDSA_D-1:0] r0,
         output logic [MLDSA_D-1:0] r0_packed

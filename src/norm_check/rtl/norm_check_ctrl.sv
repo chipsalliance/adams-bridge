@@ -35,13 +35,12 @@ module norm_check_ctrl
         input wire zeroize,
 
         input wire norm_check_enable,
-        input chk_norm_mode_t mode,
 
         input wire [5:0] randomness,
 
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
+        input logic mem_rd_data_valid,
         output mem_if_t mem_rd_req,
-        output logic check_enable,
         output logic norm_check_done
     );
 
@@ -61,20 +60,20 @@ module norm_check_ctrl
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            latched_out_randomness  <= 'h0;
-            latched_in_randomness   <= 'h0;
-            increment_addr          <= 'h0;
-            mem_rd_addr             <= 'h0;
-            neutral_cnt             <= 'h0;
-            locked_based_addr       <= 'h0;
+            latched_out_randomness  <= '0;
+            latched_in_randomness   <= '0;
+            increment_addr          <= '0;
+            mem_rd_addr             <= '0;
+            neutral_cnt             <= '0;
+            locked_based_addr       <= '0;
         end
         else if (zeroize) begin
-            latched_out_randomness  <= 'h0;
-            latched_in_randomness   <= 'h0;
-            increment_addr          <= 'h0;
-            mem_rd_addr             <= 'h0;
-            neutral_cnt             <= 'h0;
-            locked_based_addr       <= 'h0;
+            latched_out_randomness  <= '0;
+            latched_in_randomness   <= '0;
+            increment_addr          <= '0;
+            mem_rd_addr             <= '0;
+            neutral_cnt             <= '0;
+            locked_based_addr       <= '0;
         end
         else begin
             if (norm_check_enable) begin
@@ -82,17 +81,17 @@ module norm_check_ctrl
                 latched_in_randomness   <= randomness[0];
                 increment_addr          <= randomness[5:1];
                 mem_rd_addr             <= {{(ABR_MEM_ADDR_WIDTH-6){1'b0}}, randomness};
-                neutral_cnt             <= 'h0;
+                neutral_cnt             <= '0;
                 locked_based_addr       <=  mem_base_addr;
             end
-            else if (incr_rd_addr) begin
+            else if ((read_fsm_state_ps != CHK_IDLE) && incr_rd_addr) begin
                 latched_in_randomness   <= latched_in_randomness;
                 latched_out_randomness  <= latched_out_randomness;
                 increment_addr          <= increment_addr;
                 mem_rd_addr             <= {mem_rd_addr[ABR_MEM_ADDR_WIDTH-1:6], increment_addr, latched_in_randomness};
                 neutral_cnt             <= neutral_cnt + 'h1;
             end
-            else if (~incr_rd_addr) begin
+            else if ((read_fsm_state_ps != CHK_IDLE) && ~incr_rd_addr) begin
                 latched_in_randomness   <= randomness[0];
                 latched_out_randomness  <= latched_out_randomness;
                 increment_addr          <= increment_addr + 'h1;
@@ -129,7 +128,7 @@ module norm_check_ctrl
 
     always_comb begin
         read_fsm_state_ns = read_fsm_state_ps;
-        incr_rd_addr = 'b0;
+        incr_rd_addr = '0;
         norm_check_done = 0;
 
         case(read_fsm_state_ps)
@@ -138,22 +137,20 @@ module norm_check_ctrl
             end
             CHK_RD_MEM: begin
                 read_fsm_state_ns = last_poly_last_addr ? CHK_DONE : CHK_WAIT;
-                incr_rd_addr = 'b0;
+                incr_rd_addr = 1'b0;
             end
             CHK_WAIT: begin
                 read_fsm_state_ns = last_poly_last_addr ? CHK_DONE : CHK_RD_MEM;
-                incr_rd_addr = 'b1;
+                incr_rd_addr = 1'b1;
             end
             CHK_DONE: begin
-                read_fsm_state_ns = CHK_IDLE;
-                norm_check_done = 'b1;
+                read_fsm_state_ns = mem_rd_data_valid ? CHK_DONE: CHK_IDLE;
+                norm_check_done = 1'b1;
             end
             default begin
                 read_fsm_state_ns = CHK_IDLE;
             end
         endcase
     end
-
-    always_comb check_enable = (read_fsm_state_ps == CHK_RD_MEM) | (read_fsm_state_ps == CHK_WAIT);
 
 endmodule

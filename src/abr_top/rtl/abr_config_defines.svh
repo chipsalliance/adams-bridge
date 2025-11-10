@@ -18,11 +18,11 @@
    `include "abr_sva.svh"
    // `define RV_FPGA_OPTIMIZE
    // `define RV_FPGA_SCA
-   `define MLDSA_MASKING
 
   `define ABR_ICG           abr_clk_gate
 
-  `define ABR_MEM(_depth, _width, _mem_name) \
+  `define ABR_MEM(_depth, _width, _mem_name, _latency) \
+  logic [_width-1:0] ``_mem_name``_rdata_o [_latency:1]; \
   abr_1r1w_ram \
   #( .DEPTH(``_depth``), \
      .DATA_WIDTH(``_width``)) \
@@ -34,10 +34,23 @@
       .wdata_i(abr_memory_export.``_mem_name``_wdata_i),\
       .re_i(abr_memory_export.``_mem_name``_re_i),\
       .raddr_i(abr_memory_export.``_mem_name``_raddr_i),\
-      .rdata_o(abr_memory_export.``_mem_name``_rdata_o)\
-   );
+      .rdata_o(``_mem_name``_rdata_o[1])\
+   );\
+   \
+   generate\
+     if (_latency > 1) begin : ``_mem_name``gen_lat\
+       for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
+         always_ff @(posedge clk_i) begin\
+           ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
+         end\
+       end\
+     end\
+   endgenerate\
+   \
+   assign abr_memory_export.``_mem_name``_rdata_o = ``_mem_name``_rdata_o[_latency];
 
-  `define ABR_MEM_BE(_depth, _width, _mem_name) \
+  `define ABR_MEM_BE(_depth, _width, _mem_name, _latency) \
+  logic [_width-1:0] ``_mem_name``_rdata_o [_latency:1]; \
   abr_1r1w_be_ram \
   #( .DEPTH(``_depth``), \
      .DATA_WIDTH(``_width``))  \
@@ -50,8 +63,20 @@
         .wstrobe_i(abr_memory_export.``_mem_name``_wstrobe_i),\
         .re_i(abr_memory_export.``_mem_name``_re_i),\
         .raddr_i(abr_memory_export.``_mem_name``_raddr_i),\
-        .rdata_o(abr_memory_export.``_mem_name``_rdata_o)\
-     );
+        .rdata_o(``_mem_name``_rdata_o[1])\
+     );\
+   \
+   generate\
+     if (_latency > 1) begin : ``_mem_name``gen_lat\
+       for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
+         always_ff @(posedge clk_i) begin\
+           ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
+         end\
+       end\
+     end\
+   endgenerate\
+   \
+   assign abr_memory_export.``_mem_name``_rdata_o = ``_mem_name``_rdata_o[_latency];
    
    `define CALIPTRA_KV_RD_TIEOFF(sig_prefix, hwif_name = hwif_in)\
    assign ``hwif_name.``sig_prefix``_rd_status.ERROR.next = '0;\

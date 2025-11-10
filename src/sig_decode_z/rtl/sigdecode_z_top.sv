@@ -35,51 +35,47 @@ module sigdecode_z_top
         parameter GAMMA1 = 19
     )
     (
-        input wire clk,
-        input wire reset_n,
-        input wire zeroize,
+        input logic clk,
+        input logic reset_n,
+        input logic zeroize,
 
         // Output memory ports
-        input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input logic [MEM_ADDR_WIDTH-1:0] dest_base_addr,
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
         output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
         output logic [3:0][REG_SIZE-1:0] mem_b_wr_data,
 
         // Input API ports
-        output sig_mem_if_t sigmem_a_rd_req,
-        output sig_mem_if_t sigmem_b_rd_req,
-        input wire [3:0][GAMMA1:0]  sigmem_a_rd_data,
-        input wire [3:0][GAMMA1:0]  sigmem_b_rd_data,
+        output sig_mem_if_t sigmem_rd_req,
+        input logic [1:0][3:0][GAMMA1:0]  sigmem_rd_data,
+        input logic sigmem_rd_data_valid,
 
         //Control and status signals        
-        input wire sigdecode_z_enable,
+        input logic sigdecode_z_enable,
         output logic sigdecode_z_done
     );
 
     localparam THE_LAST_ADDR = ((MLDSA_L * MLDSA_N)/4)-1;
     // State Machine States
-    localparam  IDLE                = 3'b000,
-                READ                = 3'b001,
-                READ_and_EXEC       = 3'b010,
-                READ_EXEC_and_WRITE = 3'b011,
-                EXEC_and_WRITE      = 3'b100,
-                WRITE               = 3'b101,
-                DONE                = 3'b110;
+    localparam  SIGDECODE_IDLE  = 2'b00,
+                SIGDECODE_READ  = 2'b01,
+                SIGDECODE_WRITE = 2'b10,
+                SIGDECODE_DONE  = 2'b11;
 
 
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr; // this ensures that addresses are captured when the block is enabled
-    logic [2:0] state, next_state;
+    logic [1:0] state, next_state;
 
 
     // State Machine
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            state <= IDLE;
+            state <= SIGDECODE_IDLE;
         end
         else if (zeroize) begin
-            state <= IDLE;
+            state <= SIGDECODE_IDLE;
         end
         else begin
             state <= next_state;
@@ -87,38 +83,30 @@ module sigdecode_z_top
     end
 
     always_comb begin
-        case (state)
-            IDLE: begin
+        next_state = state;
+        unique case (state) inside
+            SIGDECODE_IDLE: begin
                 if (sigdecode_z_enable)
-                    next_state = READ;
+                    next_state = SIGDECODE_READ;
                 else
-                    next_state = IDLE;
+                    next_state = SIGDECODE_IDLE;
             end
-            READ: begin
-                next_state = READ_and_EXEC;
-            end
-            READ_and_EXEC: begin
-                next_state = READ_EXEC_and_WRITE;
-            end
-            READ_EXEC_and_WRITE: begin
-                if ((num_api_operands+1) == THE_LAST_ADDR) begin
-                    next_state = EXEC_and_WRITE;
-                end
-                else begin
-                    next_state = READ_EXEC_and_WRITE;
+            SIGDECODE_READ: begin
+                if (num_api_operands == THE_LAST_ADDR-1) begin
+                    next_state = SIGDECODE_WRITE;
                 end
             end
-            EXEC_and_WRITE: begin
-                next_state = WRITE;
+            //Done reading, only writes remaining
+            SIGDECODE_WRITE: begin
+                if (~sigmem_rd_data_valid) begin
+                    next_state = SIGDECODE_DONE;
+                end
             end
-            WRITE: begin
-                next_state = DONE;
-            end
-            DONE: begin
-                next_state = IDLE;
+            SIGDECODE_DONE: begin
+                next_state = SIGDECODE_IDLE;
             end
             default: begin
-                next_state = IDLE;
+                next_state = SIGDECODE_IDLE;
             end
         endcase
     end
@@ -127,16 +115,16 @@ module sigdecode_z_top
     // Assert the done signal when it is needed
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            sigdecode_z_done    <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            sigdecode_z_done    <= '0;
         end
         else if (zeroize) begin
-            num_mem_operands    <= 'h0;
-            num_api_operands    <= 'h0;
-            locked_dest_addr    <= 'h0;
-            sigdecode_z_done    <= 'h0;
+            num_mem_operands    <= '0;
+            num_api_operands    <= '0;
+            locked_dest_addr    <= '0;
+            sigdecode_z_done    <= '0;
         end
         else begin
             if (sigdecode_z_enable) begin
@@ -144,23 +132,23 @@ module sigdecode_z_top
             end
 
             
-            if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
-                num_api_operands    <= num_api_operands +2'h2;
+            if (state == SIGDECODE_READ) begin
+                num_api_operands    <= num_api_operands + 2'h2;
             end
             else begin
                 num_api_operands    <= 'h0;
             end
-            if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
-                num_mem_operands    <= num_mem_operands +2'h2;
+            if (sigmem_rd_data_valid) begin
+                num_mem_operands    <= num_mem_operands + 2'h2;
             end
             else begin
                 num_mem_operands    <= 'h0;
             end
-            if (state == DONE) begin
-                sigdecode_z_done      <= 'h1;
+            if (state == SIGDECODE_DONE) begin
+                sigdecode_z_done      <= 1'b1;
             end
             else begin
-                sigdecode_z_done      <= 'h0;
+                sigdecode_z_done      <= 1'b0;
             end
         end
     end
@@ -175,7 +163,7 @@ module sigdecode_z_top
             mem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             mem_b_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
-        else if (state == READ_EXEC_and_WRITE || state == EXEC_and_WRITE || state == WRITE) begin
+        else if (sigmem_rd_data_valid) begin
             mem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands};
             mem_b_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_mem_operands + 1};
         end
@@ -188,19 +176,15 @@ module sigdecode_z_top
     // Memory read request generation
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+            sigmem_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
         else if (zeroize) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+            sigmem_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
-        else if (state == READ || state == READ_and_EXEC || state == READ_EXEC_and_WRITE) begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_READ, addr: num_api_operands};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_READ, addr: num_api_operands + 1};
+        else if (state == SIGDECODE_READ) begin
+            sigmem_rd_req <= '{rd_wr_en: RW_READ, addr: num_api_operands};
         end else begin
-            sigmem_a_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
-            sigmem_b_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+            sigmem_rd_req <= '{rd_wr_en: RW_IDLE, addr: '0};
         end
     end
 
@@ -215,7 +199,7 @@ module sigdecode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .data_i(sigmem_a_rd_data[i]),
+                .data_i(sigmem_rd_data[0][i]),
                 .data_o(mem_a_wr_data[i])
             );
             sigdecode_z_unit #(
@@ -226,7 +210,7 @@ module sigdecode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .data_i(sigmem_b_rd_data[i]),
+                .data_i(sigmem_rd_data[1][i]),
                 .data_o(mem_b_wr_data[i])
             );
         end : dec_unit

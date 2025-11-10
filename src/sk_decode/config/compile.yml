@@ -41,6 +41,7 @@ schema_version: 2.4.0
 requires:
   - skdecode
   - skdecode_pkg
+  - abr_libs
 targets:
   rtl:
     directories: [$COMPILE_ROOT/tb]

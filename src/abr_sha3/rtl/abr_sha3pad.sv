@@ -110,7 +110,6 @@ module abr_sha3pad
     // The incoming data can be partial write. Padding logic counts the number
     // of bytes received and pause if a block size is transferred.
     StMessage = 7'b0100101,
-    StMessageWait = 7'b0001111,
 
     // After sending the messages, then `process_i` is set, the FSM pads at the
     // end of the message based on `mode_i`. If this is the last byte of the
@@ -178,6 +177,7 @@ module abr_sha3pad
   // bits. The `wr_message` is used to check sent_blocksize.
   logic [MsgCountW-1:0] wr_message;
   logic inc_wrmsg, clr_wrmsg;
+  logic new_block;
 
 
   logic                 update_serial_buffer;
@@ -192,9 +192,9 @@ module abr_sha3pad
   ) u_wrmsg_count (
     .clk_i,
     .rst_b,
-    .clr_i(clr_wrmsg | zeroize),
-    .set_i(1'b0),
-    .set_cnt_i(MsgCountW'(0)),
+    .clr_i(rst_serial_buffer),
+    .set_i(new_block),
+    .set_cnt_i(MsgCountW'(1)),
     .incr_en_i(inc_wrmsg),
     .decr_en_i(1'b0),
     .step_i(MsgCountW'(1)),
@@ -300,6 +300,7 @@ module abr_sha3pad
 
     hold_msg = 1'b 0;
     clr_wrmsg = 1'b 0;
+    new_block = 1'b0;
 
     en_msgbuf = 1'b 0;
     clr_msgbuf = 1'b 0;
@@ -375,8 +376,10 @@ module abr_sha3pad
           st_d = StMessage;
 
           keccak_run_o = 1'b 1;
-          clr_wrmsg = 1'b 1;
-          hold_msg = 1'b 1;
+          if (msg_valid_i && ~msg_partial)
+            new_block = 1'b1;
+          else
+            clr_wrmsg = 1'b1;
         end else if (sent_blocksize & ~keccak_ack) begin
           // Check block completion first even process is set.
           st_d = StMessage;
@@ -390,28 +393,6 @@ module abr_sha3pad
         end else begin
           st_d = StMessage;
 
-        end
-      end
-
-      // Keccak round is running, we can send another block but can't start a
-      // new round until the current one completes.
-      StMessageWait: begin
-        sel_mux = MuxFifo;
-        en_msgbuf = msg_valid_i && msg_partial;
-
-        if (sent_blocksize) begin
-          st_d = StMessageWait;
-
-          hold_msg = 1'b 1;
-        end else if (process_i) begin
-          st_d = StPad;
-
-          // Not asserting the msg_ready_o
-          hold_msg = 1'b 1;
-        end else if (keccak_complete_i) begin
-          st_d = StMessage;
-        end else begin
-          st_d = StMessageWait;
         end
       end
 
@@ -431,7 +412,6 @@ module abr_sha3pad
 
           // always clear the latched msgbuf
           clr_msgbuf = 1'b 1;
-          //clr_wrmsg = 1'b 1;
         end else if (end_of_block && ~keccak_ack) begin
           // Wait until Keccak is available
           st_d = StPad;
@@ -788,7 +768,7 @@ module abr_sha3pad
         if (serial_buffer_wraddr == i[MsgAddrW-1:0]) begin
           serial_buffer_d[j][i] = serial_buffer_wrdata[j];
         end else begin
-          serial_buffer_d[j][i] = serial_buffer[j][i];
+          serial_buffer_d[j][i] = new_block ? '0 : serial_buffer[j][i];
         end
       end // for i
     end // for j

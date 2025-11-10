@@ -48,6 +48,7 @@ module makehint
         input wire zeroize,
 
         input wire makehint_enable,
+        input logic mem_rd_data_valid,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
@@ -61,7 +62,6 @@ module makehint
     );
 
     //Internal wires
-    logic hintgen_enable, hintgen_enable_reg;
     logic [3:0] hint;
     logic [MLDSA_K-1:0][7:0] max_index_buffer;
     logic [31:0] max_index_buffer_data;
@@ -79,7 +79,7 @@ module makehint
     //Index counter
     logic [3:0][7:0] index;
     logic [7:0] index_count;
-    logic incr_index, incr_index_d1, incr_index_d2;
+    logic incr_index;
 
     //Polynomial counter
     logic [$clog2(MLDSA_K)-1:0] poly_count;
@@ -96,10 +96,9 @@ module makehint
     //Read fsm
     mh_read_state_e read_fsm_state_ps, read_fsm_state_ns;
     logic arc_MH_IDLE_MH_RD_MEM;
-    logic arc_MH_RD_MEM_MH_WAIT1;
-    logic arc_MH_WAIT2_MH_IDLE;
-    // logic arc_MH_WAIT_MH_RD_MEM; //TODO don't need wait if we do all polys back to back? check this later
-    logic arc_MH_WAIT2_MH_FLUSH;
+    logic arc_MH_RD_MEM_MH_WAIT;
+    logic arc_MH_WAIT_MH_RD_MEM;
+    logic arc_MH_WAIT_MH_FLUSH;
 
     //Hint sum
     logic [7:0] hintsum;
@@ -109,85 +108,60 @@ module makehint
     //Busy flag
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            busy_reg <= 'b0;
+            busy_reg <= '0;
         else if (zeroize)
-            busy_reg <= 'b0;
+            busy_reg <= '0;
         else
             busy_reg <= (read_fsm_state_ps != MH_IDLE);
     end
 
-    //Delay adjustment
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)
-            hintgen_enable_reg <= 'b0;
-        else if (zeroize)
-            hintgen_enable_reg <= 'b0;
-        else
-            hintgen_enable_reg <= hintgen_enable;
-    end
-
     //Keep count of index. Input is 4 coeffs per cycle. Have a vector that counts
-    //(0, 1, 2, 3), (4, 5, 6, 7), etc
-    //Flop incr_index twice to account for 1 cycle of mem read latency + 1 cycle of hintgen latency
+    always_comb incr_index = mem_rd_data_valid;
+
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            incr_index_d1 <= 'h0;
-            incr_index_d2 <= 'h0;
+            index_count <= '0;
         end
         else if (zeroize | makehint_done) begin
-            incr_index_d1 <= 'h0;
-            incr_index_d2 <= 'h0;
+            index_count <= '0;
         end
-        else begin
-            incr_index_d1 <= incr_index;
-            incr_index_d2 <= incr_index_d1;
-        end
-    end
-    
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            index_count <= 'h0;
-        end
-        else if (zeroize | makehint_done) begin
-            index_count <= 'h0;
-        end
-        else if (incr_index_d1) begin
+        else if (incr_index) begin
             index_count <= index_count + 'h4;
         end
     end
 
     always_comb begin
-        index[0] = incr_index_d1 ? index_count       : 'h0;
-        index[1] = incr_index_d1 ? index_count + 'h1 : 'h0;
-        index[2] = incr_index_d1 ? index_count + 'h2 : 'h0;
-        index[3] = incr_index_d1 ? index_count + 'h3 : 'h0;
+        index[0] = incr_index ? index_count       : '0;
+        index[1] = incr_index ? index_count + 'h1 : '0;
+        index[2] = incr_index ? index_count + 'h2 : '0;
+        index[3] = incr_index ? index_count + 'h3 : '0;
     end
 
     //Keep count of polynomial. 1 polynomial needs 64 memory addr accesses == 256 index count (0 to 255)
     //After each poly_done, record the last index into max_index_buffer
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            poly_count <= 'h0;
+            poly_count <= '0;
         else if (zeroize | makehint_done)
-            poly_count <= 'h0;
+            poly_count <= '0;
         else if (incr_poly)
             poly_count <= poly_count + 'h1;
     end
 
     always_comb begin
         poly_done = incr_poly; //last_addr_read;
-        poly_last = (poly_count == 'h7);
+        poly_last = (poly_count == MLDSA_K-1);
         flush_buffer = (read_fsm_state_ps == MH_FLUSH_SBUF); //poly_last & poly_done; //TODO: check to make sure all indexes have been processed before this flag goes high
     end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            poly_last_reg <= 'b0;
-            flush_buffer_reg <= 'b0;
+            poly_last_reg <= '0;
+            flush_buffer_reg <= '0;
         end
         else if (zeroize | makehint_done) begin
-            poly_last_reg <= 'b0;
-            flush_buffer_reg <= 'b0;
+            poly_last_reg <= '0;
+            flush_buffer_reg <= '0;
         end
         else begin
             poly_last_reg <= poly_last;
@@ -202,9 +176,9 @@ module makehint
     //Instead count 1s manually and store sum into max_index_buffer for every poly_done
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            hintsum <= 'h0;
+            hintsum <= '0;
         else if (zeroize | makehint_done)
-            hintsum <= 'h0;
+            hintsum <= '0;
         else
             hintsum <= hintsum + hint[3] + hint[2] + hint[1] + hint[0];
     end
@@ -217,31 +191,31 @@ module makehint
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            max_index_buffer <= 'h0;
+            max_index_buffer <= '0;
         else if (zeroize | makehint_done)
-            max_index_buffer <= 'h0;
+            max_index_buffer <= '0;
         else if (poly_done)
             max_index_buffer <= {hintsum, max_index_buffer[MLDSA_K-1:1]};
     end
     assign max_index_buffer_data = max_index_buffer_rd_lo ? {max_index_buffer[0], 24'h0} : 
                                    max_index_buffer_rd_mid ? max_index_buffer[4:1] :
-                                   max_index_buffer_rd_hi ? {8'h0, max_index_buffer[7:5]} : 'h0;
+                                   max_index_buffer_rd_hi ? {8'h0, max_index_buffer[7:5]} : '0;
 
     //Reg API
     //Write from sample buffer for each dword captured per polynomial.
     //If last poly is done, flush buffer and write to reg API
     //After that, write the max_index_buffer contents to reg API - using delayed poly_last as the wren in this case
     assign reg_wren = sample_valid | flush_buffer | max_index_buffer_rd;
-    assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : 'h0;
+    assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : '0;
 
     always_comb reg_wr_addr_nxt = latch_hintsum_addr ? (OMEGA/4) : reg_wr_addr + 'h1; //Latch hintsum dword addr at the end of hint processing
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            reg_wr_addr <= 'h0;
+            reg_wr_addr <= '0;
         end
         else if (zeroize | makehint_done) begin
-            reg_wr_addr <= 'h0;
+            reg_wr_addr <= '0;
         end
         else if (sample_valid | flush_buffer | max_index_buffer_rd) begin
             reg_wr_addr <= reg_wr_addr_nxt;
@@ -255,20 +229,20 @@ module makehint
     //----------------------------
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            mem_rd_addr <= 'h0;
-            z_rd_addr <= 'h0;
+            mem_rd_addr <= '0;
+            z_rd_addr <= '0;
         end
         else if (zeroize) begin
-            mem_rd_addr <= 'h0;
-            z_rd_addr <= 'h0;
+            mem_rd_addr <= '0;
+            z_rd_addr <= '0;
         end
         else if (rst_rd_addr) begin
             mem_rd_addr <= mem_base_addr;
-            z_rd_addr <= 'h0;
+            z_rd_addr <= '0;
         end
         else if (incr_mem_rd_addr) begin
             mem_rd_addr <= (poly_last && last_addr_read) ? mem_base_addr : mem_rd_addr + 'h1;
-            z_rd_addr <= (poly_last && last_addr_read) ? 'h0 : z_rd_addr + 'h1;
+            z_rd_addr <= (poly_last && last_addr_read) ? '0 : z_rd_addr + 'h1;
         end
     end
 
@@ -292,62 +266,55 @@ module makehint
         //Start makehint upon seeing enable trigger
         arc_MH_IDLE_MH_RD_MEM = (read_fsm_state_ps == MH_IDLE) && makehint_enable;
         //When any poly is done (last or not), wait for 1 cyc to give time for sample buffer to process last coeffs
-        arc_MH_RD_MEM_MH_WAIT1 = (read_fsm_state_ps == MH_RD_MEM) && last_addr_read;
-        //When non-last poly is done, move to IDLE and wait for next enable. Opt - if we know all 8 poly will be back to back, we can remain in RD_MEM and wrap addr around + take new base addr if needed, calc hints and continue execution without waiting in IDLE for HLC to give enable
-        arc_MH_WAIT2_MH_IDLE = (read_fsm_state_ps == MH_WAIT2) && !poly_last;
+        arc_MH_RD_MEM_MH_WAIT = (read_fsm_state_ps == MH_RD_MEM) && last_addr_read;
+        arc_MH_WAIT_MH_RD_MEM = (read_fsm_state_ps == MH_WAIT) && ~mem_rd_data_valid && ~poly_last;
         //When non-last poly is done, go back to RD_MEM and continue executing
-        arc_MH_WAIT2_MH_FLUSH = (read_fsm_state_ps == MH_WAIT2) && (poly_count == MLDSA_K-1);
+        arc_MH_WAIT_MH_FLUSH = (read_fsm_state_ps == MH_WAIT) && ~mem_rd_data_valid && poly_last;
     end
 
     always_comb begin
         read_fsm_state_ns = read_fsm_state_ps;
-        incr_mem_rd_addr  = 'b0;
-        incr_index        = 'b0;
-        rst_rd_addr       = 'b0;
-        hintgen_enable    = 'b0;
-        max_index_buffer_rd_lo = 'b0;
-        max_index_buffer_rd_mid = 'b0;
-        max_index_buffer_rd_hi = 'b0;
-        incr_poly         = 'b0;
-        latch_hintsum_addr = 'b0;
+        incr_mem_rd_addr  = '0;
+        rst_rd_addr       = '0;
+        max_index_buffer_rd_lo = '0;
+        max_index_buffer_rd_mid = '0;
+        max_index_buffer_rd_hi = '0;
+        incr_poly         = '0;
+        latch_hintsum_addr = '0;
         unique case(read_fsm_state_ps)
             MH_IDLE: begin
                 read_fsm_state_ns   = arc_MH_IDLE_MH_RD_MEM ? MH_RD_MEM : MH_IDLE;
-                rst_rd_addr         = 'b1;
+                rst_rd_addr         = 1'b1;
             end
             MH_RD_MEM: begin
                 //Read memory and produce hints for (r,z)
-                read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT1 ? MH_WAIT1 : MH_RD_MEM;
-                incr_mem_rd_addr    = 'b1;
-                incr_index          = 'b1;
-                hintgen_enable      = 'b1;
+                read_fsm_state_ns   = arc_MH_RD_MEM_MH_WAIT ? MH_WAIT : MH_RD_MEM;
+                incr_mem_rd_addr    = 1'b1;
             end
-            MH_WAIT1: begin
-                read_fsm_state_ns = MH_WAIT2;
-            end
-            MH_WAIT2: begin
-                //After all 64 addr are done, wait for 1 clk to let sample buffer finish last coeff
-                read_fsm_state_ns   = arc_MH_WAIT2_MH_FLUSH ? MH_FLUSH_SBUF : MH_RD_MEM; //arc_MH_WAIT2_MH_RD_MEM ? MH_RD_MEM : MH_FLUSH_SBUF_LOW;
-                incr_poly           = 'b1;
+            MH_WAIT: begin
+                //After all 64 addr are done, wait for sample buffer finish last coeff
+                read_fsm_state_ns   = arc_MH_WAIT_MH_FLUSH ? MH_FLUSH_SBUF : 
+                                      arc_MH_WAIT_MH_RD_MEM ? MH_RD_MEM : MH_WAIT;
+                incr_poly           = ~mem_rd_data_valid;
             end
             MH_FLUSH_SBUF: begin
                 //If last poly, flush sample buffer
                 read_fsm_state_ns   = MH_RD_IBUF_LOW;
-                latch_hintsum_addr  = 'b1; //prepare for next state
+                latch_hintsum_addr  = 1'b1; //prepare for next state
             end
             MH_RD_IBUF_LOW: begin
                 //last poly, write lower dword of max idx buf to reg API
                 read_fsm_state_ns   = MH_RD_IBUF_MID;
-                max_index_buffer_rd_lo = 'b1;
+                max_index_buffer_rd_lo = 1'b1;
             end
             MH_RD_IBUF_MID: begin
                 read_fsm_state_ns   = MH_RD_IBUF_HIGH;
-                max_index_buffer_rd_mid = 'b1;
+                max_index_buffer_rd_mid = 1'b1;
             end
             MH_RD_IBUF_HIGH: begin
                 //last poly, write higher dword of max idx buf to reg API
                 read_fsm_state_ns   = MH_IDLE;
-                max_index_buffer_rd_hi = 'b1;
+                max_index_buffer_rd_hi = 1'b1;
             end
             default: begin
                 read_fsm_state_ns   = MH_IDLE;
@@ -371,7 +338,7 @@ module makehint
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
-                .enable(hintgen_enable_reg),
+                .enable(mem_rd_data_valid),
                 .r(r[(REG_SIZE*i)+(REG_SIZE-2):(REG_SIZE*i)]), //remove MSB 0 since coeff coming from memory is 24 bit
                 .z_neq_z(z[i]),
                 .h(hint[i])

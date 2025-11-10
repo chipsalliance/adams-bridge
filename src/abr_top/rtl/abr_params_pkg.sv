@@ -34,6 +34,8 @@ package abr_params_pkg;
   parameter MLDSA_N = 256;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
   parameter MLDSA_K = 8;
+  parameter MLDSA_D = 13;
+  parameter MLDSA_ETA = 2;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
 
   parameter MLKEM_NTT_N = 128;
@@ -105,7 +107,7 @@ package abr_params_pkg;
   parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00000000_3030312e; // "1.00"
 
   // Implementation parameters
-  parameter DATA_WIDTH = 32;
+  parameter ABR_REG_WIDTH = 32;
 
   //Common structs
   typedef enum logic [1:0] {RW_IDLE = 2'b00, RW_READ = 2'b01, RW_WRITE = 2'b10} mem_rw_mode_e;

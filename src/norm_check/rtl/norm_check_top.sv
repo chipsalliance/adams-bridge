@@ -46,20 +46,20 @@ module norm_check_top
 
         input wire [ABR_MEM_ADDR_WIDTH-1:0] mem_base_addr,
         output mem_if_t mem_rd_req,
-        input [4*REG_SIZE-1:0] mem_rd_data,
+        input logic mem_rd_data_valid,
+        input logic [4*REG_SIZE-1:0] mem_rd_data,
         output logic invalid,
         output logic norm_check_ready,
         output logic norm_check_done
     );
 
     logic [3:0] check_a_invalid;
-    logic check_enable, check_enable_reg;
-    logic norm_check_done_int;
+    logic norm_check_done_rd;
 
     generate 
         for (genvar i = 0; i < 4; i++) begin : gen_check_a_invalid
             norm_check check_inst (
-                .enable(check_enable_reg),
+                .enable(mem_rd_data_valid),
                 .mode(mode),
                 .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .invalid(check_a_invalid[i])
@@ -69,18 +69,19 @@ module norm_check_top
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            norm_check_done <= 'b0;
+            norm_check_done <= '0;
         else if (zeroize)
-            norm_check_done <= 'b0;
+            norm_check_done <= '0;
         else
-            norm_check_done <= norm_check_done_int;
+            //signal done once reads have all been issued and processed
+            norm_check_done <= norm_check_done_rd & ~mem_rd_data_valid;
     end
 
     always_ff @(posedge clk or negedge reset_n) begin
         if  (!reset_n) 
-            invalid <= 'b0;
+            invalid <= '0;
         else if (zeroize | norm_check_done) 
-            invalid <= 'b0;
+            invalid <= '0;
         else 
             invalid <= invalid | (|check_a_invalid);// |  (|check_b_invalid);
     end
@@ -89,16 +90,13 @@ module norm_check_top
     //Give one cycle for HLC to capture invalid flag
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)  begin
-            norm_check_ready         <= 'b0;
-            check_enable_reg         <= 'b0;
+            norm_check_ready         <= '0;
         end
         else if (zeroize)  begin
-            norm_check_ready         <= 'b0;
-            check_enable_reg         <= 'b0;
+            norm_check_ready         <= '0;
         end
         else  begin
             norm_check_ready         <= norm_check_done;
-            check_enable_reg         <= check_enable;
         end
 
     end
@@ -110,11 +108,10 @@ module norm_check_top
         .zeroize(zeroize),
         .norm_check_enable(norm_check_enable),
         .randomness(randomness),
-        .mode(mode),
         .mem_base_addr(mem_base_addr),
         .mem_rd_req(mem_rd_req),
-        .norm_check_done(norm_check_done_int),
-        .check_enable(check_enable)
+        .mem_rd_data_valid(mem_rd_data_valid),
+        .norm_check_done(norm_check_done_rd)
     );
 
 

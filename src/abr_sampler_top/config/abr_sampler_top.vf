@@ -25,6 +25,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso_multi.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_piso.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_sample_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_msg_buffer.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_rd_lat_buffer.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_slv_sif.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_AND.sv
