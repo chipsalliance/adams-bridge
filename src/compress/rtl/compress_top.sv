@@ -54,7 +54,6 @@ module compress_top
     localparam COMP_DATA_W = MLKEM_Q_WIDTH;
 
     logic [COEFF_PER_CLK-1:0][MLKEM_Q_WIDTH-1:0] compress_data_o, compress_data;
-    logic [COMP_DATA_W-1:0] compress_data_valid;
     logic read_done;
     logic [SRAM_LATENCY:0]buffer_valid;
     logic [SRAM_LATENCY:0][ABR_REG_WIDTH-1:0] buffer_data;
@@ -104,45 +103,54 @@ module compress_top
             compress1: begin
                 d = 1;
                 compress_data = {44'b0, compress_data_o[3][0:0], compress_data_o[2][0:0], compress_data_o[1][0:0],compress_data_o[0][0:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 11);
             end
             compress5: begin
                 d = 5;
                 compress_data = {28'b0, compress_data_o[3][4:0], compress_data_o[2][4:0], compress_data_o[1][4:0],compress_data_o[0][4:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 7);
             end
             compress11: begin
                 d = 11;
                 compress_data = {4'b0, compress_data_o[3][10:0], compress_data_o[2][10:0], compress_data_o[1][10:0],compress_data_o[0][10:0]};
-                compress_data_valid = COMP_DATA_W'({COMP_DATA_W{mem_rd_data_valid}} >> 1);
             end
             compress12: begin
                 d = 12;
                 compress_data = compress_data_o;
-                compress_data_valid = {COMP_DATA_W{mem_rd_data_valid}};
             end
             default: begin
                 d = 0;
                 compress_data = compress_data_o; // Default case
-                compress_data_valid = '0;
             end
         endcase
     end
 
-    abr_sample_buffer #(
-        .BUFFER_DATA_W(4),
-        .NUM_WR(12),
-        .NUM_RD(8)
-    ) compress_sample_buffer_inst (
+    //Multi-rate piso
+    //Compress mode determines the input rate
+    //Output rate is always 32 bits (API width)
+    //Depth is tune to worst case pace for 44 bit input rate
+    abr_piso_multi #(
+        .NUM_MODES(4),
+        .PISO_BUFFER_W(72),
+        .PISO_ACT_INPUT_RATE(48),
+        .PISO_ACT_OUTPUT_RATE(32),
+        `ifdef VERILATOR
+        .INPUT_RATES('{4, 20, 44, 48, 0}),
+        .OUTPUT_RATES('{32, 32, 32, 32, 0})
+        `else
+        .INPUT_RATES('{4, 20, 44, 48}),
+        .OUTPUT_RATES('{32, 32, 32, 32})
+        `endif
+    ) abr_piso_inst (
         .clk(clk),
         .rst_b(reset_n),
         .zeroize(zeroize),
+        .mode(mode),
+        .valid_i(mem_rd_data_valid),
+        .hold_o( ),
         .data_i(compress_data),
-        .data_valid_i(compress_data_valid),
-        .buffer_full_o(),
-        .data_valid_o(buffer_valid[0]),
+        .valid_o(buffer_valid[0]),
+        .hold_i('0),
         .data_o(buffer_data[0])
-    );
+      );
 
     //Compute API write address
     always_ff @(posedge clk or negedge reset_n) begin
