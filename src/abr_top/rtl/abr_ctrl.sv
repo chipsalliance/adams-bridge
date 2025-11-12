@@ -914,7 +914,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sk_raddr = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
   always_comb api_sk_reg_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
-  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]} & ~kv_mlkem_msg_data_present;
 
   always_comb api_sk_reg_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
   always_comb api_keymem_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
