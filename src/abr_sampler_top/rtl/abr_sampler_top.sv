@@ -41,8 +41,8 @@ module abr_sampler_top
   input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_i,
 
   //NTT read from sib_mem
-  input mem_if_t                        sib_mem_rd_req_i,
-  output logic [ABR_MEM_DATA_WIDTH-1:0] sib_mem_rd_data_o,
+  input mem_if_t                                      sib_mem_rd_req_i,
+  output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sib_mem_rd_data_o,
 
   //output
   output logic                     sampler_busy_o,
@@ -124,8 +124,8 @@ module abr_sampler_top
   logic [1:0]                                    sib_mem_cs, sib_mem_cs_mux;
   logic [1:0]                                    sib_mem_we;
   logic [1:0][7:2]                               sib_mem_addr, sib_mem_addr_mux;
-  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_wrdata;
-  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0]            sib_mem_rddata;
+  logic [1:0][3:0][1:0]                          sib_mem_wrdata;
+  logic [1:0][3:0][1:0]                          sib_mem_rddata;
 
   //cbd
   logic                                               cbd_piso_dv;
@@ -579,13 +579,22 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   always_comb sib_mem_cs_mux[0] = (sib_mem_rd_req_i.rd_wr_en == RW_READ) | sib_mem_cs[0];
   always_comb sib_mem_cs_mux[1] = sib_mem_cs[1];
 
-  //ugly expansion of 23->24 bits
-  assign sib_mem_rd_data_o = {1'b0,sib_mem_rddata[0][3],1'b0,sib_mem_rddata[0][2],1'b0,sib_mem_rddata[0][1],1'b0,sib_mem_rddata[0][0]};
+  //Expand encoded sample in ball data
+  always_comb begin
+    for (int i = 0; i < 4; i++) begin
+      unique case (sib_mem_rddata[0][i]) inside
+        2'b00: sib_mem_rd_data_o[i] = 0;
+        2'b01: sib_mem_rd_data_o[i] = 1;
+        2'b11: sib_mem_rd_data_o[i] = MLDSA_Q-1;
+        default: sib_mem_rd_data_o[i] = '0;
+      endcase
+    end
+  end
 
   sib_mem
   #(
-    .DATA_WIDTH((MLDSA_Q_WIDTH-1)*4),
-    .DEPTH     (MLDSA_N/4),
+    .DATA_WIDTH(2*COEFF_PER_CLK), //encoded 2 bits per sample
+    .DEPTH     (MLDSA_N/COEFF_PER_CLK),
     .NUM_PORTS (2)
   )
   sib_mem_inst
@@ -601,7 +610,8 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .rdata_o(sib_mem_rddata)
   );
 
-  sample_in_ball_ctrl #(
+  sample_in_ball_ctrl
+  #(
     .SIB_NUM_SAMPLERS(SIB_NUM_SAMPLERS),
     .SIB_SAMPLE_W(SIB_SAMPLE_W),
     .SIB_TAU(SIB_TAU)

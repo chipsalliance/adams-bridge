@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+`include "abr_sva.svh"
+
 `ifndef RV_FPGA_OPTIMIZE
 module abr_1r1w_ram #(
      parameter DEPTH      = 64
@@ -42,8 +44,13 @@ module abr_1r1w_ram #(
     always @(posedge clk_i) begin
         if (re_i) begin
             rdata_o <= ram[raddr_i];
+        end else begin
+            rdata_o <= '0;
         end
     end
+
+`ABR_ASSERT_NEVER(ABR_MEM_RD_GT_DEPTH, raddr_i >= DEPTH, clk_i, 0, re_i) //no reset here, just enable on reads
+`ABR_ASSERT_NEVER(ABR_MEM_WR_GT_DEPTH, waddr_i >= DEPTH, clk_i, 0, we_i) //no reset here, just enable on writes
 
 endmodule
 

@@ -35,11 +35,11 @@ module sample_in_ball_ctrl
   output logic                                          sib_done_o,
 
   //memory if 
-  output logic [1:0]                         cs_o,
-  output logic [1:0]                         we_o,
-  output logic [1:0][7:2]                    addr_o,
-  output logic [1:0][3:0][MLDSA_Q_WIDTH-1:0] wrdata_o,
-  input  logic [1:0][3:0][MLDSA_Q_WIDTH-1:0] rddata_i
+  output logic [1:0]           cs_o,
+  output logic [1:0]           we_o,
+  output logic [1:0][7:2]      addr_o,
+  output logic [1:0][3:0][1:0] wrdata_o,
+  input  logic [1:0][3:0][1:0] rddata_i
 
   );
   localparam SIB_NUM_DATA_BITS = $bits(data_i);

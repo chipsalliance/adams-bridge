@@ -23,29 +23,29 @@ module sample_in_ball_shuffler
      parameter SIB_SAMPLE_W = 8
   )
   (
-    input logic                          clk,
-    input logic                          rst_b,
-    input logic                          zeroize,
+    input logic                     clk,
+    input logic                     rst_b,
+    input logic                     zeroize,
     //input data
-    input  logic                         valid_i,
-    output logic                         hold_o,
-    input  logic [SIB_SAMPLE_W-1:0]      indexi_i,
-    input  logic [SIB_SAMPLE_W-1:0]      indexj_i,
-    input  logic                         sign_i,
+    input  logic                    valid_i,
+    output logic                    hold_o,
+    input  logic [SIB_SAMPLE_W-1:0] indexi_i,
+    input  logic [SIB_SAMPLE_W-1:0] indexj_i,
+    input  logic                    sign_i,
 
     //memory if 
-    output logic [1:0]                         cs_o,
-    output logic [1:0]                         we_o,
-    output logic [1:0][7:2]                    addr_o,
-    output logic [1:0][3:0][MLDSA_Q_WIDTH-2:0] wrdata_o,
-    input  logic [1:0][3:0][MLDSA_Q_WIDTH-2:0] rddata_i
+    output logic [1:0]           cs_o,
+    output logic [1:0]           we_o,
+    output logic [1:0][7:2]      addr_o,
+    output logic [1:0][3:0][1:0] wrdata_o,
+    input  logic [1:0][3:0][1:0] rddata_i
 
   );
 
   logic read_valid;
   logic addr_match;
-  logic [MLDSA_Q_WIDTH-2:0] nxt_i, nxt_j;
-  logic [3:0][MLDSA_Q_WIDTH-2:0] wrdata_pre;
+  logic [1:0] nxt_i, nxt_j;
+  logic [3:0][1:0] wrdata_pre;
 
   //hold the first phase
   always_comb hold_o = valid_i & ~read_valid;
@@ -70,7 +70,8 @@ module sample_in_ball_shuffler
   always_comb addr_match = indexi_i[7:2] == indexj_i[7:2];
 
   //Assign the nxt j value (contents of i, modified by sign bit)
-  always_comb nxt_j = sign_i ? MLDSA_Q-1 : 1;
+  //Encode Q-1 as 3, and 1 as 1 in 2 bits
+  always_comb nxt_j = sign_i ? 3 : 1;
 
   //Write nxt_j into indexj_i location
   always_comb begin

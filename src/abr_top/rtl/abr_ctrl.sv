@@ -568,6 +568,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [MsgWidth-1:0] counter_reg;
 
   logic zeroize_mem_we;
+  logic zeroize_mem_we_pk, zeroize_mem_we_sk, zeroize_mem_we_sig;
   logic [ABR_MEM_ADDR_WIDTH-1:0] zeroize_mem_addr;
   logic zeroize_mem_done;
   
@@ -981,7 +982,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       compress_keymem_we_bank[i] = compress_api_rw_en_i[0] & (compress_api_rw_addr_i[0] == i);
 
       sk_ram_we_bank[i] = skencode_keymem_we_bank[i] | pwr2rnd_keymem_we_bank[i] | compress_keymem_we_bank[i] |api_keymem_we_bank[i] |
-                          mlkem_api_dk_we_bank[i] | mlkem_api_ek_we_bank[i] | mlkem_api_ct_we_bank[i] | mlkem_api_msg_we_bank[i] | zeroize_mem_we;
+                          mlkem_api_dk_we_bank[i] | mlkem_api_ek_we_bank[i] | mlkem_api_ct_we_bank[i] | mlkem_api_msg_we_bank[i] | zeroize_mem_we_sk;
 
       sk_ram_waddr_bank[i] = ({SK_MEM_BANK_ADDR_W{skencode_keymem_we_bank[i]}} & skencode_keymem_if_i.addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_keymem_if_i[i].addr[SK_MEM_BANK_ADDR_W:1] ) |
@@ -991,7 +992,7 @@ always_comb kv_mlkem_msg_write_data = '0;
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ek_we_bank[i]}} & mlkem_api_ek_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_ct_we_bank[i]}} & mlkem_api_ct_mem_addr[SK_MEM_BANK_ADDR_W:1]) |
                              ({SK_MEM_BANK_ADDR_W{mlkem_api_msg_we_bank[i]}} & mlkem_api_msg_mem_waddr[SK_MEM_BANK_ADDR_W:1]) |
-                             ({SK_MEM_BANK_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SK_MEM_BANK_ADDR_W-1:0]);
+                             ({SK_MEM_BANK_ADDR_W{zeroize_mem_we_sk}} & zeroize_mem_addr[SK_MEM_BANK_ADDR_W-1:0]);
                  
       sk_ram_wdata[i] = ({ABR_REG_WIDTH{skencode_keymem_we_bank[i]}} & skencode_wr_data_i) |
                         ({ABR_REG_WIDTH{pwr2rnd_keymem_we_bank[i]}} & pwr2rnd_wr_data_i[i]) |
@@ -1112,14 +1113,14 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb sigdecode_z_rd_data_valid_o = sigdecode_z_ram_re[SRAM_LATENCY];
 
   //write requests
-  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we;
+  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we_sig;
   always_comb sig_z_ram_waddr = ({SIG_Z_MEM_ADDR_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
                                 ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr[0].addr) |
-                                ({SIG_Z_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]);
+                                ({SIG_Z_MEM_ADDR_W{zeroize_mem_we_sig}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]);
 
   always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
                                   ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr[0].offset*4)) |
-                                  ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we}});
+                                  ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we_sig}});
 
 
   always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
@@ -1220,14 +1221,14 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb pkdecode_rd_data_valid_o = pkdecode_rd_en[SRAM_LATENCY];
 
   //write requests
-  always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we | zeroize_mem_we;
+  always_comb pubkey_ram_we = (pk_t1_wren_i) | api_pubkey_we | zeroize_mem_we_pk;
   always_comb pubkey_ram_waddr = ({PK_MEM_ADDR_W{pk_t1_wren_i}} & pk_t1_wr_addr_i[PK_MEM_ADDR_W+1:2]) |
                                 ({PK_MEM_ADDR_W{api_pubkey_we}} & api_pubkey_mem_addr[0].addr) |
-                                ({PK_MEM_ADDR_W{zeroize_mem_we}} & zeroize_mem_addr[PK_MEM_ADDR_W-1:0]);
+                                ({PK_MEM_ADDR_W{zeroize_mem_we_pk}} & zeroize_mem_addr[PK_MEM_ADDR_W-1:0]);
 
   always_comb pubkey_ram_wstrobe = ({PK_MEM_WSTROBE_W{pk_t1_wren_i}} & PK_MEM_WSTROBE_W'('h3FF << pk_t1_wr_addr_i[1:0]*10)) |
                                    ({PK_MEM_WSTROBE_W{api_pubkey_we}} & PK_MEM_WSTROBE_W'('hF << api_pubkey_mem_addr[0].offset*4)) |
-                                   ({PK_MEM_WSTROBE_W{zeroize_mem_we}});
+                                   ({PK_MEM_WSTROBE_W{zeroize_mem_we_pk}});
 
 
   always_comb pubkey_ram_wdata = ({PK_MEM_DATA_W{pk_t1_wren_i}} & PK_MEM_DATA_W'(pk_t1_wrdata_i << pk_t1_wr_addr_i[1:0]*80)) |
@@ -1536,9 +1537,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     if (!rst_b)
       external_mu_mode <= 0;  
     else if (zeroize | mldsa_process_done)
-      external_mu_mode <= 0;  
-    else if (mldsa_process_done)
-      external_mu_mode <= 0;
+      external_mu_mode <= 0; 
     else 
       external_mu_mode <= external_mu_mode | external_mu_mode_nxt;
   end
@@ -2172,7 +2171,7 @@ always_ff @(posedge clk or negedge rst_b) begin
     zeroize_mem_done <= 0;
   end
   else if (abr_prog_cntr == ABR_ZEROIZE) begin
-    if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH) begin
+    if (zeroize_mem_addr == ABR_MEM_MAX_DEPTH-1) begin
       zeroize_mem_addr <= 0;
       zeroize_mem_done <= 1;
     end else if (!zeroize_mem_done) begin
@@ -2185,7 +2184,9 @@ always_ff @(posedge clk or negedge rst_b) begin
 end
 
 always_comb zeroize_mem_we = (abr_prog_cntr == ABR_ZEROIZE) & !zeroize_mem_done;
-
+always_comb zeroize_mem_we_pk = zeroize_mem_we && zeroize_mem_o.addr < PK_MEM_DEPTH;
+always_comb zeroize_mem_we_sk = zeroize_mem_we && zeroize_mem_o.addr < SK_MEM_BANK_DEPTH;
+always_comb zeroize_mem_we_sig = zeroize_mem_we && zeroize_mem_o.addr < SIG_Z_MEM_DEPTH;
 always_comb zeroize_mem_o.rd_wr_en = zeroize_mem_we? RW_WRITE : RW_IDLE;
 always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   

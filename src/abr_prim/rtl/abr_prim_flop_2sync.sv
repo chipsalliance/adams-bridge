@@ -20,7 +20,7 @@ module abr_prim_flop_2sync #(
   logic [Width-1:0] d_o;
   logic [Width-1:0] intq;
 
-`ifdef ABR_SIMULATION
+`ifdef SIMULATION
 
   abr_prim_cdc_rand_delay #(
     .DataWidth(Width),
@@ -32,11 +32,11 @@ module abr_prim_flop_2sync #(
     .prev_data_i(intq),
     .dst_data_o(d_o)
   );
-`else // !`ifdef ABR_SIMULATION
+`else // !`ifdef SIMULATION
   logic unused_sig;
   assign unused_sig = EnablePrimCdcRand;
   always_comb d_o = d_i;
-`endif // !`ifdef ABR_SIMULATION
+`endif // !`ifdef SIMULATION
 
   abr_prim_flop #(
     .Width(Width),
