@@ -5,7 +5,7 @@ pr\_\* objects are used to validate a Pull Request run. This is in support of an
   1. Contributor runs an internal workflow on a branch that contains the merge of the feature branch into main. This workflow includes the complete test-suite and (possibly) some additional checks required by the company policy of that contributor
       - All contributors MUST perform the following checks in their development pipeline:
         - VCS test of the complete L0 regression suite (smoke tests)
-        - Lint check run against adamsbridge_top
+        - Lint check run against abr_top
   1. Upon successfully completing, the internal workflow runs the script [stamp_repo.sh](../scripts/stamp_repo.sh). This script:
       - Updates the pr\_timestamp file to the current date
       - Runs the hash script [file_hash.sh](../scripts/file_hash.sh) to measure the code that the workflow ran on (including the pr\_timestamp file)
@@ -18,4 +18,10 @@ pr\_\* objects are used to validate a Pull Request run. This is in support of an
       - Pull Request runs a hash on the branch fileset (including the timestamp), compares with the contents of pr\_hash. If the hash mismatches, the feature branch is considered to have failed the internal workflow
   1. Pull Request is allowed to be merged only once all Actions complete successfully
 
-The Pull Request run ignores updates to documentation files. That is, commits containing only markdown (.md) or image (.png) files are not required to pass the timestamp/hash check.
+The Pull Request run ignores updates to documentation files. That is, commits containing only the following files are not required to pass the timestamp/hash check.
+
+* Markdown (.md)
+* Images (.png, .jpg)
+* Github Workflows (.github/workflows/**)
+* Spreadsheets (.xlsx, .xls)
+

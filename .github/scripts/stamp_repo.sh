@@ -22,7 +22,7 @@ if [[ -z "${ADAMSBRIDGE_ROOT:+"empty"}" ]]; then
 fi
 
 # Create file list
-find "$ADAMSBRIDGE_ROOT" -type f -name "*.sv" \
+find "$ADAMSBRIDGE_ROOT" -type f \( -name "*.sv" \
                            -o -name "*.svh" \
                            -o -name "*.rdl" \
                            -o -name "*.json" \
@@ -39,7 +39,7 @@ find "$ADAMSBRIDGE_ROOT" -type f -name "*.sv" \
                            -o -name "*.yml" \
                            -o -name "*.sh" \
                            -o -name "*.py" \
-                           -o -name "pr_timestamp" \
+                           -o -name "pr_timestamp" \) \
                            ! -path "*.github/workflows/*" \
                            ! -path "*.git/*" | LC_COLLATE=C sort -o $ADAMSBRIDGE_ROOT/.github/workflow_metadata/file_list.txt
 sed -i "s,^$ADAMSBRIDGE_ROOT/,," $ADAMSBRIDGE_ROOT/.github/workflow_metadata/file_list.txt
