@@ -110,7 +110,8 @@ Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
 
 ### EXTERNAL_MU 
 
-Enable External_Mu Mode. (this mode is hard turned off for now.)
+Enable External_Mu Mode.
+
 The External_mu variant of ML-DSA modifies the standard signing and verifying process by allowing the precomputed mu to be externally provided instead of being internally derived from the message and public key. In this variant, the signing procedure accepts mu as an explicit input, making it suitable for environments where mu is generated offline for efficiency. While the core signing and verifying algorithm remains unchanged, the message input register is ignored in this mode.
 
 ### STREAM_MSG 
