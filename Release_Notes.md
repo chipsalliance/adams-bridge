@@ -16,6 +16,24 @@ limitations under the License.*_<BR>
 # **Release Notes** #
 _*Last Update: 2025/10/07*_
 
+### Rev 2p0p1 ###
+
+#### Rev 2p0p1 release date: 2025/10/07 ####
+- AdamsBridge Hardware Specification: see docs/ folder
+- AdamsBridge SCA Specification: see docs/ folder
+- AdamsBridge testplan: see docs/ folder
+- ML-DSA-87 – Based on FIPS204
+- ML-KEM-1024 – Based on FIPS203
+- [RTL] Mask MLDSA private key writes when KV data is present
+    - Fix for Caliptra issue [#1118](https://github.com/chipsalliance/caliptra-rtl/issues/1118)
+- Verification
+    - Smoke tests for all scenarios described in test plan passing
+    - Nightly regressions on-going
+    - UVM for ML-DSA-87 and ML-KEM 1024
+    - Formal Verification sign off for ML-KEM complete
+
+## Previous Releases ##
+
 ### Rev 2p0 ###
 
 #### Rev 2p0 release date: 2025/10/07 ####
@@ -29,8 +47,6 @@ _*Last Update: 2025/10/07*_
     - Nightly regressions on-going
     - UVM for ML-DSA-87 and ML-KEM 1024
     - Formal Verification sign off for ML-KEM complete
-
-## Previous Releases ##
 
 ### Rev 2p0-rc1 ###
 - AdamsBridge Hardware Specification: see docs/ folder
