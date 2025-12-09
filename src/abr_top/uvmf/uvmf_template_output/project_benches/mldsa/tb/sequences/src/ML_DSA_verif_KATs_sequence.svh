@@ -97,7 +97,6 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
         ready = data[0];
       end
 
-
       // Writing the PK into the MLDSA_PUBKEY register array
       for (int j = 0; j < reg_model.MLDSA_PUBKEY.m_mem.get_size(); j++) begin
         reg_model.MLDSA_PUBKEY.m_mem.write(status, j, kat_PK[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -157,9 +156,9 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
         end
 
         if (data !== VERIFY_RES[j]) begin
-          `uvm_error("VALIDATION_FAIL", $sformatf("SIG mismatch for KAT %0d at index %0d: Expected %h, Got %h", i, j, SIG[j], data));
+          `uvm_error("VALIDATION_FAIL", $sformatf("VERIFY_RES mismatch for KAT %0d at index %0d: Expected %h, Got %h", i, j, VERIFY_RES[j], data));
         end else begin
-          `uvm_info("VALIDATION_PASS", $sformatf("SIG match for KAT %0d at index %0d: %h", i, j, data), UVM_LOW);
+          `uvm_info("VALIDATION_PASS", $sformatf("VERIFY_RES match for KAT %0d at index %0d: %h", i, j, data), UVM_LOW);
         end
       end
 
@@ -174,7 +173,7 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
     end
 
 
-    `uvm_info("KAT", $sformatf("signing KAT validation completed"), UVM_LOW);
+    `uvm_info("KAT", $sformatf("verif KAT validation completed"), UVM_LOW);
 
 
   endtask
