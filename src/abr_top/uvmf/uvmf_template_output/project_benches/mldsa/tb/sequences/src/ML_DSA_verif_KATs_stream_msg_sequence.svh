@@ -112,16 +112,6 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
         end
       end
 
-      // Write MSG to MLDSA_MSG registers
-      foreach (reg_model.MLDSA_MSG[j]) begin
-        reg_model.MLDSA_MSG[j].write(status, kat_MSG[j], UVM_FRONTDOOR, reg_model.default_map, this);
-        if (status != UVM_IS_OK) begin
-          `uvm_error("REG_WRITE_FAIL", $sformatf("Failed to write MLDSA_MSG[%0d] for KAT %0d", j, i));
-        end else begin
-          `uvm_info("REG_WRITE_PASS", $sformatf("Successfully wrote MLDSA_MSG[%0d]: %h", j, kat_MSG[j]), UVM_LOW);
-        end
-      end
-
       // Writing the SIGNATURE into the MLDSA_SIGNATURE register array
       for (int j = 0; j < reg_model.MLDSA_SIGNATURE.m_mem.get_size(); j++) begin
         reg_model.MLDSA_SIGNATURE.m_mem.write(status, j, kat_SIG[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -151,8 +141,15 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
         stream_msg_rdy = data[2];
       end
 
+      //write 0 to strobe since it's aligned to trigger end
+      reg_model.MLDSA_MSG_STROBE.write(status, 4'b1111, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (status != UVM_IS_OK) begin
+        `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_MSG_STROBE"));
+      end else begin
+        `uvm_info("REG_WRITE", $sformatf("MLDSA_MSG_STROBE written with %0h", 0), UVM_LOW);
+      end
       // Writing MLDSA_MSG register
-      // Hack to stream normal message in through streaming interface
+      // Stream message in through streaming interface
       foreach (MSG[j]) begin
         reg_model.MLDSA_MSG[0].write(status, kat_MSG[j], UVM_FRONTDOOR, reg_model.default_map, this);
         if (status != UVM_IS_OK) begin
@@ -196,9 +193,9 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
         end
 
         if (data !== VERIFY_RES[j]) begin
-          `uvm_error("VALIDATION_FAIL", $sformatf("SIG mismatch for KAT %0d at index %0d: Expected %h, Got %h", i, j, SIG[j], data));
+          `uvm_error("VALIDATION_FAIL", $sformatf("VERIFY_RES mismatch for KAT %0d at index %0d: Expected %h, Got %h", i, j, VERIFY_RES[j], data));
         end else begin
-          `uvm_info("VALIDATION_PASS", $sformatf("SIG match for KAT %0d at index %0d: %h", i, j, data), UVM_LOW);
+          `uvm_info("VALIDATION_PASS", $sformatf("VERIFY_RES match for KAT %0d at index %0d: %h", i, j, data), UVM_LOW);
         end
       end
 
@@ -213,7 +210,7 @@ class ML_DSA_verif_KATs_stream_msg_sequence extends mldsa_bench_sequence_base;
     end
 
 
-    `uvm_info("KAT", $sformatf("signing KAT validation completed"), UVM_LOW);
+    `uvm_info("KAT", $sformatf("verif KAT validation completed"), UVM_LOW);
 
 
   endtask

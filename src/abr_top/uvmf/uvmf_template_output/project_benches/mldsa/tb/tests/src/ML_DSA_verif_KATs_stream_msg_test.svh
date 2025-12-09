@@ -21,6 +21,9 @@ class ML_DSA_verif_KATs_stream_msg_test extends test_top;
 
   `uvm_component_utils(ML_DSA_verif_KATs_stream_msg_test);
 
+  bit disable_scrboard_from_test;
+  bit disable_pred_from_test;
+
   function new(string name = "", uvm_component parent = null);
     super.new(name, parent);
   endfunction
@@ -33,6 +36,12 @@ class ML_DSA_verif_KATs_stream_msg_test extends test_top;
     super.build_phase(phase);
     // pragma uvmf custom configuration_settings_post_randomize begin
     // UVMF_CHANGE_ME Test specific configuration values can be set here.  
+    disable_scrboard_from_test = 1;
+    disable_pred_from_test = 1;
+
+    uvm_config_db#(bit)::set(null, "*", "disable_scrboard_from_test", disable_scrboard_from_test);
+    uvm_config_db#(bit)::set(null, "*", "disable_pred_from_test", disable_pred_from_test);
+
     // The configuration structure has already been randomized.
     // pragma uvmf custom configuration_settings_post_randomize end
   endfunction
