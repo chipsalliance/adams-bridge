@@ -41,10 +41,14 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     wait_for_done(0, "ready");
     run_operation(32'h1, "KeyGen Operation");
     maybe_reset_mid_op(on_the_fly_zeroize);
-    wait_for_done(0, "ready");
+    if (on_the_fly_zeroize) begin
+      wait_for_done(0, "ready");
+    end else begin
+      wait_for_done(1, "valid");
+    end
     read_ek();
     read_dk();
-    compare_keygen_vectors();
+    compare_keygen_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -57,10 +61,14 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     wait_for_done(0, "ready");
     run_operation(32'h2, "Encap Operation");
     maybe_reset_mid_op(on_the_fly_zeroize);
-    wait_for_done(0, "ready");
+    if (on_the_fly_zeroize) begin
+      wait_for_done(0, "ready");
+    end else begin
+      wait_for_done(1, "valid");
+    end
     read_ciphertext();
     read_shared_key();
-    compare_encap_vectors();
+    compare_encap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -73,9 +81,13 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     wait_for_done(0, "ready");
     run_operation(32'h3, "decap Operation");
     maybe_reset_mid_op(on_the_fly_zeroize);
-    wait_for_done(0, "ready");
+    if (on_the_fly_zeroize) begin
+      wait_for_done(0, "ready");
+    end else begin
+      wait_for_done(1, "valid");
+    end
     read_shared_key();
-    compare_decap_vectors();
+    compare_decap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -88,9 +100,13 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     wait_for_done(0, "ready");
     run_operation(32'h4, "keygen decap Operation");
     maybe_reset_mid_op(on_the_fly_zeroize);
-    wait_for_done(0, "ready");
+    if (on_the_fly_zeroize) begin
+      wait_for_done(0, "ready");
+    end else begin
+      wait_for_done(1, "valid");
+    end
     read_shared_key();
-    compare_decap_vectors();
+    compare_decap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask

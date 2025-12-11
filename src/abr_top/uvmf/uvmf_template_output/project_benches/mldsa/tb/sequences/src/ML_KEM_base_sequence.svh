@@ -331,9 +331,10 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
     end 
   endtask
 
-  task compare_keygen_vectors();
+  task compare_keygen_vectors(bit error_flag = 0);
     // Compare Encapsulation Key (ek)
     foreach (expected_ek[i]) begin
+      if (error_flag) expected_ek[i] = '0;
       if (actual_ek[i] !== expected_ek[i]) begin
         `uvm_error("EK_MISMATCH",
           $sformatf("ek[%0d] mismatch: expected %08h, actual %08h",
@@ -347,6 +348,7 @@ class ML_KEM_base_sequence extends mldsa_bench_sequence_base;
   
     // Compare Decapsulation Key (dk)
     foreach (expected_dk[j]) begin
+      if (error_flag) expected_dk[j] = '0;
       if (actual_dk[j] !== expected_dk[j]) begin
         `uvm_error("DK_MISMATCH",
           $sformatf("dk[%0d] mismatch: expected %08h, actual %08h",
