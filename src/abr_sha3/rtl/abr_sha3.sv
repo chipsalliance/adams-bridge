@@ -356,7 +356,12 @@ module abr_sha3
         end
       end
 
+      StTerminalError_sparse: begin
+        // Do nothing
+      end
+      
       default: begin
+        // Do nothing
       end
     endcase
   end

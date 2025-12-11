@@ -146,7 +146,7 @@ module ntt_masked_gs_butterfly
         .rnd1(rnd_i[3]),
         .rnd2(rnd_i[0]),
         .rnd3(rnd_i[1]),
-        .rnd4(WIDTH'(rnd_i[2]+rnd_i[3])),
+        .rnd4(rnd_i[4]),
         .res(mul_res)
     );
 

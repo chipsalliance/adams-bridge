@@ -121,7 +121,7 @@ module skdecode_ctrl
     end
 
     //Write addr counter
-    always_comb mem_wr_addr_nxt = mem_wr_addr + 1'b1;
+    always_comb mem_wr_addr_nxt = (s1_mode | s2_mode) ? (mem_wr_addr + 2) : (mem_wr_addr + 1);
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
@@ -342,10 +342,10 @@ module skdecode_ctrl
 
     //Outputs
     always_comb begin
-        mem_a_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) : '0;
+        mem_a_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? {mem_wr_addr[ABR_MEM_ADDR_WIDTH-1:1],1'b0} : '0;
         mem_a_wr_req.rd_wr_en   = t0_mode & mem_a_wr_req.addr[0] ? RW_IDLE : mem_rw_mode;
 
-        mem_b_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? (mem_wr_addr << 1) + 1'b1 : '0;
+        mem_b_wr_req.addr       = t0_mode ? mem_wr_addr : (s1_mode | s2_mode) ? {mem_wr_addr[ABR_MEM_ADDR_WIDTH-1:1],1'b1} : '0;
         mem_b_wr_req.rd_wr_en   = t0_mode & ~mem_a_wr_req.addr[0]? RW_IDLE : mem_rw_mode;
 
         kmem_a_rd_req.addr      = kmem_rd_addr;

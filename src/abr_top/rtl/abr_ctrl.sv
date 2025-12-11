@@ -742,12 +742,12 @@ always_comb kv_mlkem_msg_write_data = '0;
     stream_msg_mode = abr_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
     abr_reg_hwif_in.MLDSA_CTRL.STREAM_MSG.hwclr = zeroize;
 
-    for (int dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < ENTROPY_NUM_DWORDS; dword++) begin
       entropy_reg[dword] = abr_reg_hwif_out.ABR_ENTROPY[dword].ENTROPY.value;
       abr_reg_hwif_in.ABR_ENTROPY[dword].ENTROPY.hwclr = zeroize;
     end
 
-    for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mldsa_seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
@@ -764,7 +764,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       `endif
     end
   
-    for (int dword=0; dword < MLDSA_MSG_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < MLDSA_MSG_NUM_DWORDS; dword++) begin
       msg_reg[dword] = external_mu_mode? '0 : abr_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
@@ -778,19 +778,19 @@ always_comb kv_mlkem_msg_write_data = '0;
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.swwe = abr_ready | stream_msg_rdy;
     end
 
-    for (int dword=0; dword < MU_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < MU_NUM_DWORDS; dword++) begin
       external_mu_reg[dword] = abr_reg_hwif_out.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.value;
       abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we = internal_mu_we & !external_mu & !zeroize;
       abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next = internal_mu_reg[dword];
       abr_reg_hwif_in.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr = zeroize;
     end
   
-    for (int dword=0; dword < SIGN_RND_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < SIGN_RND_NUM_DWORDS; dword++) begin
       sign_rnd_reg[dword] = abr_reg_hwif_out.MLDSA_SIGN_RND[dword].SIGN_RND.value;
       abr_reg_hwif_in.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr = zeroize;
     end
   
-    for (int dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
+    for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
@@ -799,7 +799,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.swwe = stream_msg_rdy;
     abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.hwclr = zeroize;
 
-    for (int dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
+    for (int unsigned dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
       ctx_reg[dword] = abr_reg_hwif_out.MLDSA_CTX[dword].CTX.value;
       abr_reg_hwif_in.MLDSA_CTX[dword].CTX.hwclr = zeroize;
     end
@@ -816,7 +816,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLKEM_STATUS.VALID.next = mlkem_valid_reg;
     abr_reg_hwif_in.MLKEM_STATUS.ERROR.next = error_flag_reg;
 
-    for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == dword))) & ~zeroize;
@@ -832,11 +832,11 @@ always_comb kv_mlkem_msg_write_data = '0;
       `endif
     end
 
-    for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       abr_reg_hwif_in.MLKEM_SEED_Z[dword].wr_ack = abr_reg_hwif_out.MLKEM_SEED_Z[dword].req & abr_reg_hwif_out.MLKEM_SEED_Z[dword].req_is_wr;
     end
 
-    for (int dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
+    for (int unsigned dword=0; dword < SHAREDKEY_NUM_DWORDS; dword++) begin
       abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_ack = abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req & ~abr_reg_hwif_out.MLKEM_SHARED_KEY[dword].req_is_wr;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLKEM_SHARED_KEY[dword].rd_data = mlkem_valid_reg & ~dest_keyvault & ~kv_mlkem_seed_data_present & ~kv_mlkem_msg_data_present ? 
@@ -971,7 +971,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   //Secret Key Write Interface
   always_comb begin
-    for (int i = 0; i < 2; i++) begin
+    for (int unsigned i = 0; i < 2; i++) begin
       skencode_keymem_we_bank[i] = ((skencode_keymem_if_i.rd_wr_en == RW_WRITE) & (skencode_keymem_if_i.addr[0] == i));
       pwr2rnd_keymem_we_bank[i] = (pwr2rnd_keymem_if_i[i].rd_wr_en == RW_WRITE);
       api_keymem_we_bank[i] = abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & abr_ready & api_keymem_wr_dec & (api_sk_mem_waddr[0] == i);
@@ -1009,7 +1009,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb decompress_keymem_re[0] = decompress_api_rd_en_i;
 
   always_comb begin
-    for (int i = 0; i < 2; i++) begin
+    for (int unsigned i = 0; i < 2; i++) begin
       api_sk_re_bank[i] = api_keymem_rd_vld & api_keymem_rd_dec & (api_sk_mem_raddr[0] == i);
       mlkem_api_dk_re_bank[i] = mlkem_api_dk_rd_vld & mlkem_api_dk_mem_dec & (mlkem_api_dk_mem_addr[0] == i);
       mlkem_api_ek_re_bank[i] = mlkem_api_ek_rd_vld & mlkem_api_ek_mem_dec & (mlkem_api_ek_mem_addr[0] == i);
@@ -1139,7 +1139,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       if (sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
         signature_reg.enc.c <= sampler_state_data_i[0][511:0];
       end else if (abr_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-        for (int dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
+        for (int unsigned dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
           signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
         end
       end
@@ -1147,7 +1147,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       if (set_signature_valid) begin
         signature_reg.enc.h <= '0;
       end else if (makehint_reg_wren_i) begin
-        for (int dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
+        for (int unsigned dword = 0; dword < SIGNATURE_H_NUM_DWORDS; dword++) begin
           if (makehint_reg_wr_addr_i == dword)
             signature_reg.enc.h[dword] <= signature_reg.enc.h[dword] | makehint_reg_wrdata_i;
         end
@@ -1159,7 +1159,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb begin
     //HW read h
-    for (int i = 0; i < SIGNATURE_H_VALID_NUM_BYTES; i++) begin
+    for (int unsigned i = 0; i < SIGNATURE_H_VALID_NUM_BYTES; i++) begin
       signature_h_o[i] = signature_reg.enc.h[i/4][(i%4)*8 +: 8];
     end
   end
@@ -1200,8 +1200,8 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb begin
       sampler_pk_rd_en[0] = (sampler_src == MLDSA_PK_REG_ID) & (sampler_src_offset inside {[4:324]});
-      sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset- 4)/(PK_MEM_NUM_DWORDS/2));
-      sampler_pubkey_mem_addr.offset = (sampler_src_offset- 4)%(PK_MEM_NUM_DWORDS/2);
+      sampler_pubkey_mem_addr.addr = PK_MEM_ADDR_W'((sampler_src_offset - 4)/(PK_MEM_NUM_DWORDS_HALF));
+      sampler_pubkey_mem_addr.offset = (sampler_src_offset - 4)%(PK_MEM_NUM_DWORDS_HALF);
   end
   //read requests
   always_comb pubkey_ram_re = sampler_pk_rd_en[0] | pkdecode_rd_en[0] | api_pubkey_re[0];
@@ -1343,7 +1343,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_K_ID:           msg_data <= abr_scratch_reg.mldsa_enc.K[sampler_src_offset[1:0]];
         MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
         MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
+        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,16'(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
         ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
@@ -1422,7 +1422,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       abr_scratch_reg.raw[api_pk_reg_waddr] <= abr_reg_hwif_out.MLDSA_PUBKEY.wr_data;
     end
     else begin
-      for (int i = 0; i < SEED_NUM_DWORDS; i++) begin
+      for (int unsigned i = 0; i < SEED_NUM_DWORDS; i++) begin
         if (abr_reg_hwif_out.MLKEM_SEED_Z[i].req & abr_reg_hwif_out.MLKEM_SEED_Z[i].req_is_wr & abr_ready & ~kv_mlkem_seed_data_present) begin
           abr_scratch_reg.mlkem_enc.seed_z[i] <= abr_reg_hwif_out.MLKEM_SEED_Z[i].wr_data;
         end

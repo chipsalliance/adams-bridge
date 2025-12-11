@@ -21,20 +21,16 @@
 // that is stored in memory as coefficients for further processing
 
 module skdecode_t0_unpack
-    #(
-        parameter REG_SIZE = 23,
-        parameter MLDSA_Q = 8380417,
-        parameter MLDSA_D = 13
-    )
+    import abr_params_pkg::*;
     (
-        input wire clk,
-        input wire reset_n,
-        input wire zeroize,
+        input logic clk,
+        input logic reset_n,
+        input logic zeroize,
 
-        input wire enable,
-        input wire sub_i,
-        input wire [MLDSA_D-1:0] data_i,
-        output logic [REG_SIZE:0] data_o, //TODO: clean up. At top level, data_o is 24-bits, so add 1 more bit here and assign 0
+        input logic enable,
+        input logic sub_i,
+        input logic [MLDSA_D-1:0] data_i,
+        output logic [REG_SIZE-1:0] data_o,
         output logic valid_o
     );
 
@@ -99,14 +95,14 @@ module skdecode_t0_unpack
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) 
-            valid_o <= 'b0;
+            valid_o <= 1'b0;
         else if (zeroize) 
-            valid_o <= 'b0;
+            valid_o <= 1'b0;
         else 
             valid_o <= enable;
     end
 
-    assign data_o = sub_n ? (carry0_reg ^ carry1) ? (REG_SIZE+1)'(r1) : (REG_SIZE+1)'(r0_reg)
-                          : (carry0_reg) ? (REG_SIZE+1)'(r0_reg) : (REG_SIZE+1)'(r1);
+    assign data_o = sub_n ? (carry0_reg ^ carry1) ? (REG_SIZE)'(r1) : (REG_SIZE)'(r0_reg)
+                          : (carry0_reg) ? (REG_SIZE)'(r0_reg) : (REG_SIZE)'(r1);
 
 endmodule

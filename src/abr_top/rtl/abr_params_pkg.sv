@@ -36,6 +36,7 @@ package abr_params_pkg;
   parameter MLDSA_K = 8;
   parameter MLDSA_D = 13;
   parameter MLDSA_ETA = 2;
+  parameter MLDSA_ETA_W = 3;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
 
   parameter MLKEM_NTT_N = 128;

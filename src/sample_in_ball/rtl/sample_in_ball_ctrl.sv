@@ -183,7 +183,7 @@ module sample_in_ball_ctrl
         sampler_mask_d[i] = 0;
         if (sampler_valid[i]) begin
           index_found = 1;
-          valid_index = i[$clog2(SIB_NUM_SAMPLERS)-1:0];
+          valid_index = i;
         end
       end
     end
