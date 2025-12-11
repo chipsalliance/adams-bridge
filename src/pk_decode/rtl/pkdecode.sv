@@ -61,7 +61,7 @@ module pkdecode
                 PKDECODE_DONE  = 2'b11;
 
     // Internal signals
-    logic [7:0][REG_SIZE-1:0] coefficients;  // Extracted 10-bit coefficients
+    logic [7:0][COEFF_WIDTH-1:0] coefficients;  // Extracted 10-bit coefficients
     logic [7:0][REG_SIZE-1:0] encoded_coeffs; // Encoded 24-bit coefficients
     logic [ABR_MEM_ADDR_WIDTH-1:0] locked_dest_addr;
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
@@ -114,14 +114,14 @@ module pkdecode
     // Extract 10-bit coefficients from API_rd_data
     always_comb begin
         for (int i = 0; i < NUM_COEFFS_PER_CYCLE; i++) begin
-            coefficients[i] = {14'h0, API_rd_data[COEFF_WIDTH*i +: COEFF_WIDTH]};
+            coefficients[i] = API_rd_data[COEFF_WIDTH*i +: COEFF_WIDTH];
         end
     end
 
     // Encode coefficients into 24-bit format
     always_comb begin
         for (int i = 0; i < NUM_COEFFS_PER_CYCLE; i++) begin
-            encoded_coeffs[i] = (coefficients[i] << SHIFT_LEFT);
+            encoded_coeffs[i] = REG_SIZE'(coefficients[i] << SHIFT_LEFT);
         end
     end
 

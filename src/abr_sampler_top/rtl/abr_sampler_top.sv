@@ -280,8 +280,11 @@ module abr_sampler_top
         zeroize_piso |= sampler_done;
         piso_mode = ABR_CBD_MODE;
       end
+      ABR_SAMPLER_NONE: begin
+        //do nothing
+      end
       default: begin
-
+        //do nothing
       end
     endcase
   end

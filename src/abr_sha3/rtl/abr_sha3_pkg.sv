@@ -149,7 +149,6 @@ package abr_sha3_pkg;
   typedef enum logic [StateWidthLogic-1:0] {
     StIdle,
     StAbsorb,
-    //StAbort,
     StSqueeze,
     StManualRun,
     StFlush,
@@ -158,12 +157,12 @@ package abr_sha3_pkg;
 
   function automatic sha3_st_e sparse2logic(sha3_st_sparse_e st);
     unique case (st)
-      StIdle_sparse      : return StIdle;
-      StAbsorb_sparse    : return StAbsorb;
-      //StAbort_sparse   : return StAbort;
-      StSqueeze_sparse   : return StSqueeze;
-      StManualRun_sparse : return StManualRun;
-      default            : return StError;
+      StIdle_sparse          : return StIdle;
+      StAbsorb_sparse        : return StAbsorb;
+      StSqueeze_sparse       : return StSqueeze;
+      StManualRun_sparse     : return StManualRun;
+      StTerminalError_sparse : return StError;
+      default                : return StError;
     endcase
   endfunction : sparse2logic
 

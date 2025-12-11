@@ -298,8 +298,7 @@ module ntt_butterfly
         .reset_n(reset_n),
         .zeroize(zeroize),
         .opa_i(mlkem ? '0 : 46'(mul_res)),
-        .res_o(mldsa_mul_res_reduced),
-        .ready_o()
+        .res_o(mldsa_mul_res_reduced)
     );
 
     barrett_reduction #(

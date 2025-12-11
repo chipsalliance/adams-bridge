@@ -32,8 +32,7 @@ module ntt_mult_reduction #(
     input wire zeroize,
 
     input wire [(2*REG_SIZE)-1:0] opa_i,
-    output logic [REG_SIZE-1:0] res_o,
-    output logic ready_o
+    output logic [REG_SIZE-1:0] res_o
 );
 
     logic [2*REG_SIZE-1:0] z;

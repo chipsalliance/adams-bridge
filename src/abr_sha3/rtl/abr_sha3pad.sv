@@ -277,7 +277,7 @@ module abr_sha3pad
   // is set by the strength_i, which is `block_addr_limit`.
   logic end_of_block;
 
-  assign end_of_block = ((wr_message + 1'b1) == block_addr_limit) ? 1'b 1 : 1'b 0;
+  assign end_of_block = (MsgCountW'(wr_message + 1'b1) == block_addr_limit);
 
 
   // Next logic and output logic ==============================================
@@ -585,9 +585,9 @@ module abr_sha3pad
       MuxPrefix:  serial_buffer_wrdata = prefix_data;
       MuxFuncPad: serial_buffer_wrdata = funcpad_data;
       MuxZeroEnd: serial_buffer_wrdata = zero_with_endbit;
+      MuxNone:    serial_buffer_wrdata = '{default:'0};
 
-      // MuxNone
-      default:  serial_buffer_wrdata = '{default:'0};
+      default:    serial_buffer_wrdata = '{default:'0};
     endcase
   end
 
@@ -597,9 +597,9 @@ module abr_sha3pad
       MuxPrefix:  update_serial_buffer = fsm_keccak_valid;
       MuxFuncPad: update_serial_buffer = fsm_keccak_valid;
       MuxZeroEnd: update_serial_buffer = fsm_keccak_valid;
-
-      // MuxNone
-      default:  update_serial_buffer = 1'b 0;
+      MuxNone:    update_serial_buffer = 1'b0;
+      
+      default:    update_serial_buffer = 1'b0;
     endcase
   end
 
@@ -609,8 +609,8 @@ module abr_sha3pad
       MuxPrefix:  msg_ready_o = 1'b 0;
       MuxFuncPad: msg_ready_o = 1'b 0;
       MuxZeroEnd: msg_ready_o = 1'b 0;
+      MuxNone:    msg_ready_o = 1'b 0;
 
-      // MuxNone
       default: msg_ready_o = 1'b 0;
     endcase
   end
@@ -765,7 +765,7 @@ module abr_sha3pad
     serial_buffer_d = serial_buffer;
     for (int j = 0 ; j < Share ; j++) begin
       for (int unsigned i = 0 ; i < MsgEntries ; i++) begin
-        if (serial_buffer_wraddr == i[MsgAddrW-1:0]) begin
+        if (serial_buffer_wraddr == i) begin
           serial_buffer_d[j][i] = serial_buffer_wrdata[j];
         end else begin
           serial_buffer_d[j][i] = new_block ? '0 : serial_buffer[j][i];
