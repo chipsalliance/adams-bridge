@@ -39,7 +39,14 @@ module abr_piso_multi #(
 
   logic [PISO_BUFFER_W-1:0] buffer, buffer_d;
   logic [PISO_PTR_W-1:0] buffer_wr_ptr, buffer_wr_ptr_d;
+  logic [PISO_PTR_W-1:0] buffer_rw_ptr;
   logic [PISO_PTR_W-1:0] current_input_rate, current_output_rate;
+
+  logic wr_ptr_overflow;
+
+  // Write data and mask
+  logic [PISO_BUFFER_W-1:0] buffer_wdata;
+  logic [PISO_BUFFER_W-1:0] buffer_wdata_mask;
 
   logic buffer_wr, buffer_rd;
   logic update_buffer;
@@ -51,8 +58,8 @@ module abr_piso_multi #(
   end
 
   // Flow control
-  always_comb hold_o  = buffer_rd ? buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate + current_output_rate) :
-                                    buffer_wr_ptr > (PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate);
+  always_comb hold_o  = buffer_rd ? buffer_wr_ptr > PISO_PTR_W'(PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate + current_output_rate):
+                                    buffer_wr_ptr > PISO_PTR_W'(PISO_BUFFER_W[PISO_PTR_W-1:0] - current_input_rate);
   always_comb data_o  = buffer[PISO_ACT_OUTPUT_RATE-1:0];
   always_comb valid_o = buffer_wr_ptr >= current_output_rate;
 
@@ -76,18 +83,18 @@ module abr_piso_multi #(
 
   // Write pointer control
   always_comb begin
+    wr_ptr_overflow = 1'b0;
     unique case ({buffer_rd, buffer_wr})
       2'b00 : buffer_wr_ptr_d = buffer_wr_ptr;
-      2'b01 : buffer_wr_ptr_d = buffer_wr_ptr + current_input_rate;
-      2'b10 : buffer_wr_ptr_d = buffer_wr_ptr - current_output_rate;
-      2'b11 : buffer_wr_ptr_d = buffer_wr_ptr + (current_input_rate - current_output_rate);
+      2'b01 : {wr_ptr_overflow, buffer_wr_ptr_d} = buffer_wr_ptr + current_input_rate;
+      2'b10 : {wr_ptr_overflow, buffer_wr_ptr_d} = buffer_wr_ptr - current_output_rate;
+      2'b11 : {wr_ptr_overflow, buffer_wr_ptr_d} = buffer_wr_ptr + (current_input_rate - current_output_rate);
       default : buffer_wr_ptr_d = buffer_wr_ptr;
     endcase
   end
 
-  // Write data and mask
-  logic [PISO_BUFFER_W-1:0] buffer_wdata;
-  logic [PISO_BUFFER_W-1:0] buffer_wdata_mask;
+  // Calculate the write point for rw cases
+  always_comb buffer_rw_ptr = buffer_wr_ptr - current_output_rate;
 
   always_comb begin
     buffer_wdata = '0;
@@ -102,10 +109,12 @@ module abr_piso_multi #(
       2'b00 : buffer_d = buffer;
       2'b10 : buffer_d = PISO_BUFFER_W'(buffer >> current_output_rate);
       2'b01 : buffer_d = PISO_BUFFER_W'(buffer_wdata << buffer_wr_ptr) | buffer;
-      2'b11 : buffer_d = PISO_BUFFER_W'(buffer_wdata << (buffer_wr_ptr - current_output_rate)) |
+      2'b11 : buffer_d = PISO_BUFFER_W'(buffer_wdata << (buffer_rw_ptr)) |
                          PISO_BUFFER_W'(buffer >> current_output_rate);
       default : buffer_d = buffer;
     endcase
   end
+
+`ABR_ASSERT_NEVER(ABR_PISO_MULTI_WR_PTR_OVERFLOW, wr_ptr_overflow, clk, !rst_b)
 
 endmodule

@@ -45,28 +45,28 @@ module abr_masked_N_bit_Boolean_sub #(
     assign carry[0] = sub_i ? 2'b01 : 2'b00;
 
     // Generate the full adders for each bit
-    genvar i;
+    genvar g_i;
     generate
-        for (i = 0; i < WIDTH; i = i + 1) begin : gen_full_adders
+        for (g_i = 0; g_i < WIDTH; g_i = g_i + 1) begin : gen_full_adders
             // Pipeline registers for x and y inputs
             always_ff @(posedge clk or negedge rst_n) begin
                 if (!rst_n) begin
-                    x_reg[i] <= '0;
-                    y_reg[i] <= '0;
+                    x_reg[g_i] <= '0;
+                    y_reg[g_i] <= '0;
                 end
                 else if (zeroize) begin
-                    x_reg[i] <= '0;
-                    y_reg[i] <= '0;
+                    x_reg[g_i] <= '0;
+                    y_reg[g_i] <= '0;
                 end
                 else begin
                     for (int j = 0; j < WIDTH; j = j + 1) begin
                         if (j == 0) begin
-                            x_reg[i][j] <= x[i];
-                            y_reg[i][j] <= y[i];
+                            x_reg[g_i][j] <= x[g_i];
+                            y_reg[g_i][j] <= y[g_i];
                         end
                         else begin
-                            x_reg[i][j] <= x_reg[i][j-1];
-                            y_reg[i][j] <= y_reg[i][j-1];
+                            x_reg[g_i][j] <= x_reg[g_i][j-1];
+                            y_reg[g_i][j] <= y_reg[g_i][j-1];
                         end
                     end
                 end
@@ -75,37 +75,37 @@ module abr_masked_N_bit_Boolean_sub #(
             // Pipeline registers for sum output
             always_ff @(posedge clk or negedge rst_n) begin
                 if (!rst_n) begin
-                    sum_reg[i] <= '0;
+                    sum_reg[g_i] <= '0;
                 end
                 else if (zeroize) begin
-                    sum_reg[i] <= '0;
+                    sum_reg[g_i] <= '0;
                 end
                 else begin
-                    for (int j = i; j < WIDTH; j = j + 1) begin
-                        if (j == i && i == WIDTH-1) begin
-                            sum_reg[i][j] <= the_last_sum;
+                    for (int j = g_i; j < WIDTH; j = j + 1) begin
+                        if (j == g_i && g_i == WIDTH-1) begin
+                            sum_reg[g_i][j] <= the_last_sum;
                         end
-                        else if (j == i) begin
-                            sum_reg[i][j] <= sum[i];
+                        else if (j == g_i) begin
+                            sum_reg[g_i][j] <= sum[g_i];
                         end
                         else begin
-                            sum_reg[i][j] <= sum_reg[i][j-1];
+                            sum_reg[g_i][j] <= sum_reg[g_i][j-1];
                         end
                     end
                 end
             end
-            if (i<(WIDTH-1)) begin : gen_masked_full_adder
+            if (g_i<(WIDTH-1)) begin : gen_masked_full_adder
                 // Instance of abr_masked_full_adder
                 abr_masked_full_adder u_abr_masked_full_adder (
                     .clk(clk),              // Connect clk to clk
                     .rst_n(rst_n),          // Connect rst_n to rst_n
                     .zeroize(zeroize),      // Connect zeroize to zeroize
-                    .x(x_reg[i][i]),        // Connect x to the last stage of the x pipeline
-                    .y(y_reg[i][i]),        // Connect y to the last stage of the y pipeline
-                    .c_in(carry[i]),        // Connect c_in to carry[i]
-                    .rnd(rnd[i]),           // Connect rnd to corresponding random bit
-                    .s(sum[i]),             // Connect sum to sum[i]
-                    .c_out(carry[i+1])      // Connect carry out to carry[i+1]
+                    .x(x_reg[g_i][g_i]),        // Connect x to the last stage of the x pipeline
+                    .y(y_reg[g_i][g_i]),        // Connect y to the last stage of the y pipeline
+                    .c_in(carry[g_i]),        // Connect c_in to carry[g_i]
+                    .rnd(rnd[g_i]),           // Connect rnd to corresponding random bit
+                    .s(sum[g_i]),             // Connect sum to sum[g_i]
+                    .c_out(carry[g_i+1])      // Connect carry out to carry[g_i+1]
                 );
             end
         end

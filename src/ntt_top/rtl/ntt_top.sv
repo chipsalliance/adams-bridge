@@ -833,6 +833,6 @@ module ntt_top
         .data_o(buf_data_o)
     );
 
-    `ABR_ASSERT_NEVER(ASSERT_MASKING_EN, (masking_en & (mode inside {ct, pwa, pws})), clk, reset_n, masking_en);
+    `ABR_ASSERT_NEVER(ASSERT_MASKING_EN, (masking_en & (mode inside {ct, pwa, pws})), clk, reset_n, masking_en)
 
 endmodule

@@ -47,6 +47,7 @@ module abr_rd_lat_buffer
   //Buffer
   logic [BUFFER_DEPTH-1:0] buffer, buffer_d, buffer_shift, buffer_wr_data_shift;
   logic [$clog2(BUFFER_DEPTH):0] wr_ptr, wr_ptr_d;
+  logic [$clog2(BUFFER_DEPTH):0] rw_ptr;
 
   //Read when we have NUM_RD worth of valid data
   always_comb buffer_rd = wr_ptr >= RD_WIDTH;
@@ -67,10 +68,12 @@ module abr_rd_lat_buffer
       wr_ptr_d = wr_ptr;
   end
 
+  always_comb rw_ptr = (wr_ptr - RD_WIDTH);
+
   //Shift the buffer contents and append new samples
   always_comb begin
     //shift the write data left by the wr_ptr, or wr_ptr - RD_WIDTH if there is a read
-    buffer_wr_data_shift = buffer_wr & buffer_rd ? BUFFER_DEPTH'(data_i << (wr_ptr - RD_WIDTH)) : 
+    buffer_wr_data_shift = buffer_wr & buffer_rd ? BUFFER_DEPTH'(data_i << rw_ptr) : 
                            buffer_wr             ? BUFFER_DEPTH'(data_i << wr_ptr) : '0;
 
     //shift the buffer data right by NUM_RD if there is a read

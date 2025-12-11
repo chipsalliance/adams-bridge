@@ -246,7 +246,7 @@ module makehint
         end
     end
 
-    assign last_addr_read = (mem_rd_addr == mem_base_addr + ABR_MEM_ADDR_WIDTH'(((poly_count+1) * (MLDSA_N/4))-1));
+    assign last_addr_read = (mem_rd_addr == ABR_MEM_ADDR_WIDTH'(mem_base_addr + (((poly_count+1) * (MLDSA_N/4))-1)));
 
     //----------------------------
     //Read fsm

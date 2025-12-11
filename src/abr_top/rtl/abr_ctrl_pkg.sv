@@ -90,7 +90,8 @@ package abr_ctrl_pkg;
 
     localparam PK_MEM_DEPTH = 64;
     localparam PK_MEM_DATA_W = 320;
-    localparam PK_MEM_NUM_DWORDS = (PK_MEM_DATA_W)/32;
+    localparam PK_MEM_NUM_DWORDS = PK_MEM_DATA_W/32;
+    localparam PK_MEM_NUM_DWORDS_HALF = PK_MEM_NUM_DWORDS/2;
     localparam PK_MEM_WSTROBE_W = PK_MEM_DATA_W/8;
     localparam PK_ADDR_W = $clog2(PUBKEY_NUM_DWORDS);
     localparam PK_MEM_ADDR_W = $clog2(PK_MEM_DEPTH);
@@ -171,7 +172,6 @@ package abr_ctrl_pkg;
         MLDSA_PWM_ACCUM_SMPL,
         MLDSA_PWA,
         MLDSA_PWS,
-        MLDSA_PWM_INTT,
         MLKEM_NTT,
         MLKEM_INTT,
         MLKEM_PWM,
@@ -179,8 +179,7 @@ package abr_ctrl_pkg;
         MLKEM_PWM_SMPL,
         MLKEM_PWM_ACCUM_SMPL,
         MLKEM_PWA,
-        MLKEM_PWS,
-        MLKEM_PWM_INTT
+        MLKEM_PWS
     } abr_ntt_mode_e;
 
     typedef enum logic[4:0] {

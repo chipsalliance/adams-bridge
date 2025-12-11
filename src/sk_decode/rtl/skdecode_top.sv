@@ -32,18 +32,15 @@
 module skdecode_top
     import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
-    #(
-        parameter ETA_SIZE = 3
-    )
     (
-        input wire clk,
-        input wire reset_n,
-        input wire zeroize,
+        input logic clk,
+        input logic reset_n,
+        input logic zeroize,
         
-        input wire skdecode_enable,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
-        input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
-        input wire [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
+        input logic skdecode_enable,
+        input logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
+        input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        input logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
         input logic [1:0] keymem_rd_data_valid,
 
         output mem_if_t [1:0] keymem_rd_req,
@@ -68,7 +65,7 @@ module skdecode_top
 
     //IO flops
     mem_if_t mem_a_wr_req_int, mem_b_wr_req_int, mem_a_wr_req_reg, mem_b_wr_req_reg;
-    logic [7:0][ETA_SIZE-1:0] s1s2_buf_data;
+    logic [7:0][MLDSA_ETA_W-1:0] s1s2_buf_data;
     logic [3:0][MLDSA_D-1:0] t0_buf_data;
     logic [3:0][REG_SIZE-1:0] mem_a_wr_data_int, mem_b_wr_data_int, mem_a_wr_data_reg, mem_b_wr_data_reg;
     logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data_reg;
@@ -143,9 +140,7 @@ module skdecode_top
     //8 s1s2 unpack instances to process 3*8 = 24-bits per cycle. In this case, one addr of key mem is read per cycle
     generate
         for (genvar i = 0; i < 8; i++) begin : gen_s1s2_unpack
-            skdecode_s1s2_unpack #(
-                .REG_SIZE(REG_SIZE)
-            )
+            skdecode_s1s2_unpack
             s1s2_unpack_inst (
                 .data_i(s1s2_buf_data[i]),
                 .enable(s1s2_data_valid), //from buffer
@@ -160,9 +155,7 @@ module skdecode_top
     //atmost 64-bits per cycle. Remaining bits are accumulated in buffer. in this case, 2 addr of key mem are read per cycle
     generate
         for (genvar i = 0; i < 4; i++) begin : gen_t0_unpack
-            skdecode_t0_unpack #(
-                .REG_SIZE(REG_SIZE-1)
-            )
+            skdecode_t0_unpack
             t0_unpack_inst (
                 .clk(clk),
                 .reset_n(reset_n),
