@@ -48,7 +48,7 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     end
     read_ek();
     read_dk();
-    compare_keygen_vectors();
+    compare_keygen_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -68,7 +68,7 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     end
     read_ciphertext();
     read_shared_key();
-    compare_encap_vectors();
+    compare_encap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -87,7 +87,7 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
       wait_for_done(1, "valid");
     end
     read_shared_key();
-    compare_decap_vectors();
+    compare_decap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
@@ -106,7 +106,7 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
       wait_for_done(1, "valid");
     end
     read_shared_key();
-    compare_decap_vectors();
+    compare_decap_vectors(on_the_fly_zeroize);
     zeroize();
     wait_for_done(0, "ready");
   endtask
