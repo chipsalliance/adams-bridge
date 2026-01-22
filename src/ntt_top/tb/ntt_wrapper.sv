@@ -45,6 +45,9 @@ module ntt_wrapper
     
     //TB purpose
     input wire load_tb_values,
+    input wire load_random_values,
+    input wire load_pwm_a_values,
+    input wire load_pwm_b_values,
 
     input ntt_mem_addr_t ntt_mem_base_addr,
     input pwo_mem_addr_t pwo_mem_base_addr,
@@ -117,7 +120,9 @@ module ntt_wrapper
         .addrb(mem_rd_req.addr),
         .dinb(),
         .doutb(mem_rd_data_int),
-        .load_tb_values(load_tb_values)
+        .load_tb_values(load_tb_values),
+        .load_random_values(load_random_values),
+        .mlkem(mlkem)
     );
 
     ntt_ram_tdp_file #(
@@ -137,7 +142,9 @@ module ntt_wrapper
         .addrb(pwm_a_rd_req.addr), //(pwm_rd_addr_a_reg),
         .dinb(),
         .doutb(pwm_a_rd_data),
-        .load_tb_values(load_tb_values)
+        .load_tb_values(1'b0),
+        .load_random_values(load_pwm_a_values),
+        .mlkem(mlkem)
     );
 
     ntt_ram_tdp_file #(
@@ -157,7 +164,9 @@ module ntt_wrapper
         .addrb(pwm_b_rd_req.addr), //(pwm_rd_addr_b_reg),
         .dinb(),
         .doutb(pwm_b_rd_data),
-        .load_tb_values(load_tb_values)
+        .load_tb_values(1'b0),
+        .load_random_values(load_pwm_b_values),
+        .mlkem(mlkem)
     );
 
     always_comb begin
@@ -170,6 +179,23 @@ module ntt_wrapper
                                                                                                MLDSA_SHARE_WIDTH'(0),
                                                                                                MLDSA_SHARE_WIDTH'(mem_rd_data_int[23:0])}  
                                                                                             : mem_rd_data_int;
+    end
+
+    logic ntt_mem_rd_data_valid;
+    logic pwm_mem_a_rd_data_valid;
+    logic pwm_mem_b_rd_data_valid;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            ntt_mem_rd_data_valid <= 1'b0;
+            pwm_mem_a_rd_data_valid <= 1'b0;
+            pwm_mem_b_rd_data_valid <= 1'b0;
+        end
+        else begin
+            ntt_mem_rd_data_valid <= ntt_mem_rden;
+            pwm_mem_a_rd_data_valid <= pwm_mem_a_rden;
+            pwm_mem_b_rd_data_valid <= pwm_mem_b_rden;
+        end
     end
 
     ntt_top #(
@@ -197,10 +223,13 @@ module ntt_wrapper
         .mem_wr_req(mem_wr_req),
         .mem_rd_req(mem_rd_req),
         .mem_wr_data(mem_wr_data),
+        .mem_rd_data_valid(ntt_mem_rd_data_valid),
         .mem_rd_data(mem_rd_data),
         //PWM mem IF
         .pwm_a_rd_req(pwm_a_rd_req),
         .pwm_b_rd_req(pwm_b_rd_req),
+        .pwm_a_rd_data_valid(pwm_mem_a_rd_data_valid),
+        .pwm_b_rd_data_valid(pwm_mem_b_rd_data_valid),
         .pwm_a_rd_data(pwm_a_rd_data),
         .pwm_b_rd_data(sampler_mode ? sampler_data : pwm_b_rd_data),
         .ntt_busy(ntt_busy),
