@@ -93,6 +93,8 @@ module ntt_top
     output logic ntt_done
 
 );
+    `include "abr_prim_assert.sv"
+
     //NTT mem signals
     //Masking internal - TODO: remove and merge with mem_wr/rd interface after testing
     mem_if_t share_mem_wr_req, share_mem_rd_req, share_mem_rd_req_reg;
