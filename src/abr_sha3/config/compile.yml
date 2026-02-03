@@ -29,7 +29,7 @@ targets:
 provides: [abr_sha3_tb]
 schema_version: 2.4.0
 requires:
-  - mldsa_sampler_pkg
+  - abr_sampler_pkg
   - abr_sha3
 targets:
   rtl:
