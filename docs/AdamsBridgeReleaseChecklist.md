@@ -56,7 +56,8 @@ For each release, the following steps are followed to ensure code functionality 
   - Audit pipelines: Promote pipeline L0 regression enabled
 - Audit RTL and testbenches for FIXME/TODO items
 - Pre-Silicon Regressions
-  - [L0 regression](../src/abr_top/stimulus/testsuites/abr_top_nightly_random_regression.yml)
+  - [L0 regression](../src/abr_top/stimulus/uvmf_mldsa_top_promote_regression.yml)
+  - [L1 regression](../src/abr_top/stimulus/testsuites/abr_top_nightly_random_regression.yml)
   - Directed/Random regression per the [Test Plan](./AdamsBridge_TestPlan.xlsx)
 - Coverage Review
   - Coverage database is manually reviewed to ensure all required coverpoints are exercised
