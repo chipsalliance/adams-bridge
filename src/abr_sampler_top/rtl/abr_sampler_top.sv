@@ -59,7 +59,9 @@ module abr_sampler_top
 
   );
 
-//Signal Declarations
+  `include "abr_prim_assert.sv"
+
+  //Signal Declarations
   logic                    sha3_process;
   logic                    sha3_run;
 
