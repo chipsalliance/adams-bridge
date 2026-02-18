@@ -247,10 +247,10 @@ module abr_ctrl
 
   logic [SHAREDKEY_NUM_DWORDS-1:0][3:0][7:0] mlkem_sharedkey_data;
 
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mldsa_seed, abr_reg_hwif_in)
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_seed, abr_reg_hwif_in)
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_msg, abr_reg_hwif_in)
-  `CALIPTRA_KV_WRITE_STATUS_ASSIGN(kv_mlkem_sharedkey, abr_reg_hwif_in)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mldsa_seed, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_seed, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_msg, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_WRITE_STATUS_ASSIGN(kv_mlkem_sharedkey, abr_reg_hwif_in, zeroize)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mldsa_seed_read_ctrl_reg, kv_mldsa_seed_rd_ctrl, abr_reg_hwif_out)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_seed_read_ctrl_reg, kv_mlkem_seed_rd_ctrl, abr_reg_hwif_out)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_msg_read_ctrl_reg,  kv_mlkem_msg_rd_ctrl, abr_reg_hwif_out)
