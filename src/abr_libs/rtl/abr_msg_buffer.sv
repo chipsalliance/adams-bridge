@@ -29,6 +29,8 @@ module abr_msg_buffer
   input logic clk,
   input logic rst_b,
 
+  input logic zeroize,
+
   input logic flush,
 
   //input data
@@ -109,6 +111,9 @@ module abr_msg_buffer
 
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
+      buffer <= '0;
+      buffer_valid <= '0;
+    end else if (zeroize) begin
       buffer <= '0;
       buffer_valid <= '0;
     end else if (update_buffer) begin

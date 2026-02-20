@@ -1873,6 +1873,7 @@ abr_msg_buffer #(
 ) stream_msg_buffer (
   .clk(clk),
   .rst_b(rst_b),
+  .zeroize(zeroize),
   .flush(stream_msg_buffer_flush),
   //input data
   .data_valid_i(stream_msg_strobe),
