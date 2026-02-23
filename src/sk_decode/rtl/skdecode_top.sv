@@ -58,7 +58,8 @@ module skdecode_top
     logic s1s2_enable, t0_enable;
     logic [7:0] s1s2_valid;
     logic [3:0] t0_valid;
-    logic [7:0] s1s2_error;
+    logic s1s2_error;
+    logic [7:0] s1s2_error_set;
     logic [7:0][REG_SIZE-1:0] s1s2_data;
     logic [3:0][REG_SIZE-1:0] t0_data;
     logic keymem_rd_data_valid_f;
@@ -122,11 +123,25 @@ module skdecode_top
         end
     end
 
+    //latch the error indication and assert to controller on done
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            s1s2_error <= '0;
+        end
+        else if (zeroize) begin
+            s1s2_error <= '0;
+        end
+        else begin
+            s1s2_error <= s1s2_error_set ? '1 : 
+                          skdecode_done ? '0 : s1s2_error;
+        end
+    end
+
     //Flags
     always_comb begin
         mem_a_wr_data_int  = |s1s2_valid ? s1s2_data[3:0] : |t0_valid ? t0_data[3:0] : '0;
         mem_b_wr_data_int  = |s1s2_valid ? s1s2_data[7:4] : |t0_valid ? t0_data[3:0] : '0;
-        skdecode_error     = |s1s2_error;
+        skdecode_error     = s1s2_error & skdecode_done;
     end
 
     //Assign outputs
@@ -146,7 +161,7 @@ module skdecode_top
                 .enable(s1s2_data_valid), //from buffer
                 .data_o(s1s2_data[i]),
                 .valid_o(s1s2_valid[i]),
-                .error_o(s1s2_error[i])
+                .error_o(s1s2_error_set[i])
             );
         end
     endgenerate
@@ -207,7 +222,6 @@ module skdecode_top
         .dest_base_addr(dest_base_addr),
         .s1s2_valid(|s1s2_valid),
         .t0_valid(|t0_valid),
-        .s1s2_error(|s1s2_error), //TODO: enable later when tb is fixed to drive input values within range
         .mem_a_wr_req(mem_a_wr_req_int),
         .mem_b_wr_req(mem_b_wr_req_int),
         .kmem_a_rd_req(keymem_rd_req[0]),

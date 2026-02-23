@@ -35,7 +35,6 @@ module skdecode_ctrl
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire s1s2_valid,
         input wire t0_valid,
-        input wire s1s2_error,
 
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
@@ -89,8 +88,6 @@ module skdecode_ctrl
         if (!reset_n)
             skdecode_count <= '0;
         else if (zeroize)
-            skdecode_count <= '0;
-        else if (s1s2_error)
             skdecode_count <= '0;
         else if (rst_skdec_count)
             skdecode_count <= '0;

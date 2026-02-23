@@ -60,21 +60,30 @@ module compress_top
     logic [3:0] d;
     logic last_poly_last_addr_wr;
     logic compress_busy;
+    logic compare_failure, compare_failure_set;
 
     always_comb compress_done = compress_busy & read_done & ~(mem_rd_data_valid | (|api_rw_en) | (|buffer_valid));
+    always_comb compare_failed = compress_done & compare_failure;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             compress_busy <= '0;
+            compare_failure <= '0;
         end
         else if (zeroize) begin
             compress_busy <= '0;
+            compare_failure <= '0;
         end
         else begin
             compress_busy <= compress_enable ? '1 :
                              compress_done ? '0 : compress_busy;
+
+            compare_failure <= compare_failure_set ? '1 : 
+                               compress_done ? '0 : compare_failure;
         end
     end
+
+    always_comb compare_failure_set = compare_mode & api_rd_data_valid & (buffer_data[SRAM_LATENCY] != api_rd_data);
 
     compress_ctrl cmp_ctrl_inst (
         .clk(clk),
@@ -177,7 +186,6 @@ module compress_top
     //Read one cycle after we read memory to account for buffer latency
     //Buffer is designed to be supplied with data every cycle after initial reads
     always_comb api_rw_en[1] = buffer_valid[0] & compare_mode & ~last_poly_last_addr_wr;
-    always_comb compare_failed = compare_mode & api_rd_data_valid & (buffer_data[SRAM_LATENCY] != api_rd_data);
 
     
 generate
