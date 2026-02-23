@@ -132,7 +132,7 @@ module skdecode_top
             s1s2_error <= '0;
         end
         else begin
-            s1s2_error <= s1s2_error_set ? '1 : 
+            s1s2_error <= (|s1s2_error_set) ? '1 : 
                           skdecode_done ? '0 : s1s2_error;
         end
     end
