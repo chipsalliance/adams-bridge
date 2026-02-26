@@ -257,15 +257,15 @@ module abr_ctrl
   //lock kv controls
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_entry.swwe      = !kv_mldsa_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.rsvd.swwe            = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_en.swwe         = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_entry.swwe      = !kv_mlkem_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.rsvd.swwe            = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_en.swwe          = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_entry.swwe       = !kv_mlkem_msg_data_present  && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.rsvd.swwe             = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_en.swwe              = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_entry.swwe           = abr_ready;
