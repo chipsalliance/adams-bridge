@@ -103,9 +103,9 @@ package abr_params_pkg;
   } mlkem_cmd_e;
 
   parameter [63  : 0] MLDSA_CORE_NAME        = 64'h3837412D_44534D4C; // "MLDSA-87"
-  parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00000000_3030312e; // "1.00"
+  parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00000000_3030322e; // "2.00"
   parameter [63  : 0] MLKEM_CORE_NAME        = 64'h32343130_4D2D4B45; // "KEM-1024"
-  parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00000000_3030312e; // "1.00"
+  parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00000000_3030322e; // "2.00"
 
   // Implementation parameters
   parameter ABR_REG_WIDTH = 32;
