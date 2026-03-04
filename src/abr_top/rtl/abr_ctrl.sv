@@ -956,7 +956,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   assign mlkem_api_ct_mem_addr = mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
-  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
+  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,$clog2(MLKEM_MSG_MEM_NUM_DWORDS)'(MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset)} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & ~kv_mlkem_msg_data_present & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
