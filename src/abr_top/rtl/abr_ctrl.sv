@@ -805,7 +805,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     for (int dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
       `ifdef CALIPTRA
-      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == $clog2(2*SEED_NUM_DWORDS)'(SEED_NUM_DWORDS-1-dword)))) & ~zeroize;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = kv_mlkem_seed_write_data;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | (kv_mlkem_seed_error == KV_READ_FAIL);
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready & ~kv_mlkem_seed_data_present;
