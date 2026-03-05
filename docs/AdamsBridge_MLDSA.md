@@ -218,6 +218,13 @@ ML-DSA component public key register type definition storing the public key. Thi
 
 ML-DSA component signature register type definition storing the signature of the message. This register is read by Adams Bridge user after signing operation, or be set before verifying operation. 
 
+# Endianness and byte ordering
+
+All ML-DSA registers use **little-endian** byte ordering within each 32-bit register. Byte 0 of an algorithm input or output occupies bits \[7:0\] of register index 0, byte 1 occupies bits \[15:8\], and so on. Firmware writes FIPS 204 byte arrays directly to registers with no byte swapping or DWORD reordering: byte\[0\] maps to register\[0\]\[7:0\].
+
+
+For Key Vault byte ordering and DWORD reversal details, see the *Key Vault endianness and byte ordering* section in CaliptraHardwareSpecification.md.
+
 # ​Pseudocode 
 
 ## ​Keygen 
@@ -375,7 +382,330 @@ signature = read(ADDR_SIGNATURE);
 // Return the output (signature)
 return signature;
 ```
-​ 
+
+## Signing with External Mu
+
+In this mode, the caller supplies a precomputed 512-bit mu value instead of a message. The core skips the internal mu derivation (H(tr || msg)) and uses the provided mu directly. The message register is ignored.
+
+```cpp
+Input:
+    sk_in
+    external_mu
+    sign_rnd
+    entropy
+
+Output:
+    signature
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_SK_IN, sk_in);
+write(ADDR_EXTERNAL_MU, external_mu);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+
+// Trigger the core for performing Signing with external mu
+// CTRL = SIGN_CMD | EXTERNAL_MU
+write(ADDR_CTRL, SIGN_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
+
+## Verifying with External Mu
+
+In this mode, the caller supplies a precomputed 512-bit mu value instead of a message. The core skips the internal mu derivation and uses the provided mu directly. The message register is ignored.
+
+```cpp
+Input:
+    external_mu
+    pk
+    signature
+
+Output:
+    verification_result
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_EXTERNAL_MU, external_mu);
+write(ADDR_PK, pk);
+write(ADDR_SIGNATURE, signature);
+
+// Trigger the core for performing Verifying with external mu
+// CTRL = VERIFY_CMD | EXTERNAL_MU
+write(ADDR_CTRL, VERIFY_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Return the output (verification_result)
+return verification_result;
+```
+
+## Keygen + Signing with External Mu
+
+This mode combines keygen and signing using a precomputed mu. The core generates the key pair from the seed and signs using the provided mu, bypassing internal mu derivation. The message register is ignored.
+
+```cpp
+Input:
+    seed
+    external_mu
+    sign_rnd
+    entropy
+
+Output:
+    signature
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the required inputs
+write(ADDR_SEED, seed);
+write(ADDR_EXTERNAL_MU, external_mu);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+
+// Trigger the core for performing Keygen + Signing with external mu
+// CTRL = KEYGEN_SIGN_CMD | EXTERNAL_MU
+write(ADDR_CTRL, KEYGEN_SIGN_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
+
+## Signing with Streaming Message
+
+In this mode, the message is streamed one dword at a time instead of being written to the message register upfront. After triggering the command, the core asserts MSG_STREAM_READY in the status register when it is ready to accept message data. The ctx register is applied in this mode.
+
+```cpp
+Input:
+    sk_in
+    sign_rnd
+    entropy
+    ctx_size
+    ctx
+    msg[]           // arbitrary-length message, streamed one dword at a time
+
+Output:
+    signature
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the non-message inputs
+write(ADDR_SK_IN, sk_in);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+write(ADDR_CTX_SIZE, ctx_size);
+write(ADDR_CTX, ctx);
+
+// Trigger the core for performing Signing with streaming message
+// CTRL = SIGN_CMD | STREAM_MSG
+write(ADDR_CTRL, SIGN_CMD | STREAM_MSG);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for MSG_STREAM_READY (STATUS bit [2])
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS) & 0x4;
+}
+
+// Set MSG_STROBE to 0xF to indicate full dwords
+write(ADDR_MSG_STROBE, 0xF);
+
+// Stream each full dword of the message through MSG[0]
+for (i = 0; i < msg_full_dwords; i++) {
+    write(ADDR_MSG[0], msg[i]);
+}
+
+// Terminate the stream:
+// If last dword is partial (1, 2, or 3 valid bytes):
+//   write MSG_STROBE with the appropriate mask (0x1, 0x3, or 0x7)
+//   write the partial dword to MSG[0]
+// If message is dword-aligned:
+//   write MSG_STROBE to 0x0
+//   write a dummy value to MSG[0]
+write(ADDR_MSG_STROBE, last_strobe);  // 0x0 if aligned, 0x1/0x3/0x7 if partial
+write(ADDR_MSG[0], last_dword);
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
+
+## Verifying with Streaming Message
+
+Same streaming protocol as signing, but for signature verification.
+
+```cpp
+Input:
+    pk
+    signature
+    ctx_size
+    ctx
+    msg[]           // arbitrary-length message, streamed one dword at a time
+
+Output:
+    verification_result
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the non-message inputs
+write(ADDR_PK, pk);
+write(ADDR_SIGNATURE, signature);
+write(ADDR_CTX_SIZE, ctx_size);
+write(ADDR_CTX, ctx);
+
+// Trigger the core for performing Verifying with streaming message
+// CTRL = VERIFY_CMD | STREAM_MSG
+write(ADDR_CTRL, VERIFY_CMD | STREAM_MSG);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for MSG_STREAM_READY (STATUS bit [2])
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS) & 0x4;
+}
+
+// Set MSG_STROBE to 0xF to indicate full dwords
+write(ADDR_MSG_STROBE, 0xF);
+
+// Stream each full dword of the message through MSG[0]
+for (i = 0; i < msg_full_dwords; i++) {
+    write(ADDR_MSG[0], msg[i]);
+}
+
+// Terminate the stream (see Signing with Streaming Message for details)
+write(ADDR_MSG_STROBE, last_strobe);
+write(ADDR_MSG[0], last_dword);
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Return the output (verification_result)
+return verification_result;
+```
+
+## Keygen + Signing with Streaming Message
+
+Combines keygen and signing with a streamed message.
+
+```cpp
+Input:
+    seed
+    sign_rnd
+    entropy
+    ctx_size
+    ctx
+    msg[]           // arbitrary-length message, streamed one dword at a time
+
+Output:
+    signature
+
+// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Feed the non-message inputs
+write(ADDR_SEED, seed);
+write(ADDR_SIGN_RND, sign_rnd);
+write(ADDR_ENTROPY, entropy);
+write(ADDR_CTX_SIZE, ctx_size);
+write(ADDR_CTX, ctx);
+
+// Trigger the core for performing Keygen + Signing with streaming message
+// CTRL = KEYGEN_SIGN_CMD | STREAM_MSG
+write(ADDR_CTRL, KEYGEN_SIGN_CMD | STREAM_MSG);  // (STATUS flag will be changed to 2'b00)
+
+// Wait for MSG_STREAM_READY (STATUS bit [2])
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS) & 0x4;
+}
+
+// Set MSG_STROBE to 0xF to indicate full dwords
+write(ADDR_MSG_STROBE, 0xF);
+
+// Stream each full dword of the message through MSG[0]
+for (i = 0; i < msg_full_dwords; i++) {
+    write(ADDR_MSG[0], msg[i]);
+}
+
+// Terminate the stream (see Signing with Streaming Message for details)
+write(ADDR_MSG_STROBE, last_strobe);
+write(ADDR_MSG[0], last_dword);
+
+// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
+
+// Reading the outputs
+signature = read(ADDR_SIGNATURE);
+
+// Return the output (signature)
+return signature;
+```
+
 # Performance and Area Results
 
 ## ML-DSA-87
@@ -406,14 +736,7 @@ The area overhead associated with enabling these countermeasures is as follows:
 
 
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
-- The requried area for the unprotected ML-DSA-87 is 0.0366mm2 @5nm:
-    - 0.0146mm2 for stdcell
-    - 0.0220mm2 for ram area for 57.38 KB memory.
- 
-- The requried area for the protected ML-DSA-87 is 0.114mm2 @5nm:
-    - 0.0921mm2 for stdcell
-    - 0.0220mm2 for ram area for 57.38 KB memory.
-
+- For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
 ### Signing perofrmance

@@ -54,6 +54,14 @@ All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
 Strobe width describes the number of bits enabled by each strobe. All strobed memories are byte enabled in the design.
 
+# Area Results
+
+- The required area for the protected Adams Bridge (ML-DSA-87 + ML-KEM-1024) is 0.1096mm2 @5nm:
+    - 0.0860mm2 for stdcell
+    - 0.0236mm2 for ram area.
+
+For per-algorithm performance breakdowns, see the Performance and Area Results sections in [AdamsBridge\_MLDSA.md](AdamsBridge_MLDSA.md) and [AdamsBridge\_MLKEM.md](AdamsBridge_MLKEM.md).
+
 # References:
 
 [1] The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022. [Online]. Available: [White House](https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/).
