@@ -25,7 +25,7 @@ module abr_sha3_tb
   import abr_sha3_pkg::*;
   import abr_sha3_tb_pkg::*;
   import abr_prim_alert_pkg::*;
-  import mldsa_sampler_pkg::*;
+  import abr_sampler_pkg::*;
 (
 `ifdef VERILATOR
   input bit clk_tb

@@ -35,6 +35,8 @@ module abr_piso_multi #(
   output logic [PISO_ACT_OUTPUT_RATE-1:0] data_o
 );
 
+  `include "abr_prim_assert.sv"
+
   localparam BUFFER_W_DELTA = PISO_BUFFER_W - PISO_ACT_INPUT_RATE;
 
   logic [PISO_BUFFER_W-1:0] buffer, buffer_d;
