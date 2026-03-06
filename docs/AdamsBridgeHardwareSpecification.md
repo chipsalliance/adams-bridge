@@ -54,6 +54,19 @@ All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
 Strobe width describes the number of bits enabled by each strobe. All strobed memories are byte enabled in the design.
 
+# Zeroize
+
+The ZEROIZE bit in the control register clears all internal data-path registers that hold or have held secret-derived values. This prevents residual sensitive data from leaking through side-channel analysis or from being consumed by a subsequent operation.
+
+Firmware must issue zeroize:
+- After every completed operation, before starting the next command.
+- After any error or aborted operation, before re-issuing a command or reading results.
+
+Hardware behavior:
+- Zeroize takes the highest priority after reset.
+- The ZEROIZE control-register field is a pulse command: firmware writes a 1; the register auto-clears after one clock cycle. However, the hardware zeroize operation itself takes multiple cycles because on-chip SRAM is scrubbed one address per cycle. Firmware must poll the STATUS register and wait for ready before issuing the next command.
+- After zeroize completes, the STATUS register returns to ready, and the engine accepts a new command.
+
 # Area Results
 
 - The required area for the protected Adams Bridge (ML-DSA-87 + ML-KEM-1024) is 0.1096mm2 @5nm:
