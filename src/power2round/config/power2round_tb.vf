@@ -41,4 +41,3 @@ ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_core.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/rtl/power2round_skencode.sv
 ${ADAMSBRIDGE_ROOT}/src/power2round/tb/power2round_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
