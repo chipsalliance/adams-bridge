@@ -93,8 +93,7 @@ CTRL command field contains two bits indicating:
 
 ### ZEROIZE
 
-Zeroize all internal registers: Zeroize all internal registers after process to avoid SCA leakage.  
-Software write generates only a single-cycle pulse on the hardware interface and then will be erased.
+Clears all internal data-path registers holding secret-derived values. See the [Zeroize](AdamsBridgeHardwareSpecification.md#zeroize) section in the top-level specification for the full zeroize policy.
 
 ## status 
 
