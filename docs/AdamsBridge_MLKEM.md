@@ -93,8 +93,7 @@ CTRL command field contains two bits indicating:
 
 ### ZEROIZE
 
-Zeroize all internal registers: Zeroize all internal registers after process to avoid SCA leakage.  
-Software write generates only a single-cycle pulse on the hardware interface and then will be erased.
+Clears all internal data-path registers holding secret-derived values. See the [Zeroize](AdamsBridgeHardwareSpecification.md#zeroize) section in the top-level specification for the full zeroize policy.
 
 ## status 
 
@@ -156,6 +155,13 @@ This register stores the encapsulation key generated in keygen. This register sh
 ## ciphertext
 
 This register stores the ciphertext generated in encapsulation operation. This register should be set before decapsulation operation.
+
+# Endianness and byte ordering
+
+All ML-KEM registers use **little-endian** byte ordering within each 32-bit register. Byte 0 of an algorithm input or output occupies bits \[7:0\] of register index 0, byte 1 occupies bits \[15:8\], and so on. Firmware writes FIPS 203 byte arrays directly to registers with no byte swapping or DWORD reordering: byte\[0\] maps to register\[0\]\[7:0\].
+
+
+For Key Vault byte ordering and DWORD reversal details, see the *Key Vault endianness and byte ordering* section in CaliptraHardwareSpecification.md.
 
 # ​Pseudocode 
 
@@ -318,7 +324,33 @@ return shared_key;
 # Performance and Area Results
 
 ## ML-KEM-1024
-TBD
+
+The performance results for two operational frequencies, 400 MHz and 600 MHz, are presented in terms of latency (clock cycles [CCs]), time [ms], and performance [IOPS] as follows:
+
+|                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
+| ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Unprotected"**      | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Key Generation**     | 6,603            |         0.017 | 60,579                 |     |         0.011 | 90,868                 |
+| **Encapsulation**      | 7,930            |         0.020 | 50,441                 |     |         0.013 | 75,662                 |
+| **Decapsulation**      | 11,054           |         0.028 | 36,186                 |     |         0.018 | 54,279                 |
+
+
+**NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configurable to be enabled or disabled at synthesis time.
+
+The performance overhead associated with enabling these countermeasures is as follows:
+
+|                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
+| ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Protected"**        | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Key Generation**     | 6,603            |         0.017 | 60,579                 |     |         0.011 | 90,868                 |
+| **Encapsulation**      | 8,509            |         0.021 | 47,009                 |     |         0.014 | 70,514                 |
+| **Decapsulation**      | 12,117           |         0.030 | 33,011                 |     |         0.020 | 49,517                 |
+
+
+
+- CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-KEM-1024, and **Adams Bridge only supports ML-KEM-1024 parameter set.**
+- For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
+- The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
 # NTT/INTT
 

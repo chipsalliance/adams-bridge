@@ -39,4 +39,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_decode_z/rtl/sigdecode_z_top.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_decode_z/rtl/sigdecode_z_unit.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_decode_z/tb/sigdecode_z_tb.sv
-${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
