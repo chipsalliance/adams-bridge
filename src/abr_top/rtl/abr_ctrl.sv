@@ -956,7 +956,9 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   assign mlkem_api_ct_mem_addr = mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
-  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,$clog2(MLKEM_MSG_MEM_NUM_DWORDS)'(MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset)} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
+  logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset_rev;
+  assign kv_mlkem_msg_write_offset_rev = $clog2(MLKEM_MSG_MEM_NUM_DWORDS)'(MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset);
+  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,kv_mlkem_msg_write_offset_rev} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & ~kv_mlkem_msg_data_present & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
@@ -1328,6 +1330,9 @@ always_comb kv_mlkem_msg_write_data = '0;
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
   end
 
+  logic [15:0] kappa_sum;
+  assign kappa_sum = kappa_reg + 16'(sampler_imm[2:0]);
+
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       msg_data <= '0;
@@ -1343,7 +1348,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_K_ID:           msg_data <= abr_scratch_reg.mldsa_enc.K[sampler_src_offset[1:0]];
         MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
         MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,16'(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
+        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,kappa_sum} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
         ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
