@@ -206,6 +206,7 @@ module abr_ctrl
   logic mlkem_valid_reg;
   logic mldsa_privkey_lock, mlkem_dk_lock;
   logic kv_mldsa_seed_data_present, kv_mlkem_seed_data_present, kv_mlkem_msg_data_present;
+  logic kv_mlkem_msg_nonzero;
   logic kv_mlkem_msg_write_en;
   logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset;
   logic [ABR_REG_WIDTH-1:0] kv_mlkem_msg_write_data;
@@ -240,7 +241,6 @@ module abr_ctrl
   logic kv_mldsa_seed_data_present_set;
   logic kv_mlkem_seed_data_present_set;
   logic kv_mlkem_msg_data_present_set;
-  logic kv_mlkem_msg_nonzero;
   logic pcr_sign_mode;
   logic pcr_sign_input_invalid;
   logic dest_keyvault;
