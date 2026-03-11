@@ -266,15 +266,15 @@ module abr_ctrl
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_entry.swwe      = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
-  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.rsvd.swwe            = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.rsvd.swwe            = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_en.swwe         = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_entry.swwe      = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
-  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.rsvd.swwe            = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.rsvd.swwe            = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_en.swwe          = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_entry.swwe       = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = '0;
-  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.rsvd.swwe             = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.rsvd.swwe             = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_en.swwe              = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_entry.swwe           = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.hmac_key_dest_valid.swwe   = abr_ready;
@@ -286,7 +286,7 @@ module abr_ctrl
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.mlkem_seed_dest_valid.swwe = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.mlkem_msg_dest_valid.swwe  = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.dma_data_dest_valid.swwe   = abr_ready;
-  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.rsvd.swwe                  = abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.rsvd.swwe                  = '0;
 
   //OCP Lock filtering rules inputs
   always_comb begin
@@ -683,16 +683,18 @@ always_comb kv_mlkem_msg_write_data = '0;
   //ABR Ready allows writes to api registers
   //No writes allowed during operation or when keyvault reads are in progress
   `ifdef CALIPTRA
-  always_comb abr_ready = (abr_prog_cntr == ABR_RESET) & 
-                          ~kv_mlkem_seed_write_en &
-                          ~kv_mlkem_msg_write_en &
-                          ~kv_mldsa_seed_write_en;
+  always_comb abr_ready = (abr_prog_cntr == ABR_RESET) &
+                           kv_mlkem_seed_ready &
+                           kv_mlkem_msg_ready &
+                           kv_mldsa_seed_ready &
+                           kv_mlkem_sharedkey_ready;
 
   always_comb abr_idle = ((abr_prog_cntr == ABR_RESET) | (abr_prog_cntr == ABR_ZEROIZE) |
-                           mldsa_valid_reg | mlkem_valid_reg) & 
-                          ~kv_mlkem_seed_write_en &
-                          ~kv_mlkem_msg_write_en &
-                          ~kv_mldsa_seed_write_en;
+                           mldsa_valid_reg | mlkem_valid_reg) &
+                           kv_mlkem_seed_ready &
+                           kv_mlkem_msg_ready &
+                           kv_mldsa_seed_ready &
+                           kv_mlkem_sharedkey_ready;
 
   always_comb kv_dest_data_avail = dest_keyvault & 
                                    ((mlkem_encaps_process & mlkem_encaps_done) |
