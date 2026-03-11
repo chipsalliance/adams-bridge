@@ -1,0 +1,7 @@
+---
+# ACVP ML-DSA-87 Rejection Path KAT Test
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_ACVP_rejection_KATs_test'
+testname: ML_DSA_ACVP_rejection_KATs_test
+parameters:
+  dilithium_command: "test_dilithium5"

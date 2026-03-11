@@ -258,7 +258,10 @@ interface abr_top_cov_if
         stream_msg_ip_cp: coverpoint stream_msg_ip;
 
         // External MU crossed with operations
-        external_muXsigning: cross external_mu_mode_cp, mldsa_signing_process_cp;
+        external_muXsigning: cross external_mu_mode_cp, mldsa_signing_process_cp {
+            ignore_bins no_ext_mu_signing = binsof(external_mu_mode_cp) intersect {0} && binsof(mldsa_signing_process_cp) intersect {1};
+            ignore_bins ext_mu_no_signing = binsof(external_mu_mode_cp) intersect {1} && binsof(mldsa_signing_process_cp) intersect {0};
+        }
         external_muXkeygen_signing: cross external_mu_mode_cp, mldsa_keygen_signing_process_cp;
         external_muXverifying: cross external_mu_mode_cp, mldsa_verifying_process_cp;
 
@@ -269,6 +272,10 @@ interface abr_top_cov_if
 
         // Zeroize during stream msg in-progress
         zeroizeXstream_msg_ip: cross zeroize_cp, stream_msg_ip_cp;
+
+        // Makehint failure during signing (h rejection path)
+        makehintXsigning_failure: cross makehint_failure_cp, mldsa_signing_process_cp;
+        makehintXkeygen_signing_failure: cross makehint_failure_cp, mldsa_keygen_signing_process_cp;
 
     endgroup
 
