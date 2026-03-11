@@ -14,11 +14,32 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2025/03/09*_
+_*Last Update: 2025/03/11*_
+
+### Rev 2p0p3 ###
+
+#### Rev 2p0p3 release date: 2026/03/11 ####
+- AdamsBridge Hardware Specification: see docs/ folder
+- AdamsBridge SCA Specification: see docs/ folder
+- AdamsBridge testplan: see docs/ folder
+- ML-DSA-87 – Based on FIPS204
+- ML-KEM-1024 – Based on FIPS203
+- Fix for various Key-Vault (Caliptra only) issues
+    - Fix for Adams-Bridge issue [#256](https://github.com/chipsalliance/adams-bridge/issues/256)
+    - Fix for Adams-Bridge issue [#261](https://github.com/chipsalliance/adams-bridge/issues/261)
+    - Fix for Adams-Bridge issue [#262](https://github.com/chipsalliance/adams-bridge/issues/262)
+    - Fix for Adams-Bridge issue [#270](https://github.com/chipsalliance/adams-bridge/issues/270)
+- Verification
+    - Smoke tests for all scenarios described in test plan passing
+    - Nightly regressions on-going
+    - UVM for ML-DSA-87 and ML-KEM 1024
+    - Formal Verification sign off for ML-KEM complete
+
+## Previous Releases ##
 
 ### Rev 2p0p2 ###
 
-#### Rev 2p0p2 release date: 2025/11/12 ####
+#### Rev 2p0p2 release date: 2026/03/09 ####
 - AdamsBridge Hardware Specification: see docs/ folder
 - AdamsBridge SCA Specification: see docs/ folder
 - AdamsBridge testplan: see docs/ folder
@@ -33,8 +54,6 @@ _*Last Update: 2025/03/09*_
     - Nightly regressions on-going
     - UVM for ML-DSA-87 and ML-KEM 1024
     - Formal Verification sign off for ML-KEM complete
-    - 
-## Previous Releases ##
 
 ### Rev 2p0p1 ###
 
