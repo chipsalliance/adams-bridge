@@ -206,6 +206,7 @@ module abr_ctrl
   logic mlkem_valid_reg;
   logic mldsa_privkey_lock, mlkem_dk_lock;
   logic kv_mldsa_seed_data_present, kv_mlkem_seed_data_present, kv_mlkem_msg_data_present;
+  logic kv_mlkem_msg_nonzero;
   logic kv_mlkem_msg_write_en;
   logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset;
   logic [ABR_REG_WIDTH-1:0] kv_mlkem_msg_write_data;
@@ -247,10 +248,10 @@ module abr_ctrl
 
   logic [SHAREDKEY_NUM_DWORDS-1:0][3:0][7:0] mlkem_sharedkey_data;
 
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mldsa_seed, abr_reg_hwif_in)
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_seed, abr_reg_hwif_in)
-  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_msg, abr_reg_hwif_in)
-  `CALIPTRA_KV_WRITE_STATUS_ASSIGN(kv_mlkem_sharedkey, abr_reg_hwif_in)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mldsa_seed, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_seed, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_READ_STATUS_ASSIGN(kv_mlkem_msg, abr_reg_hwif_in, zeroize)
+  `CALIPTRA_KV_WRITE_STATUS_ASSIGN(kv_mlkem_sharedkey, abr_reg_hwif_in, zeroize)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mldsa_seed_read_ctrl_reg, kv_mldsa_seed_rd_ctrl, abr_reg_hwif_out)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_seed_read_ctrl_reg, kv_mlkem_seed_rd_ctrl, abr_reg_hwif_out)
   `CALIPTRA_KV_READ_CTRL_REG2STRUCT(kv_mlkem_msg_read_ctrl_reg,  kv_mlkem_msg_rd_ctrl, abr_reg_hwif_out)
@@ -441,14 +442,19 @@ always_ff @(posedge clk or negedge rst_b) begin : abr_kv_reg
     kv_mldsa_seed_data_present <= '0;
     kv_mlkem_seed_data_present <= '0;
     kv_mlkem_msg_data_present <= '0;
+    kv_mlkem_msg_nonzero <= '0;
   end else if (zeroize) begin
     kv_mldsa_seed_data_present <= '0;
     kv_mlkem_seed_data_present <= '0;
     kv_mlkem_msg_data_present <= '0;
+    kv_mlkem_msg_nonzero <= '0;
   end else begin
     kv_mldsa_seed_data_present <=  kv_mldsa_seed_data_present_set ? '1 : kv_mldsa_seed_data_present;
     kv_mlkem_seed_data_present <=  kv_mlkem_seed_data_present_set ? '1 : kv_mlkem_seed_data_present;
     kv_mlkem_msg_data_present  <=  kv_mlkem_msg_data_present_set ? '1 : kv_mlkem_msg_data_present;
+    // Track whether any nonzero dword was written from KV for msg
+    if (kv_mlkem_msg_write_en & |kv_mlkem_msg_write_data)
+      kv_mlkem_msg_nonzero <= 1'b1;
   end
 end
 
@@ -463,6 +469,7 @@ always_comb pcr_sign_mode = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
 always_comb kv_mldsa_seed_data_present = '0;
 always_comb kv_mlkem_seed_data_present = '0;
 always_comb kv_mlkem_msg_data_present = '0;
+always_comb kv_mlkem_msg_nonzero = '0;
 
 always_comb kv_mlkem_msg_write_en = '0;
 always_comb kv_mlkem_msg_write_offset = '0;
@@ -539,6 +546,9 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic error_flag;
   logic error_flag_reg;
   logic error_flag_edge;
+  logic mldsa_seed_zero_error;
+  logic mlkem_seed_zero_error;
+  logic mlkem_msg_zero_error;
   logic subcomponent_busy;
 
   abr_ctrl_fsm_state_e abr_ctrl_fsm_ps, abr_ctrl_fsm_ns;
@@ -1572,7 +1582,15 @@ always_comb begin
   `ifdef CALIPTRA
   //extra error condition for caliptra
   pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
-  error_flag |= pcr_sign_input_invalid;
+  // All-zero KV seed/msg error detection
+  mldsa_seed_zero_error = kv_mldsa_seed_data_present & (|mldsa_cmd_reg) & (mldsa_seed_reg == '0);
+  mlkem_seed_zero_error = kv_mlkem_seed_data_present & (|mlkem_cmd_reg) & (mlkem_seed_d_reg == '0) & (abr_scratch_reg.mlkem_enc.seed_z == '0);
+  mlkem_msg_zero_error  = kv_mlkem_msg_data_present  & (|mlkem_cmd_reg) & ~kv_mlkem_msg_nonzero;
+  error_flag |= pcr_sign_input_invalid | mldsa_seed_zero_error | mlkem_seed_zero_error | mlkem_msg_zero_error;
+  `else
+  mldsa_seed_zero_error = '0;
+  mlkem_seed_zero_error = '0;
+  mlkem_msg_zero_error  = '0;
   `endif
 end                              
 
