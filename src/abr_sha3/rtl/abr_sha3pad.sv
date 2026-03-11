@@ -656,6 +656,9 @@ module abr_sha3pad
     if (!rst_b) begin
       msg_buf  <= '{default:'0};
       msg_strb <= '0;
+    end else if (zeroize) begin
+      msg_buf  <= '{default:'0};
+      msg_strb <= '0;
     end else if (en_msgbuf) begin
       for (int i = 0 ; i < Share ; i++) begin
         msg_buf[i]  <= msg_data_i[i][0+:(MsgWidth-8)];

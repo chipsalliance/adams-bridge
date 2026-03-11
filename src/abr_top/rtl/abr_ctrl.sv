@@ -264,15 +264,15 @@ module abr_ctrl
   //lock kv controls
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_en.swwe         = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.read_entry.swwe      = !kv_mldsa_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mldsa_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
   always_comb abr_reg_hwif_in.kv_mldsa_seed_rd_ctrl.rsvd.swwe            = !kv_mldsa_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_en.swwe         = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.read_entry.swwe      = !kv_mlkem_seed_data_present && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = !kv_mlkem_seed_data_present && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.pcr_hash_extend.swwe = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_seed_rd_ctrl.rsvd.swwe            = !kv_mlkem_seed_data_present && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_en.swwe          = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.read_entry.swwe       = !kv_mlkem_msg_data_present  && abr_ready;
-  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = !kv_mlkem_msg_data_present  && abr_ready;
+  always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.pcr_hash_extend.swwe  = '0;
   always_comb abr_reg_hwif_in.kv_mlkem_msg_rd_ctrl.rsvd.swwe             = !kv_mlkem_msg_data_present  && abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_en.swwe              = abr_ready;
   always_comb abr_reg_hwif_in.kv_mlkem_sharedkey_wr_ctrl.write_entry.swwe           = abr_ready;
@@ -431,7 +431,7 @@ kv_mlkem_sharedkey_write_inst
 always_comb begin
   for(int d = 0; d < SHAREDKEY_NUM_DWORDS; d++) begin
     for(int b = 0; b < 4; b++) begin
-      mlkem_sharedkey_data[d][b] = abr_scratch_reg.mlkem_enc.shared_key[d][31-(b*8) -: 8];
+      mlkem_sharedkey_data[d][b] = abr_scratch_reg.mlkem_enc.shared_key[SHAREDKEY_NUM_DWORDS-1-d][(b*8) +: 8];
     end
   end
 end
@@ -819,7 +819,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     for (int unsigned dword=0; dword < SEED_NUM_DWORDS; dword++) begin
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
       `ifdef CALIPTRA
-      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == dword))) & ~zeroize;
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == $clog2(2*SEED_NUM_DWORDS)'(SEED_NUM_DWORDS-1-dword)))) & ~zeroize;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = kv_mlkem_seed_write_data;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | (kv_mlkem_seed_error == KV_READ_FAIL);
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready & ~kv_mlkem_seed_data_present;
@@ -956,7 +956,9 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   assign mlkem_api_ct_mem_addr = mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
 
-  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,kv_mlkem_msg_write_offset} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
+  logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset_rev;
+  assign kv_mlkem_msg_write_offset_rev = $clog2(MLKEM_MSG_MEM_NUM_DWORDS)'(MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset);
+  always_comb mlkem_api_msg_waddr =  kv_mlkem_msg_write_en ? {8'b0,kv_mlkem_msg_write_offset_rev} : {8'b0,abr_reg_hwif_out.MLKEM_MSG.addr[4:2]};
   always_comb mlkem_api_msg_mem_wr_dec = abr_reg_hwif_out.MLKEM_MSG.req & ~kv_mlkem_msg_data_present & mlkem_api_msg_waddr inside {[0:MLKEM_MSG_MEM_NUM_DWORDS-1]};
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
@@ -1328,6 +1330,9 @@ always_comb kv_mlkem_msg_write_data = '0;
     else msg_p_reg = {32'h0, 16'h0, msg_reg, 8'h00, 8'h00};
   end
 
+  logic [15:0] kappa_sum;
+  assign kappa_sum = kappa_reg + 16'(sampler_imm[2:0]);
+
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
       msg_data <= '0;
@@ -1343,7 +1348,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_K_ID:           msg_data <= abr_scratch_reg.mldsa_enc.K[sampler_src_offset[1:0]];
         MLDSA_MU_ID:          msg_data <= mu_reg[sampler_src_offset[2:0]];
         MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
-        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,16'(kappa_reg + sampler_imm[2:0])} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
+        MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,kappa_sum} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
         ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
@@ -1427,7 +1432,7 @@ always_comb kv_mlkem_msg_write_data = '0;
           abr_scratch_reg.mlkem_enc.seed_z[i] <= abr_reg_hwif_out.MLKEM_SEED_Z[i].wr_data;
         end
         `ifdef CALIPTRA
-        if (kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == (SEED_NUM_DWORDS + i))) begin
+        if (kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == (2*SEED_NUM_DWORDS - 1 - i))) begin
           abr_scratch_reg.mlkem_enc.seed_z[i] <= kv_mlkem_seed_write_data;
         end
         `endif
@@ -1908,6 +1913,7 @@ abr_msg_buffer #(
 ) stream_msg_buffer (
   .clk(clk),
   .rst_b(rst_b),
+  .zeroize(zeroize),
   .flush(stream_msg_buffer_flush),
   //input data
   .data_valid_i(stream_msg_strobe),
