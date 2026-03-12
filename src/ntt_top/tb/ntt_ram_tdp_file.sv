@@ -25,7 +25,7 @@ module ntt_ram_tdp_file
     import abr_params_pkg::*;
     #(
     parameter ADDR_WIDTH = 10,
-    parameter DATA_WIDTH = 32
+    parameter DATA_WIDTH = ABR_MEM_MASKED_DATA_WIDTH
     )
     (      
     input  wire                      clk,
@@ -45,14 +45,16 @@ module ntt_ram_tdp_file
     output logic [DATA_WIDTH-1 : 0]  doutb,
 
     //TODO: temporary inputs. Remove after high-level memory is ready
-    input wire load_tb_values //,
+    input wire load_tb_values,
+    input wire load_random_values,
+    input wire mlkem
     // input wire [ADDR_WIDTH-1:0] load_tb_addr
     );
  
     // Declare the RAM variable
     localparam ADDR_LENGTH = 2**ADDR_WIDTH;
     reg [DATA_WIDTH-1:0]    mem[ADDR_LENGTH-1:0], mem_tb[ADDR_LENGTH-1:0];
-
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] data_tb;
 
     //for tb purpose - TODO: temp, remove after high-level memory is ready
     initial begin
@@ -90,9 +92,25 @@ module ntt_ram_tdp_file
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)
                 mem[i0] <= '0;
         end
+        else if (load_random_values) begin
+            for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++) begin
+                if (mlkem) begin
+                    for (int k = 0; k < ABR_MEM_MASKED_DATA_WIDTH/24; k++) begin
+                        data_tb[24*k +: 24] = 24'($urandom() % MLKEM_Q);
+                    end
+                end
+                else begin
+                    for (int k = 0; k < ABR_MEM_MASKED_DATA_WIDTH/24; k++) begin
+                        data_tb[24*k +: 24] = {1'b0,23'($urandom() % MLDSA_Q)};
+                    end
+                end
+                mem[i0] <= data_tb; //mem_tb[i0];
+            end
+        end
         else if (load_tb_values) begin
-            for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++)
+            for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++) begin
                 mem[i0] <= mem_tb[i0];
+            end
         end
         else begin
             if (ena & wea)

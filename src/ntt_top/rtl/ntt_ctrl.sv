@@ -1073,6 +1073,7 @@ always_comb begin
             
             incr_pw_wr_addr     = shuffle_en ? pwo_mode & arc_WR_WAIT_WR_STAGE : arc_WR_WAIT_WR_MEM;
             pw_wren_fsm         = shuffle_en ? 'b0 : arc_WR_WAIT_WR_MEM;
+            buf_wr_rst_count_intt = gs_mode;
         end
         default: begin
             write_fsm_state_ns  = WR_IDLE;
