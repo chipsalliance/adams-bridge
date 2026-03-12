@@ -32,8 +32,11 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
-                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .
-                && mkdir ml-kem/tv'
+                && mkdir -p ml-kem/tv
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/Module.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
     vcs:
@@ -95,8 +98,11 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
-                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .
-                && mkdir ml-kem/tv'
+                && mkdir -p ml-kem/tv
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/Module.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
     vcs:
@@ -159,8 +165,11 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
-                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .
-                && mkdir ml-kem/tv'
+                && mkdir -p ml-kem/tv
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/Module.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
     vcs:
@@ -222,8 +231,11 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
-                && cp -r $MSFT_SCRIPTS_DIR/models/ml-kem .
-                && mkdir ml-kem/tv'
+                && mkdir -p ml-kem/tv
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/Module.py ml-kem/
+                && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
     vcs:
