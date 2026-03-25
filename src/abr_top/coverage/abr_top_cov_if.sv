@@ -56,6 +56,9 @@ interface abr_top_cov_if
     logic [2 : 0] normcheck_mode;
     logic makehint_failure;
     logic invalid_hint;
+    logic external_mu_mode;
+    logic stream_msg_mode;
+    logic stream_msg_ip;
 
     `ifdef CALIPTRA
     logic pcr_sign_mode;
@@ -70,6 +73,14 @@ interface abr_top_cov_if
     assign kv_mldsa_seed_data_present = abr_top.abr_ctrl_inst.kv_mldsa_seed_data_present;
     assign kv_mlkem_seed_data_present = abr_top.abr_ctrl_inst.kv_mlkem_seed_data_present;
     assign kv_mlkem_msg_data_present  = abr_top.abr_ctrl_inst.kv_mlkem_msg_data_present;
+
+    logic mldsa_seed_zero_error;
+    logic mlkem_seed_zero_error;
+    logic mlkem_msg_zero_error;
+
+    assign mldsa_seed_zero_error = abr_top.abr_ctrl_inst.mldsa_seed_zero_error;
+    assign mlkem_seed_zero_error = abr_top.abr_ctrl_inst.mlkem_seed_zero_error;
+    assign mlkem_msg_zero_error  = abr_top.abr_ctrl_inst.mlkem_msg_zero_error;
 
     always_ff @(posedge clk) begin
         if (!rst_b) begin
@@ -128,6 +139,9 @@ interface abr_top_cov_if
     assign normcheck_mode[2] = (abr_top.abr_ctrl_inst.normcheck_mode_o == 2'b10);
     assign makehint_failure = abr_top.abr_ctrl_inst.makehint_done_i & abr_top.abr_ctrl_inst.makehint_invalid_i;
     assign invalid_hint = abr_top.abr_ctrl_inst.sigdecode_h_invalid_i;
+    assign external_mu_mode = abr_top.abr_ctrl_inst.external_mu_mode;
+    assign stream_msg_mode = abr_top.abr_ctrl_inst.stream_msg_mode;
+    assign stream_msg_ip = abr_top.abr_ctrl_inst.stream_msg_ip;
 
     covergroup abr_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
@@ -204,6 +218,23 @@ interface abr_top_cov_if
         kv_mlkem_msg_data_present_cp: coverpoint kv_mlkem_msg_data_present;
         mlkem_encapsXkv: cross mlkem_encaps_process_cp, kv_mlkem_msg_data_present_cp;
 
+        mldsa_seed_zero_error_cp: coverpoint mldsa_seed_zero_error;
+        mlkem_seed_zero_error_cp: coverpoint mlkem_seed_zero_error;
+        mlkem_msg_zero_error_cp:  coverpoint mlkem_msg_zero_error;
+
+        mldsa_seed_zero_errorXcmd: cross mldsa_seed_zero_error_cp, mldsa_cmd_cp {
+            ignore_bins illegal_crosses = binsof(mldsa_cmd_cp.illegal_values);
+            ignore_bins irrelevant_cmds = binsof(mldsa_cmd_cp) intersect {0, MLDSA_SIGN, MLDSA_VERIFY};
+        }
+        mlkem_seed_zero_errorXcmd: cross mlkem_seed_zero_error_cp, mlkem_cmd_cp {
+            ignore_bins illegal_crosses = binsof(mlkem_cmd_cp.illegal_values);
+            ignore_bins irrelevant_cmds = binsof(mlkem_cmd_cp) intersect {0, MLKEM_ENCAPS, MLKEM_DECAPS};
+        }
+        mlkem_msg_zero_errorXcmd:  cross mlkem_msg_zero_error_cp, mlkem_cmd_cp {
+            ignore_bins illegal_crosses = binsof(mlkem_cmd_cp.illegal_values);
+            ignore_bins irrelevant_cmds = binsof(mlkem_cmd_cp) intersect {0, MLKEM_KEYGEN, MLKEM_DECAPS, MLKEM_KEYGEN_DEC};
+        }
+
         pcr_sign_cp: coverpoint pcr_sign_mode;
         pcr_sign_input_invalid_cp: coverpoint pcr_sign_input_invalid;
 
@@ -220,6 +251,31 @@ interface abr_top_cov_if
         normcheck_fail_signXpcr_sign: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (pcr_process);
         makehint_failXpcr_sign: cross makehint_failure_cp, pcr_sign_cp;
         `endif
+
+        // External MU mode coverage
+        external_mu_mode_cp: coverpoint external_mu_mode;
+        stream_msg_mode_cp: coverpoint stream_msg_mode;
+        stream_msg_ip_cp: coverpoint stream_msg_ip;
+
+        // External MU crossed with operations
+        external_muXsigning: cross external_mu_mode_cp, mldsa_signing_process_cp {
+            ignore_bins no_ext_mu_signing = binsof(external_mu_mode_cp) intersect {0} && binsof(mldsa_signing_process_cp) intersect {1};
+            ignore_bins ext_mu_no_signing = binsof(external_mu_mode_cp) intersect {1} && binsof(mldsa_signing_process_cp) intersect {0};
+        }
+        external_muXkeygen_signing: cross external_mu_mode_cp, mldsa_keygen_signing_process_cp;
+        external_muXverifying: cross external_mu_mode_cp, mldsa_verifying_process_cp;
+
+        // Stream msg crossed with operations
+        stream_msgXsigning: cross stream_msg_mode_cp, mldsa_signing_process_cp;
+        stream_msgXkeygen_signing: cross stream_msg_mode_cp, mldsa_keygen_signing_process_cp;
+        stream_msgXverifying: cross stream_msg_mode_cp, mldsa_verifying_process_cp;
+
+        // Zeroize during stream msg in-progress
+        zeroizeXstream_msg_ip: cross zeroize_cp, stream_msg_ip_cp;
+
+        // Makehint failure during signing (h rejection path)
+        makehintXsigning_failure: cross makehint_failure_cp, mldsa_signing_process_cp;
+        makehintXkeygen_signing_failure: cross makehint_failure_cp, mldsa_keygen_signing_process_cp;
 
     endgroup
 

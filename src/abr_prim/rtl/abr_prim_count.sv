@@ -50,8 +50,9 @@ module abr_prim_count #(
 
   // Reset Values for primary and secondary counters.
   localparam int NumCnt = 2;
-  localparam logic [NumCnt-1:0][Width-1:0] ResetValues = {{Width{1'b1}} - ResetValue, // secondary
-                                                          ResetValue};                // primary
+  localparam logic [Width-1:0] ResetValueSec = {Width{1'b1}} - ResetValue;
+  localparam logic [NumCnt-1:0][Width-1:0] ResetValues = {ResetValueSec,  // secondary
+                                                          ResetValue};    // primary
 
   logic [NumCnt-1:0][Width-1:0] cnt_d, cnt_q, fpv_force;
 
