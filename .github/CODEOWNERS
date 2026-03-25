@@ -5,5 +5,5 @@
 # compilespecs.yml and compile.yml are used in Microsoft
 # internal build processes; edits must be approved by Microsoft
 # reps
-compilespecs.yml
-compile.yml
+compilespecs.yml @Nitsirks @mojtaba-bisheh @upadhyayulakiran @ekarabu @clayton8 @calebofearth
+compile.yml @Nitsirks @mojtaba-bisheh @upadhyayulakiran @ekarabu @clayton8 @calebofearth
