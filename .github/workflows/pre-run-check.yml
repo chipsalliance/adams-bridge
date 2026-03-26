@@ -17,9 +17,6 @@ on:
         default: 'main'
   workflow_call:
 
-env:
-  MSFT_ACTORS: ( "Nitsirks" "calebofearth" "mojtaba-bisheh" "anjpar" "upadhyayulakiran" "ekarabu" "clayton8")
-
 jobs:
   # Build the comparison hash file
   hash_check:
