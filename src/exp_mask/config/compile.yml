@@ -16,7 +16,7 @@ provides: [exp_mask_tb]
 schema_version: 2.4.0
 requires:
   - exp_mask
-  - mldsa_sampler_pkg
+  - abr_sampler_pkg
 targets:
   tb:
     directories: [$COMPILE_ROOT/tb]

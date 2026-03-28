@@ -21,10 +21,10 @@
 
 import "DPI-C" function string getenv(input string env_name);
 
-`include "mldsa_config_defines.svh"
+`include "abr_config_defines.svh"
 
 module exp_mask_tb
-  import mldsa_sampler_pkg::*;
+  import abr_sampler_pkg::*;
   import abr_params_pkg::*;
 (
 `ifdef VERILATOR
