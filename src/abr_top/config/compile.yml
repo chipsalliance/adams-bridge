@@ -108,3 +108,32 @@ global:
         #- '-ucli -i dump.ucli'
       #sim:
         #- '-ucli -i dump.ucli'        
+---
+provides: [abr_top_caliptra]
+schema_version: 2.4.0
+requires:
+  - abr_top
+targets:
+  rtl_lint:
+    waiver_files:
+      - $MSFT_REPO_ROOT/src/adamsbridge_top/config/design_lint/sglint_waivers
+  rtl:
+    directories:
+      - $CALIPTRA_ROOT/src/keyvault/rtl
+      - $CALIPTRA_ROOT/src/caliptra_prim/rtl
+      - $CALIPTRA_ROOT/src/libs/rtl
+    files:
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_defines_pkg.sv
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_macros.svh
+      - $CALIPTRA_ROOT/src/caliptra_prim/rtl/caliptra_prim_assert.sv
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_read_client.sv
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_write_client.sv
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_read_rule_check.sv
+      - $CALIPTRA_ROOT/src/keyvault/rtl/kv_write_rule_check.sv
+    tops: [abr_top]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+CALIPTRA
