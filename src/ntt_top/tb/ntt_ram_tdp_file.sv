@@ -47,6 +47,7 @@ module ntt_ram_tdp_file
     //TODO: temporary inputs. Remove after high-level memory is ready
     input wire load_tb_values,
     input wire load_random_values,
+    input wire load_masked_values,
     input wire mlkem
     // input wire [ADDR_WIDTH-1:0] load_tb_addr
     );
@@ -54,7 +55,8 @@ module ntt_ram_tdp_file
     // Declare the RAM variable
     localparam ADDR_LENGTH = 2**ADDR_WIDTH;
     reg [DATA_WIDTH-1:0]    mem[ADDR_LENGTH-1:0], mem_tb[ADDR_LENGTH-1:0];
-    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] data_tb;
+    logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] data_tb, masked_data_tb;
+    logic [95:0] rand_input;
 
     //for tb purpose - TODO: temp, remove after high-level memory is ready
     initial begin
@@ -87,10 +89,14 @@ module ntt_ram_tdp_file
         if (!reset_n) begin
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)
                 mem[i0] <= '0;
+                data_tb = '0;
+                masked_data_tb = '0;
         end
         else if (zeroize) begin
             for (int i0 = 0; i0 < ADDR_LENGTH; i0++)
                 mem[i0] <= '0;
+                data_tb = '0;
+                masked_data_tb = '0;
         end
         else if (load_random_values) begin
             for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++) begin
@@ -107,7 +113,44 @@ module ntt_ram_tdp_file
                 mem[i0] <= data_tb; //mem_tb[i0];
             end
         end
+        else if (load_masked_values) begin
+            for (int i0 = 'hC0; i0 < 'hC0+MLDSA_N/COEFF_PER_CLK; i0++) begin //Choosing 'hC0 as base addr to load masked values
+                if (mlkem) begin
+                    // for (int k = 0; k < ABR_MEM_MASKED_DATA_WIDTH/24; k++) begin
+                    //     data_tb[24*k +: 24] = 24'($urandom() % MLKEM_Q);
+                    // end
+                    rand_input = {24'($urandom() % MLKEM_Q),
+                                  24'($urandom() % MLKEM_Q),
+                                  24'($urandom() % MLKEM_Q),
+                                  24'($urandom() % MLKEM_Q)};
+                    for (int k = 0; k < 4/*ABR_MEM_MASKED_DATA_WIDTH/24*/; k++) begin
+                        if (mem_tb[i0-'hC0][24*k +: 24] >= rand_input[24*k +: 24])
+                            masked_data_tb[24*k +: 24] = (mem_tb[i0-'hC0][24*k +: 24] - rand_input[24*k +: 24]) % MLKEM_Q;
+                        else
+                            masked_data_tb[24*k +: 24] = (mem_tb[i0-'hC0][24*k +: 24] + (MLKEM_Q - rand_input[24*k +: 24])) % MLKEM_Q;
+                        // masked_data_tb[24*k +: 24] = rand_input; //{1'b0,23'($urandom() % MLDSA_Q)};
+                    end
+                end
+                else begin
+                    rand_input = {24'($urandom() % MLDSA_Q),
+                                  24'($urandom() % MLDSA_Q),
+                                  24'($urandom() % MLDSA_Q),
+                                  24'($urandom() % MLDSA_Q)};
+                    for (int k = 0; k < 4/*ABR_MEM_MASKED_DATA_WIDTH/24*/; k++) begin
+                        if (mem_tb[i0-'hC0][24*k +: 24] >= rand_input[24*k +: 24])
+                            masked_data_tb[24*k +: 24] = (mem_tb[i0-'hC0][24*k +: 24] - rand_input[24*k +: 24]) % MLDSA_Q;
+                        else
+                            masked_data_tb[24*k +: 24] = (mem_tb[i0-'hC0][24*k +: 24] + (MLDSA_Q - rand_input[24*k +: 24])) % MLDSA_Q;
+                        // masked_data_tb[24*k +: 24] = rand_input; //{1'b0,23'($urandom() % MLDSA_Q)};
+                    end
+                end
+                mem[i0] <= ABR_MEM_MASKED_DATA_WIDTH'(rand_input); //mem_tb[i0];
+                mem[i0+'hC0] <= ABR_MEM_MASKED_DATA_WIDTH'(masked_data_tb); //ABR_MEM_MASKED_DATA_WIDTH'((mem_tb[i0-'hc0] - data_tb) % MLDSA_Q); //Storing the second share at offset 'hC0
+                // $display("Loading random values into NTT mem at addr %0h: data = %0h, masked = %0h", i0, data_tb, (data_tb - (i0 - 'hc0)));
+            end
+        end
         else if (load_tb_values) begin
+            $display("Loading tb values into NTT mem\n");
             for (int i0 = 0; i0 < MLDSA_N/COEFF_PER_CLK; i0++) begin
                 mem[i0] <= mem_tb[i0];
             end

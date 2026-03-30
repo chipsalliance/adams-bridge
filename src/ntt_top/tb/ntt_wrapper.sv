@@ -46,6 +46,7 @@ module ntt_wrapper
     //TB purpose
     input wire load_tb_values,
     input wire load_random_values,
+    input wire load_masked_values,
     input wire load_pwm_a_values,
     input wire load_pwm_b_values,
 
@@ -122,6 +123,7 @@ module ntt_wrapper
         .doutb(mem_rd_data_int),
         .load_tb_values(load_tb_values),
         .load_random_values(load_random_values),
+        .load_masked_values(load_masked_values),
         .mlkem(mlkem)
     );
 
@@ -144,6 +146,7 @@ module ntt_wrapper
         .doutb(pwm_a_rd_data),
         .load_tb_values(1'b0),
         .load_random_values(load_pwm_a_values),
+        .load_masked_values(load_masked_values),
         .mlkem(mlkem)
     );
 
@@ -166,6 +169,7 @@ module ntt_wrapper
         .doutb(pwm_b_rd_data),
         .load_tb_values(1'b0),
         .load_random_values(load_pwm_b_values),
+        .load_masked_values(load_masked_values),
         .mlkem(mlkem)
     );
 

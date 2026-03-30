@@ -50,8 +50,12 @@ logic load_tb_values_tb;
 logic load_random_values_tb;
 logic load_pwm_a_values_tb;
 logic load_pwm_b_values_tb;
+logic load_masked_values_tb;
 logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] sampler_data;
 logic [11:0] kyber_zeta_tb [127 : 0];
+logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] sampler_mem [63:0];
+logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] sampler_data_tb_f;
+logic fail_flag;
 
 
 ntt_wrapper dut (
@@ -65,6 +69,7 @@ ntt_wrapper dut (
     .load_random_values(load_random_values_tb),
     .load_pwm_a_values(load_pwm_a_values_tb),
     .load_pwm_b_values(load_pwm_b_values_tb),
+    .load_masked_values(load_masked_values_tb),
     // .load_tb_addr(),
     .shuffle_en(shuffle_en_tb),
     .random(random_tb),
@@ -75,7 +80,7 @@ ntt_wrapper dut (
     .accumulate(acc_tb),
     .sampler_valid(svalid_tb),
     .sampler_mode(sampler_mode_tb),
-    .sampler_data(sampler_data_tb),
+    .sampler_data(sampler_data_tb_f),
     .ntt_done(ntt_done_tb),
     .ntt_busy()
 );
@@ -141,6 +146,8 @@ task init_sim;
         load_random_values_tb = 0;
         load_pwm_a_values_tb = 0;
         load_pwm_b_values_tb = 0;
+        load_masked_values_tb = 0;
+        fail_flag = 0;
     end
 endtask
 
@@ -171,8 +178,26 @@ task init_por_coeffs;
         load_tb_values_tb = 0;
     end
 endtask
+
+task init_masked_coeffs (input logic mlkem);
+    begin
+        $display("Initializing masked coefficients\n");
+        mlkem_tb = mlkem;
+        load_masked_values_tb = 1;
+        repeat(64) @(posedge clk_tb);
+        load_masked_values_tb = 0;
+    end
+endtask
+
+task init_sampler_mem;
+    begin
+        for (int i = 0; i < 64; i++) begin
+            sampler_mem[i] = ABR_MEM_MASKED_DATA_WIDTH'({$urandom(), $urandom(), $urandom()});
+        end
+    end
+endtask
 //----------------------------------------------------------------
-task ct_test(input logic mlkem, input logic shuf_en);
+task ct_test(input logic mlkem, input logic shuf_en, input ntt_mem_addr_t ntt_base_addr);
     begin
         $display("CT test with mlkem = %0d, shuf_en=%0d", mlkem, shuf_en);
         fork
@@ -188,7 +213,7 @@ task ct_test(input logic mlkem, input logic shuf_en);
                 mlkem_tb = mlkem;
                 shuffle_en_tb = shuf_en;
                 masking_en_tb = 0;
-                ntt_mem_base_addr_tb = {14'h0, 14'h40, 14'h80};
+                ntt_mem_base_addr_tb = ntt_base_addr; //{14'h0, 14'h40, 14'h80};
                 pwo_mem_base_addr_tb = '0;
 
                 acc_tb = 0;
@@ -259,6 +284,7 @@ task gs_test(input logic mlkem, input logic shuf_en, input logic mask_en);
             $display("GS test passed with no errors\n");
         end else begin
             $display("GS test failed with %0d errors\n", err_ctr);
+            fail_flag = 1;
         end
         err_ctr = 0;
     end
@@ -324,11 +350,21 @@ task pwa_pws_test(input logic mlkem, input logic shuf_en, input logic pwa_mode);
             $display("PWA/PWS test passed with no errors\n");
         end else begin
             $display("PWA/PWS test failed with %0d errors\n", err_ctr);
+            fail_flag = 1;
         end
         err_ctr = 0;
     end
 endtask
 //----------------------------------------------------------------
+
+always_ff @(posedge clk_tb) begin
+    if (reset_n_tb == 0)
+        sampler_data_tb_f <= '0;
+    else
+        sampler_data_tb_f <= sampler_data_tb;
+end
+
+
 task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input logic shuf_en, input logic mask_en);
     logic [ABR_MEM_MASKED_DATA_WIDTH-1:0] expected_data;
     int err_ctr = 0;
@@ -372,11 +408,13 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
                 acc_tb = acc_en;
                 sampler_mode_tb = sampler;
                 if (sampler) begin
-                    while (svalid_ctr <= 64) begin
+                    repeat(2) @(posedge clk_tb); //Wait 2 clks for read fsm to enter exec stage before driving sampler valid + 1 clk to offset sampler input and line it up with mem input
+                    while (svalid_ctr < 64) begin
+                        // @(posedge clk_tb);
                         svalid_tb = svalid;
                         if (svalid) begin
-                            sampler_data_tb = sampler_data; //{24'(svalid_ctr*4+3), 24'(svalid_ctr*4+2), 24'(svalid_ctr*4+1), 24'(svalid_ctr*4)};
-                            $display("Driving sampler data at count %0d", svalid_ctr);
+                            sampler_data_tb <= sampler_mem[svalid_ctr]; //sampler_data;
+                            // $display("Providing sampler data at cycle %0d: %h", svalid_ctr, sampler_mem[svalid_ctr]);
                             svalid_ctr++;
                         end
                         @(posedge clk_tb);
@@ -386,9 +424,6 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
                     svalid_tb = 1;
                     sampler_data_tb = '0;
                 end
-                // svalid_tb = 1;
-                
-                // sampler_data_tb = '0;
 
                 @(posedge clk_tb);
                 enable_tb = 0;
@@ -406,25 +441,25 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
             if (sampler) begin
                 if (!acc_en) begin
                     if (mlkem)
-                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((((24'((sampler_data[83:72])*(dut.pwm_mem_a.mem[i/4][59:48])) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][83:72])*sampler_data[59:48]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q),
-                                                                    24'(((36'((dut.pwm_mem_a.mem[i/4][83:72]) * (sampler_data[83:72]) * (kyber_zeta_tb[(i/2)+1])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][59:48]*sampler_data[59:48])) % MLKEM_Q)) % MLKEM_Q), 
-                                                                    24'((((24'((sampler_data[35:24])*dut.pwm_mem_a.mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][35:24])*sampler_data[11:0]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q), 
-                                                                    24'(((36'((dut.pwm_mem_a.mem[i/4][35:24]) * (sampler_data[35:24]) * (kyber_zeta_tb[i/2])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][11:0]*sampler_data[11:0])) % MLKEM_Q)) % MLKEM_Q) 
+                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((((24'((sampler_mem[i/4][83:72])*(dut.pwm_mem_a.mem[i/4][59:48])) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][83:72])*sampler_mem[i/4][59:48]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q),
+                                                                    24'(((36'((dut.pwm_mem_a.mem[i/4][83:72]) * (sampler_mem[i/4][83:72]) * (kyber_zeta_tb[(i/2)+1])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][59:48]*sampler_mem[i/4][59:48])) % MLKEM_Q)) % MLKEM_Q), 
+                                                                    24'((((24'((sampler_mem[i/4][35:24])*dut.pwm_mem_a.mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][35:24])*sampler_mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q), 
+                                                                    24'(((36'((dut.pwm_mem_a.mem[i/4][35:24]) * (sampler_mem[i/4][35:24]) * (kyber_zeta_tb[i/2])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][11:0]*sampler_mem[i/4][11:0])) % MLKEM_Q)) % MLKEM_Q) 
                                                                 });
                     else begin
-                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((46'(dut.pwm_mem_a.mem[i/4][94:72]*sampler_data[94:72])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][70:48]*sampler_data[70:48])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][46:24]*sampler_data[46:24])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_data[22:0])) % MLDSA_Q)});
-                        //$display("Debug: i=%0d, pwm_mem_a=%h, sampler_data=%h, expected_data=%h", i, dut.pwm_mem_a.mem[i/4][22:0], sampler_data[22:0], 46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_data[22:0]) % abr_params_pkg::MLDSA_Q);
+                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((46'(dut.pwm_mem_a.mem[i/4][94:72]*sampler_mem[i/4][94:72])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][70:48]*sampler_mem[i/4][70:48])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][46:24]*sampler_mem[i/4][46:24])) % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_mem[i/4][22:0])) % MLDSA_Q)});
+                        // $display("Debug: i=%0d, pwm_mem_a=%h, sampler_mem[i/4]=%h, expected_data=%h", i, dut.pwm_mem_a.mem[i/4][22:0], sampler_mem[i/4][22:0], 46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_mem[i/4][22:0]) % abr_params_pkg::MLDSA_Q);
                     end
                 end
                 else begin
                     if (mlkem)
-                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'(2*(((24'((sampler_data[83:72])*(dut.pwm_mem_a.mem[i/4][59:48])) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][83:72])*sampler_data[59:48]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q),
-                                                                    24'(2*((36'((dut.pwm_mem_a.mem[i/4][83:72]) * (sampler_data[83:72]) * (kyber_zeta_tb[(i/2)+1])) % MLKEM_Q) + (24'((dut.pwm_mem_a.mem[i/4][59:48]) * (sampler_data[59:48])) % MLKEM_Q)) % MLKEM_Q), 
-                                                                    24'(2*(((24'((sampler_data[35:24])*dut.pwm_mem_a.mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][35:24])*sampler_data[11:0]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q), 
-                                                                    24'(2*((36'((dut.pwm_mem_a.mem[i/4][35:24]) * (sampler_data[35:24]) * (kyber_zeta_tb[i/2])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][11:0]*sampler_data[11:0])) % MLKEM_Q)) % MLKEM_Q) 
+                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'(2*(((24'((sampler_mem[i/4][83:72])*(dut.pwm_mem_a.mem[i/4][59:48])) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][83:72])*sampler_mem[i/4][59:48]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q),
+                                                                    24'(2*((36'((dut.pwm_mem_a.mem[i/4][83:72]) * (sampler_mem[i/4][83:72]) * (kyber_zeta_tb[(i/2)+1])) % MLKEM_Q) + (24'((dut.pwm_mem_a.mem[i/4][59:48]) * (sampler_mem[i/4][59:48])) % MLKEM_Q)) % MLKEM_Q), 
+                                                                    24'(2*(((24'((sampler_mem[i/4][35:24])*dut.pwm_mem_a.mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q) + ((24'((dut.pwm_mem_a.mem[i/4][35:24])*sampler_mem[i/4][11:0]) % MLKEM_Q) % MLKEM_Q)) % MLKEM_Q), 
+                                                                    24'(2*((36'((dut.pwm_mem_a.mem[i/4][35:24]) * (sampler_mem[i/4][35:24]) * (kyber_zeta_tb[i/2])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][11:0]*sampler_mem[i/4][11:0])) % MLKEM_Q)) % MLKEM_Q) 
                                                                 });
                     else
-                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((46'(dut.pwm_mem_a.mem[i/4][94:72]*sampler_data[94:72]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][70:48]*sampler_data[70:48]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][46:24]*sampler_data[46:24]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_data[22:0]) % MLDSA_Q)*2 % MLDSA_Q)});
+                        expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'((46'(dut.pwm_mem_a.mem[i/4][94:72]*sampler_mem[i/4][94:72]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][70:48]*sampler_mem[i/4][70:48]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][46:24]*sampler_mem[i/4][46:24]) % MLDSA_Q)*2 % MLDSA_Q), 24'((46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_mem[i/4][22:0]) % MLDSA_Q)*2 % MLDSA_Q)});
                 end
             end
             else begin
@@ -435,7 +470,7 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
                                                                     24'(2 * ((24'((dut.pwm_mem_a.mem[i/4][35:24])*dut.pwm_mem_a.mem[i/4][11:0]) % MLKEM_Q)) % MLKEM_Q), 
                                                                     24'((((36'(dut.pwm_mem_a.mem[i/4][35:24]*dut.pwm_mem_a.mem[i/4][35:24]*kyber_zeta_tb[i/2])) % MLKEM_Q) + ((24'(dut.pwm_mem_a.mem[i/4][11:0]*dut.pwm_mem_a.mem[i/4][11:0])) % MLKEM_Q)) % MLKEM_Q) 
                                                                 });
-                        // $display("Debug: i=%0d, pwm_mem_a=%h, sampler_data=%h, expected_data=%h", i, dut.pwm_mem_a.mem[i/4][22:0], sampler_data[22:0], 46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_data[22:0]) % abr_params_pkg::MLDSA_Q);
+                        // $display("Debug: i=%0d, pwm_mem_a=%h, sampler_mem[i/4]=%h, expected_data=%h", i, dut.pwm_mem_a.mem[i/4][22:0], sampler_mem[i/4][22:0], 46'(dut.pwm_mem_a.mem[i/4][22:0]*sampler_mem[i/4][22:0]) % abr_params_pkg::MLDSA_Q);
                     else
                         expected_data = ABR_MEM_MASKED_DATA_WIDTH'({24'(46'(dut.pwm_mem_a.mem[i/4][94:72]*dut.pwm_mem_a.mem[i/4][94:72])%MLDSA_Q), 24'(46'(dut.pwm_mem_a.mem[i/4][70:48]*dut.pwm_mem_a.mem[i/4][70:48])%MLDSA_Q), 24'(46'(dut.pwm_mem_a.mem[i/4][46:24]*dut.pwm_mem_a.mem[i/4][46:24]) % MLDSA_Q), 24'(46'(dut.pwm_mem_a.mem[i/4][22:0]*dut.pwm_mem_a.mem[i/4][22:0]) % MLDSA_Q)});
                 end
@@ -454,7 +489,7 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
             end
 
             if ((dut.ntt_mem.mem[128+(i/4)] != expected_data)) begin
-                $display("Mismatch at index %0d: expected %h, got %h, sampler data = %h", i, expected_data, dut.ntt_mem.mem[128+(i/4)], sampler_data);
+                $display("Mismatch at index %0d: expected %h, got %h, sampler data = %h", i, expected_data, dut.ntt_mem.mem[128+(i/4)], sampler_mem[i/4]);
                 err_ctr++;
             end
         end
@@ -463,6 +498,7 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
             $display("PWM test passed with no errors\n");
         end else begin
             $display("PWM test failed with %0d errors\n", err_ctr);
+            fail_flag = 1;
         end
         err_ctr = 0;
         svalid_ctr = 0;
@@ -470,25 +506,18 @@ task pwm_test(input logic mlkem, input logic acc_en, input logic sampler, input 
     end
 endtask
 
-
-initial begin
-    init_sim();
-    reset_dut();
-
+task run_all_tests();
     init_mem_with_coeffs(.mlkem(0));
     // init_por_coeffs();
     sampler_data = {$urandom(), $urandom(), $urandom()};
+    init_sampler_mem();
     
     $display("-------------------------------------\n");
-    ct_test(.mlkem(0), .shuf_en(0));
+    ct_test(.mlkem(0), .shuf_en(0), .ntt_base_addr({14'h0, 14'h40, 14'h80}));
     gs_test(.mlkem(0), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
-    ct_test(.mlkem(0), .shuf_en(1));
+    ct_test(.mlkem(0), .shuf_en(1), .ntt_base_addr({14'h0, 14'h40, 14'h80}));
     gs_test(.mlkem(0), .shuf_en(1), .mask_en(0));
-    $display("-------------------------------------\n");
-    pwm_test(.mlkem(0), .sampler(1), .acc_en(0), .shuf_en(0), .mask_en(0));
-    $display("-------------------------------------\n");
-    pwm_test(.mlkem(0), .sampler(1), .acc_en(1), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
     pwm_test(.mlkem(0), .sampler(0), .acc_en(0), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
@@ -497,7 +526,13 @@ initial begin
     pwm_test(.mlkem(0), .sampler(0), .acc_en(0), .shuf_en(1), .mask_en(0));
     $display("-------------------------------------\n");
     pwm_test(.mlkem(0), .sampler(0), .acc_en(1), .shuf_en(1), .mask_en(0));
+    
     $display("-------------------------------------\n");
+    pwm_test(.mlkem(0), .sampler(1), .acc_en(0), .shuf_en(0), .mask_en(0));
+    $display("-------------------------------------\n");
+    pwm_test(.mlkem(0), .sampler(1), .acc_en(1), .shuf_en(0), .mask_en(0));
+    $display("-------------------------------------\n");
+    
     pwa_pws_test(.mlkem(0), .shuf_en(0), .pwa_mode(1));
     $display("-------------------------------------\n");
     pwa_pws_test(.mlkem(0), .shuf_en(0), .pwa_mode(0));
@@ -509,20 +544,24 @@ initial begin
 
     init_mem_with_coeffs(.mlkem(1));
 
-    ct_test(.mlkem(1), .shuf_en(0));
+    ct_test(.mlkem(1), .shuf_en(0), .ntt_base_addr({14'h0, 14'h40, 14'h80}));
     gs_test(.mlkem(1), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
-    ct_test(.mlkem(1), .shuf_en(1));
+    ct_test(.mlkem(1), .shuf_en(1), .ntt_base_addr({14'h0, 14'h40, 14'h80}));
     gs_test(.mlkem(1), .shuf_en(1), .mask_en(0));
     $display("-------------------------------------\n");
     pwm_test(.mlkem(1), .sampler(0), .acc_en(0), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
     pwm_test(.mlkem(1), .sampler(0), .acc_en(1), .shuf_en(0), .mask_en(0));
     $display("-------------------------------------\n");
-    // pwm_test(.mlkem(1), .sampler(1), .acc_en(0), .shuf_en(0), .mask_en(0)); //TODO: fix this part
-    // $display("-------------------------------------\n");
-    // pwm_test(.mlkem(1), .sampler(1), .acc_en(1), .shuf_en(0), .mask_en(0));
-    // $display("-------------------------------------\n");
+    pwm_test(.mlkem(1), .sampler(1), .acc_en(0), .shuf_en(0), .mask_en(0));
+    $display("-------------------------------------\n");
+    pwm_test(.mlkem(1), .sampler(1), .acc_en(1), .shuf_en(0), .mask_en(0));
+    $display("-------------------------------------\n");
+    pwm_test(.mlkem(1), .sampler(0), .acc_en(0), .shuf_en(1), .mask_en(0));
+    $display("-------------------------------------\n");
+    pwm_test(.mlkem(1), .sampler(0), .acc_en(1), .shuf_en(1), .mask_en(0));
+    $display("-------------------------------------\n");
     pwa_pws_test(.mlkem(1), .shuf_en(0), .pwa_mode(1));
     $display("-------------------------------------\n");
     pwa_pws_test(.mlkem(1), .shuf_en(0), .pwa_mode(0));
@@ -531,16 +570,54 @@ initial begin
     $display("-------------------------------------\n");
     pwa_pws_test(.mlkem(1), .shuf_en(1), .pwa_mode(0));
     $display("-------------------------------------\n");
-    pwm_test(.mlkem(1), .sampler(0), .acc_en(0), .shuf_en(1), .mask_en(0));
-    $display("-------------------------------------\n");
-    pwm_test(.mlkem(1), .sampler(0), .acc_en(1), .shuf_en(1), .mask_en(0));
-    $display("-------------------------------------\n");
+endtask
 
-    pwm_test(.mlkem(1), .sampler(1), .acc_en(0), .shuf_en(0), .mask_en(0));
-    $display("-------------------------------------\n");
-    pwm_test(.mlkem(1), .sampler(1), .acc_en(1), .shuf_en(0), .mask_en(0));
-    $display("-------------------------------------\n");
+task try_new_masking();
+    begin
+        $display("Trying new masking scheme\n");
+        
+        init_por_coeffs();
 
+        $display("Perform NTT on unmasked data\n");
+        ct_test(.mlkem(1), .shuf_en(0), .ntt_base_addr({14'h0, 14'h40, 14'h80}));
+
+        init_masked_coeffs(.mlkem(1));
+
+        $display("Perform NTT on rand input\n");
+        ct_test(.mlkem(1), .shuf_en(0), .ntt_base_addr({14'hC0, 14'h100, 14'h140}));
+        $display("Perform NTT on masked data\n");
+        ct_test(.mlkem(1), .shuf_en(0), .ntt_base_addr({14'h180, 14'h1C0, 14'h200}));
+
+        // for (int i = 0; i < 64; i++) begin
+        //     force dut.pwm_mem_a.mem[i] = dut.ntt_mem.mem[i+'h140];
+        //     force dut.pwm_mem_b.mem[i] = dut.ntt_mem.mem[i+'h200];
+        // end
+        // pwa_pws_test(.mlkem(1), .shuf_en(0), .pwa_mode(1));
+
+        // for (int i = 0; i < 64; i++) begin
+        //     // if (dut.ntt_mem.mem[i+'h80] != dut.ntt_mem.mem[i+'h80]) begin
+        //     //     $display("Mismatch at index %0d: expected %h, got %h", i, dut.ntt_mem.mem[i+'h80], dut.ntt_mem.mem[i+'h80]);
+        //     //     fail_flag = 1;
+        //     // end
+        //     release dut.pwm_mem_a.mem[i];
+        //     release dut.pwm_mem_b.mem[i];
+        // end
+    end
+endtask
+
+
+initial begin
+    init_sim();
+    reset_dut();
+
+    // run_all_tests();
+    try_new_masking();
+    
+    if (fail_flag)
+        $display("Some tests FAILED!\n");
+    else
+        $display("All tests PASSED!\n");
+    
     repeat(1000) @(posedge clk_tb); // Wait for some time to observe the reset behavior
     $finish;
     
