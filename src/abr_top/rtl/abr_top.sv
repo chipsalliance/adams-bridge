@@ -120,6 +120,14 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] mlkem_mode;
   ntt_mem_addr_t [ABR_NUM_NTT-1:0] ntt_mem_base_addr;
   pwo_mem_addr_t [ABR_NUM_NTT-1:0] pwo_mem_base_addr;
+
+  // Controller outputs — single command set
+  abr_ntt_mode_e ntt_mode_ctrl;
+  logic ntt_enable_ctrl;
+  ntt_mem_addr_t ntt_mem_base_addr_ctrl;
+  pwo_mem_addr_t pwo_mem_base_addr_ctrl;
+  logic ntt_masking_en_ctrl;
+  logic ntt_shuffling_en_ctrl;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_rd_req;
@@ -137,6 +145,7 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] pwm_a_rd_data_valid;
   logic [ABR_NUM_NTT-1:0] pwm_b_rd_data_valid;
   logic [ABR_NUM_NTT-1:0] ntt_busy;
+  logic [ABR_NUM_NTT-1:0] ntt_done;
   logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
   logic [ABR_NUM_NTT-1:0] ntt_masking_en; //TODO: we can remove this
@@ -458,14 +467,14 @@ abr_ctrl_inst
   .sampler_state_data_i(sampler_state_data),
   .sampler_busy_i(sampler_busy),
 
-  //ntt interface
-  .ntt_enable_o(ntt_enable),
-  .ntt_mode_o(ntt_mode),
-  .ntt_mem_base_addr_o(ntt_mem_base_addr),
-  .pwo_mem_base_addr_o(pwo_mem_base_addr),
-  .ntt_masking_en_o(ntt_masking_en),
-  .ntt_shuffling_en_o(ntt_shuffling_en),
-  .ntt_busy_i(ntt_busy),
+  //ntt interface — single command set from controller
+  .ntt_enable_o(ntt_enable_ctrl),
+  .ntt_mode_o(ntt_mode_ctrl),
+  .ntt_mem_base_addr_o(ntt_mem_base_addr_ctrl),
+  .pwo_mem_base_addr_o(pwo_mem_base_addr_ctrl),
+  .ntt_masking_en_o(ntt_masking_en_ctrl),
+  .ntt_shuffling_en_o(ntt_shuffling_en_ctrl),
+  .ntt_busy_i(ntt_busy[0]),
 
   //aux interface
   .aux_src0_base_addr_o(aux_src0_base_addr),
@@ -618,6 +627,34 @@ generate if (MASKING_EN) begin : sampler_ntt_dv_mirror
 end else begin : sampler_ntt_dv_no_mirror
   assign sampler_ntt_dv[1] = 1'b0;
 end endgenerate
+
+// NTT control: controller outputs single command, abr_top distributes
+// NTT[0] always gets the command; NTT[1] mirrors when masking_en is set
+always_comb begin
+  // NTT[0] — always active
+  ntt_enable[0]        = ntt_enable_ctrl;
+  ntt_mode[0]          = ntt_mode_ctrl;
+  ntt_mem_base_addr[0] = ntt_mem_base_addr_ctrl;
+  pwo_mem_base_addr[0] = pwo_mem_base_addr_ctrl;
+  ntt_shuffling_en[0]  = ntt_shuffling_en_ctrl;
+  ntt_masking_en[0]    = ntt_masking_en_ctrl;
+  // NTT[1] — mirrors NTT[0] when sequencer sets masking_en
+  if (MASKING_EN && ntt_masking_en_ctrl) begin
+    ntt_enable[1]        = ntt_enable_ctrl;
+    ntt_mode[1]          = ntt_mode_ctrl;
+    ntt_mem_base_addr[1] = ntt_mem_base_addr_ctrl;
+    pwo_mem_base_addr[1] = pwo_mem_base_addr_ctrl;
+    ntt_shuffling_en[1]  = ntt_shuffling_en_ctrl;
+    ntt_masking_en[1]    = 1'b0;
+  end else if (MASKING_EN) begin
+    ntt_enable[1]        = '0;
+    ntt_mode[1]          = ABR_NTT_NONE;
+    ntt_mem_base_addr[1] = '0;
+    pwo_mem_base_addr[1] = '0;
+    ntt_shuffling_en[1]  = '0;
+    ntt_masking_en[1]    = '0;
+  end
+end
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
@@ -772,14 +809,17 @@ generate
     .pwm_b_rd_data_valid(pwm_b_rd_data_valid[g_inst]),
     .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? ABR_MEM_MASKED_DATA_WIDTH'(sampler_ntt_data) : ABR_MEM_MASKED_DATA_WIDTH'(pwm_b_rd_data[g_inst])),
     .ntt_busy(ntt_busy[g_inst]),
-    .ntt_done()
+    .ntt_done(ntt_done[g_inst])
   );
   // Truncate 384-bit NTT output to 96-bit
   assign ntt_mem_wr_data[g_inst] = ntt_mem_wr_data_full[g_inst][ABR_MEM_DATA_WIDTH-1:0];
   end
 endgenerate
 
-//aux functions
+// Phase 2b: NTT output comparison — validates NTT[1] produces correct results
+// The cycle-level checker is deferred to Phase 2c when both NTTs are synchronized.
+// For now, functional correctness is validated by KAT signature comparison.
+// TODO(Phase 2c): Add memory content comparison after each masked NTT operation
 power2round_top
 power2round_inst (
   .clk(clk),
@@ -1164,6 +1204,16 @@ always_comb begin
       pwm_b_rd_req_mux[ntt][i]    = ({ABR_MEM_ADDR_WIDTH{pwo_b_mem_re[0][ntt][i]}} & pwm_b_rd_req[ntt].addr);
 
       ntt_mem_wr_data_mux[ntt][i] = ({ABR_MEM_DATA_WIDTH{ntt_mem_we[ntt][i]}}   & ntt_mem_wr_data[ntt]);
+    end
+  end
+
+  // When NTT[1] is idle (unmasked ops), fan-out NTT[0] writes to masked memory
+  // so masked memory stays in sync for when NTT[1] later reads those addresses
+  if (MASKING_EN && !ntt_enable[1]) begin
+    for (int unsigned i = 0; i < 3; i++) begin
+      ntt_mem_we_mux[1][i]      = ntt_mem_we_mux[0][i];
+      ntt_mem_wr_req_mux[1][i]  = ntt_mem_wr_req_mux[0][i];
+      ntt_mem_wr_data_mux[1][i] = ntt_mem_wr_data_mux[0][i];
     end
   end
 end
