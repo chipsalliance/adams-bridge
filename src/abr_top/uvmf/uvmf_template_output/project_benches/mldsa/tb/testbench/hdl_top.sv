@@ -103,8 +103,8 @@ import kv_defines_pkg::*;
 
   abr_mem_if abr_memory_export();
 
-  // MASKING_EN — hardcoded to 0 until Phase 2 adds masked memory support
-  localparam MASKING_EN = 0;
+  // MASKING_EN — hardcoded to 1 for Phase 2 dual-NTT + masked memory
+  localparam MASKING_EN = 1;
 
   // SRAM Latency
 `ifdef ABR_SRAM_2CLK_LATENCY
