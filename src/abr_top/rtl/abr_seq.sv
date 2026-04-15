@@ -596,9 +596,9 @@ module abr_seq
                 MLDSA_VERIFY_EXP_A+ 78      : data_o_rom <= '{opcode:ABR_UOP_PWS, imm:'h0000, length:'d00, operand1:MLDSA_CT_BASE, operand2:MLDSA_AZ0_BASE, operand3:MLDSA_AZ0_BASE};
                 MLDSA_VERIFY_EXP_A+ 79      : data_o_rom <= '{opcode:ABR_UOP_INTT, imm:'h0000, length:'d00, operand1:MLDSA_AZ0_BASE, operand2:MLDSA_TEMP0_BASE, operand3:MLDSA_W0_7_BASE};
      
-                MLDSA_VERIFY_RES+ 0         : data_o_rom <= '{opcode:ABR_UOP_SIGDEC_H, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_HINT_R_0_BASE};
+                MLDSA_VERIFY_RES+ 0         : data_o_rom <= '{opcode:ABR_UOP_SIGDEC_H, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_HINT_R_BASE};
                 MLDSA_VERIFY_RES+ 1         : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_VERIFY_RES+ 2         : data_o_rom <= '{opcode:ABR_UOP_USEHINT, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:MLDSA_HINT_R_0_BASE, operand3:ABR_NOP};
+                MLDSA_VERIFY_RES+ 2         : data_o_rom <= '{opcode:ABR_UOP_USEHINT, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:MLDSA_HINT_R_BASE, operand3:ABR_NOP};
                 MLDSA_VERIFY_RES+ 3         : data_o_rom <= '{opcode:ABR_UOP_RUN_SHAKE256, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_DEST_VERIFY_RES_REG_ID};
                 MLDSA_VERIFY_E              : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
 

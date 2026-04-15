@@ -59,7 +59,6 @@ interface abr_mem_if;
   `ABR_MEM_IF_SIGNALS(ABR_MEM_INST0, mem_inst0_bank1)
   `ABR_MEM_IF_SIGNALS(ABR_MEM_INST1, mem_inst1)
   `ABR_MEM_IF_SIGNALS(ABR_MEM_INST2, mem_inst2)
-  `ABR_MEM_IF_SIGNALS(ABR_MEM_INST3, mem_inst3)
   `ABR_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank0)
   `ABR_MEM_IF_SIGNALS(SK_MEM_BANK, sk_mem_bank1)
   `ABR_MEM_BE_IF_SIGNALS(SIG_Z_MEM, sig_z_mem)
@@ -71,7 +70,6 @@ interface abr_mem_if;
     `ABR_MEM_IF_REQ_PORTS(mem_inst0_bank1),
     `ABR_MEM_IF_REQ_PORTS(mem_inst1),
     `ABR_MEM_IF_REQ_PORTS(mem_inst2),
-    `ABR_MEM_IF_REQ_PORTS(mem_inst3),
     `ABR_MEM_IF_REQ_PORTS(sk_mem_bank0),
     `ABR_MEM_IF_REQ_PORTS(sk_mem_bank1),
     `ABR_MEM_BE_IF_REQ_PORTS(sig_z_mem),
@@ -84,7 +82,6 @@ interface abr_mem_if;
     `ABR_MEM_IF_RESP_PORTS(mem_inst0_bank1),
     `ABR_MEM_IF_RESP_PORTS(mem_inst1),
     `ABR_MEM_IF_RESP_PORTS(mem_inst2),
-    `ABR_MEM_IF_RESP_PORTS(mem_inst3),
     `ABR_MEM_IF_RESP_PORTS(sk_mem_bank0),
     `ABR_MEM_IF_RESP_PORTS(sk_mem_bank1),
     `ABR_MEM_BE_IF_RESP_PORTS(sig_z_mem),

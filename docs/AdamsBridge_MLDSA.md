@@ -3530,6 +3530,147 @@ In the UseHint phase, the decompose unit retrieves w from memory and divides it 
 |                            | EN\_Keccak |                     |          |         |
 |                            | RDKeccak   | Verification Result |          |         |
 
+## MLDSA Memory Layout (Unmasked, MASKING_EN=0)
+
+### Memory Instances
+| Instance | Type | Depth | Width | Size |
+|----------|------|-------|-------|------|
+| inst0 | Banked (2 banks) | 832/bank (1664 total) | 96-bit | 19.5 KB |
+| inst1 | Single | 64 | 96-bit | 0.75 KB |
+| inst2 | Single | 1536 | 96-bit | 18 KB |
+| SIB | Single | - | - | SampleInBall |
+
+Address scheme: top 3 bits select instance (0=inst0, 1=inst1, 2=inst2, 4=SIB).
+inst0 bit[0] selects bank. All memories are 1R1W.
+
+---
+
+### KeyGen Memory Layout
+
+#### inst0 (KeyGen)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 447 | 448 | S1_0..S1_6 | ExpandS output, 7x64 |
+|  448- 959 | 512 | S2_0..S2_7 | ExpandS output, 8x64 |
+|  960-1471 | 512 | T0..T7 | A*s1+s2 result, 8x64 |
+| 1536-1599 |  64 | TEMP0 | NTT scratch |
+
+#### inst1 (KeyGen)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0-  63 |  64 | AS0 / AS0_INTT | A*NTT(s1) accumulator, reused per row |
+
+#### inst2 (KeyGen)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|   64- 511 | 448 | S1_0_NTT..S1_6_NTT | NTT(s1) for ExpandA, 7x64 |
+| 1472-1535 |  64 | TEMP2 | INTT scratch |
+
+#### KeyGen Data Flow
+```
+1. ExpandS -> S1[0..6], S2[0..7]                      (inst0)
+2. NTT(S1_i) -> S1_i_NTT                              (inst0 -> inst2, temp: inst0/TEMP0)
+3. For each row i=0..7:
+   a. ExpandA x S1_NTT -> AS0                          (inst2 read, inst1 write)
+   b. INTT(AS0) -> AS0_INTT                            (inst1 in-place, temp: inst2/TEMP2)
+   c. AS0_INTT + S2_i -> T_i                           (inst1 read + inst0 read -> inst0 write)
+4. Power2Round(T) -> t1,t0                             (inst0 read)
+5. skEncode(S1, S2, T0)                                (inst0 read)
+```
+
+---
+
+### Signing Memory Layout
+
+#### inst0 (Signing)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 447 | 448 | S1_0..S1_6 | NTT(s1) from skDecode, 7x64 |
+|  448- 959 | 512 | S2_0..S2_7 | NTT(s2) from skDecode, 8x64 |
+|  960-1471 | 512 | T0..T7 | NTT(t) from skDecode, 8x64 |
+| 1472-1535 |  64 | CS1/Z/CS2/R0/AY0/CS_NTT/CT_NTT | Shared scratch (sequential reuse) |
+| 1536-1599 |  64 | TEMP0 | NTT scratch |
+
+#### inst1 (Signing)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0-  63 |  64 | C_NTT | NTT(c) from SampleInBall |
+
+#### inst2 (Signing)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 447 | 448 | Y_0..Y_6 | ExpandMask output, 7x64 |
+|  448- 959 | 512 | Y_NTT / CT_0..CT_7 / HINT_R_0..HINT_R_7 | NTT(Y) then reused for c*t and hints, 8x64 |
+|  960-1471 | 512 | W0_0..W0_7 | INTT(A*Y) decompose input, 8x64 |
+| 1472-1535 |  64 | TEMP2 | INTT scratch |
+
+#### Signing Data Flow
+```
+1. skDecode -> NTT(S1), NTT(S2), NTT(T)               (inst0)
+2. ExpandMask -> Y[0..6]                               (inst2)
+3. NTT(Y_i) -> Y_i_NTT                                (inst2 in-place, temp: inst2/TEMP2)
+4. For each row i=0..7:
+   a. ExpandA x Y_NTT -> AY0                           (inst2 read -> inst0/1472 write)
+   b. INTT(AY0) -> W0_i                                (inst0 read -> inst2 write, temp: inst2/TEMP2)
+5. Decompose(W0) -> w1, w0                             (inst2 read/write)
+6. NTT(c) -> C_NTT                                     (SIB -> inst1)
+7. For each i=0..6:
+   a. C_NTT x S1_i -> CS_NTT                           (inst1 x inst0 -> inst0/1472)
+   b. INTT(CS_NTT) -> CS1                              (inst0 in-place, temp: inst2/TEMP2)
+   c. Y_i + CS1 -> Z                                   (inst2 + inst0 -> inst0/1472)
+   d. NormCheck(Z), SigEncode(Z)
+8. For each i=0..7:
+   a. C_NTT x T_i -> CT_NTT                            (inst1 x inst0 -> inst0/1472)
+   b. INTT(CT_NTT) -> CT_i                             (inst0 -> inst2, temp: inst2/TEMP2)
+9. For each i=0..7:
+   a. C_NTT x S2_i -> CS_NTT                           (inst1 x inst0 -> inst0/1472)
+   b. INTT(CS_NTT) -> CS2                              (inst0 in-place, temp: inst2/TEMP2)
+   c. W0_i - CS2 -> R0                                 (inst2 - inst0 -> inst0/1472)
+   d. R0 + CT_i -> HINT_R_i                            (inst0 + inst2 -> inst2)
+10. MakeHint(HINT_R)                                    (inst2 read)
+```
+
+---
+
+### Verify Memory Layout
+
+#### inst0 (Verify)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 447 | 448 | Z_0..Z_6 / Z_NTT_0..Z_NTT_6 | sigDecode_z output, NTT in-place, 7x64 |
+|  448- 959 | 512 | HINT_R (verify) | sigDecode_h output, aliases S2 region, 8x64 |
+|  960-1471 | 512 | T0..T7 | pkDecode output, NTT in-place, 8x64 |
+| 1472-1535 |  64 | CT_v | C_NTT x T_i scratch |
+| 1536-1599 |  64 | TEMP0 | NTT scratch |
+
+#### inst1 (Verify)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0-  63 |  64 | C_NTT | NTT(c) from SampleInBall |
+
+#### inst2 (Verify)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|  448- 959 | 512 | AZ0 | A*z accumulator, aliases HINT_R/CT signing slots, 8x64 |
+|  960-1471 | 512 | W0_0..W0_7 | A*z-c*t result, 8x64 |
+
+#### Verify Data Flow
+```
+1. pkDecode -> T0..T7                                  (inst0)
+2. sigDecode_z -> Z_0..Z_6                             (inst0, aliases S1 slots)
+3. NormCheck(Z)
+4. NTT(T_i) in-place                                   (inst0, temp: inst0/TEMP0)
+5. NTT(Z_i) -> Z_NTT_i in-place                       (inst0, temp: inst0/TEMP0)
+6. NTT(c) -> C_NTT                                     (SIB -> inst1)
+7. For each row i=0..7:
+   a. ExpandA x Z_NTT -> AZ0                           (inst0 read -> inst2/448 write)
+   b. C_NTT x T_i -> CT_v                              (inst1 x inst0 -> inst0/1472)
+   c. CT_v - AZ0 -> AZ0                                (inst0 - inst2 -> inst2 in-place)
+   d. INTT(AZ0) -> W0_i                                (inst2 -> inst2, temp: inst0/TEMP0)
+8. sigDecode_h -> HINT_R                                (inst0/448, aliases S2)
+9. UseHint(W0, HINT_R) -> w1                           (inst2 read W0, inst0 read HINT_R)
+```
+
 References:
 
 [1] The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022. [Online]. Available: [White House](https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/).

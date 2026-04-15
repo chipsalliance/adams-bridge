@@ -18,7 +18,8 @@ module abr_mem_top
   import abr_params_pkg::*;
   import abr_ctrl_pkg::*;
   #(
-    parameter SRAM_LATENCY = 1
+    parameter SRAM_LATENCY = 1,
+    parameter bit MASKING_EN = 0
   )
 (
   input logic clk_i,
@@ -30,7 +31,6 @@ module abr_mem_top
 `ABR_MEM(ABR_MEM_INST0_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst0_bank1,SRAM_LATENCY)
 `ABR_MEM(ABR_MEM_INST1_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst1,SRAM_LATENCY)
 `ABR_MEM(ABR_MEM_INST2_DEPTH,ABR_MEM_DATA_WIDTH,mem_inst2,SRAM_LATENCY)
-`ABR_MEM(ABR_MEM_INST3_DEPTH,ABR_MEM_MASKED_DATA_WIDTH,mem_inst3,SRAM_LATENCY)
 `ABR_MEM(SK_MEM_BANK_DEPTH,SK_MEM_BANK_DATA_W,sk_mem_bank0,SRAM_LATENCY)
 `ABR_MEM(SK_MEM_BANK_DEPTH,SK_MEM_BANK_DATA_W,sk_mem_bank1,SRAM_LATENCY)
 `ABR_MEM_BE(SIG_Z_MEM_DEPTH,SIG_Z_MEM_DATA_W,sig_z_mem,SRAM_LATENCY)

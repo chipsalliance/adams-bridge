@@ -39,7 +39,9 @@ module abr_ctrl
   import kv_defines_pkg::*; 
   `endif
   #(
-    parameter SRAM_LATENCY = 1
+    parameter SRAM_LATENCY = 1,
+    parameter bit MASKING_EN = 0,
+    localparam ABR_NUM_NTT = MASKING_EN ? 2 : 1
   )
   (
   input logic clk,
@@ -2170,9 +2172,18 @@ abr_seq abr_seq_inst
 localparam ABR_SEQ_NTT = 0;
 
 //Check if ntt is being enabled in this clock also
-always_comb ntt_busy[ABR_SEQ_NTT] = abr_instr.opcode.ntt_en & (ntt_busy_i[ABR_SEQ_NTT] | ntt_enable_o[ABR_SEQ_NTT]);
+always_comb begin
+  ntt_busy = '0;
+  ntt_busy[ABR_SEQ_NTT] = abr_instr.opcode.ntt_en & (ntt_busy_i[ABR_SEQ_NTT] | ntt_enable_o[ABR_SEQ_NTT]);
+end
 
 always_comb begin
+  ntt_enable_o = '0;
+  ntt_mode_o = '{default: ABR_NTT_NONE};
+  ntt_masking_en_o = '0;
+  ntt_shuffling_en_o = '0;
+  ntt_mem_base_addr_o = '0;
+  pwo_mem_base_addr_o = '0;
   ntt_enable_o[ABR_SEQ_NTT] = ntt_en[ABR_SEQ_NTT];
   ntt_mode_o[ABR_SEQ_NTT] = abr_instr.opcode.mode.ntt_mode;
   ntt_masking_en_o[ABR_SEQ_NTT] = abr_instr.opcode.masking_en;

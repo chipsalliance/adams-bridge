@@ -103,12 +103,8 @@ import kv_defines_pkg::*;
 
   abr_mem_if abr_memory_export();
 
-  // MASKING_EN
-`ifdef ABR_MASKING_DISABLED
+  // MASKING_EN — hardcoded to 0 until Phase 2 adds masked memory support
   localparam MASKING_EN = 0;
-`else
-  localparam MASKING_EN = 1;
-`endif
 
   // SRAM Latency
 `ifdef ABR_SRAM_2CLK_LATENCY
@@ -119,7 +115,8 @@ import kv_defines_pkg::*;
 
   // SRAM module
   abr_mem_top #(
-    .SRAM_LATENCY(SRAM_LATENCY)
+    .SRAM_LATENCY(SRAM_LATENCY),
+    .MASKING_EN(MASKING_EN)
   )
   abr_mem_top_inst
   (

@@ -56,29 +56,21 @@ package abr_params_pkg;
   parameter MLKEM_NUM_SHARES = 2; //set this to 1 if masking disabled
   parameter MLKEM_SHARE_WIDTH = MLKEM_Q_WIDTH * MLKEM_NUM_SHARES;
 
-  //Can be 1 or 2 only
-  parameter ABR_NUM_NTT = 1;
-  
   //Memory interface
   parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
   parameter ABR_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
-
-  parameter ABR_MEM_MASKED_INST = 3;
 
   //parameter ABR_MEM_INST0_DEPTH = 1664; //19.5 KB
   //parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
   parameter ABR_MEM_INST0_DEPTH = 1664/2; //9.75 KB
   parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);
   parameter ABR_MEM_INST0_DATA_W = ABR_MEM_DATA_WIDTH;
-  parameter ABR_MEM_INST1_DEPTH = 576; //6.75 KB
+  parameter ABR_MEM_INST1_DEPTH = 64; //0.75 KB
   parameter ABR_MEM_INST1_ADDR_W = $clog2(ABR_MEM_INST1_DEPTH);
   parameter ABR_MEM_INST1_DATA_W = ABR_MEM_DATA_WIDTH;
-  parameter ABR_MEM_INST2_DEPTH = 1472; //17.25 KB
+  parameter ABR_MEM_INST2_DEPTH = 1536; //18 KB
   parameter ABR_MEM_INST2_ADDR_W = $clog2(ABR_MEM_INST2_DEPTH);
   parameter ABR_MEM_INST2_DATA_W = ABR_MEM_DATA_WIDTH;
-  parameter ABR_MEM_INST3_DEPTH = 64; //3 KB
-  parameter ABR_MEM_INST3_ADDR_W = $clog2(ABR_MEM_INST3_DEPTH);
-  parameter ABR_MEM_INST3_DATA_W = ABR_MEM_MASKED_DATA_WIDTH;
   parameter ABR_MEM_W1_DEPTH = 512;
   parameter ABR_MEM_W1_ADDR_W = $clog2(ABR_MEM_W1_DEPTH);
   parameter ABR_MEM_W1_DATA_W = 4;
