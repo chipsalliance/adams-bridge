@@ -58,6 +58,8 @@ module skencode
         output logic skencode_done
     );
 
+    `include "abr_prim_assert.sv"
+
     localparam THE_LAST_ADDR = ((MLDSA_K * MLDSA_N)/4)+((MLDSA_L * MLDSA_N)/4)-1;
     localparam THE_LAST_API = ((MLDSA_K +MLDSA_L)*MLDSA_N*3)/32;
 

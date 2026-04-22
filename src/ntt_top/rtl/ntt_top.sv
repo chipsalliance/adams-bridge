@@ -82,6 +82,8 @@ module ntt_top
     output logic ntt_done
 
 );
+    `include "abr_prim_assert.sv"
+
     // //NTT mem signals
 
     //Write IF

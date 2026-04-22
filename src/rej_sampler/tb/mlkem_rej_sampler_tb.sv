@@ -22,7 +22,7 @@
 import "DPI-C" function string getenv(input string env_name);
 
 module mlkem_rej_sampler_tb
-  import mldsa_sampler_pkg::*;
+  import abr_sampler_pkg::*;
   import mldsa_params_pkg::*;
 (
 `ifdef VERILATOR

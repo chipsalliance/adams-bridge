@@ -2559,6 +2559,7 @@ module abr_reg (
     assign cpuif_rd_data = readback_data;
     assign cpuif_rd_err = readback_err;
 
+`include "abr_prim_assert.sv"
 `ABR_ASSERT_KNOWN(ERR_HWIF_IN, hwif_in, clk, !hwif_in.hard_reset_b)
 
 endmodule

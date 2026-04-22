@@ -2,7 +2,6 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/norm_check/tb
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/norm_check/rtl/norm_check.sv
