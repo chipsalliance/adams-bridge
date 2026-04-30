@@ -44,6 +44,7 @@ parameter UNMASKED_PWM_LATENCY       = 5;         //latency of modular multiplie
 parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
+parameter UNMASKED_PWAS_RD_TO_WR_LATENCY = 3; //PWA/PWS: incr_pw_rd_addr to incr_pw_wr_addr = 4 cycles - 1 cycle for chunk latching
 
 parameter MASKED_ADD_SUB_LATENCY            = 53;      //For 1 masked add/sub operation
 parameter MASKED_PWM_LATENCY                = 211;     //For 1 masked pwm operation
