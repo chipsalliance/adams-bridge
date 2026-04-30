@@ -87,7 +87,7 @@ module ntt_top
     //Write IF
     logic mem_wren, mem_wren_reg, mem_wren_mux;
     logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr, mem_wr_addr_reg, mem_wr_addr_mux;
-    logic [ABR_MEM_DATA_WIDTH-1:0] mem_wr_data_int, mem_wr_data_reg, mem_wr_data_reg_d2;
+    logic [ABR_MEM_DATA_WIDTH-1:0] mem_wr_data_int, mem_wr_data_reg;
     
     //Read IF
     logic mem_rden;
@@ -103,7 +103,7 @@ module ntt_top
     logic buf0_valid;
 
     //Internal
-    logic [6:0] twiddle_addr, twiddle_addr_reg;
+    logic [6:0] twiddle_addr;
     logic buf_wren;
     logic buf_rden;
     logic buf_wr_rst_count, buf_rd_rst_count;
@@ -117,13 +117,13 @@ module ntt_top
     //PWM mem IF
     pwo_uvwi_t pw_uvw_i; //Used for PWM, PWMA
     pwo_t pwo_uv_o;
-    logic pw_wren, pw_wren_reg, pw_wren_reg_d1;
+    logic pw_wren, pw_wren_reg;
     logic pw_rden, pw_rden_dest_mem, pw_rden_reg;
     logic sampler_valid_reg;
     logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_reg;
     
     //Flop ntt_ctrl pwm output wr addr to align with BFU output flop
-    logic [ABR_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg, pwm_wr_addr_c_reg_d2;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] pwm_wr_addr_c_reg;
     logic [(ABR_MEM_DATA_WIDTH)-1:0] pwm_wr_data_reg;
 
     //ntt_ctrl output connections
@@ -263,6 +263,7 @@ module ntt_top
         .pw_mem_rd_addr_c(pw_mem_rd_addr_c),
         .pw_mem_wr_addr_c(pw_mem_wr_addr_c),
         .pw_rden(pw_rden),
+        .pw_rden_dest_mem(pw_rden_dest_mem),
         .pw_wren(pw_wren),
         .busy(ntt_busy),
         .done(ntt_done_int),
@@ -354,7 +355,6 @@ module ntt_top
         if (!reset_n) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -368,12 +368,9 @@ module ntt_top
             pwm_wr_data_reg     <= 'h0;
 
             pwm_wr_addr_c_reg   <= 'h0;
-            pwm_wr_addr_c_reg_d2 <= 'h0;
 
             pw_wren_reg         <= 'b0;
-            pw_wren_reg_d1      <= 'b0;
             mem_wr_data_reg     <= 'h0;
-            mem_wr_data_reg_d2  <= 'h0;
             sampler_valid_reg   <= 'h0;
             pwm_b_rd_data_reg   <= 'h0;
 
@@ -388,7 +385,6 @@ module ntt_top
         else if (zeroize) begin
             mem_rd_data_reg     <= 'h0;
             bf_enable_reg       <= 'b0;
-            twiddle_addr_reg    <= 'h0;
             twiddle_factor_reg  <= 'h0;
 
             uv_o_reg            <= 'h0;
@@ -401,12 +397,9 @@ module ntt_top
             pwm_wr_data_reg     <= 'h0;
 
             pwm_wr_addr_c_reg   <= 'h0;
-            pwm_wr_addr_c_reg_d2 <= 'h0;
 
             pw_wren_reg         <= 'b0;
-            pw_wren_reg_d1      <= 'b0;
             mem_wr_data_reg     <= 'h0;
-            mem_wr_data_reg_d2  <= 'h0;
             sampler_valid_reg   <= 'h0;
             pwm_b_rd_data_reg   <= 'h0;
 
@@ -420,7 +413,6 @@ module ntt_top
         else begin
             mem_rd_data_reg     <= mem_rd_data[ABR_MEM_DATA_WIDTH-1:0];
             bf_enable_reg       <= {bf_enable_reg[1:0], bf_enable};
-            twiddle_addr_reg    <= twiddle_addr;
             twiddle_factor_reg  <= twiddle_factor;
 
             uv_o_reg            <= uv_o;
@@ -429,7 +421,6 @@ module ntt_top
 
             //pwm
             pwm_wr_addr_c_reg   <= pw_mem_wr_addr_c;
-            pwm_wr_addr_c_reg_d2 <= pwm_wr_addr_c_reg;
             
             pwm_rd_data_a_reg   <= pwm_rd_data_a;
             pwm_rd_data_b_reg   <= pwm_rd_data_b;
@@ -437,9 +428,7 @@ module ntt_top
             pwm_wr_data_reg     <= {1'b0, pwo_uv_o.uv3, 1'b0, pwo_uv_o.uv2, 1'b0, pwo_uv_o.uv1, 1'b0, pwo_uv_o.uv0};
 
             pw_wren_reg         <= pw_wren;
-            pw_wren_reg_d1      <= pw_wren_reg;
             mem_wr_data_reg     <= mem_wr_data_int;
-            mem_wr_data_reg_d2  <= mem_wr_data_reg;
             sampler_valid_reg   <= sampler_valid;
             pwm_b_rd_data_reg   <= pwm_b_rd_data[ABR_MEM_DATA_WIDTH-1:0];
 

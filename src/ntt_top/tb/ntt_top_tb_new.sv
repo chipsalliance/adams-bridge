@@ -73,8 +73,8 @@ ntt_wrapper dut (
     // .load_tb_addr(),
     .shuffle_en(shuffle_en_tb),
     .random(random_tb),
-    .masking_en(masking_en_tb),
-    .rnd_i(230'h0),
+    // .masking_en(masking_en_tb),
+    // .rnd_i(230'h0),
     .ntt_mem_base_addr(ntt_mem_base_addr_tb),
     .pwo_mem_base_addr(pwo_mem_base_addr_tb),
     .accumulate(acc_tb),
@@ -610,7 +610,7 @@ initial begin
     init_sim();
     reset_dut();
 
-    // run_all_tests();
+    run_all_tests();
     try_new_masking();
     
     if (fail_flag)
