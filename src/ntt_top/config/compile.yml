@@ -4,11 +4,10 @@
 # https://dev.azure.com/ms-tsd/Ether/_git/sim-tools?path=%2FSourceFileSpec.docx&version=GBmaster
 
 ---
-provides: [ntt_pkg]
+provides: [ntt_defines]
 schema_version: 2.4.0
 requires:
   - abr_defines
-  - abr_libs
 targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -19,6 +18,19 @@ targets:
       - $COMPILE_ROOT/rtl
     files:
       - $COMPILE_ROOT/rtl/ntt_defines_pkg.sv
+---
+provides: [ntt_pkg]
+schema_version: 2.4.0
+requires:
+  - ntt_defines
+  - abr_libs
+targets:
+  rtl:
+    directories: []
+    files: []
+  tb:
+    directories: []
+    files: []
 ---
 provides: [butterfly_top_tb]  
 schema_version: 2.4.0

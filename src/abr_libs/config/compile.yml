@@ -3,6 +3,7 @@ provides: [abr_libs]
 schema_version: 2.4.0
 requires:
   - abr_defines
+  - ntt_defines
 targets:
   tb:
     directories: [$COMPILE_ROOT/rtl]
@@ -36,6 +37,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_splitter.sv
       - $COMPILE_ROOT/rtl/abr_masked_OR.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
@@ -70,6 +72,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
+      - $COMPILE_ROOT/rtl/abr_splitter.sv
       - $COMPILE_ROOT/rtl/abr_masked_OR.sv
 ---
 provides: [masking_tb]

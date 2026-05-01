@@ -21,6 +21,9 @@
 module decompress_top
     import abr_params_pkg::*;
     import decompress_defines_pkg::*;
+    #(
+        parameter int ABR_NUM_NTT = 1
+    )
     (
         input logic clk,
         input logic reset_n,
@@ -32,8 +35,12 @@ module decompress_top
         input logic [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
 
+        // Splitter control
+        input logic                          split_en_i,
+        input logic [ABR_MEM_DATA_WIDTH-1:0] rand_i,
+
         output mem_if_t mem_wr_req,
-        output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] mem_wr_data, //Match memory width of ABR
+        output logic [ABR_NUM_NTT-1:0][ABR_MEM_DATA_WIDTH-1:0] mem_wr_data,
 
         output logic api_rd_en,
         output logic [ABR_MEM_ADDR_WIDTH-1:0] api_rd_addr,
@@ -55,8 +62,15 @@ module decompress_top
     logic [ABR_MEM_ADDR_WIDTH-1:0] mem_wr_addr;
     logic write_done;
     logic decompress_busy;
+    logic decompress_done_int;
 
-    always_comb decompress_done = decompress_busy & write_done;
+    // Pre-split write data (96-bit packed)
+    logic [ABR_MEM_DATA_WIDTH-1:0] mem_wr_data_pre;
+
+    // Pre-split write request
+    mem_if_t mem_wr_req_pre;
+
+    always_comb decompress_done_int = decompress_busy & write_done;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -153,8 +167,9 @@ module decompress_top
                 .op_o(decompress_data_o[i])
             );
 
-        assign mem_wr_data[i][MLKEM_Q_WIDTH-1:0] = decompress_data_o[i];
-        assign mem_wr_data[i][MLDSA_Q_WIDTH-1:MLKEM_Q_WIDTH] = '0; //Zero padding for memory width
+        // Pack into pre-split data word
+        assign mem_wr_data_pre[i*MLDSA_Q_WIDTH +: MLKEM_Q_WIDTH] = decompress_data_o[i];
+        assign mem_wr_data_pre[i*MLDSA_Q_WIDTH + MLKEM_Q_WIDTH +: (MLDSA_Q_WIDTH - MLKEM_Q_WIDTH)] = '0;
 
         end
     endgenerate
@@ -219,7 +234,80 @@ module decompress_top
         .done(write_done)
     );
 
-    always_comb mem_wr_req.addr = mem_wr_addr;
-    always_comb mem_wr_req.rd_wr_en = piso_data_valid ? RW_WRITE : RW_IDLE;
+    // Pre-split write request (combinational)
+    always_comb mem_wr_req_pre.addr = mem_wr_addr;
+    always_comb mem_wr_req_pre.rd_wr_en = piso_data_valid ? RW_WRITE : RW_IDLE;
+
+    // --- Arithmetic share splitter ---
+    // Splits decompress writes into share0 (random) and share1 (data - random mod q).
+    // 2-cycle latency; write request is delayed to align.
+    logic [ABR_MEM_DATA_WIDTH-1:0] split_share0, split_share1;
+    logic split_ready;
+    logic wr_valid_pre;
+
+    assign wr_valid_pre = piso_data_valid;
+
+    abr_splitter u_splitter (
+        .clk     (clk),
+        .reset_n (reset_n),
+        .zeroize (zeroize),
+        .en_i    (wr_valid_pre & split_en_i),
+        .mode    (1'b1),                        // decompress is MLKEM-only
+        .data_i  (mem_wr_data_pre),
+        .rand_i  (rand_i),
+        .share0_o(split_share0),
+        .share1_o(split_share1),
+        .ready_o (split_ready)
+    );
+
+    // 2-stage delay for write request to align with splitter output
+    mem_if_t mem_wr_req_d1, mem_wr_req_d2;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            mem_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d1.addr     <= '0;
+            mem_wr_req_d2.addr     <= '0;
+        end
+        else if (zeroize) begin
+            mem_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d1.addr     <= '0;
+            mem_wr_req_d2.addr     <= '0;
+        end
+        else begin
+            mem_wr_req_d1 <= mem_wr_req_pre;
+            mem_wr_req_d2 <= mem_wr_req_d1;
+        end
+    end
+
+    // Splitter pipeline tracker — delays decompress_done until pipeline drains
+    logic [1:0] split_pipe_active;
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)        split_pipe_active <= '0;
+        else if (zeroize)    split_pipe_active <= '0;
+        else                 split_pipe_active <= {split_pipe_active[0], wr_valid_pre & split_en_i};
+    end
+
+    // Output mux: split path (2-cycle delay) or bypass (combinational)
+    always_comb begin
+        if (split_en_i) begin
+            mem_wr_req     = mem_wr_req_d2;
+            mem_wr_data[0] = split_share0;
+            if (ABR_NUM_NTT > 1) begin
+                mem_wr_data[1] = split_share1;
+            end
+        end else begin
+            mem_wr_req     = mem_wr_req_pre;
+            mem_wr_data[0] = mem_wr_data_pre;
+            if (ABR_NUM_NTT > 1) begin
+                mem_wr_data[1] = mem_wr_data_pre;
+            end
+        end
+    end
+
+    // Done signal: wait for split pipeline to drain before signaling done
+    assign decompress_done = decompress_done_int & ~(split_en_i & |split_pipe_active);
 
 endmodule

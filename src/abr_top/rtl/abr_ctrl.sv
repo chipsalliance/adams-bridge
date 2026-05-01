@@ -87,6 +87,8 @@ module abr_ctrl
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
 
+  output logic                        split_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2175,7 +2177,7 @@ end
 always_comb begin
   ntt_enable_o = ntt_en;
   ntt_mode_o = abr_instr.opcode.mode.ntt_mode;
-  ntt_masking_en_o = abr_instr.opcode.masking_en;
+  ntt_masking_en_o = abr_instr.opcode.masking_en & ntt_en;
   ntt_shuffling_en_o = abr_instr.opcode.shuffling_en;
   ntt_temp_address = abr_instr.imm[0] ? MLDSA_TEMP2_BASE[ABR_MEM_ADDR_WIDTH-1:0] : MLDSA_TEMP0_BASE[ABR_MEM_ADDR_WIDTH-1:0];
   ntt_mem_base_addr_o = '{src_base_addr:abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
@@ -2185,6 +2187,9 @@ always_comb begin
                                         pw_base_addr_a:abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0],
                                         pw_base_addr_c:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
 end
+
+// Covers: MASKED_REJB, MASKED_EXP_MASK, MASKED_CBD, MASKED_SKDECODE, MASKED_DECOMPRESS
+always_comb split_en_o = abr_instr.opcode.masking_en & ~ntt_en;
 
 //Zeroizer
 always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
