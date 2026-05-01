@@ -193,8 +193,16 @@ module abr_seq
                 MLDSA_KG_S+ 106 : data_o_rom <= '{opcode:ABR_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:ABR_NOP, operand3:MLDSA_SK_T0_OFFSET};
                 //tr ←H(BytesToBits(pk),512)
                 MLDSA_KG_S+ 107 : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_TR_REG_ID};
+                //Recombine s1 shares before skencode
+                MLDSA_KG_S+ 108 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:MLDSA_S1_0_BASE, operand3:MLDSA_S1_0_BASE};
+                MLDSA_KG_S+ 109 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_1_BASE, operand2:MLDSA_S1_1_BASE, operand3:MLDSA_S1_1_BASE};
+                MLDSA_KG_S+ 110 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_2_BASE, operand2:MLDSA_S1_2_BASE, operand3:MLDSA_S1_2_BASE};
+                MLDSA_KG_S+ 111 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_3_BASE, operand2:MLDSA_S1_3_BASE, operand3:MLDSA_S1_3_BASE};
+                MLDSA_KG_S+ 112 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_4_BASE, operand2:MLDSA_S1_4_BASE, operand3:MLDSA_S1_4_BASE};
+                MLDSA_KG_S+ 113 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_5_BASE, operand2:MLDSA_S1_5_BASE, operand3:MLDSA_S1_5_BASE};
+                MLDSA_KG_S+ 114 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_6_BASE, operand2:MLDSA_S1_6_BASE, operand3:MLDSA_S1_6_BASE};
                 //sk ←skEncode(ρ,K,tr,s1,s2,t0)
-                MLDSA_KG_S+ 108 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_KG_S+ 115 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_KG_JUMP_SIGN : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //KG end
                 MLDSA_KG_E       : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
