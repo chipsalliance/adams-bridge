@@ -1561,7 +1561,9 @@ always_comb normcheck_mem_rd_data_valid = (|normcheck_mem_re[SRAM_LATENCY]) || (
 always_comb decomp_mem_rd_data_valid = (|decomp_mem_re[SRAM_LATENCY]) || (|decomp_mem_re0_bank[SRAM_LATENCY]);
 always_comb begin: ntt_rd_data_valid_gen
   for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
-    ntt_mem_rd_data_valid[ntt] = (|ntt_mem_re[SRAM_LATENCY][ntt]) || (|ntt_mem_re0_bank[SRAM_LATENCY][ntt]) || (ntt == 0 && sib_mem_re[1]);
+    // SIB valid for NTT[1] only when NTT[1] is in ct mode (forward NTT reading from SIB source)
+    ntt_mem_rd_data_valid[ntt] = (|ntt_mem_re[SRAM_LATENCY][ntt]) || (|ntt_mem_re0_bank[SRAM_LATENCY][ntt]) ||
+                                 (sib_mem_re[1] & (ntt == 0 || (ntt_mode[ntt] inside {MLDSA_NTT, MLKEM_NTT})));
     pwm_a_rd_data_valid[ntt] = (|pwo_a_mem_re[SRAM_LATENCY][ntt]) || (|pwo_a_mem_re0_bank[SRAM_LATENCY][ntt]);
     pwm_b_rd_data_valid[ntt] = (|pwo_b_mem_re[SRAM_LATENCY][ntt]) || (|pwo_b_mem_re0_bank[SRAM_LATENCY][ntt]);
   end
