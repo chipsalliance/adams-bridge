@@ -242,7 +242,6 @@ module decompress_top
     // Splits decompress writes into share0 (random) and share1 (data - random mod q).
     // 2-cycle latency; write request is delayed to align.
     logic [ABR_MEM_DATA_WIDTH-1:0] split_share0, split_share1;
-    logic split_ready;
     logic wr_valid_pre;
 
     assign wr_valid_pre = piso_data_valid;
@@ -257,7 +256,7 @@ module decompress_top
         .rand_i  (rand_i),
         .share0_o(split_share0),
         .share1_o(split_share1),
-        .ready_o (split_ready)
+        .ready_o ()
     );
 
     // 2-stage delay for write request to align with splitter output

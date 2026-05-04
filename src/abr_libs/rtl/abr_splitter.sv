@@ -17,13 +17,13 @@
 // abr_splitter.sv
 // --------
 // Arithmetic share splitter for SCA protection.
+// Pure 2-cycle pipeline stage — no handshake, no enable.
 // Splits a 96-bit memory word (4 coefficients × 23 bits) into two shares:
-//   share0 = rand
-//   share1 = (data - rand) mod q
+//   share0 = rand (delayed 2 cycles)
+//   share1 = (data - rand) mod q (1 cycle from add_sub_mod + 1 output register)
 // Supports MLDSA (q=8380417, 23-bit coefficients) and MLKEM (q=3329, 12-bit).
-// Uses NTT_REG_SIZE (23) to match NTT butterfly datapath.
+// Validity is controlled by the producer's DV/addr delay chain, not by this module.
 // LFSR is external — this module consumes 96 bits of randomness per word.
-// 2-cycle latency (from en_i pulse to ready_o assertion).
 //
 //======================================================================
 
@@ -54,7 +54,21 @@ module abr_splitter
     logic [NTT_REG_SIZE-1:0] rand_coeff  [COEFF_PER_CLK];
     logic [NTT_REG_SIZE-1:0] share0_coeff[COEFF_PER_CLK];
     logic [NTT_REG_SIZE-1:0] share1_coeff[COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] share1_coeff_reg[COEFF_PER_CLK];
     logic [COEFF_PER_CLK-1:0] lane_ready;
+
+    // Register share1 (add_sub_mod res_o) to make total share1 path = 2 cycles.
+    // add_sub_mod: res_o is combinationally valid 1 cycle after add_en_i.
+    // This register captures it, giving 2-cycle total latency matching
+    // the 2-stage rand/DV/addr delay chain in the producer.
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            for (int idx = 0; idx < COEFF_PER_CLK; idx++) share1_coeff_reg[idx] <= '0;
+        else if (zeroize)
+            for (int idx = 0; idx < COEFF_PER_CLK; idx++) share1_coeff_reg[idx] <= '0;
+        else
+            share1_coeff_reg <= share1_coeff;
+    end
 
     // Unpack inputs / pack outputs (23-bit coefficients in 24-bit slots)
     genvar k;
@@ -63,7 +77,7 @@ module abr_splitter
             assign data_coeff[k] = data_i[k*REG_SIZE +: NTT_REG_SIZE];
             assign rand_coeff[k] = rand_i[k*REG_SIZE +: NTT_REG_SIZE];
             assign share0_o[k*REG_SIZE +: REG_SIZE] = {1'b0, share0_coeff[k]};
-            assign share1_o[k*REG_SIZE +: REG_SIZE] = {1'b0, share1_coeff[k]};
+            assign share1_o[k*REG_SIZE +: REG_SIZE] = {1'b0, share1_coeff_reg[k]};
         end
     endgenerate
 
@@ -88,7 +102,7 @@ module abr_splitter
                 .ready_o  (lane_ready[i])
             );
 
-            // --- share0: rand delayed 2 cycles to align with ready_o ---
+            // --- share0: rand delayed 2 cycles ---
             // For MLKEM: only lower 12 bits, upper bits zeroed
             logic [NTT_REG_SIZE-1:0] rand_masked;
             logic [NTT_REG_SIZE-1:0] rand_d1, rand_d2;
@@ -107,8 +121,7 @@ module abr_splitter
                     rand_d2 <= '0;
                 end
                 else begin
-                    if (en_i)
-                        rand_d1 <= rand_masked;
+                    rand_d1 <= rand_masked;
                     rand_d2 <= rand_d1;
                 end
             end

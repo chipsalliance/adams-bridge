@@ -160,7 +160,6 @@ module skdecode_top
     // 2-cycle latency; write request is delayed to align.
     logic [ABR_MEM_DATA_WIDTH-1:0] split_share0_a, split_share1_a;
     logic [ABR_MEM_DATA_WIDTH-1:0] split_share0_b, split_share1_b;
-    logic split_ready_a;
     logic wr_valid_a, wr_valid_b;
 
     assign wr_valid_a = (mem_a_wr_req_int.rd_wr_en == RW_WRITE);
@@ -176,7 +175,7 @@ module skdecode_top
         .rand_i  (rand_i),
         .share0_o(split_share0_a),
         .share1_o(split_share1_a),
-        .ready_o (split_ready_a)
+        .ready_o ()
     );
 
     abr_splitter u_splitter_b (
@@ -189,7 +188,7 @@ module skdecode_top
         .rand_i  (rand_dual_i),
         .share0_o(split_share0_b),
         .share1_o(split_share1_b),
-        .ready_o ()                             // same timing as splitter A
+        .ready_o ()
     );
 
     // 2-stage delay for write request to align with splitter output

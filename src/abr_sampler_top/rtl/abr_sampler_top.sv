@@ -674,7 +674,6 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   // Splits sampler memory writes into share0 (random) and share1 (data - random mod q).
   // 2-cycle latency; address and write-enable are delayed to align.
   logic [ABR_MEM_DATA_WIDTH-1:0] splitter_share0, splitter_share1;
-  logic splitter_ready;
   logic splitter_mode; // 0 = MLDSA, 1 = MLKEM
   assign splitter_mode = (sampler_mode_i == ABR_CBD_SAMPLER);
 
@@ -688,7 +687,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .rand_i  (rand_i),
     .share0_o(splitter_share0),
     .share1_o(splitter_share1),
-    .ready_o (splitter_ready)
+    .ready_o ()
   );
 
   // 2-stage delay for write-enable and address to align with splitter output
