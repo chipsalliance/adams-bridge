@@ -366,8 +366,9 @@ module abr_seq
                 MLDSA_SIGN_MAKE_C       : data_o_rom <= '{opcode:ABR_UOP_RUN_SHAKE256, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_DEST_SIG_C_REG_ID};
                 MLDSA_SIGN_MAKE_C+ 1    : data_o_rom <= '{opcode:ABR_UOP_SIB, imm:'h0000, length:'d64, operand1:MLDSA_SIG_C_REG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
 
-                //NTT(C)
-                MLDSA_SIGN_VALID_S     : data_o_rom <= '{opcode:ABR_UOP_NTT, imm:'h0000, length:'d00, operand1:MLDSA_C_BASE, operand2:MLDSA_TEMP0_BASE, operand3:MLDSA_C_NTT_BASE};
+                //NTT(C) — MASKED_NTT_NOSHUF: both NTTs produce identical C_NTT
+                //at identical addresses (no shuffling divergence since c is public)
+                MLDSA_SIGN_VALID_S     : data_o_rom <= '{opcode:ABR_UOP_MASKED_NTT_NOSHUF, imm:'h0000, length:'d00, operand1:MLDSA_C_BASE, operand2:MLDSA_TEMP0_BASE, operand3:MLDSA_C_NTT_BASE};
 
                 //Compute Z and perform norm check
                 MLDSA_SIGN_VALID_S+1   : data_o_rom <= '{opcode:ABR_UOP_MASKED_PWM, imm:'h0000, length:'d00, operand1:MLDSA_C_NTT_BASE, operand2:MLDSA_S1_0_BASE, operand3:MLDSA_CS_NTT_BASE};

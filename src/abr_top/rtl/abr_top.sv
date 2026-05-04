@@ -1219,7 +1219,8 @@ always_comb begin
   w1_mem_rd_data = abr_memory_export.w1_mem_rdata_o;
 end
 
-// SIB is unmasked — only NTT[0] uses it, no path to NTT[1] or masked memory
+// SIB is unmasked — but both NTTs read the same SIB data when src address hits inst4.
+// During MASKED_NTT_NOSHUF(c), NTT[1] mirrors NTT[0] and needs the same SIB source data.
 always_comb begin
   sib_mem_re[0] = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == 3'b100);
   sib_mem_rd_req.addr = {ABR_MEM_ADDR_WIDTH{sib_mem_re[0]}} & ntt_mem_rd_req[0].addr;
@@ -1542,8 +1543,9 @@ always_comb begin
       compress_mem_rd_data |= ({ABR_MEM_DATA_WIDTH{compress_mem_re[SRAM_LATENCY][i]}} & abr_mem_rdata[0][i]);
     end
   end
-  // SIB read data only to NTT[0] — SIB is unmasked
-  ntt_mem_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{sib_mem_re[1]}} & sib_mem_rd_data);
+  // SIB read data to all NTTs — shared public source (c is public)
+  for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++)
+    ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{sib_mem_re[1]}} & sib_mem_rd_data);
 end
 
 always_comb skencode_mem_rd_data = abr_mem_rdata0_bank[0];
