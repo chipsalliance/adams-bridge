@@ -359,6 +359,9 @@ module abr_top
   //Decode request to sample in ball memory — SIB is unmasked, NTT[0] only
   //fixed latency
   logic sib_mem_re[1:0];
+  // Per-NTT SIB read detect: NTT[1] also reads from SIB range during NOSHUF
+  logic [ABR_NUM_NTT-1:0] ntt_sib_rd_detect;
+  logic [ABR_NUM_NTT-1:0] ntt_sib_rd_detect_d1;
 
   //memory interfaces
   abr_sram_if #(.ADDR_W(SK_MEM_BANK_ADDR_W), .DATA_W(SK_MEM_BANK_DATA_W)) sk_bank0_mem_if();
@@ -1225,6 +1228,20 @@ always_comb begin
   sib_mem_re[0] = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == 3'b100);
   sib_mem_rd_req.addr = {ABR_MEM_ADDR_WIDTH{sib_mem_re[0]}} & ntt_mem_rd_req[0].addr;
   sib_mem_rd_req.rd_wr_en = sib_mem_re[0] ? RW_READ : RW_IDLE;
+  // Detect per-NTT SIB-range reads for valid generation
+  for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++)
+    ntt_sib_rd_detect[ntt] = (ntt_mem_rd_req[ntt].rd_wr_en == RW_READ) &
+                              (ntt_mem_rd_req[ntt].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == 3'b100);
+end
+
+// Pipeline NTT[1] SIB read detect (1-cycle latency matching SIB memory)
+always_ff @(posedge clk or negedge rst_b) begin
+  if (!rst_b)
+    ntt_sib_rd_detect_d1 <= '0;
+  else if (zeroize_reg)
+    ntt_sib_rd_detect_d1 <= '0;
+  else
+    ntt_sib_rd_detect_d1 <= ntt_sib_rd_detect;
 end
 
 //NTT Muxes — per-NTT direct assign (no cross-NTT OR)
@@ -1561,13 +1578,31 @@ always_comb normcheck_mem_rd_data_valid = (|normcheck_mem_re[SRAM_LATENCY]) || (
 always_comb decomp_mem_rd_data_valid = (|decomp_mem_re[SRAM_LATENCY]) || (|decomp_mem_re0_bank[SRAM_LATENCY]);
 always_comb begin: ntt_rd_data_valid_gen
   for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
-    // SIB valid for NTT[1] only when NTT[1] is in ct mode (forward NTT reading from SIB source)
+    // SIB valid: Both NTTs use NTT[0]'s SIB read detect (pipelined 1 cycle).
+    // Only NTT[0] actually drives the SIB read port — NTT[1]'s SIB-range addresses
+    // go nowhere in the memory mux (no inst4 decode). Since NOSHUF guarantees both
+    // NTTs are cycle-aligned (same addresses, same timing), NTT[0]'s SIB read detect
+    // fires at exactly the cycles NTT[1] also needs valid. SIB data is already
+    // broadcast to all NTTs on line 1548.
     ntt_mem_rd_data_valid[ntt] = (|ntt_mem_re[SRAM_LATENCY][ntt]) || (|ntt_mem_re0_bank[SRAM_LATENCY][ntt]) ||
-                                 (sib_mem_re[1] & (ntt == 0 || (ntt_mode[ntt] inside {MLDSA_NTT, MLKEM_NTT})));
+                                 ntt_sib_rd_detect_d1[0];
     pwm_a_rd_data_valid[ntt] = (|pwo_a_mem_re[SRAM_LATENCY][ntt]) || (|pwo_a_mem_re0_bank[SRAM_LATENCY][ntt]);
     pwm_b_rd_data_valid[ntt] = (|pwo_b_mem_re[SRAM_LATENCY][ntt]) || (|pwo_b_mem_re0_bank[SRAM_LATENCY][ntt]);
   end
 end
+// DEBUG: Trace NTT[1] stall during MASKED_NTT_NOSHUF
+// synthesis translate_off
+generate if (ABR_NUM_NTT > 1) begin : ntt1_debug
+  always @(posedge clk) begin
+    if (ntt_busy[1] && !ntt_mem_rd_data_valid[1])
+      $display("DBG NTT1 @%0t: busy=%b valid=%b mode=%0d rdreq_en=%0d addr=%h rdfsm=%0d",
+               $time, ntt_busy[1], ntt_mem_rd_data_valid[1],
+               ntt_mode[1], ntt_mem_rd_req[1].rd_wr_en, ntt_mem_rd_req[1].addr,
+               ntt_gen[1].ntt_top_inst.ntt_ctrl_inst0.read_fsm_state_ps);
+  end
+end endgenerate
+// synthesis translate_on
+
 always_comb skencode_mem_rd_data_valid = (|skencode_mem_re0_bank[SRAM_LATENCY]);
 always_comb sigencode_mem_rd_data_valid = (|sigencode_mem_re0_bank[SRAM_LATENCY]);
 always_comb pwr2rnd_mem_rd_data_valid = (|pwr2rnd_mem_re0_bank[SRAM_LATENCY]);  

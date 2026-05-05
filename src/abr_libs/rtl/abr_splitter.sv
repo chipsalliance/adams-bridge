@@ -85,7 +85,19 @@ module abr_splitter
     generate
         for (i = 0; i < COEFF_PER_CLK; i++) begin : gen_lane
 
-            // --- share1: (data - rand) mod q ---
+            // --- Reduce LFSR random to [0, q-1] ---
+            // LFSR produces [0, 2^NTT_REG_SIZE-1]. add_sub_mod assumes inputs < q.
+            // Since 2^NTT_REG_SIZE-1 < 2*q for both MLDSA and MLKEM, a single
+            // conditional subtraction suffices.
+            logic [NTT_REG_SIZE-1:0] rand_reduced;
+            logic [NTT_REG_SIZE-1:0] rand_raw;
+
+            assign rand_raw = mode ? {{(NTT_REG_SIZE-MLKEM_REG_SIZE){1'b0}},
+                                      rand_coeff[i][MLKEM_REG_SIZE-1:0]}
+                                   : rand_coeff[i];
+            assign rand_reduced = (rand_raw >= prime) ? (rand_raw - prime) : rand_raw;
+
+            // --- share1: (data - rand_reduced) mod q ---
             abr_ntt_add_sub_mod #(
                 .REG_SIZE(NTT_REG_SIZE)
             ) u_sub (
@@ -95,21 +107,15 @@ module abr_splitter
                 .add_en_i (en_i),
                 .sub_i    (1'b1),
                 .opa_i    (data_coeff[i]),
-                .opb_i    (rand_coeff[i]),
+                .opb_i    (rand_reduced),
                 .prime_i  (prime),
                 .mlkem    (mode),
                 .res_o    (share1_coeff[i]),
                 .ready_o  (lane_ready[i])
             );
 
-            // --- share0: rand delayed 2 cycles ---
-            // For MLKEM: only lower 12 bits, upper bits zeroed
-            logic [NTT_REG_SIZE-1:0] rand_masked;
+            // --- share0: rand_reduced delayed 2 cycles ---
             logic [NTT_REG_SIZE-1:0] rand_d1, rand_d2;
-
-            assign rand_masked = mode ? {{(NTT_REG_SIZE-MLKEM_REG_SIZE){1'b0}},
-                                         rand_coeff[i][MLKEM_REG_SIZE-1:0]}
-                                      : rand_coeff[i];
 
             always_ff @(posedge clk or negedge reset_n) begin
                 if (!reset_n) begin
@@ -121,7 +127,7 @@ module abr_splitter
                     rand_d2 <= '0;
                 end
                 else begin
-                    rand_d1 <= rand_masked;
+                    rand_d1 <= rand_reduced;
                     rand_d2 <= rand_d1;
                 end
             end
