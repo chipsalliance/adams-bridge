@@ -113,55 +113,6 @@ targets:
     tops: [ntt_mult_reduction_tb]
 
 ---
-provides: [ntt_masked_mult_reduction_tb]  
-schema_version: 2.4.0
-requires: 
-  - ntt_top
-targets:
-  rtl:
-    directories: [$COMPILE_ROOT/tb]
-    files:
-      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_tb.sv
-      - $COMPILE_ROOT/tb/ntt_masked_mult_redux46_auto_tb.sv
-    tops: [ntt_masked_mult_redux46_auto_tb]
-
----
-provides: [ntt_top_masking_tb]  
-schema_version: 2.4.0
-requires: 
-  - ntt_top
-targets:
-  rtl:
-    directories: [$COMPILE_ROOT/tb]
-    files:
-      - $COMPILE_ROOT/tb/ntt_top_masking_tb.sv
-    tops: [ntt_top_masking_tb]
-
----
-provides: [masked_barrett_redux_tb]  
-schema_version: 2.4.0
-requires: 
-  - ntt_top
-targets:
-  rtl:
-    directories: [$COMPILE_ROOT/tb]
-    files:
-      - $COMPILE_ROOT/tb/masked_barrett_redux_tb.sv
-    tops: [masked_barrett_redux_tb]
-
----
-provides: [mlkem_masked_gs_butterfly_tb]  
-schema_version: 2.4.0
-requires: 
-  - ntt_top
-targets:
-  rtl:
-    directories: [$COMPILE_ROOT/tb]
-    files:
-      - $COMPILE_ROOT/tb/mlkem_masked_gs_butterfly_tb.sv
-    tops: [mlkem_masked_gs_butterfly_tb]
-
----
 provides: [ntt_utb]  
 schema_version: 2.4.0
 requires:

@@ -40,4 +40,3 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_arbiter_ppc.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sum_tree.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_subreg_ext.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_edge_detector.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv

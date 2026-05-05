@@ -2,8 +2,7 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl
 +incdir+${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl
-+incdir+${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl
-+incdir+${ADAMSBRIDGE_ROOT}/src/sk_decode/tb
++incdir+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_config_defines.svh
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_reg_pkg.sv
@@ -68,9 +67,9 @@ ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mlkem_masked_butterfly1x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_hybrid_butterfly_2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_karatsuba_pairwm.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_masked_pairwm.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_defines_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_top.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_ctrl.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_s1s2_unpack.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/rtl/skdecode_t0_unpack.sv
-${ADAMSBRIDGE_ROOT}/src/sk_decode/tb/skdecode_tb.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_top_tb.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_top_tb_new.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_ram_tdp_file.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/ntt_wrapper.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/mlkem_hybrid_bf_tb.sv
+${ADAMSBRIDGE_ROOT}/src/ntt_top/tb/mlkem_karatsuba_tb.sv
