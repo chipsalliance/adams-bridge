@@ -281,14 +281,6 @@ module decompress_top
         end
     end
 
-    // Splitter pipeline tracker — delays decompress_done until pipeline drains
-    logic [1:0] split_pipe_active;
-    always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n)        split_pipe_active <= '0;
-        else if (zeroize)    split_pipe_active <= '0;
-        else                 split_pipe_active <= {split_pipe_active[0], wr_valid_pre & split_en_i};
-    end
-
     // Output mux: split path (2-cycle delay) or bypass (combinational)
     always_comb begin
         if (split_en_i) begin
@@ -306,7 +298,14 @@ module decompress_top
         end
     end
 
-    // Done signal: wait for split pipeline to drain before signaling done
-    assign decompress_done = decompress_done_int & ~(split_en_i & |split_pipe_active);
+    // Done signal: delay by 2 cycles when splitting to match splitter write latency
+    logic [1:0] done_pipe;
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)        done_pipe <= '0;
+        else if (zeroize)    done_pipe <= '0;
+        else                 done_pipe <= {done_pipe[0], decompress_done_int};
+    end
+
+    assign decompress_done = split_en_i ? done_pipe[1] : decompress_done_int;
 
 endmodule

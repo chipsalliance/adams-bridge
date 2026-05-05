@@ -42,6 +42,8 @@ class ML_KEM_decaps_KATs_test extends test_top;
 
     uvm_config_db#(bit)::set(null, "*", "disable_scrboard_from_test", disable_scrboard_from_test);
     uvm_config_db#(bit)::set(null, "*", "disable_pred_from_test", disable_pred_from_test);
+
+    uvm_top.set_timeout(4ms, 0);
     // The configuration structure has already been randomized.
     // The configuration structure has already been randomized.
     // pragma uvmf custom configuration_settings_post_randomize end

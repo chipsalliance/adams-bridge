@@ -792,8 +792,8 @@ module abr_seq
                 MLKEM_ENCAPS_S  + 53: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_INTT, imm:'h0000, length:'d00, operand1:MLKEM_TY_MASKED_BASE, operand2:ABR_NOP, operand3:MLKEM_V_BASE};
                 MLKEM_ENCAPS_S  + 54: data_o_rom <= '{opcode:ABR_UOP_MLKEM_RECOMBINE, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_V_BASE, operand3:MLKEM_V_BASE};
                 MLKEM_ENCAPS_S  + 55: data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_SRC_MSG_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_MU_BASE};
-                MLKEM_ENCAPS_S  + 56: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWA, imm:'h0000, length:'d00, operand1:MLKEM_MU_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_E_2_BASE};
-                MLKEM_ENCAPS_S  + 57: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWA, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_V_BASE};
+                MLKEM_ENCAPS_S  + 56: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_MU_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_E_2_BASE};
+                MLKEM_ENCAPS_S  + 57: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_E_2_BASE, operand3:MLKEM_V_BASE};
                 MLKEM_ENCAPS_S  + 58: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0422, length:'d00, operand1:MLKEM_U0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C1_MEM_OFFSET};
                 MLKEM_ENCAPS_S  + 59: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0121, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C2_MEM_OFFSET};
                 MLKEM_ENCAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
