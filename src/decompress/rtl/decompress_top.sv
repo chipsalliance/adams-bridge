@@ -259,7 +259,7 @@ module decompress_top
         .ready_o ()
     );
 
-    // 2-stage delay for write request to align with splitter output
+    // 2-stage delay for write request to align with splitter output (split mode only)
     mem_if_t mem_wr_req_d1, mem_wr_req_d2;
 
     always_ff @(posedge clk or negedge reset_n) begin
@@ -275,9 +275,15 @@ module decompress_top
             mem_wr_req_d1.addr     <= '0;
             mem_wr_req_d2.addr     <= '0;
         end
-        else begin
+        else if (split_en_i) begin
             mem_wr_req_d1 <= mem_wr_req_pre;
             mem_wr_req_d2 <= mem_wr_req_d1;
+        end
+        else begin
+            mem_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_wr_req_d1.addr     <= '0;
+            mem_wr_req_d2.addr     <= '0;
         end
     end
 
