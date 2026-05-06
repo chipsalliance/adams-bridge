@@ -70,7 +70,7 @@ package abr_ctrl_pkg;
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
     
-    localparam LFSR_W = 99; // Each LFSR width: (2*96 + 6) / 2
+    localparam LFSR_W = 102; // Each LFSR width: (2*96 + 12) / 2 — 12 shuffle bits (6 per NTT)
 
     localparam SK_MEM_DEPTH = 1192;
     localparam SK_MEM_BANK_DEPTH = SK_MEM_DEPTH/2;
@@ -442,8 +442,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E1_BASE = MLKEM_E0_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E2_BASE = MLKEM_E1_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E3_BASE = MLKEM_E2_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_MU_BASE = MLKEM_E3_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U0_BASE = MLKEM_MU_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U0_BASE = MLKEM_E3_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U1_BASE = MLKEM_U0_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U2_BASE = MLKEM_U1_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U3_BASE = MLKEM_U2_BASE + MLKEM_COEFF_DEPTH;
@@ -530,6 +529,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP1_BASE = MLKEM_UP0_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP2_BASE = MLKEM_UP1_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP3_BASE = MLKEM_UP2_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_MU_BASE = MLKEM_UP3_BASE + MLKEM_COEFF_DEPTH;
+
     //TEMP for NTT
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_TEMP2_BASE = MLDSA_W0_7_BASE + MLDSA_COEFF_DEPTH;
     
@@ -557,7 +558,7 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 73;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_MAKE_W+ 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_VALID_S      = MLDSA_SIGN_MAKE_C+ 2;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_VALID_S + 131;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_VALID_S + 124;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_CHL_E + 1;
     //Verify
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;

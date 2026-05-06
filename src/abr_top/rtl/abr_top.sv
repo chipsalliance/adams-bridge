@@ -282,7 +282,7 @@ module abr_top
 
   logic lfsr_enable;
   logic [1:0][LFSR_W-1:0] lfsr_seed;
-  logic [2*LFSR_W-1:0] rand_bits;
+  logic [1:0][LFSR_W-1:0] rand_bits;
 
   //gasket to assemble reg requests
   logic abr_reg_dv;
@@ -369,16 +369,16 @@ module abr_top
   abr_sram_be_if #(.ADDR_W(SIG_Z_MEM_ADDR_W), .DATA_W(SIG_Z_MEM_DATA_W)) sig_z_mem_if();
   abr_sram_be_if #(.ADDR_W(PK_MEM_ADDR_W), .DATA_W(PK_MEM_DATA_W)) pk_mem_if();
 
-  // Randomness from two identical LFSRs (LFSR_W=99 each, total 198 bits):
-  //   [ABR_MEM_DATA_WIDTH-1:0]                        — splitter A (96 bits)
-  //   [2*ABR_MEM_DATA_WIDTH-1:ABR_MEM_DATA_WIDTH]     — splitter B (96 bits)
-  //   [2*ABR_MEM_DATA_WIDTH+5:2*ABR_MEM_DATA_WIDTH]   — shuffling  (6 bits)
-  logic [ABR_MEM_DATA_WIDTH-1:0] splitter_rand;
-  assign splitter_rand = rand_bits[ABR_MEM_DATA_WIDTH-1:0];
-  logic [ABR_MEM_DATA_WIDTH-1:0] splitter_rand_b;
-  assign splitter_rand_b = rand_bits[2*ABR_MEM_DATA_WIDTH-1:ABR_MEM_DATA_WIDTH];
-  logic [5:0] shuffling_rand;
-  assign shuffling_rand = rand_bits[2*ABR_MEM_DATA_WIDTH+5:2*ABR_MEM_DATA_WIDTH];
+  // Randomness from two LFSRs (LFSR_W=102 each, total 204 bits):
+  //   Each LFSR[i] provides: 96-bit splitter_rand[i] + 6-bit shuffling_rand[i]
+  logic [1:0][ABR_MEM_DATA_WIDTH-1:0] splitter_rand;
+  logic [ABR_NUM_NTT-1:0][5:0] shuffling_rand;
+  for (genvar gi = 0; gi < 2; gi++) begin : gen_rand_assign
+    assign splitter_rand[gi]  = rand_bits[gi][ABR_MEM_DATA_WIDTH-1:0];
+    if (gi < ABR_NUM_NTT) begin : gen_shuffle
+      assign shuffling_rand[gi] = rand_bits[gi][ABR_MEM_DATA_WIDTH+5:ABR_MEM_DATA_WIDTH];
+    end
+  end
 
   abr_ahb_slv_sif #(
     .AHB_ADDR_WIDTH(AHB_ADDR_WIDTH),
@@ -641,7 +641,7 @@ sampler_top_inst
   .sampler_mem_addr_o(sampler_mem_addr),
 
   .split_en_i(split_en),
-  .rand_i(splitter_rand),
+  .rand_i(splitter_rand[0]),
 
   .sampler_state_dv_o(sampler_state_dv),
   .sampler_state_data_o(sampler_state_data)
@@ -832,7 +832,7 @@ generate
     .accumulate(accumulate[g_inst]),
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
-    .random(shuffling_rand),
+    .random(shuffling_rand[g_inst]),
     .masking_en(1'b0),
     .rnd_i('0),
     //NTT mem IF — zero-extend 96→384 for inputs, truncate 384→96 for outputs
@@ -972,8 +972,8 @@ skdecode_inst
   .mem_b_wr_data(skdecode_mem_wr_data_b),
 
   .split_en_i(split_en),
-  .rand_i(splitter_rand),
-  .rand_dual_i(splitter_rand_b),
+  .rand_i(splitter_rand[0]),
+  .rand_dual_i(splitter_rand[1]),
 
   .s1_done(),
   .s2_done(),
@@ -1017,7 +1017,7 @@ norm_check_inst
   .mode(normcheck_mode),
   .norm_check_enable(normcheck_enable),
 
-  .randomness(shuffling_rand),
+  .randomness(shuffling_rand[0]),
 
   .norm_check_ready(),
   .norm_check_done(normcheck_done),
@@ -1172,7 +1172,7 @@ decompress_top_inst
   .mem_wr_data(decompress_mem_wr_data),
 
   .split_en_i(split_en),
-  .rand_i(splitter_rand),
+  .rand_i(splitter_rand[0]),
 
   .api_rd_en(decompress_api_rd_en),
   .api_rd_addr(decompress_api_rd_addr),
@@ -1180,37 +1180,23 @@ decompress_top_inst
   .api_rd_data_valid(decompress_api_rd_data_valid)
 );
 
-abr_prim_lfsr
-#(
-  .LfsrType("FIB_XNOR"),
-  .LfsrDw(LFSR_W),
-  .StateOutDw(LFSR_W)
-) abr_prim_lfsr_inst0 
-(
-  .clk_i(clk),
-  .rst_b(rst_b),
-  .seed_en_i(lfsr_enable),
-  .seed_i(lfsr_seed[0]),
-  .lfsr_en_i(1'b1),
-  .entropy_i('0),
-  .state_o(rand_bits[LFSR_W-1:0])
-);
-
-abr_prim_lfsr
-#(
-  .LfsrType("FIB_XNOR"),
-  .LfsrDw(LFSR_W),
-  .StateOutDw(LFSR_W)
-) abr_prim_lfsr_inst1 
-(
-  .clk_i(clk),
-  .rst_b(rst_b),
-  .seed_en_i(lfsr_enable),
-  .seed_i(lfsr_seed[1]),
-  .lfsr_en_i(1'b1),
-  .entropy_i('0),
-  .state_o(rand_bits[2*LFSR_W-1:LFSR_W])
-);
+for (genvar gi = 0; gi < 2; gi++) begin : gen_lfsr
+  abr_prim_lfsr
+  #(
+    .LfsrType("FIB_XNOR"),
+    .LfsrDw(LFSR_W),
+    .StateOutDw(LFSR_W)
+  ) abr_prim_lfsr_inst
+  (
+    .clk_i(clk),
+    .rst_b(rst_b),
+    .seed_en_i(lfsr_enable),
+    .seed_i(lfsr_seed[gi]),
+    .lfsr_en_i(1'b1),
+    .entropy_i('0),
+    .state_o(rand_bits[gi])
+  );
+end
 
 always_comb begin
   abr_memory_export.w1_mem_we_i = (w1_mem_wr_req.rd_wr_en == RW_WRITE) | zeroize_mem_we_w1_inst;
