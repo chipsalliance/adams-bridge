@@ -156,8 +156,7 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] ntt_done;
   logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
-  logic [ABR_NUM_NTT-1:0] ntt_masking_en; //TODO: we can remove this
-  logic [ABR_NUM_NTT-1:0][ABR_MEM_MASKED_DATA_WIDTH-1:0] ntt_mem_wr_data_full;
+  logic [ABR_NUM_NTT-1:0][ABR_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data_full;
 
   mem_if_t w1_mem_wr_req;
   logic [ABR_MEM_W1_DATA_W-1:0] w1_mem_wr_data;
@@ -663,7 +662,6 @@ always_comb begin
   ntt_mem_base_addr[0] = ntt_mem_base_addr_ctrl;
   pwo_mem_base_addr[0] = pwo_mem_base_addr_ctrl;
   ntt_shuffling_en[0]  = ntt_shuffling_en_ctrl;
-  ntt_masking_en[0]    = ntt_masking_en_ctrl;
   // NTT[1] — mirrors NTT[0] when masking_en AND NOT recombine
   // RECOMBINE is NTT[0]-only: reads both memory domains
   recombine_en_ctrl = MASKING_EN & ntt_masking_en_ctrl &
@@ -677,7 +675,6 @@ always_comb begin
     ntt_mem_base_addr[1] = ntt_mem_base_addr_ctrl;
     pwo_mem_base_addr[1] = pwo_mem_base_addr_ctrl;
     ntt_shuffling_en[1]  = ntt_shuffling_en_ctrl;
-    ntt_masking_en[1]    = '0;
   end
 end
 
@@ -813,11 +810,7 @@ generate
     end
 
   ntt_top #(
-    .SRAM_LATENCY(SRAM_LATENCY),
-    .REG_SIZE(REG_SIZE),
-    .MLDSA_Q(MLDSA_Q),
-    .MLDSA_N(MLDSA_N),
-    .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
+    .SRAM_LATENCY(SRAM_LATENCY)
   )
   ntt_top_inst (
     .clk(clk),
@@ -833,26 +826,24 @@ generate
     .sampler_valid(sampler_valid[g_inst]),
     .shuffle_en(ntt_shuffling_en[g_inst]),
     .random(shuffling_rand[g_inst]),
-    .masking_en(1'b0),
-    .rnd_i('0),
     //NTT mem IF — zero-extend 96→384 for inputs, truncate 384→96 for outputs
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
     .mem_wr_data(ntt_mem_wr_data_full[g_inst]),
     .mem_rd_data_valid(ntt_mem_rd_data_valid[g_inst]),
-    .mem_rd_data(ABR_MEM_MASKED_DATA_WIDTH'(ntt_mem_rd_data[g_inst])),
+    .mem_rd_data(ntt_mem_rd_data[g_inst]),
     //PWM mem IF
     .pwm_a_rd_req(pwm_a_rd_req[g_inst]),
     .pwm_b_rd_req(pwm_b_rd_req[g_inst]),
     .pwm_a_rd_data_valid(pwm_a_rd_data_valid[g_inst]),
-    .pwm_a_rd_data(ABR_MEM_MASKED_DATA_WIDTH'(pwm_a_rd_data[g_inst])),
+    .pwm_a_rd_data(pwm_a_rd_data[g_inst]),
     .pwm_b_rd_data_valid(pwm_b_rd_data_valid[g_inst]),
-    .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? ABR_MEM_MASKED_DATA_WIDTH'(sampler_ntt_data) : ABR_MEM_MASKED_DATA_WIDTH'(pwm_b_rd_data[g_inst])),
+    .pwm_b_rd_data(sampler_ntt_mode[g_inst] ? ABR_MEM_DATA_WIDTH'(sampler_ntt_data) : pwm_b_rd_data[g_inst]),
     .ntt_busy(ntt_busy[g_inst]),
     .ntt_done(ntt_done[g_inst])
   );
   // Truncate 384-bit NTT output to 96-bit
-  assign ntt_mem_wr_data[g_inst] = ntt_mem_wr_data_full[g_inst][ABR_MEM_DATA_WIDTH-1:0];
+  assign ntt_mem_wr_data[g_inst] = ntt_mem_wr_data_full[g_inst];
   end
 endgenerate
 
@@ -923,7 +914,6 @@ decompose_inst (
 
 skencode
 #(
-  .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
 )
 skencode_inst
 (
