@@ -914,6 +914,7 @@ decompose_inst (
 
 skencode
 #(
+  .MEM_ADDR_WIDTH(ABR_MEM_ADDR_WIDTH)
 )
 skencode_inst
 (
@@ -1566,18 +1567,6 @@ always_comb begin: ntt_rd_data_valid_gen
     pwm_b_rd_data_valid[ntt] = (|pwo_b_mem_re[SRAM_LATENCY][ntt]) || (|pwo_b_mem_re0_bank[SRAM_LATENCY][ntt]);
   end
 end
-// DEBUG: Trace NTT[1] stall during MASKED_NTT_NOSHUF
-// synthesis translate_off
-generate if (ABR_NUM_NTT > 1) begin : ntt1_debug
-  always @(posedge clk) begin
-    if (ntt_busy[1] && !ntt_mem_rd_data_valid[1])
-      $display("DBG NTT1 @%0t: busy=%b valid=%b mode=%0d rdreq_en=%0d addr=%h rdfsm=%0d",
-               $time, ntt_busy[1], ntt_mem_rd_data_valid[1],
-               ntt_mode[1], ntt_mem_rd_req[1].rd_wr_en, ntt_mem_rd_req[1].addr,
-               ntt_gen[1].ntt_top_inst.ntt_ctrl_inst0.read_fsm_state_ps);
-  end
-end endgenerate
-// synthesis translate_on
 
 always_comb skencode_mem_rd_data_valid = (|skencode_mem_re0_bank[SRAM_LATENCY]);
 always_comb sigencode_mem_rd_data_valid = (|sigencode_mem_re0_bank[SRAM_LATENCY]);
