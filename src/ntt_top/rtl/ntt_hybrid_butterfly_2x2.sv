@@ -16,10 +16,8 @@
 //
 // ntt_hybrid_noncascade_butterfly_2x2.sv
 // --------
-// This module consists of masked PWMs, followed by 1st stage of masked and unmasked BFUs followed by
-// 2nd stage of unmasked BFUs. In case of masking_en, PWMs are triggered and 
-// masked branch is taken for computing 1st stage outputs. In case of unmasked operation, 
-// both branches are enabled but unmasked outputs are passed to next stage. Final outputs are 23-bit values
+// This module consists of PWMs followed by two stages of unmasked BFUs.
+// Final outputs are 23-bit values.
 
 module ntt_hybrid_butterfly_2x2
     import abr_params_pkg::*;
@@ -172,7 +170,7 @@ ntt_butterfly #(
 );
 
 //----------------------------------------------------
-//MLDSA/MLKEM - Unmasked BFU stage 2 - Used in all modes (irrespective of masking_en)
+//MLDSA/MLKEM - Unmasked BFU stage 2
 //----------------------------------------------------
 logic [NTT_REG_SIZE-1:0] u20_int, v20_int, u21_int, v21_int;
 logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] u10_reg, u11_reg;
@@ -263,18 +261,18 @@ ntt_butterfly #(
 );
 
 always_comb begin
-    uv_o.u20_o =    ntt_passthrough ? u10_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? u10_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+    uv_o.u20_o =    ntt_passthrough ? u10_reg[0]
+                 : intt_passthrough ? u10_reg[0]
                                     : u20_int;
-    uv_o.v20_o =    ntt_passthrough ? v10_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
-                 : intt_passthrough ? u11_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+    uv_o.v20_o =    ntt_passthrough ? v10_reg[0]
+                 : intt_passthrough ? u11_reg[0]
                                     : v20_int;
 
-    uv_o.u21_o =    ntt_passthrough ? u11_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? v10_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+    uv_o.u21_o =    ntt_passthrough ? u11_reg[0]
+                 : intt_passthrough ? v10_reg[0]
                                     : u21_int;
-    uv_o.v21_o =    ntt_passthrough ? v11_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY] 
-                 : intt_passthrough ? v11_reg[0] //[MLKEM_MASKED_BF_STAGE1_LATENCY-MLKEM_UNMASKED_BF_STAGE1_LATENCY]
+    uv_o.v21_o =    ntt_passthrough ? v11_reg[0]
+                 : intt_passthrough ? v11_reg[0]
                                     : v21_int;
 end
 
@@ -338,53 +336,6 @@ end
 //----------------------------------------------------
 //Determine when results are ready
 //----------------------------------------------------
-//ready_o logic
-
-// `ifdef MLDSA_NTT_MASKING //TODO: optimize shift reg size based on masking en/dis
-    // logic [MASKED_INTT_LATENCY-1:0] masked_ready_reg; //masked INTT is longest op
-
-    // always_ff @(posedge clk or negedge reset_n) begin
-    //     if (!reset_n)
-    //         masked_ready_reg <= 'b0;
-    //     else if (zeroize)
-    //         masked_ready_reg <= 'b0;
-    //     else begin
-    //         if (mlkem) begin
-    //             unique case(mode)
-    //                 ct: masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
-    //                 gs: begin
-    //                     masked_ready_reg <= {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
-    //                 end
-    //                 pwm: masked_ready_reg <= 'b0;
-    //                 pwa: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
-    //                 pws: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
-    //                 pairwm: begin
-    //                     masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_ACC_LATENCY-1:1]}
-    //                                                                            : {{(MASKED_INTT_LATENCY-MLKEM_UNMASKED_PAIRWM_LATENCY){1'b0}}, enable, masked_ready_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1:1]};
-    //                 end
-    //                 default: masked_ready_reg <= 'b0;
-    //             endcase
-    //         end
-    //         else begin
-    //             unique case(mode) //270:0 delay flop for enable
-    //                 //Add masking_en mux for gs, pwm modes
-    //                 ct:  masked_ready_reg <= {{(MASKED_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-    //                 gs: begin 
-    //                     masked_ready_reg <= {{(MASKED_INTT_LATENCY-UNMASKED_BF_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_BF_LATENCY-1:1]};
-    //                 end
-    //                 pwm: begin
-    //                     masked_ready_reg <= accumulate ? {{(MASKED_INTT_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {6'h0, enable, masked_ready_reg[UNMASKED_PWM_LATENCY-2:1]};
-    //                 end
-    //                 pwa: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
-    //                 pws: masked_ready_reg <= {{MASKED_INTT_LATENCY-1{1'b0}}, enable};
-    //                 pairwm: masked_ready_reg <= 'b0;
-    //                 default: masked_ready_reg <= 'h0;
-    //             endcase
-    //         end
-    //     end
-    // end
-
-    // assign ready_o = masked_ready_reg[0];
 
     logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 
