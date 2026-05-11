@@ -2191,8 +2191,12 @@ end
 // Covers: MASKED_REJB, MASKED_EXP_MASK, MASKED_CBD, MASKED_SKDECODE, MASKED_DECOMPRESS
 always_comb split_en_o = abr_instr.opcode.masking_en & ~ntt_en;
 
-//Zeroizer
-always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
+// Skip RECOMBINE in unmasked mode — no share recombination needed
+logic skip_recombine;
+always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
+                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
+
+always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | skip_recombine) ? '0 : abr_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
