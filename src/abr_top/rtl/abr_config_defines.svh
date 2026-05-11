@@ -37,15 +37,13 @@
       .rdata_o(``_mem_name``_rdata_o[1])\
    );\
    \
-   generate\
-     if (_latency > 1) begin : ``_mem_name``gen_lat\
-       for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
-         always_ff @(posedge clk_i) begin\
-           ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
-         end\
+   if (_latency > 1) begin : ``_mem_name``gen_lat\
+     for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
+       always_ff @(posedge clk_i) begin\
+         ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
        end\
      end\
-   endgenerate\
+   end\
    \
    assign abr_memory_export.``_mem_name``_rdata_o = ``_mem_name``_rdata_o[_latency];
 
@@ -66,15 +64,13 @@
         .rdata_o(``_mem_name``_rdata_o[1])\
      );\
    \
-   generate\
-     if (_latency > 1) begin : ``_mem_name``gen_lat\
-       for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
-         always_ff @(posedge clk_i) begin\
-           ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
-         end\
+   if (_latency > 1) begin : ``_mem_name``gen_lat\
+     for (genvar g_i = 2; g_i <= _latency; g_i = g_i + 1) begin : ``_mem_name``gen_lat_stages\
+       always_ff @(posedge clk_i) begin\
+         ``_mem_name``_rdata_o[g_i] <= ``_mem_name``_rdata_o[g_i-1];\
        end\
      end\
-   endgenerate\
+   end\
    \
    assign abr_memory_export.``_mem_name``_rdata_o = ``_mem_name``_rdata_o[_latency];
    
