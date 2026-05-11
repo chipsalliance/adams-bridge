@@ -21,22 +21,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_rd_lat_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
-      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
-      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
-      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
-      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
-      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_splitter.sv
-      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -53,23 +41,10 @@ targets:
       - $COMPILE_ROOT/rtl/abr_rd_lat_buffer.sv
       - $COMPILE_ROOT/rtl/abr_ahb_defines_pkg.sv
       - $COMPILE_ROOT/rtl/abr_ahb_slv_sif.sv
-      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
-      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
-      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
-      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
-      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Arith_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
       - $COMPILE_ROOT/rtl/abr_adder.sv
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_splitter.sv
-      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
 ---
 provides: [masking_tb]
 schema_version: 2.4.0
@@ -77,29 +52,10 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/abr_masked_AND.sv
-      - $COMPILE_ROOT/rtl/abr_delay_masked_shares.sv
-      - $COMPILE_ROOT/rtl/abr_masked_add_sub_mod_Boolean.sv
-      - $COMPILE_ROOT/rtl/abr_masked_MUX.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_sub.sv
-      - $COMPILE_ROOT/rtl/abr_masked_full_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_A2B_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_Boolean_adder.sv
-      - $COMPILE_ROOT/rtl/abr_masked_B2A_conv.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult.sv
-      - $COMPILE_ROOT/rtl/abr_masked_N_bit_mult_two_share.sv
-      - $COMPILE_ROOT/rtl/abr_masked_OR.sv
   tb:
     directories: [$COMPILE_ROOT/tb]
     files:
-      - $COMPILE_ROOT/tb/abr_masked_A2B_conv_tb.sv
-      - $COMPILE_ROOT/tb/abr_masked_N_bit_Boolean_adder_tb.sv
-      - $COMPILE_ROOT/tb/abr_masked_B2A_conv_tb.sv
-      - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_tb.sv
-      - $COMPILE_ROOT/tb/abr_masked_N_bit_mult_two_share_tb.sv
-      - $COMPILE_ROOT/tb/abr_masked_OR_tb.sv
       
-    tops: [abr_masked_OR_tb]
 ---
 provides: [mldsa_uvm_lib]
 schema_version: 2.4.0
