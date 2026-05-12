@@ -60,12 +60,12 @@ logic gs_mode;
 logic pairwm_mode;
 
 //Other internal wires
-logic [UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
+logic [UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 3 cycles to match 1st stage BF latency
 logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg;
 logic pwo_mode;
 
 //w delay flops
-//Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
+//Flop the twiddle factor 3x to correctly pass in values to the 2nd set of bf units
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
         mldsa_w10_reg <= 'h0;

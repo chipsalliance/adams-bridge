@@ -93,6 +93,11 @@ localparam [ABR_MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 localparam SRAM_DELAY = SRAM_LATENCY-1;
 // localparam MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY = MASKED_INTT_WRBUF_LATENCY + SRAM_DELAY;
 localparam INTT_WRBUF_LATENCY_SRAM_DELAY = INTT_WRBUF_LATENCY + SRAM_DELAY;
+
+localparam PAIRWM_PWO_ENTRY    = MLKEM_UNMASKED_PAIRWM_LATENCY + MLKEM_UNMASKED_BF_LATENCY + SRAM_DELAY;
+localparam MAX_RDPTR_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
+localparam MAX_CHUNK_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
+
 //FSM states
 ntt_read_state_t read_fsm_state_ps, read_fsm_state_ns;
 ntt_write_state_t write_fsm_state_ps, write_fsm_state_ns;
@@ -113,10 +118,10 @@ logic [1:0] index_rand_offset, index_count, mem_rd_index_ofst;
 logic [1:0] buf_rdptr_int;
 logic [1:0] buf_rdptr_f;
 
-logic [INTT_WRBUF_LATENCY_SRAM_DELAY-1:0][1:0] buf_rdptr_reg;
+logic [MAX_RDPTR_REG_DEPTH-1:0][1:0] buf_rdptr_reg;
 logic [INTT_WRBUF_LATENCY_SRAM_DELAY-1:0][1:0] buf_wrptr_reg;
 logic [1:0] buf_wrptr_reg_d1;
-logic [INTT_WRBUF_LATENCY_SRAM_DELAY-3:0][3:0] chunk_count_reg; //buf latency not rqd
+logic [MAX_CHUNK_REG_DEPTH-1:0][3:0] chunk_count_reg; //buf latency not rqd
 
 logic latch_chunk_rand_offset, latch_index_rand_offset;
 logic last_rd_addr, last_wr_addr;
@@ -605,13 +610,16 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_wrptr_reg <= 'h0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        buf_rdptr_reg <= {{(INTT_WRBUF_LATENCY_SRAM_DELAY-UNMASKED_BF_LATENCY-1){2'h0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
+        buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-UNMASKED_BF_LATENCY-1){2'h0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
         buf_wrptr_reg <= {{(INTT_WRBUF_LATENCY_SRAM_DELAY-INTT_WRBUF_LATENCY-SRAM_DELAY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY+SRAM_DELAY-1:1]};
     end
     else if ((pwo_mode) & (incr_pw_rd_addr | butterfly_ready)) begin
-        buf_rdptr_reg <= {{(INTT_WRBUF_LATENCY_SRAM_DELAY-UNMASKED_BF_LATENCY-SRAM_DELAY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
+        if (pairwm_mode)
+            buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-PAIRWM_PWO_ENTRY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[PAIRWM_PWO_ENTRY:1]};
+        else
+            buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-UNMASKED_BF_LATENCY-SRAM_DELAY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
     end
     else begin
         buf_rdptr_reg <= 'h0;
@@ -654,7 +662,10 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= {chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin
-        chunk_count_reg <= {chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
+        if (pairwm_mode)
+            chunk_count_reg <= {chunk_count, chunk_count_reg[PAIRWM_PWO_ENTRY:1]};
+        else
+            chunk_count_reg <= {chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
     end
 end
 
@@ -1012,7 +1023,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     end
     else begin
         pw_rden_fsm_reg <= {pw_rden_fsm, pw_rden_fsm_reg[UNMASKED_PWM_LATENCY:1]};
-        shuffled_pw_rden_fsm_reg <= mlkem ? pw_rden_fsm_reg[UNMASKED_PWM_LATENCY-(MLKEM_UNMASKED_PAIRWM_LATENCY+1)] : pw_rden_fsm_reg[0]; //TODO fix pairwm latency
+        shuffled_pw_rden_fsm_reg <= pw_rden_fsm_reg[0];
     end
 end
 

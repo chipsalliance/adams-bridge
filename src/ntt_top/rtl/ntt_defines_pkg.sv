@@ -32,9 +32,9 @@ parameter NTT_REG_SIZE = REG_SIZE-1;
 //----------------------
 //Latency params for NTT
 //----------------------
-parameter INTT_WRBUF_LATENCY         = 13;
-parameter UNMASKED_BF_LATENCY        = 10;        //5 cycles per butterfly * 2 instances in serial = 10 clks
-parameter UNMASKED_PWM_LATENCY       = 5;         //latency of modular multiplier + modular addition to perform accumulation
+parameter INTT_WRBUF_LATENCY         = 9;
+parameter UNMASKED_BF_LATENCY        = 6;         //3 cycles per butterfly * 2 instances in serial = 6 clks (barrett reduction is combinational)
+parameter UNMASKED_PWM_LATENCY       = 3;         //latency of modular multiplier (barrett, combinational) + modular addition to perform accumulation
 parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
 parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
 parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;

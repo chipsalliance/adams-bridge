@@ -65,7 +65,7 @@ module ntt_butterfly2x2
     logic [REG_SIZE-1:0] w11;
     logic [MLKEM_REG_SIZE-1:0] mlkem_w10; 
     logic [MLKEM_REG_SIZE-1:0] mlkem_w11;
-    logic [UNMASKED_BF_STAGE1_LATENCY-1:0][REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 5 cycles to match 1st stage BF latency
+    logic [UNMASKED_BF_STAGE1_LATENCY-1:0][REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 3 cycles to match 1st stage BF latency
     logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg; //Shift w10/w11 by 3 cycles to match 1st stage of MLKEM BF latency
     logic pwo_mode;
     logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
@@ -74,14 +74,14 @@ module ntt_butterfly2x2
 
     //Each butterfly unit takes u, v, w inputs and produces
     //u, v outputs for the next stage to consume. Each butterfly
-    //has a maximum latency of 5 clks
+    //has a latency of 3 clks
     //Each worst-case path (ct or gs) contains a modular multiplication
-    //and a modular add/sub. Multiplication takes a max of 4 clks 
-    //(Multiplication module has 2 flops + 2 add/sub reductions in a single path).
+    //and a modular add/sub. Multiplication takes 2 clks
+    //(DSP mult + flop + barrett reduction (comb) + flop).
     //Add/sub takes 1 clk to produce results.
-    //So, worst case latency = 4 + 1 = 5 clks
+    //So, latency = 2 + 1 = 3 clks
 
-    //Flop the twiddle factor 5x to correctly pass in values to the 2nd set of bf units
+    //Flop the twiddle factor 3x to correctly pass in values to the 2nd set of bf units
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             mldsa_w10_reg <= 'h0;
@@ -277,8 +277,8 @@ module ntt_butterfly2x2
 
     //Determine when results are ready
     //---------------------------------------------
-    //For the first 10 cycles, ntt_butterfly2x2 does not produce any valid  output.
-    //We wait for 10 clks before asserting ready. After that, there's a valid output every clk.
+    //For the first BF_LATENCY cycles, ntt_butterfly2x2 does not produce any valid output.
+    //We wait for BF_LATENCY clks before asserting ready. After that, there's a valid output every clk.
     //ntt_top controller will disable bf2x2 and that will reset ready while transitioning 
     //from one stage to next after all writes of current stage have finished.
 
