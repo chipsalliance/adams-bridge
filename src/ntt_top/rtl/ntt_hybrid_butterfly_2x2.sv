@@ -94,7 +94,7 @@ assign pairwm_mode = mlkem & (mode == pairwm);
 
 //Input assignments - TODO: add input flops for u, v, w, and rnd?
 always_comb begin
-    if (pwo_mode) begin
+    if (pwo_mode | pairwm_mode) begin
         u00 = pw_uvw_i.u0_i;
         v00 = pw_uvw_i.v0_i;
         w00 = pw_uvw_i.w0_i;
@@ -135,6 +135,10 @@ end
 //----------------------------------------------------
 //MLDSA/MLKEM - Unmasked BFU stage 1 - Used in all other modes
 //----------------------------------------------------
+//BF taps for Karatsuba pairwm: m0/m1 per pair from each BF's reduced MLKEM mult.
+logic [NTT_REG_SIZE-1:0] unmasked_bf00_pairwm_mul_red, unmasked_bf01_pairwm_mul_red;
+logic [NTT_REG_SIZE-1:0] unmasked_bf10_pairwm_mul_red, unmasked_bf11_pairwm_mul_red;
+
 ntt_butterfly #(
     .REG_SIZE(NTT_REG_SIZE)
 ) unmasked_bf_inst00 (
@@ -149,7 +153,8 @@ ntt_butterfly #(
     .accumulate(accumulate),
     .u_o(u10_int),
     .v_o(u11_int),
-    .pwm_res_o(mldsa_pwo_uv_o.uv0)
+    .pwm_res_o(mldsa_pwo_uv_o.uv0),
+    .pairwm_mul_red_o(unmasked_bf00_pairwm_mul_red)
 );
 
 ntt_butterfly #(
@@ -166,7 +171,8 @@ ntt_butterfly #(
     .accumulate(accumulate),
     .u_o(v10_int),
     .v_o(v11_int),
-    .pwm_res_o(mldsa_pwo_uv_o.uv1)
+    .pwm_res_o(mldsa_pwo_uv_o.uv1),
+    .pairwm_mul_red_o(unmasked_bf01_pairwm_mul_red)
 );
 
 //----------------------------------------------------
@@ -240,7 +246,8 @@ ntt_butterfly #(
     .accumulate(accumulate),
     .u_o(u20_int),
     .v_o(v20_int),
-    .pwm_res_o(mldsa_pwo_uv_o.uv2)
+    .pwm_res_o(mldsa_pwo_uv_o.uv2),
+    .pairwm_mul_red_o(unmasked_bf10_pairwm_mul_red)
 );
 
 ntt_butterfly #(
@@ -257,7 +264,8 @@ ntt_butterfly #(
     .accumulate(accumulate),
     .u_o(u21_int),
     .v_o(v21_int),
-    .pwm_res_o(mldsa_pwo_uv_o.uv3)
+    .pwm_res_o(mldsa_pwo_uv_o.uv3),
+    .pairwm_mul_red_o(unmasked_bf11_pairwm_mul_red)
 );
 
 always_comb begin
@@ -306,6 +314,7 @@ always_comb begin
     end
 end
 
+//MLKEM Karatsuba pair-wise multiplier. BFs provide m0/m1; this module computes m2 and m1*zeta.
 ntt_karatsuba_pairwm mlkem_pawm_inst0 (
     .clk(clk),
     .reset_n(reset_n),
@@ -313,6 +322,8 @@ ntt_karatsuba_pairwm mlkem_pawm_inst0 (
     .accumulate(accumulate),
     .pwo_uvw_i(pairwm_uvw01_i),
     .pwo_z_i(mlkem_pairwm_zeta13_i.z0_i),
+    .m0_red_i(unmasked_bf00_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m1_red_i(unmasked_bf01_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
     .pwo_uv_o(pairwm_uv01_o)
 );
 
@@ -323,6 +334,8 @@ ntt_karatsuba_pairwm mlkem_pawm_inst1 (
     .accumulate(accumulate),
     .pwo_uvw_i(pairwm_uvw23_i),
     .pwo_z_i(mlkem_pairwm_zeta13_i.z1_i),
+    .m0_red_i(unmasked_bf10_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m1_red_i(unmasked_bf11_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
     .pwo_uv_o(pairwm_uv23_o)
 );
 

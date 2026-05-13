@@ -68,6 +68,7 @@ module ntt_butterfly2x2
     logic [UNMASKED_BF_STAGE1_LATENCY-1:0][REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 3 cycles to match 1st stage BF latency
     logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg; //Shift w10/w11 by 3 cycles to match 1st stage of MLKEM BF latency
     logic pwo_mode;
+    logic pairwm_mode;
     logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
 
     pwo_t mldsa_pwo_uv_o;
@@ -105,9 +106,10 @@ module ntt_butterfly2x2
     end
 
     assign pwo_mode = (mode inside {pwm, pwa, pws});
+    assign pairwm_mode = mlkem & (mode == pairwm);
 
     always_comb begin
-        if (pwo_mode) begin
+        if (pwo_mode | pairwm_mode) begin
             u00 = pw_uvw_i.u0_i;
             v00 = pw_uvw_i.v0_i;
             w00 = pw_uvw_i.w0_i;
@@ -147,6 +149,10 @@ module ntt_butterfly2x2
     //--------------------------
     //Butterfly instances
     //--------------------------
+    //BF taps for Karatsuba pairwm: m0/m1 per pair from each BF's reduced MLKEM mult.
+    logic [REG_SIZE-1:0] bf00_pairwm_mul_red, bf01_pairwm_mul_red;
+    logic [REG_SIZE-1:0] bf10_pairwm_mul_red, bf11_pairwm_mul_red;
+
     ntt_butterfly #(
         .REG_SIZE(REG_SIZE)
     )
@@ -162,7 +168,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .u_o(u10_int),
         .v_o(u11_int),
-        .pwm_res_o(mldsa_pwo_uv_o.uv0)
+        .pwm_res_o(mldsa_pwo_uv_o.uv0),
+        .pairwm_mul_red_o(bf00_pairwm_mul_red)
     );
 
     ntt_butterfly #(
@@ -180,7 +187,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .u_o(v10_int),
         .v_o(v11_int),
-        .pwm_res_o(mldsa_pwo_uv_o.uv1)
+        .pwm_res_o(mldsa_pwo_uv_o.uv1),
+        .pairwm_mul_red_o(bf01_pairwm_mul_red)
     );
 
     ntt_butterfly #(
@@ -198,7 +206,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .u_o(uv_o.u20_o),
         .v_o(uv_o.v20_o),
-        .pwm_res_o(mldsa_pwo_uv_o.uv2)
+        .pwm_res_o(mldsa_pwo_uv_o.uv2),
+        .pairwm_mul_red_o(bf10_pairwm_mul_red)
     );
 
     ntt_butterfly #(
@@ -217,7 +226,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .u_o(uv_o.u21_o),
         .v_o(uv_o.v21_o),
-        .pwm_res_o(mldsa_pwo_uv_o.uv3)
+        .pwm_res_o(mldsa_pwo_uv_o.uv3),
+        .pairwm_mul_red_o(bf11_pairwm_mul_red)
     );
 
     //MLKEM PairWM
@@ -248,6 +258,7 @@ module ntt_butterfly2x2
         end
     end
 
+    //MLKEM Karatsuba pair-wise multiplier. BFs provide m0/m1; this module computes m2 and m1*zeta.
     ntt_karatsuba_pairwm mlkem_pawm_inst0 (
         .clk(clk),
         .reset_n(reset_n),
@@ -255,6 +266,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .pwo_uvw_i(pairwm_uvw01_i),
         .pwo_z_i(mlkem_pairwm_zeta13_i.z0_i),
+        .m0_red_i(bf00_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+        .m1_red_i(bf01_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
         .pwo_uv_o(pairwm_uv01_o)
     );
 
@@ -265,6 +278,8 @@ module ntt_butterfly2x2
         .accumulate(accumulate),
         .pwo_uvw_i(pairwm_uvw23_i),
         .pwo_z_i(mlkem_pairwm_zeta13_i.z1_i),
+        .m0_red_i(bf10_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+        .m1_red_i(bf11_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
         .pwo_uv_o(pairwm_uv23_o)
     );
 

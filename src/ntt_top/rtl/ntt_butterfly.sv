@@ -50,7 +50,9 @@ module ntt_butterfly
 
     output logic [REG_SIZE-1:0]   u_o,
     output logic [REG_SIZE-1:0]   v_o,
-    output logic [REG_SIZE-1:0]   pwm_res_o
+    output logic [REG_SIZE-1:0]   pwm_res_o,
+    //BF tap for MLKEM Karatsuba pairwm (registered, 2 cycles after opu/opv).
+    output logic [REG_SIZE-1:0]   pairwm_mul_red_o
 );
 
     //Input wires
@@ -166,7 +168,7 @@ module ntt_butterfly
                 v_o = 'h0;
                 pwm_res_o = u_minus_v;
             end
-            pairwm: begin //Karatsuba pairwm is used instead of this butterfly
+            pairwm: begin
                 u_o = 'h0;
                 v_o = 'h0;
                 pwm_res_o = 'h0;
@@ -206,6 +208,12 @@ module ntt_butterfly
                 add_opb = opv_i;
                 mul_opa = 'h0;
                 mul_opb = 'h0;
+            end
+            pairwm: begin //MLKEM Karatsuba m0/m1 mult reuse
+                add_opa = 'h0;
+                add_opb = 'h0;
+                mul_opa = mlkem ? opu_i : 'h0;
+                mul_opb = mlkem ? opv_i : 'h0;
             end
             default: begin
                 add_opa = 'h0;
@@ -339,5 +347,10 @@ module ntt_butterfly
         .op_i (u_minus_v[MLKEM_REG_SIZE-1:0]),
         .res_o (mlkem_u_minus_v_div2)
     );
+
+    //BF tap for Karatsuba pairwm (mlkem_mul_res_reduced_reg, 2-cycle latency).
+    assign pairwm_mul_red_o = ((mode == pairwm) & mlkem)
+                              ? REG_SIZE'(mlkem_mul_res_reduced_reg)
+                              : 'h0;
 
 endmodule
