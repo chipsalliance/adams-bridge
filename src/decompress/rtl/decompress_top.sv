@@ -292,17 +292,18 @@ module decompress_top
         if (split_en_i) begin
             mem_wr_req     = mem_wr_req_d2;
             mem_wr_data[0] = split_share0;
-            if (ABR_NUM_NTT > 1) begin
-                mem_wr_data[1] = split_share1;
-            end
         end else begin
             mem_wr_req     = mem_wr_req_pre;
             mem_wr_data[0] = mem_wr_data_pre;
-            if (ABR_NUM_NTT > 1) begin
-                mem_wr_data[1] = mem_wr_data_pre;
-            end
         end
     end
+
+    // share[1] output — present only when masking is enabled.
+    generate if (ABR_NUM_NTT > 1) begin : g_decompress_share1_out
+        always_comb begin
+            mem_wr_data[1] = split_en_i ? split_share1 : mem_wr_data_pre;
+        end
+    end endgenerate
 
     // Done signal: delay by 2 cycles when splitting to match splitter write latency
     logic [1:0] done_pipe;

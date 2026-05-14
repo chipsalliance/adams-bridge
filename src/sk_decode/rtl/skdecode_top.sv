@@ -240,21 +240,26 @@ module skdecode_top
             mem_b_wr_req     = mem_b_wr_req_d2;
             mem_a_wr_data[0] = split_share0_a;
             mem_b_wr_data[0] = split_share0_b;
-            if (ABR_NUM_NTT > 1) begin
-                mem_a_wr_data[1] = split_share1_a;
-                mem_b_wr_data[1] = split_share1_b;
-            end
         end else begin
             mem_a_wr_req     = mem_a_wr_req_reg;
             mem_b_wr_req     = mem_b_wr_req_reg;
             mem_a_wr_data[0] = mem_a_wr_data_reg;
             mem_b_wr_data[0] = mem_b_wr_data_reg;
-            if (ABR_NUM_NTT > 1) begin
+        end
+    end
+
+    // share[1] output — present only when masking is enabled.
+    generate if (ABR_NUM_NTT > 1) begin : g_skdecode_share1_out
+        always_comb begin
+            if (split_en_i) begin
+                mem_a_wr_data[1] = split_share1_a;
+                mem_b_wr_data[1] = split_share1_b;
+            end else begin
                 mem_a_wr_data[1] = mem_a_wr_data_reg;
                 mem_b_wr_data[1] = mem_b_wr_data_reg;
             end
         end
-    end
+    end endgenerate
 
     // Done signal: delay by 1 extra cycle when split pipeline is still draining
     assign skdecode_done = skdecode_done_int & ~(split_en_i & |split_pipe_active);

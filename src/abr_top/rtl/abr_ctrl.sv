@@ -2188,13 +2188,16 @@ always_comb begin
                                         pw_base_addr_c:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
 end
 
-// Covers: MASKED_REJB, MASKED_EXP_MASK, MASKED_CBD, MASKED_SKDECODE, MASKED_DECOMPRESS
-always_comb split_en_o = abr_instr.opcode.masking_en & ~ntt_en;
+// Splitter is bypassed in unmasked builds — otherwise share0 (data⊕rand) would
+// be written into regular memory and corrupt downstream ops.
+always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
 
-// Skip RECOMBINE in unmasked mode — no share recombination needed
+// Skip in-place RECOMBINE in unmasked mode (op1==op3 → NOP).
+// Non-in-place RECOMBINEs still execute as a PWA memcopy (pwm_b=0 in abr_top).
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
-                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
+                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE}) &
+                             (abr_instr_o.operand1 == abr_instr_o.operand3);
 
 always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | skip_recombine) ? '0 : abr_instr_o;
 

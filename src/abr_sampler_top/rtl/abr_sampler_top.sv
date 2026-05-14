@@ -727,11 +727,14 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
       sampler_mem_data_o[0] = sampler_mem_data_pre;
       sampler_mem_addr_o   = sampler_mem_addr_pre;
     end
-    // ntt=1 share (masked data or bypass copy)
-    if (ABR_NUM_NTT > 1) begin
+  end
+
+  // share[1] output — present only when masking is enabled.
+  generate if (ABR_NUM_NTT > 1) begin : g_sampler_share1_out
+    always_comb begin
       sampler_mem_data_o[1] = split_en_i ? splitter_share1 : sampler_mem_data_pre;
     end
-  end
+  end endgenerate
 
   `ABR_ASSERT_MUTEX(ERR_SAMPLER_O_MUTEX, {sampler_ntt_dv_o,sampler_mem_dv_o,sampler_state_dv_o}, clk, !rst_b)
 
