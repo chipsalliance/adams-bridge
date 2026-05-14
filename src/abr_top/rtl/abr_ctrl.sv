@@ -2192,12 +2192,10 @@ end
 // be written into regular memory and corrupt downstream ops.
 always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
 
-// Skip in-place RECOMBINE in unmasked mode (op1==op3 → NOP).
-// Non-in-place RECOMBINEs still execute as a PWA memcopy (pwm_b=0 in abr_top).
+// All RECOMBINEs are in-place (op1==op3) — safe to NOP them all in unmasked mode.
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
-                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE}) &
-                             (abr_instr_o.operand1 == abr_instr_o.operand3);
+                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
 
 always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | skip_recombine) ? '0 : abr_instr_o;
 
