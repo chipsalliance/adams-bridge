@@ -21,6 +21,10 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ahb_slv_sif.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
+<<<<<<< HEAD
+=======
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_masked_OR.sv
+>>>>>>> chips/main
 ${ADAMSBRIDGE_ROOT}/src/rej_sampler/rtl/rej_sampler_ctrl.sv
 ${ADAMSBRIDGE_ROOT}/src/rej_sampler/rtl/rej_sampler.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_pkg.sv
