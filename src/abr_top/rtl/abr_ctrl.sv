@@ -806,9 +806,9 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   
     for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | (verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID));
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[0][dword*32 +: 32];
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
     end
   
     abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.swwe = stream_msg_rdy;

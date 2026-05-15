@@ -242,6 +242,17 @@ interface abr_top_cov_if
     logic sca_zeroize;
     assign sca_zeroize = abr_top.abr_ctrl_inst.zeroize;
 
+    // VERIFY_RES poison-init: re-tap signals that drive `clear_verify_valid`
+    // so we can cover that both abort paths fire. By design (abr_ctrl.sv:806-810,
+    // hwclr = zeroize only), VERIFY_RES retains the poison `~c~` whenever
+    // clear_verify_valid asserts — coverage on the two source bits is sufficient.
+    logic sca_clear_verify_valid;
+    logic sca_normcheck_invalid;
+    logic sca_sigdecode_h_invalid;
+    assign sca_clear_verify_valid  = abr_top.abr_ctrl_inst.clear_verify_valid;
+    assign sca_normcheck_invalid   = abr_top.abr_ctrl_inst.normcheck_invalid_i;
+    assign sca_sigdecode_h_invalid = abr_top.abr_ctrl_inst.sigdecode_h_invalid_i;
+
     // =========================================================================
     // SCA Covergroup
     // =========================================================================
@@ -471,6 +482,15 @@ interface abr_top_cov_if
             illegal_bins decompress_split_on_masking_off =
                 binsof(decompress_splitter_en_cp) intersect {1} &&
                 binsof(opcode_masking_en_cp) intersect {0};
+        }
+
+        // VERIFY_RES poison-init coverage (abr_ctrl.sv:806-810). With hwclr = zeroize
+        // only, the poison `~c~` survives any abort; covering both abort sources
+        // proves the retention path was exercised.
+        verify_abort_path_cp: coverpoint {sca_normcheck_invalid, sca_sigdecode_h_invalid}
+                              iff (sca_clear_verify_valid) {
+            bins by_normcheck = {2'b10};
+            bins by_sigdec_h  = {2'b01};
         }
 
     endgroup
