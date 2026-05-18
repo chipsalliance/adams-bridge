@@ -658,13 +658,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= '0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        chunk_count_reg <= {chunk_count, chunk_count_reg[BF_LATENCY:1]};
+        chunk_count_reg <= {{(MAX_CHUNK_REG_DEPTH-BF_LATENCY-1){4'h0}}, chunk_count, chunk_count_reg[BF_LATENCY:1]};
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin
         if (pairwm_mode)
             chunk_count_reg <= {chunk_count, chunk_count_reg[PAIRWM_PWO_ENTRY:1]};
         else
-            chunk_count_reg <= {chunk_count, chunk_count_reg[BF_LATENCY+SRAM_DELAY:1]};
+            chunk_count_reg <= {{(MAX_CHUNK_REG_DEPTH-BF_LATENCY-SRAM_DELAY-1){4'h0}}, chunk_count, chunk_count_reg[BF_LATENCY+SRAM_DELAY:1]};
     end
 end
 

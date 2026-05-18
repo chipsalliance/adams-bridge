@@ -107,7 +107,7 @@ module ntt_karatsuba_pairwm
     logic [MLKEM_REG_SIZE-1:0]      m0_red_d1, m1_red_d1;
 
     always_ff @(posedge clk or negedge reset_n) begin
-        if (!reset_n || zeroize) begin
+        if (!reset_n) begin
             z_reg       <= '0;
             m2_red_reg  <= '0;
             m1z_red_reg <= '0;
@@ -115,7 +115,17 @@ module ntt_karatsuba_pairwm
             w1_reg      <= '0;
             m0_red_d1   <= '0;
             m1_red_d1   <= '0;
-        end else begin
+        end
+        else if (zeroize) begin
+            z_reg       <= '0;
+            m2_red_reg  <= '0;
+            m1z_red_reg <= '0;
+            w0_reg      <= '0;
+            w1_reg      <= '0;
+            m0_red_d1   <= '0;
+            m1_red_d1   <= '0;
+        end
+        else begin
             z_reg       <= {z_reg[0], z1};
             m2_red_reg  <= m2_red_comb;
             m1z_red_reg <= m1z_red_comb;
