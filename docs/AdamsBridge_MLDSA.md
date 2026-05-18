@@ -720,7 +720,7 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 | **Verifying**         | 18,800           |         0.047 | 21,277                 |     |         0.031 | 31,915                 |
 
 
-**NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configureble to be enabled or disabled at synthesis time.
+**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined via explicit `RECOMBINE` sequencer ops. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
 The area overhead associated with enabling these countermeasures is as follows:
 
@@ -1311,7 +1311,13 @@ For a complete NTT/INTT operation for Dilithium ML-DSA-87 with 7 or 8 polynomial
 
 ### NTT shuffling countermeasure
 
-To protect NTT, we have two options – shuffling the order of execution of coefficients and masking in-order computation such that NTT performs operation on two input shares per coefficient and produces two output shares. While masking is a strong countermeasure for side-channel attacks, it requires at least 4x the area and adds 4x the latency to one NTT operation. Shuffling is an implementation trick that can be used to provide randomization to some degree without area or latency overhead. In Adam’s Bridge, we employ a combination of both for protected design. Both NTT cores will have masking on the first layer of computation for INTT mode and will have a fully masked PWM module, in addition to shuffling. In NTT, PWA and PWS modes, the NTT cores can employ only shuffling.
+The Adams-Bridge NTT engine uses **shuffling** as one of two complementary side-channel countermeasures. Shuffling randomizes the per-coefficient execution order so that any observable side-channel emission cannot be correlated with a specific coefficient index. The reordering is purely a control-path permutation of the read/write address sequence, so it adds no datapath area and no latency overhead. Shuffling is available in all NTT operating modes (`NTT`, `INTT`, `PWM`, `PWM-with-accumulation`, `PWA`, `PWS`) and is gated by the `shuffling_en` field of the active opcode (see [`abr_ctrl_pkg.sv`](../src/abr_top/rtl/abr_ctrl_pkg.sv) opcode definitions).
+
+The shuffling random word is sourced from the top-level LFSR. When `MASKING_EN = 1` two NTT engines are instantiated, and each engine receives an independent `shuffling_rand` slice from the LFSR so that `NTT[0]` and `NTT[1]` execute different permutations of the same logical operation. This prevents trace alignment across the two shares.
+
+Shuffling is the *only* in-NTT countermeasure. The complementary **arithmetic masking** countermeasure (data-domain splitting into two arithmetic shares of each coefficient) is implemented at the architectural level, outside the NTT engine — see [PWM and INTT masking countermeasure](#pwm-and-intt-masking-countermeasure) below.
+
+The pre-shuffle in-order memory layout for one NTT polynomial (4 coefficients per address × 64 addresses = 256 coefficients) is shown in the table below; the shuffler permutes the read/write order over these same addresses.
 
 | Address |     | Memory Content |     |     |     |
 | ------- | --- | -------------- | --- | --- | --- |
@@ -2067,13 +2073,43 @@ The proposed NTT method preserves the memory contents in sequence without needin
 
 ## PWM and INTT masking countermeasure
 
-Masking countermeasure is implemented for two of the most critical operations in ML-DSA-87 to protect secrets - point-wise multiplication and INTT. A fully masked 2x2 butterfly architecture increases memory, area and latency by ~4 times. To avoid such large overhead, Adams Bridge implements a hybrid masking countermeasure where PWM operation is fully masked and the first stage of INTT operation is masked. To support Ay calculation where one input of PWM operation comes from samplers, an additional shares memory is provided that stores 1 polynomial worth of shares. Figure below shows the masking architecture:
+Adams-Bridge implements an **architectural-level arithmetic masking** countermeasure: every secret coefficient `x` is represented as a pair of additive shares `(share0, share1)` such that `share0 + share1 ≡ x (mod q)`, where `q` is the algorithm prime (`MLDSA_Q = 8380417` for ML-DSA-87, `MLKEM_Q = 3329` for ML-KEM-1024). The two shares travel through two parallel, cycle-aligned NTT engines on disjoint storage, and are recombined only at the boundary of any unmasked downstream consumer. No masking logic exists *inside* the NTT engine itself — the engine is unchanged datapath that operates on whatever value is in memory.
 
-![Masking architecture](./images/MLDSA/image64.png)
+The countermeasure is fully configurable via the top-level `MASKING_EN` parameter (see [`abr_params_pkg.sv`](../src/abr_top/rtl/abr_params_pkg.sv) and [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv)). When `MASKING_EN = 0`, all `MASKED_*` opcodes degrade to their unmasked equivalents, `RECOMBINE` opcodes become no-ops via `skip_recombine`, and the masked memory instances are not generated.
 
-PWM, PWM with accumulation and INTT modes of NTT engine support masking and shuffling countermeasures. Remaining opcodes (NTT, PWA and PWS) only support shuffling countermeasure. During Ay computation, the first PWM operation with masking enabled will receive inputs from the original coefficient memory/sampler and these inputs are in their original form. Internal to the NTT block, the inputs are split into shares and fed to the masked PWM units. The output shares are then stored in the share memory in split form. Subsequent PWM operations with accumulation and masking enabled will retrieve primary inputs from the original memory/sampler which are split on the fly and the accumulation input is retrieved from share memory. The accumulated output shares are stored back into the share memory. 
+### Share generation — `abr_splitter`
 
-The following masked INTT operation in Ay computation receives inputs from the share memory in split format. Once the first stage of INTT is finished, the shares are combined and passed onto the unmasked second stage of INTT. The final outputs of INTT are stored in the original coefficient memory in their combined form.
+Shares are produced at every point where secret data enters the memory subsystem: the sampler (rejection / rejection-bounded / CBD / SampleInBall / `exp_mask`), `skdecode`, and `decompress`. The [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv) module is a 2-cycle pure pipeline stage that takes a 96-bit producer word (4 coefficients × 23 bits for MLDSA, or 4 × 12 bits for MLKEM) plus 96 random bits from the top-level LFSR, and emits two 96-bit shares:
+
+- `share0_o = rand`  (the random word delayed two cycles, becomes share 0)
+- `share1_o = (data − rand) mod q`  (computed by `abr_add_sub_mod`)
+
+`share0` is written to the *regular* memory instance and `share1` to the corresponding *masked* memory instance (`mem_inst*_masked`, see [`abr_mem_top.sv`](../src/abr_top/rtl/abr_mem_top.sv) — only instantiated when `MASKING_EN = 1`).
+
+### Dual-NTT execution
+
+When `MASKING_EN = 1`, [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv) instantiates `ABR_NUM_NTT = 2` identical NTT engines:
+
+| Engine    | Reads from        | Writes to         | Operand               |
+|-----------|-------------------|-------------------|-----------------------|
+| `NTT[0]`  | Regular SRAMs     | Regular SRAMs     | `share0`              |
+| `NTT[1]`  | Masked SRAMs      | Masked SRAMs      | `share1`              |
+
+Both engines receive the same opcode and the same logical address sequence but independent `shuffling_rand` slices, so they execute the same arithmetic on different shares with different per-cycle physical address orderings. Engine `NTT[1]` is enabled only when the current opcode has `masking_en = 1`; otherwise it idles. The sequencer ([`abr_seq.sv`](../src/abr_top/rtl/abr_seq.sv)) issues `MASKED_*` variants of every NTT opcode that touches secret data, including:
+
+- `ABR_UOP_MASKED_NTT`, `ABR_UOP_MASKED_INTT`
+- `ABR_UOP_MASKED_PWM`, `ABR_UOP_MASKED_PWA`, `ABR_UOP_MASKED_PWS`
+- `ABR_UOP_REJS_MASKED_PWM`, `ABR_UOP_REJS_MASKED_PWMA` (sampler-fed)
+- `ABR_UOP_MASKED_REJB`, `ABR_UOP_MASKED_EXP_MASK`, `ABR_UOP_MASKED_CBD`, `ABR_UOP_MASKED_SKDECODE`, `ABR_UOP_MASKED_DECOMPRESS`
+- ML-KEM mirrors: `ABR_UOP_MLKEM_MASKED_*`
+
+### Special case: shared public input — `MASKED_NTT_NOSHUF`
+
+For the `NTT(c)` step in signing, the operand `c` is a public challenge polynomial produced by SampleInBall. Both NTTs must produce the *same* result at the *same* memory address so that subsequent masked PWMs against `c` work correctly. The dedicated [`ABR_UOP_MASKED_NTT_NOSHUF`](../src/abr_top/rtl/abr_ctrl_pkg.sv) opcode (`masking_en = 1, shuffling_en = 0`) drives both engines through cycle-aligned identical schedules so that `NTT[0]` and `NTT[1]` arrive at the same `C_NTT` polynomial in their respective memories. SIB read data is broadcast to both engines from `NTT[0]`'s shared read port.
+
+### Recombination — `RECOMBINE`
+
+Before any *unmasked* consumer (signature encoding, public-key encoding, hashing for `μ`, decompose, norm-check, makehint, compress) reads a masked value, the sequencer issues a `RECOMBINE` opcode. `RECOMBINE` runs on `NTT[0]` in pass-through mode: it reads `share0` from the regular memory and `share1` from the masked memory at the same address, computes `(share0 + share1) mod q`, and writes the combined value back to the regular memory. The recombined value is in-place, hence, when `MASKING_EN = 0`, the `skip_recombine` decoder in [`abr_ctrl.sv`](../src/abr_top/rtl/abr_ctrl.sv) converts every `RECOMBINE` opcode into a no-op, since the data is already in the regular memory in its non-shared form.
 
 ## RejBounded architecture
 
@@ -3531,6 +3567,8 @@ In the UseHint phase, the decompose unit retrieves w from memory and divides it 
 |                            | RDKeccak   | Verification Result |          |         |
 
 ## MLDSA Memory Layout (Unmasked, MASKING_EN=0)
+
+> When `MASKING_EN = 1`, each `inst0_bank0` / `inst0_bank1` / `inst1` / `inst2` instance below has a same-dimension mirror instance with the `_masked` suffix that holds `share1` of the same coefficient set; the regular instances hold `share0`. The offset tables apply to both. See [`abr_mem_top.sv`](../src/abr_top/rtl/abr_mem_top.sv) for the gated instantiation.
 
 ### Memory Instances
 | Instance | Type | Depth | Width | Size |

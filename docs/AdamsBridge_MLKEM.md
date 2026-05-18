@@ -335,7 +335,7 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 | **Decapsulation**      | 11,054           |         0.028 | 36,186                 |     |         0.018 | 54,279                 |
 
 
-**NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configurable to be enabled or disabled at synthesis time.
+**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined via explicit `RECOMBINE` sequencer ops. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
 The performance overhead associated with enabling these countermeasures is as follows:
 
@@ -1085,6 +1085,8 @@ The following table lists different operations used in the high-level controller
 
 
 ## ML-KEM Memory Layout (Unmasked, MASKING_EN=0)
+
+> When `MASKING_EN = 1`, each `inst0` / `inst1` / `inst2` instance below has a same-dimension mirror with the `_masked` suffix holding `share1`; the regular instances hold `share0`. The offset tables apply to both. See [`abr_mem_top.sv`](../src/abr_top/rtl/abr_mem_top.sv) for the gated instantiation.
 
 ML-KEM shares the same three memory instances as MLDSA. ML-KEM coefficients use
 MLKEM_COEFF_DEPTH = 64 entries per polynomial (256 coefficients / 4 per clock).
