@@ -158,7 +158,6 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] ntt_done;
   logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
-  logic [ABR_NUM_NTT-1:0][ABR_MEM_DATA_WIDTH-1:0] ntt_mem_wr_data_full;
 
   mem_if_t w1_mem_wr_req;
   logic [ABR_MEM_W1_DATA_W-1:0] w1_mem_wr_data;
@@ -358,10 +357,7 @@ module abr_top
   logic [1:0] sigencode_mem_re0_bank[SRAM_LATENCY:0];
   logic [1:0] pwr2rnd_mem_re0_bank[SRAM_LATENCY:0];
 
-  //Decode request to sample in ball memory — SIB is unmasked, NTT[0] only
-  //fixed latency
   logic sib_mem_re[1:0];
-  // Per-NTT SIB read detect: NTT[1] also reads from SIB range during NOSHUF
   logic [ABR_NUM_NTT-1:0] ntt_sib_rd_detect;
   logic [ABR_NUM_NTT-1:0] ntt_sib_rd_detect_d1;
 
@@ -371,8 +367,6 @@ module abr_top
   abr_sram_be_if #(.ADDR_W(SIG_Z_MEM_ADDR_W), .DATA_W(SIG_Z_MEM_DATA_W)) sig_z_mem_if();
   abr_sram_be_if #(.ADDR_W(PK_MEM_ADDR_W), .DATA_W(PK_MEM_DATA_W)) pk_mem_if();
 
-  // Randomness from two LFSRs (LFSR_W=102 each, total 204 bits):
-  //   Each LFSR[i] provides: 96-bit splitter_rand[i] + 6-bit shuffling_rand[i]
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] splitter_rand;
   logic [ABR_NUM_NTT-1:0][5:0] shuffling_rand;
   for (genvar gi = 0; gi < 2; gi++) begin : gen_rand_assign
@@ -828,7 +822,7 @@ generate
     //NTT mem IF — zero-extend 96→384 for inputs, truncate 384→96 for outputs
     .mem_wr_req(ntt_mem_wr_req[g_inst]),
     .mem_rd_req(ntt_mem_rd_req[g_inst]),
-    .mem_wr_data(ntt_mem_wr_data_full[g_inst]),
+    .mem_wr_data(ntt_mem_wr_data[g_inst]),
     .mem_rd_data_valid(ntt_mem_rd_data_valid[g_inst]),
     .mem_rd_data(ntt_mem_rd_data[g_inst]),
     //PWM mem IF
@@ -841,15 +835,9 @@ generate
     .ntt_busy(ntt_busy[g_inst]),
     .ntt_done(ntt_done[g_inst])
   );
-  // Truncate 384-bit NTT output to 96-bit
-  assign ntt_mem_wr_data[g_inst] = ntt_mem_wr_data_full[g_inst];
   end
 endgenerate
 
-// Phase 2b: NTT output comparison — validates NTT[1] produces correct results
-// The cycle-level checker is deferred to Phase 2c when both NTTs are synchronized.
-// For now, functional correctness is validated by KAT signature comparison.
-// TODO(Phase 2c): Add memory content comparison after each masked NTT operation
 power2round_top
 power2round_inst (
   .clk(clk),
@@ -1198,7 +1186,6 @@ always_comb begin
   w1_mem_rd_data = abr_memory_export.w1_mem_rdata_o;
 end
 
-// SIB is unmasked — but both NTTs read the same SIB data when src address hits inst4.
 // During MASKED_NTT_NOSHUF(c), NTT[1] mirrors NTT[0] and needs the same SIB source data.
 always_comb begin
   sib_mem_re[0] = (ntt_mem_rd_req[0].rd_wr_en == RW_READ) & (ntt_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == 3'b100);
@@ -1513,7 +1500,6 @@ always_comb begin
           ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
           pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
           // RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1)
-          // or 0 (MASKING_EN=0 → memcopy via PWA op1+0).
           if (ntt == 0)
             pwm_b_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} &
                                  (recombine_en_pipe[SRAM_LATENCY] ?
@@ -1532,7 +1518,6 @@ always_comb begin
         ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
         pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
         // RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1)
-        // or 0 (MASKING_EN=0 → memcopy via PWA op1+0).
         if (ntt == 0)
           pwm_b_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} &
                                (recombine_en_pipe[SRAM_LATENCY] ?

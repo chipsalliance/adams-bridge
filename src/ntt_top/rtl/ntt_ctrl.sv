@@ -91,10 +91,9 @@ localparam PWO_WRITE_ADDR_STEP  = 1;
 localparam [ABR_MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 
 localparam SRAM_DELAY = SRAM_LATENCY-1;
-// localparam MASKED_INTT_WRBUF_LATENCY_SRAM_DELAY = MASKED_INTT_WRBUF_LATENCY + SRAM_DELAY;
 localparam INTT_WRBUF_LATENCY_SRAM_DELAY = INTT_WRBUF_LATENCY + SRAM_DELAY;
 
-localparam PAIRWM_PWO_ENTRY    = MLKEM_UNMASKED_PAIRWM_LATENCY + MLKEM_UNMASKED_BF_LATENCY + SRAM_DELAY;
+localparam PAIRWM_PWO_ENTRY    = MLKEM_PAIRWM_LATENCY + MLKEM_BF_LATENCY + SRAM_DELAY;
 localparam MAX_RDPTR_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
 localparam MAX_CHUNK_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
 
@@ -129,7 +128,7 @@ logic mem_wr_en_fsm, mem_wr_en_reg;
 logic mem_rd_en_fsm, mem_rd_en_reg;
 logic pw_rden_fsm, pw_rden_reg;
 logic pw_wren_fsm, pw_wren_reg;
-logic [UNMASKED_PWM_LATENCY:0] pw_rden_fsm_reg;
+logic [PWM_LATENCY:0] pw_rden_fsm_reg;
 logic shuffled_pw_rden_fsm_reg; 
 
 //Mode flags
@@ -152,7 +151,7 @@ logic wr_addr_wraparound;
 //PWO wires
 logic incr_pw_rd_addr, incr_pw_wr_addr;
 logic rst_pw_addr;
-logic [UNMASKED_PWM_LATENCY:0] incr_pw_rd_addr_reg;
+logic [PWM_LATENCY:0] incr_pw_rd_addr_reg;
 
 //Twiddle ROM wires
 logic incr_twiddle_addr, incr_twiddle_addr_fsm, incr_twiddle_addr_reg;
@@ -315,7 +314,7 @@ always_comb begin
 
     if (shuffle_en) begin
         mem_rd_addr_nxt    = (gs_mode) ? (COEFF_PER_CLK*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
-        mem_wr_addr_nxt    = ct_mode ? (ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*(mlkem ? chunk_count_reg[UNMASKED_BF_LATENCY-MLKEM_UNMASKED_BF_LATENCY] : chunk_count_reg[0])) + (wr_addr_step*(mlkem ? buf_rdptr_reg[UNMASKED_BF_LATENCY-MLKEM_UNMASKED_BF_LATENCY] : buf_rdptr_reg[0])) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : '0 /*(ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]))*/;
+        mem_wr_addr_nxt    = ct_mode ? (ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*(mlkem ? chunk_count_reg[BF_LATENCY-MLKEM_BF_LATENCY] : chunk_count_reg[0])) + (wr_addr_step*(mlkem ? buf_rdptr_reg[BF_LATENCY-MLKEM_BF_LATENCY] : buf_rdptr_reg[0])) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : '0 /*(ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]))*/;
     end
     else begin
         mem_rd_addr_nxt = mem_rd_addr + rd_addr_step;
@@ -375,15 +374,15 @@ always_comb begin
     pw_mem_rd_addr_b_nxt = pw_base_addr_b + (COEFF_PER_CLK*chunk_count) + (PWO_READ_ADDR_STEP*mem_rd_index_ofst);
     
     if (pwm_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[UNMASKED_PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-2])
-                                                   :  pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[UNMASKED_PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_PWM_LATENCY-1]);
+        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[PWM_LATENCY-2]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[PWM_LATENCY-2])
+                                                   :  pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[PWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[PWM_LATENCY-1]);
     end
     else if (pairwm_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1])
-                                                   : pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_UNMASKED_PAIRWM_LATENCY]);
+        shuffled_pw_mem_wr_addr_c_nxt = accumulate ? pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[MLKEM_PAIRWM_LATENCY-1]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_PAIRWM_LATENCY-1])
+                                                   : pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[MLKEM_PAIRWM_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[MLKEM_PAIRWM_LATENCY]);
     end
     else if (pwa_mode | pws_mode) begin
-        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[UNMASKED_BF_LATENCY-UNMASKED_PWAS_RD_TO_WR_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[UNMASKED_BF_LATENCY-UNMASKED_PWAS_RD_TO_WR_LATENCY]);
+        shuffled_pw_mem_wr_addr_c_nxt = pw_base_addr_c + (COEFF_PER_CLK*chunk_count_reg[BF_LATENCY-PWAS_RD_TO_WR_LATENCY]) + (PWO_WRITE_ADDR_STEP*buf_rdptr_reg[BF_LATENCY-PWAS_RD_TO_WR_LATENCY]);
     end
     else
         shuffled_pw_mem_wr_addr_c_nxt = 0;
@@ -454,12 +453,12 @@ always_comb begin
         'h0: begin
             twiddle_end_addr    = pairwm_mode ? 'd63 : ct_mode ? 'd0 : 'd63;
             twiddle_offset      = pairwm_mode ? 'd21 : 'h0;
-            twiddle_rand_offset = pairwm_mode ? 7'((chunk_count % 'd16)*COEFF_PER_CLK + buf_rdptr_int) : ct_mode ? 'h0 : 7'((COEFF_PER_CLK*chunk_count_reg[UNMASKED_BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = pairwm_mode ? 7'((chunk_count % 'd16)*COEFF_PER_CLK + buf_rdptr_int) : ct_mode ? 'h0 : 7'((COEFF_PER_CLK*chunk_count_reg[BF_LATENCY]) + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h1: begin
             twiddle_end_addr    = ct_mode ? 'd3 : 'd15;
             twiddle_offset      = ct_mode ? 'd1 : 'd64;
-            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : 7'((chunk_count_reg[UNMASKED_BF_LATENCY] % COEFF_PER_CLK)*COEFF_PER_CLK + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
+            twiddle_rand_offset = ct_mode ? 7'(buf_rdptr_int) : 7'((chunk_count_reg[BF_LATENCY] % COEFF_PER_CLK)*COEFF_PER_CLK + buf_wrptr_reg[INTT_WRBUF_LATENCY-1]);
         end
         'h2: begin
             twiddle_end_addr    = ct_mode ? 'd15 : 'd3;
@@ -610,7 +609,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         buf_wrptr_reg <= 'h0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-UNMASKED_BF_LATENCY-1){2'h0}}, buf_rdptr_int, buf_rdptr_reg[UNMASKED_BF_LATENCY:1]};
+        buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-BF_LATENCY-1){2'h0}}, buf_rdptr_int, buf_rdptr_reg[BF_LATENCY:1]};
     end
     else if ((gs_mode & (incr_mem_rd_addr | butterfly_ready))) begin
         buf_wrptr_reg <= {{(INTT_WRBUF_LATENCY_SRAM_DELAY-INTT_WRBUF_LATENCY-SRAM_DELAY){2'h0}}, mem_rd_index_ofst, buf_wrptr_reg[INTT_WRBUF_LATENCY+SRAM_DELAY-1:1]};
@@ -619,7 +618,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         if (pairwm_mode)
             buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-PAIRWM_PWO_ENTRY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[PAIRWM_PWO_ENTRY:1]};
         else
-            buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-UNMASKED_BF_LATENCY-SRAM_DELAY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
+            buf_rdptr_reg <= {{(MAX_RDPTR_REG_DEPTH-BF_LATENCY-SRAM_DELAY-1){2'h0}}, mem_rd_index_ofst, buf_rdptr_reg[BF_LATENCY+SRAM_DELAY:1]};
     end
     else begin
         buf_rdptr_reg <= 'h0;
@@ -659,13 +658,13 @@ always_ff @(posedge clk or negedge reset_n) begin
         chunk_count_reg <= '0;
     end
     else if (ct_mode & (buf_rden_ntt | butterfly_ready)) begin
-        chunk_count_reg <= {chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY:1]};
+        chunk_count_reg <= {chunk_count, chunk_count_reg[BF_LATENCY:1]};
     end
     else if (buf_rden_ntt | butterfly_ready | (gs_mode & incr_mem_rd_addr) | (pwo_mode & incr_pw_rd_addr)) begin
         if (pairwm_mode)
             chunk_count_reg <= {chunk_count, chunk_count_reg[PAIRWM_PWO_ENTRY:1]};
         else
-            chunk_count_reg <= {chunk_count, chunk_count_reg[UNMASKED_BF_LATENCY+SRAM_DELAY:1]};
+            chunk_count_reg <= {chunk_count, chunk_count_reg[BF_LATENCY+SRAM_DELAY:1]};
     end
 end
 
@@ -1022,7 +1021,7 @@ always_ff @(posedge clk or negedge reset_n) begin
         shuffled_pw_rden_fsm_reg <= '0;
     end
     else begin
-        pw_rden_fsm_reg <= {pw_rden_fsm, pw_rden_fsm_reg[UNMASKED_PWM_LATENCY:1]};
+        pw_rden_fsm_reg <= {pw_rden_fsm, pw_rden_fsm_reg[PWM_LATENCY:1]};
         shuffled_pw_rden_fsm_reg <= pw_rden_fsm_reg[0];
     end
 end

@@ -2188,11 +2188,9 @@ always_comb begin
                                         pw_base_addr_c:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
 end
 
-// Splitter is bypassed in unmasked builds — otherwise share0 (data⊕rand) would
-// be written into regular memory and corrupt downstream ops.
+// Splitter is bypassed if masking is disabled.
 always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
 
-// All RECOMBINEs are in-place (op1==op3) — safe to NOP them all in unmasked mode.
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
                              (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});

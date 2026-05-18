@@ -16,7 +16,7 @@
 //
 // ntt_hybrid_noncascade_butterfly_2x2.sv
 // --------
-// This module consists of PWMs followed by two stages of unmasked BFUs.
+// This module consists of PWMs followed by two stages of BFUs.
 // Final outputs are 23-bit values.
 
 module ntt_hybrid_butterfly_2x2
@@ -43,9 +43,6 @@ module ntt_hybrid_butterfly_2x2
     output logic ready_o
 );
 
-//----------------------
-//Unmasked wires
-//----------------------
 //Inputs to 1st stage
 logic [NTT_REG_SIZE-1:0] u00, u01, v00, v01;
 logic [NTT_REG_SIZE-1:0] w00, w01, w10, w11;
@@ -60,8 +57,8 @@ logic gs_mode;
 logic pairwm_mode;
 
 //Other internal wires
-logic [UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 3 cycles to match 1st stage BF latency
-logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg;
+logic [BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] mldsa_w10_reg, mldsa_w11_reg; //Shift w10 by 3 cycles to match 1st stage BF latency
+logic [MLKEM_BF_STAGE1_LATENCY-1:0][MLKEM_REG_SIZE-1:0] mlkem_w10_reg, mlkem_w11_reg;
 logic pwo_mode;
 
 //w delay flops
@@ -80,11 +77,11 @@ always_ff @(posedge clk or negedge reset_n) begin
         mlkem_w11_reg <= 'h0;
     end
     else begin
-        mldsa_w10_reg <= {uvw_i.w10_i, mldsa_w10_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
-        mldsa_w11_reg <= {uvw_i.w11_i, mldsa_w11_reg[UNMASKED_BF_STAGE1_LATENCY-1:1]};
+        mldsa_w10_reg <= {uvw_i.w10_i, mldsa_w10_reg[BF_STAGE1_LATENCY-1:1]};
+        mldsa_w11_reg <= {uvw_i.w11_i, mldsa_w11_reg[BF_STAGE1_LATENCY-1:1]};
 
-        mlkem_w10_reg <= {uvw_i.w10_i[MLKEM_REG_SIZE-1:0], mlkem_w10_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
-        mlkem_w11_reg <= {uvw_i.w11_i[MLKEM_REG_SIZE-1:0], mlkem_w11_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
+        mlkem_w10_reg <= {uvw_i.w10_i[MLKEM_REG_SIZE-1:0], mlkem_w10_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
+        mlkem_w11_reg <= {uvw_i.w11_i[MLKEM_REG_SIZE-1:0], mlkem_w11_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -111,7 +108,7 @@ always_comb begin
         v11 = pw_uvw_i.v3_i;
         w11 = pw_uvw_i.w3_i;
     end
-    else begin //Only applies to unmasked ops since in masking, intt receives inputs from pwm and not from the API
+    else begin
         u00 = uvw_i.u00_i;
         v00 = uvw_i.v00_i;
         w00 = uvw_i.w00_i;
@@ -133,15 +130,15 @@ end
 
 
 //----------------------------------------------------
-//MLDSA/MLKEM - Unmasked BFU stage 1 - Used in all other modes
+//MLDSA/MLKEM - BFU stage 1 - Used in all other modes
 //----------------------------------------------------
 //BF taps for Karatsuba pairwm: m0/m1 per pair from each BF's reduced MLKEM mult.
-logic [NTT_REG_SIZE-1:0] unmasked_bf00_pairwm_mul_red, unmasked_bf01_pairwm_mul_red;
-logic [NTT_REG_SIZE-1:0] unmasked_bf10_pairwm_mul_red, unmasked_bf11_pairwm_mul_red;
+logic [NTT_REG_SIZE-1:0] bf00_pairwm_mul_red, bf01_pairwm_mul_red;
+logic [NTT_REG_SIZE-1:0] bf10_pairwm_mul_red, bf11_pairwm_mul_red;
 
 ntt_butterfly #(
     .REG_SIZE(NTT_REG_SIZE)
-) unmasked_bf_inst00 (
+) bf_inst00 (
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
@@ -154,12 +151,12 @@ ntt_butterfly #(
     .u_o(u10_int),
     .v_o(u11_int),
     .pwm_res_o(mldsa_pwo_uv_o.uv0),
-    .pairwm_mul_red_o(unmasked_bf00_pairwm_mul_red)
+    .pairwm_mul_red_o(bf00_pairwm_mul_red)
 );
 
 ntt_butterfly #(
     .REG_SIZE(NTT_REG_SIZE)
-) unmasked_bf_inst01 (
+) bf_inst01 (
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
@@ -172,15 +169,15 @@ ntt_butterfly #(
     .u_o(v10_int),
     .v_o(v11_int),
     .pwm_res_o(mldsa_pwo_uv_o.uv1),
-    .pairwm_mul_red_o(unmasked_bf01_pairwm_mul_red)
+    .pairwm_mul_red_o(bf01_pairwm_mul_red)
 );
 
 //----------------------------------------------------
-//MLDSA/MLKEM - Unmasked BFU stage 2
+//MLDSA/MLKEM - BFU stage 2
 //----------------------------------------------------
 logic [NTT_REG_SIZE-1:0] u20_int, v20_int, u21_int, v21_int;
-logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] u10_reg, u11_reg;
-logic [MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] v10_reg, v11_reg;
+logic [MLKEM_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] u10_reg, u11_reg;
+logic [MLKEM_BF_STAGE1_LATENCY-1:0][NTT_REG_SIZE-1:0] v10_reg, v11_reg;
 
 always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -198,11 +195,11 @@ always_ff @(posedge clk or negedge reset_n) begin
         v11_reg <= '0;
     end
     else begin
-        u10_reg <= {u10, u10_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
-        u11_reg <= {u11, u11_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
+        u10_reg <= {u10, u10_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
+        u11_reg <= {u11, u11_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
 
-        v10_reg <= {v10, v10_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
-        v11_reg <= {v11, v11_reg[MLKEM_UNMASKED_BF_STAGE1_LATENCY-1:1]};
+        v10_reg <= {v10, v10_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
+        v11_reg <= {v11, v11_reg[MLKEM_BF_STAGE1_LATENCY-1:1]};
     end
 end
 
@@ -210,14 +207,14 @@ logic [NTT_REG_SIZE-1:0] bf_opu10, bf_opv10, bf_opw10;
 logic [NTT_REG_SIZE-1:0] bf_opu11, bf_opv11, bf_opw11;
 
 always_comb begin
-        //Assign u, v inputs - unmasked mode
+        //Assign u, v inputs
         bf_opu10 = u10;
         bf_opv10 = v10;
 
         bf_opu11 = u11;
         bf_opv11 = v11;
 
-        //Assign w inputs - unmasked mode
+        //Assign w inputs
         if (pwo_mode) begin
             bf_opw10 = w10;
             bf_opw11 = w11;
@@ -234,7 +231,7 @@ end
 
 ntt_butterfly #(
     .REG_SIZE(NTT_REG_SIZE)
-) unmasked_bf_inst10 (
+) bf_inst10 (
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
@@ -247,12 +244,12 @@ ntt_butterfly #(
     .u_o(u20_int),
     .v_o(v20_int),
     .pwm_res_o(mldsa_pwo_uv_o.uv2),
-    .pairwm_mul_red_o(unmasked_bf10_pairwm_mul_red)
+    .pairwm_mul_red_o(bf10_pairwm_mul_red)
 );
 
 ntt_butterfly #(
     .REG_SIZE(NTT_REG_SIZE)
-) unmasked_bf_inst11 (
+) bf_inst11 (
     .clk(clk),
     .reset_n(reset_n),
     .zeroize(zeroize),
@@ -265,7 +262,7 @@ ntt_butterfly #(
     .u_o(u21_int),
     .v_o(v21_int),
     .pwm_res_o(mldsa_pwo_uv_o.uv3),
-    .pairwm_mul_red_o(unmasked_bf11_pairwm_mul_red)
+    .pairwm_mul_red_o(bf11_pairwm_mul_red)
 );
 
 always_comb begin
@@ -285,7 +282,7 @@ always_comb begin
 end
 
 //----------------------------------------------------
-//MLKEM - Unmasked PairWM
+//MLKEM - PairWM
 //----------------------------------------------------
 mlkem_pwo_uvwzi_t pairwm_uvw01_i, pairwm_uvw23_i;
 mlkem_pwo_t pairwm_uv01_o, pairwm_uv23_o;
@@ -322,8 +319,8 @@ ntt_karatsuba_pairwm mlkem_pawm_inst0 (
     .accumulate(accumulate),
     .pwo_uvw_i(pairwm_uvw01_i),
     .pwo_z_i(mlkem_pairwm_zeta13_i.z0_i),
-    .m0_red_i(unmasked_bf00_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
-    .m1_red_i(unmasked_bf01_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m0_red_i(bf00_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m1_red_i(bf01_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
     .pwo_uv_o(pairwm_uv01_o)
 );
 
@@ -334,8 +331,8 @@ ntt_karatsuba_pairwm mlkem_pawm_inst1 (
     .accumulate(accumulate),
     .pwo_uvw_i(pairwm_uvw23_i),
     .pwo_z_i(mlkem_pairwm_zeta13_i.z1_i),
-    .m0_red_i(unmasked_bf10_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
-    .m1_red_i(unmasked_bf11_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m0_red_i(bf10_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
+    .m1_red_i(bf11_pairwm_mul_red[MLKEM_REG_SIZE-1:0]),
     .pwo_uv_o(pairwm_uv23_o)
 );
 
@@ -350,7 +347,7 @@ end
 //Determine when results are ready
 //----------------------------------------------------
 
-    logic [UNMASKED_BF_LATENCY-1:0] ready_reg;
+    logic [BF_LATENCY-1:0] ready_reg;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
@@ -360,23 +357,23 @@ end
         else begin
             if (mlkem) begin
                 unique case(mode)
-                    ct: ready_reg <= {{(UNMASKED_BF_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
-                    gs: ready_reg <= {{(UNMASKED_BF_LATENCY-MLKEM_UNMASKED_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_UNMASKED_BF_LATENCY-1:1]};
+                    ct: ready_reg <= {{(BF_LATENCY-MLKEM_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
+                    gs: ready_reg <= {{(BF_LATENCY-MLKEM_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
                     pwm: ready_reg <= 'b0;
-                    pwa: ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
-                    pws: ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
-                    pairwm: ready_reg <= accumulate ? {{(UNMASKED_BF_LATENCY-MLKEM_UNMASKED_PAIRWM_ACC_LATENCY){1'b0}}, enable, ready_reg[MLKEM_UNMASKED_PAIRWM_ACC_LATENCY-1:1]}
-                                                   : {{(UNMASKED_BF_LATENCY-MLKEM_UNMASKED_PAIRWM_LATENCY){1'b0}}, enable, ready_reg[MLKEM_UNMASKED_PAIRWM_LATENCY-1:1]};
+                    pwa: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
+                    pws: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
+                    pairwm: ready_reg <= accumulate ? {{(BF_LATENCY-MLKEM_PAIRWM_ACC_LATENCY){1'b0}}, enable, ready_reg[MLKEM_PAIRWM_ACC_LATENCY-1:1]}
+                                                   : {{(BF_LATENCY-MLKEM_PAIRWM_LATENCY){1'b0}}, enable, ready_reg[MLKEM_PAIRWM_LATENCY-1:1]};
                     default: ready_reg <= 'b0;
                 endcase
             end
             else begin
                 unique case(mode)
-                    ct: ready_reg <= {enable, ready_reg[UNMASKED_BF_LATENCY-1:1]};
-                    gs: ready_reg <= {enable, ready_reg[UNMASKED_BF_LATENCY-1:1]};
-                    pwm: ready_reg <= accumulate ? {{(UNMASKED_BF_LATENCY-UNMASKED_PWM_LATENCY){1'b0}}, enable, ready_reg[UNMASKED_PWM_LATENCY-1:1]} : {{(UNMASKED_BF_LATENCY-(UNMASKED_PWM_LATENCY-1)){1'b0}}, enable, ready_reg[UNMASKED_PWM_LATENCY-2:1]};
-                    pwa: ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
-                    pws: ready_reg <= {{UNMASKED_BF_LATENCY-1{1'b0}}, enable};
+                    ct: ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
+                    gs: ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
+                    pwm: ready_reg <= accumulate ? {{(BF_LATENCY-PWM_LATENCY){1'b0}}, enable, ready_reg[PWM_LATENCY-1:1]} : {{(BF_LATENCY-(PWM_LATENCY-1)){1'b0}}, enable, ready_reg[PWM_LATENCY-2:1]};
+                    pwa: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
+                    pws: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
                     pairwm: ready_reg <= 'b0;
                     default: ready_reg <= 'b0;
                 endcase

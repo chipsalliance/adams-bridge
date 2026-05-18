@@ -46,17 +46,6 @@ targets:
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_splitter.sv
 ---
-provides: [masking_tb]
-schema_version: 2.4.0
-targets:
-  rtl:
-    directories: [$COMPILE_ROOT/rtl]
-    files:
-  tb:
-    directories: [$COMPILE_ROOT/tb]
-    files:
-      
----
 provides: [mldsa_uvm_lib]
 schema_version: 2.4.0
 targets:

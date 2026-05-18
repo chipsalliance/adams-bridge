@@ -58,7 +58,6 @@ package abr_params_pkg;
 
   //Memory interface
   parameter ABR_MEM_DATA_WIDTH = COEFF_PER_CLK * MLDSA_Q_WIDTH; //96
-  parameter ABR_MEM_MASKED_DATA_WIDTH = (COEFF_PER_CLK * MLDSA_NUM_SHARES) * (MLDSA_Q_WIDTH * MLDSA_NUM_SHARES); //384
 
   //parameter ABR_MEM_INST0_DEPTH = 1664; //19.5 KB
   //parameter ABR_MEM_INST0_ADDR_W = $clog2(ABR_MEM_INST0_DEPTH);

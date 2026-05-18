@@ -21,7 +21,7 @@
 // Latency from pwo_uvw_i to pwo_uv_o:
 //   - 4 cycles when accumulate = 0
 //   - 5 cycles when accumulate = 1 (one extra mod-add stage on +w)
-// ntt_ctrl uses MLKEM_UNMASKED_PAIRWM_LATENCY = 4 and shifts the write
+// ntt_ctrl uses MLKEM_PAIRWM_LATENCY = 4 and shifts the write
 // address tap by -1 when accumulate is asserted.
 //======================================================================
 

@@ -33,23 +33,19 @@ parameter NTT_REG_SIZE = REG_SIZE-1;
 //Latency params for NTT
 //----------------------
 parameter INTT_WRBUF_LATENCY         = 9;
-parameter UNMASKED_BF_LATENCY        = 6;         //3 cycles per butterfly * 2 instances in serial = 6 clks (barrett reduction is combinational)
-parameter UNMASKED_PWM_LATENCY       = 3;         //latency of modular multiplier (barrett, combinational) + modular addition to perform accumulation
-parameter UNMASKED_PWA_LATENCY       = 1;         //latency of modular addition
-parameter UNMASKED_PWS_LATENCY       = 1;         //latency of modular subtraction
-parameter UNMASKED_BF_STAGE1_LATENCY = UNMASKED_BF_LATENCY/2;
-parameter UNMASKED_PWAS_RD_TO_WR_LATENCY = 3; //PWA/PWS: incr_pw_rd_addr to incr_pw_wr_addr = 4 cycles - 1 cycle for chunk latching
+parameter BF_LATENCY        = 6;         //3 cycles per butterfly * 2 instances in serial = 6 clks (barrett reduction is combinational)
+parameter PWM_LATENCY       = 3;         //latency of modular multiplier (barrett, combinational) + modular addition to perform accumulation
+parameter BF_STAGE1_LATENCY = BF_LATENCY/2;
+parameter PWAS_RD_TO_WR_LATENCY = 3; //PWA/PWS: incr_pw_rd_addr to incr_pw_wr_addr = 4 cycles - 1 cycle for chunk latching
 
 //----------------------
 //Latency params for MLKEM NTT
 //----------------------
-parameter MLKEM_UNMASKED_PWA_LATENCY = 1;
-parameter MLKEM_UNMASKED_PWS_LATENCY = 1;
 parameter MLKEM_INTT_WRBUF_LATENCY   = 9;
-parameter MLKEM_UNMASKED_PAIRWM_ACC_LATENCY = 5;
-parameter MLKEM_UNMASKED_PAIRWM_LATENCY = 4;
-parameter MLKEM_UNMASKED_BF_STAGE1_LATENCY = 3;
-parameter MLKEM_UNMASKED_BF_LATENCY  = MLKEM_UNMASKED_BF_STAGE1_LATENCY * 2;
+parameter MLKEM_PAIRWM_ACC_LATENCY = 5;
+parameter MLKEM_PAIRWM_LATENCY = 4;
+parameter MLKEM_BF_STAGE1_LATENCY = 3;
+parameter MLKEM_BF_LATENCY  = MLKEM_BF_STAGE1_LATENCY * 2;
 
 parameter MLKEM_BARRETT_REDUCTION_LATENCY = 6;
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;
