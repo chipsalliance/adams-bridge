@@ -50,18 +50,22 @@ module ntt_butterfly
 
     output logic [REG_SIZE-1:0]   u_o,
     output logic [REG_SIZE-1:0]   v_o,
-    output logic [REG_SIZE-1:0]   pwm_res_o
+    output logic [REG_SIZE-1:0]   pwm_res_o,
+    //BF tap for MLKEM Karatsuba pairwm (registered, 2 cycles after opu/opv).
+    output logic [REG_SIZE-1:0]   pairwm_mul_red_o
 );
 
     //Input wires
-    logic [REG_SIZE-1:0] u_reg, u_reg_d2, u_reg_d3, u_reg_d4;
-    // logic [REG_SIZE-1:0] v_reg, v_reg_d2, v_reg_d3, v_reg_d4;
-    logic [REG_SIZE-1:0] w_reg, w_reg_d2, w_reg_d3, w_reg_d4; //w_reg_d4 only used in pwm mode
+    logic [REG_SIZE-1:0] u_reg, u_reg_d2;
+    // logic [REG_SIZE-1:0] v_reg, v_reg_d2;
+    logic [REG_SIZE-1:0] w_reg, w_reg_d2; //w_reg_d2 used in pwm mode
 
     //Multiplier wires
     logic [(2*REG_SIZE)-1:0] vw, vw_reg, mul_res; 
     logic [(2*MLKEM_REG_SIZE)-1:0] mul_res_reg; //used in MLKEM
     logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced;
+    logic [45:0] mldsa_mul_res_reg;
+    logic [22:0] mldsa_mul_res_reduced_comb;
     logic [22:0] mldsa_mul_res_reduced;
     logic [MLKEM_REG_SIZE-1:0] mlkem_mul_res_reduced_reg; //used in MLKEM
     logic [REG_SIZE-1:0] mul_opa, mul_opb;
@@ -72,77 +76,67 @@ module ntt_butterfly
 
     //Adder wires
     logic [REG_SIZE-1:0] add_opa, add_opb;
-    logic [REG_SIZE-1:0] add_res, add_res_d1, add_res_d2, add_res_d3, add_res_d4, sub_res;
+    logic [REG_SIZE-1:0] add_res, add_res_d1, add_res_d2, sub_res;
     logic [REG_SIZE-1:0] mldsa_add_res_div2, sub_res_div2, mul_res_reduced_div2;
     logic [MLKEM_REG_SIZE-1:0] mlkem_add_res_div2;
 
-    //Flop u input to match multiplier output (4 cycle delay)
+    //Flop u input to match multiplier output (2 cycle delay — barrett reduction is combinational)
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             u_reg    <= 'h0;
             u_reg_d2 <= 'h0;
-            u_reg_d3 <= 'h0; 
-            u_reg_d4 <= 'h0;
             
             w_reg    <= 'h0; 
             w_reg_d2 <= 'h0; 
-            w_reg_d3 <= 'h0; 
-            w_reg_d4 <= 'h0;
 
             mul_res_reg <= '0;
             mlkem_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reg <= '0;
+            mldsa_mul_res_reduced <= '0;
         end
         else if (zeroize) begin
             u_reg    <= 'h0;
             u_reg_d2 <= 'h0;
-            u_reg_d3 <= 'h0; 
-            u_reg_d4 <= 'h0;
             
             w_reg    <= 'h0; 
             w_reg_d2 <= 'h0; 
-            w_reg_d3 <= 'h0; 
-            w_reg_d4 <= 'h0;
 
             mul_res_reg <= '0;
             mlkem_mul_res_reduced_reg <= '0;
+            mldsa_mul_res_reg <= '0;
+            mldsa_mul_res_reduced <= '0;
         end
         else begin
             u_reg    <= opu_i;
             u_reg_d2 <= u_reg;
-            u_reg_d3 <= u_reg_d2; 
-            u_reg_d4 <= u_reg_d3;
             
             //Used in GS/PWM mode only
             w_reg    <= opw_i; 
             w_reg_d2 <= w_reg; 
-            w_reg_d3 <= w_reg_d2; 
-            w_reg_d4 <= w_reg_d3;
 
             //Used in MLKEM
             mul_res_reg <= (2*MLKEM_REG_SIZE)'(mul_res);
             mlkem_mul_res_reduced_reg <= mlkem_mul_res_reduced;
+
+            //Used in MLDSA
+            mldsa_mul_res_reg <= mlkem ? '0 : 46'(mul_res);
+            mldsa_mul_res_reduced <= mldsa_mul_res_reduced_comb;
         end
     end
 
-    //4 cycle delay to match critical path
+    //2 cycle delay to match critical path
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             add_res_d1 <= 'h0;
             add_res_d2 <= 'h0;
-            add_res_d3 <= 'h0;
-            add_res_d4 <= 'h0;
         end
         else if (zeroize) begin
             add_res_d1 <= 'h0;
             add_res_d2 <= 'h0;
-            add_res_d3 <= 'h0;
-            add_res_d4 <= 'h0;
         end
         else begin
             add_res_d1 <= add_res;
             add_res_d2 <= add_res_d1;
-            add_res_d3 <= add_res_d2;
-            add_res_d4 <= add_res_d3;
         end
     end
 
@@ -174,7 +168,7 @@ module ntt_butterfly
                 v_o = 'h0;
                 pwm_res_o = u_minus_v;
             end
-            pairwm: begin //Karatsuba pairwm is used instead of this butterfly
+            pairwm: begin
                 u_o = 'h0;
                 v_o = 'h0;
                 pwm_res_o = 'h0;
@@ -192,7 +186,7 @@ module ntt_butterfly
     always_comb begin
         unique case(mode)
             ct: begin
-                add_opa = mlkem ? u_reg_d2 : u_reg_d4;
+                add_opa = u_reg_d2;
                 add_opb = mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0];
                 mul_opa = opv_i;
                 mul_opb = opw_i;
@@ -204,7 +198,7 @@ module ntt_butterfly
                 mul_opb = w_reg;
             end
             pwm:begin
-                add_opa = mlkem ? 'h0 : w_reg_d4;
+                add_opa = mlkem ? 'h0 : w_reg_d2;
                 add_opb = mlkem ? 'h0 : mldsa_mul_res_reduced[REG_SIZE-1:0];
                 mul_opa = opu_i;
                 mul_opb = opv_i;
@@ -214,6 +208,12 @@ module ntt_butterfly
                 add_opb = opv_i;
                 mul_opa = 'h0;
                 mul_opb = 'h0;
+            end
+            pairwm: begin //MLKEM Karatsuba m0/m1 mult reuse
+                add_opa = 'h0;
+                add_opb = 'h0;
+                mul_opa = mlkem ? opu_i : 'h0;
+                mul_opb = mlkem ? opv_i : 'h0;
             end
             default: begin
                 add_opa = 'h0;
@@ -252,8 +252,8 @@ module ntt_butterfly
         .zeroize(zeroize),
         .add_en_i(1'b1),
         .sub_i(1'b1),
-        .opa_i(mlkem ? u_reg_d2 : u_reg_d4),
-        .opb_i(mlkem ?  REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]),
+        .opa_i(u_reg_d2),
+        .opb_i(mlkem ? REG_SIZE'(mlkem_mul_res_reduced_reg) : mldsa_mul_res_reduced[REG_SIZE-1:0]),
         .prime_i(mlkem ? REG_SIZE'(MLKEM_Q) : REG_SIZE'(MLDSA_Q)),
         .mlkem(mlkem),
         .res_o(sub_res),
@@ -289,16 +289,15 @@ module ntt_butterfly
         .P_o(mul_res)
     );
     
-    ntt_mult_reduction #(
+    //MLDSA barrett reduction
+    barrett_reduction #(
         .REG_SIZE(23),
-        .PRIME(MLDSA_Q)
+        .prime(MLDSA_Q)
         )
         mldsa_mul_redux_inst_0 (
-        .clk(clk),
-        .reset_n(reset_n),
-        .zeroize(zeroize),
-        .opa_i(mlkem ? '0 : 46'(mul_res)),
-        .res_o(mldsa_mul_res_reduced)
+        .x(mldsa_mul_res_reg),
+        .inv(),
+        .r(mldsa_mul_res_reduced_comb)
     );
 
     barrett_reduction #(
@@ -317,7 +316,7 @@ module ntt_butterfly
         .PRIME(MLDSA_Q)
     )
     mldsa_div2_inst_0 (
-        .op_i (add_res_d4),
+        .op_i (add_res_d2),
         .res_o (mldsa_add_res_div2)
     );
 
@@ -348,5 +347,10 @@ module ntt_butterfly
         .op_i (u_minus_v[MLKEM_REG_SIZE-1:0]),
         .res_o (mlkem_u_minus_v_div2)
     );
+
+    //BF tap for Karatsuba pairwm (mlkem_mul_res_reduced_reg, 2-cycle latency).
+    assign pairwm_mul_red_o = ((mode == pairwm) & mlkem)
+                              ? REG_SIZE'(mlkem_mul_res_reduced_reg)
+                              : 'h0;
 
 endmodule

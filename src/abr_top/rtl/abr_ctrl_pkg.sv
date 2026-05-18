@@ -70,8 +70,7 @@ package abr_ctrl_pkg;
     localparam T1_NUM_COEFF = 2048;
     localparam T1_COEFF_W = 10;
     
-    localparam RND_W = 236; //5*46 + 6
-    localparam LFSR_W = RND_W / 2;
+    localparam LFSR_W = 102; // Each LFSR width: (2*96 + 12) / 2 — 12 shuffle bits (6 per NTT)
 
     localparam SK_MEM_DEPTH = 1192;
     localparam SK_MEM_BANK_DEPTH = SK_MEM_DEPTH/2;
@@ -172,6 +171,7 @@ package abr_ctrl_pkg;
         MLDSA_PWM_ACCUM_SMPL,
         MLDSA_PWA,
         MLDSA_PWS,
+        MLDSA_RECOMBINE,
         MLKEM_NTT,
         MLKEM_INTT,
         MLKEM_PWM,
@@ -179,7 +179,8 @@ package abr_ctrl_pkg;
         MLKEM_PWM_SMPL,
         MLKEM_PWM_ACCUM_SMPL,
         MLKEM_PWA,
-        MLKEM_PWS
+        MLKEM_PWS,
+        MLKEM_RECOMBINE
     } abr_ntt_mode_e;
 
     typedef enum logic[4:0] {
@@ -231,39 +232,45 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_SHAKE256         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256,         masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SHAKE128         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE128,         masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJB             = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_REJ_BOUNDED,      masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MASKED_REJB      = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_REJ_BOUNDED,      masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_PWM         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_SMPL,       masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_PWMA        = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_ACCUM_SMPL, masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_MASKED_PWM  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_SMPL,       masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_MASKED_PWMA = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_ACCUM_SMPL, masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIB              = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SAMPLE_IN_BALL,   masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_EXP_MASK         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_EXP_MASK,         masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MASKED_EXP_MASK  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_EXP_MASK,         masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_NTT              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_INTT             = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWM              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWA              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MASKED_NTT_NOSHUF = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           masking_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            masking_en:1'b1, shuffling_en:1'b1}; //TODO: if shuffling_en can be kept 1 always, we don't need sampler_mode input to ntt. Else, we need to distinguish between sampelr and non-sampler PWM with masking and no shuffling (since input delay balancing is diff for both these cases)
     localparam abr_opcode_t ABR_UOP_MASKED_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_PWS       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b1, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_RECOMBINE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_RECOMBINE,      masking_en:1'b1, shuffling_en:1'b1};
     // MLKEM ISA
     localparam abr_opcode_t ABR_UOP_SHA512                 = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA512,           masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SHA256                 = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA256,           masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_CBD                    = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_CBD_SAMPLER,      masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_MLKEM_REJS_PWM         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_SMPL,       masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_MLKEM_REJS_PWMA        = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM_SMPL, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MASKED_CBD             = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_CBD_SAMPLER,      masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_REJS_PWM  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_SMPL,       masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_REJS_PWMA = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM_SMPL, masking_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_NTT              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_NTT,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_INTT             = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_INTT,           masking_en:1'b0, shuffling_en:1'b1};
-    localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_INTT,           masking_en:1'b1, shuffling_en:1'b1};
-    localparam abr_opcode_t ABR_UOP_MLKEM_PWA              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWM              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM,            masking_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWMA             = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM,      masking_en:1'b0, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_NTT,            masking_en:1'b1, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_INTT,           masking_en:1'b1, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_PWA              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM,            masking_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWMA      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM,      masking_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, shuffling_en:1'b1};
+    localparam abr_opcode_t ABR_UOP_MLKEM_RECOMBINE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_RECOMBINE,      masking_en:1'b1, shuffling_en:1'b1};
 
     //Load Keccak with data but don't run it yet
     localparam abr_opcode_t ABR_UOP_LD_SHAKE256 = '{keccak_en: 1'b1, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, masking_en:1'b0, shuffling_en:1'b0};
@@ -276,21 +283,23 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_RUN_SHA512   = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA512, masking_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_RUN_SHA256   = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA256, masking_en:1'b0, shuffling_en:1'b0};
     // Aux functions
-    localparam abr_opcode_t ABR_UOP_DECOMPOSE  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SKENCODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_MAKEHINT   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_NORMCHK    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SIGENCODE  = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_PKDECODE   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SIGDEC_H   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SIGDEC_Z   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_HINTSUM    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_HINTSUM,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_USEHINT    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_PWR2RND    = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_LFSR       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_COMPRESS   = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_DECOMPRESS = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_DECOMPOSE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MASKED_SKDECODE = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b1, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SKENCODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MAKEHINT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_NORMCHK         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SIGENCODE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_PKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SIGDEC_H        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_SIGDEC_Z        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_HINTSUM         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_HINTSUM,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_USEHINT         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_PWR2RND         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_LFSR            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_COMPRESS        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_DECOMPRESS      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b0, shuffling_en:1'b0};
+    localparam abr_opcode_t ABR_UOP_MASKED_DECOMPRESS = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b1, shuffling_en:1'b0};
 
     //Immediate encodings
     localparam [ABR_IMM_WIDTH-1:0] MLDSA_NORMCHK_Z = 'h0000;
@@ -392,6 +401,8 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S2_5_BASE = MLDSA_S2_4_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S2_6_BASE = MLDSA_S2_5_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S2_7_BASE = MLDSA_S2_6_BASE + MLDSA_COEFF_DEPTH;
+    // HINT_R for VERIFY
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_BASE = MLDSA_S1_6_BASE + MLDSA_COEFF_DEPTH;
     //t0 / NTT(t0) t1 / NTT(t1)
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_T0_BASE = MLDSA_S2_7_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_T1_BASE = MLDSA_T0_BASE + MLDSA_COEFF_DEPTH;
@@ -404,15 +415,20 @@ package abr_ctrl_pkg;
     //c.s1
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CS1_BASE = MLDSA_T7_BASE + MLDSA_COEFF_DEPTH;
     // z
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Z_BASE = MLDSA_T7_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Z_BASE = MLDSA_CS1_BASE;
     // CT for VERIFY
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_BASE = MLDSA_T7_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_BASE = MLDSA_CS1_BASE;
     //c.s2
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CS2_BASE = MLDSA_CS1_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CS2_BASE = MLDSA_CS1_BASE;
     // R0
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_R0_BASE = MLDSA_CS1_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_R0_BASE = MLDSA_CS1_BASE;
+    // AY, CS, CT
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AY0_BASE = MLDSA_CS1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CS_NTT_BASE = MLDSA_CS1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_NTT_BASE = MLDSA_CS1_BASE;
     //TEMP storage for NTT ops
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_TEMP0_BASE = MLDSA_CS2_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_TEMP0_BASE = MLDSA_CS1_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_TEMP0_BASE = MLDSA_TEMP0_BASE;
     //MLKEM KeyGen S/E/T memory locations
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_S0_BASE = ABR_INST0_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_S1_BASE = MLKEM_S0_BASE + MLKEM_COEFF_DEPTH;
@@ -431,51 +447,33 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U1_BASE = MLKEM_U0_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U2_BASE = MLKEM_U1_BASE + MLKEM_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_U3_BASE = MLKEM_U2_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_V_BASE = MLKEM_U3_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SU_BASE = MLKEM_U3_BASE + MLKEM_COEFF_DEPTH;    
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E_2_BASE = MLKEM_SU_BASE + MLKEM_COEFF_DEPTH;
+
 
     //MEMORY INST 1
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST1_BASE = 1 << (ABR_MEM_ADDR_WIDTH-3);
     // NTT(C)
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_C_NTT_BASE = ABR_INST1_BASE;
+    // AS0 and NTT(AS0) for KeyGen
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AS0_BASE = ABR_INST1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AS0_INTT_BASE = ABR_INST1_BASE;
+    // MLKEM
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_AS0_BASE = ABR_INST1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_AY0_BASE = ABR_INST1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_TY_MASKED_BASE = ABR_INST1_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SU_MASKED_BASE = ABR_INST1_BASE;
+
+    //MEMORY INST 2
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-3);
     // NTT(s1) for KEYGEN
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_0_NTT_BASE = MLDSA_C_NTT_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_0_NTT_BASE = ABR_INST2_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_1_NTT_BASE = MLDSA_S1_0_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_2_NTT_BASE = MLDSA_S1_1_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_3_NTT_BASE = MLDSA_S1_2_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_4_NTT_BASE = MLDSA_S1_3_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_5_NTT_BASE = MLDSA_S1_4_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_S1_6_NTT_BASE = MLDSA_S1_5_NTT_BASE + MLDSA_COEFF_DEPTH;
-    // c.t0 for SIGNING
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_0_BASE = MLDSA_C_NTT_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_1_BASE = MLDSA_CT_0_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_2_BASE = MLDSA_CT_1_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_3_BASE = MLDSA_CT_2_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_4_BASE = MLDSA_CT_3_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_5_BASE = MLDSA_CT_4_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_6_BASE = MLDSA_CT_5_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_7_BASE = MLDSA_CT_6_BASE + MLDSA_COEFF_DEPTH;
-    //hint_r
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_0_BASE = MLDSA_C_NTT_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_1_BASE = MLDSA_HINT_R_0_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_2_BASE = MLDSA_HINT_R_1_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_3_BASE = MLDSA_HINT_R_2_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_4_BASE = MLDSA_HINT_R_3_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_5_BASE = MLDSA_HINT_R_4_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_6_BASE = MLDSA_HINT_R_5_BASE + MLDSA_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_7_BASE = MLDSA_HINT_R_6_BASE + MLDSA_COEFF_DEPTH;
-    //ML-KEM
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y0_BASE = ABR_INST1_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y1_BASE = MLKEM_Y0_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y2_BASE = MLKEM_Y1_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y3_BASE = MLKEM_Y2_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_E_2_BASE = MLKEM_Y3_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP0_BASE = ABR_INST1_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP1_BASE = MLKEM_UP0_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP2_BASE = MLKEM_UP1_BASE + MLKEM_COEFF_DEPTH;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP3_BASE = MLKEM_UP2_BASE + MLKEM_COEFF_DEPTH;
-
-    //MEMORY INST 2
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST2_BASE = 2 << (ABR_MEM_ADDR_WIDTH-3);
     //Y
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Y_0_BASE = ABR_INST2_BASE;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Y_1_BASE = MLDSA_Y_0_BASE + MLDSA_COEFF_DEPTH;
@@ -492,8 +490,26 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Y_4_NTT_BASE = MLDSA_Y_3_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Y_5_NTT_BASE = MLDSA_Y_4_NTT_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_Y_6_NTT_BASE = MLDSA_Y_5_NTT_BASE + MLDSA_COEFF_DEPTH;
+    // c.t0 for SIGNING
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_0_BASE = MLDSA_Y_6_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_1_BASE = MLDSA_CT_0_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_2_BASE = MLDSA_CT_1_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_3_BASE = MLDSA_CT_2_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_4_BASE = MLDSA_CT_3_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_5_BASE = MLDSA_CT_4_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_6_BASE = MLDSA_CT_5_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_7_BASE = MLDSA_CT_6_BASE + MLDSA_COEFF_DEPTH;
+    //hint_r
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_0_BASE = MLDSA_Y_6_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_1_BASE = MLDSA_HINT_R_0_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_2_BASE = MLDSA_HINT_R_1_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_3_BASE = MLDSA_HINT_R_2_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_4_BASE = MLDSA_HINT_R_3_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_5_BASE = MLDSA_HINT_R_4_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_6_BASE = MLDSA_HINT_R_5_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_HINT_R_7_BASE = MLDSA_HINT_R_6_BASE + MLDSA_COEFF_DEPTH;
     //W0
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_0_BASE = MLDSA_Y_6_NTT_BASE + MLDSA_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_0_BASE = MLDSA_HINT_R_7_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_1_BASE = MLDSA_W0_0_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_2_BASE = MLDSA_W0_1_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_3_BASE = MLDSA_W0_2_BASE + MLDSA_COEFF_DEPTH;
@@ -501,25 +517,23 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_5_BASE = MLDSA_W0_4_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_6_BASE = MLDSA_W0_5_BASE + MLDSA_COEFF_DEPTH;
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_W0_7_BASE = MLDSA_W0_6_BASE + MLDSA_COEFF_DEPTH;
+    //AZ for VERIFY
+    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AZ0_BASE = MLDSA_HINT_R_0_BASE;
     //ML-KEM
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_TY_BASE = ABR_INST2_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SU_BASE = ABR_INST2_BASE;
+
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y0_BASE = MLKEM_TY_BASE;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y1_BASE = MLKEM_Y0_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y2_BASE = MLKEM_Y1_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_Y3_BASE = MLKEM_Y2_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP0_BASE = MLKEM_Y3_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP1_BASE = MLKEM_UP0_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP2_BASE = MLKEM_UP1_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_UP3_BASE = MLKEM_UP2_BASE + MLKEM_COEFF_DEPTH;
+    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_V_BASE = MLKEM_UP3_BASE + MLKEM_COEFF_DEPTH;
+
     //TEMP for NTT
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_TEMP2_BASE = MLDSA_W0_7_BASE + MLDSA_COEFF_DEPTH;
-
-    //MEMORY INST 3 - masked storage
-    localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST3_BASE = 3 << (ABR_MEM_ADDR_WIDTH-3);
-
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AS0_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AS0_INTT_BASE = MLDSA_AS0_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AY0_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_AZ0_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CS_NTT_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_CT_NTT_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_AS0_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_AY0_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_TY_MASKED_BASE = ABR_INST3_BASE;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SU_MASKED_BASE = ABR_INST3_BASE;
     
     //SIB MEMORY
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_INST4_BASE = 4 << (ABR_MEM_ADDR_WIDTH-3);
@@ -531,7 +545,7 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_RESET          = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ZEROIZE        = ABR_RESET + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = ABR_ZEROIZE + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 116;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_KG_E + 2;
@@ -542,10 +556,10 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_INIT_S+24;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 3;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_MAKE_Y_S+ 14;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 65;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 73;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_MAKE_W+ 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_VALID_S      = MLDSA_SIGN_MAKE_C+ 2;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_VALID_S + 101;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHL_E        = MLDSA_SIGN_VALID_S + 124;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_E            = MLDSA_SIGN_CHL_E + 1;
     //Verify
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_VERIFY_S          = MLDSA_SIGN_E + 2;
@@ -564,10 +578,10 @@ package abr_ctrl_pkg;
 
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_RESET = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 43;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 51;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 18;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 56;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 19;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 61;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_CHK = MLKEM_ENCAPS_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_CHK + 2;
 

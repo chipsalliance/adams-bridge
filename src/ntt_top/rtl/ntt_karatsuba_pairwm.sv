@@ -13,295 +13,178 @@
 // limitations under the License.
 //
 //======================================================================
-//
 // ntt_karatsuba_pairwm.sv
-// --------
-// Unmasked MLKEM Karatsuba pairwise multiplier. Receives 4 coefficients - 2 from memory, 2 from sampler/memory
-// and generates 2 corresponding outputs. Also needs an additional zeta input. All operations are modular.
-// Supports accumulation as an additional input.
-// This module uses Karatsuba technique for an optimized implementation of pairwise multiplication. However,
-// in a masked version, normal multiplication is performed for a better masking structure
-// (a2i, a2i+1) * (b2i, b2i+1) =>
-// c2i = (a2i*b2i) + (a2i+1*b2i+1*zeta) 
-// c2i+1 = [{(a2i+a2i+1)*(b2i+b2i+1)} - (a2i*b2i)] - (a2i+1*b2i+1)
-// Total end-to-end latency without accumulate = 4 cycles
-// Total end-to-end latency with accumulate    = 5 cycles
+// MLKEM Karatsuba pair-wise multiplier.
+//   c0 = (m0 + m1*zeta) mod q
+//   c1 = (m2 - m0 - m1) mod q,  m2 = (a0+a1)*(b0+b1)
+// m0, m1 come from BF mults (taps); only m2 and m1*zeta computed here.
+// Latency from pwo_uvw_i to pwo_uv_o:
+//   - 4 cycles when accumulate = 0
+//   - 5 cycles when accumulate = 1 (one extra mod-add stage on +w)
+// ntt_ctrl uses MLKEM_PAIRWM_LATENCY = 4 and shifts the write
+// address tap by -1 when accumulate is asserted.
+//======================================================================
 
 module ntt_karatsuba_pairwm
     import ntt_defines_pkg::*;
     import abr_params_pkg::*;
 (
-    //Clock and reset
-    input wire clk,
-    input wire reset_n,
-    input wire zeroize,
+    input  wire                          clk,
+    input  wire                          reset_n,
+    input  wire                          zeroize,
 
-    //Data ports
-    input wire accumulate,
-    input mlkem_pwo_uvwzi_t pwo_uvw_i,
-    input [MLKEM_REG_SIZE-1:0] pwo_z_i,
-    output mlkem_pwo_t pwo_uv_o
+    input  wire                          accumulate,
+    input  mlkem_pwo_uvwzi_t             pwo_uvw_i,
+    input  wire [MLKEM_REG_SIZE-1:0]     pwo_z_i,
+
+    // BF-tapped reduced base products (registered, 2-cycle from pwo_uvw_i).
+    input  wire [MLKEM_REG_SIZE-1:0]     m0_red_i,
+    input  wire [MLKEM_REG_SIZE-1:0]     m1_red_i,
+
+    output mlkem_pwo_t                   pwo_uv_o
 );
 
-logic [MLKEM_REG_SIZE-1:0] u0, u1, v0, v1, w0, w1, z1;
+    logic [MLKEM_REG_SIZE-1:0] u0, u1, v0, v1, w0, w1, z1;
 
-logic [(2*MLKEM_REG_SIZE)-1:0] uv00, uv01, uv11, mul_res_uv12, uvz11;
-logic [MLKEM_REG_SIZE-1:0] uv00_reduced, uv11_reduced, mul_res_uv12_reduced, sub_res1, uvz11_reduced;
-logic [REG_SIZE-1:0] add_res_u, add_res_v, sub_res0;
-
-always_comb begin
-    u0 = pwo_uvw_i.u0_i;
-    u1 = pwo_uvw_i.u1_i;
-
-    v0 = pwo_uvw_i.v0_i;
-    v1 = pwo_uvw_i.v1_i;
-
-    w0 = pwo_uvw_i.w0_i;
-    w1 = pwo_uvw_i.w1_i;
-
-    z1 = pwo_z_i;
-end
-
-//--------------------------------
-ntt_mult_dsp #(
-    .RADIX(MLKEM_REG_SIZE)
-    )
-    mul_inst_0 (
-    .A_i(u0),
-    .B_i(v0),
-    .P_o(uv00)
-);
-
-barrett_reduction #(
-    .REG_SIZE(MLKEM_REG_SIZE),
-    .prime(MLKEM_Q)
-)
-mul_redux_inst_0 (
-    .x(uv00),
-    .inv(),
-    .r(uv00_reduced)
-);
-
-logic [2:0][MLKEM_REG_SIZE-1:0] uv00_reduced_reg, uv11_reduced_reg, z1_reg;
-logic [3:0][MLKEM_REG_SIZE-1:0] w0_reg, w1_reg;
-logic [REG_SIZE-1:0] uv0_o_int, uv1_o_int, uv1_o_int_reg, uv0_o_acc, uv1_o_acc;
-always_ff @(posedge clk or negedge reset_n) begin
-    if (!reset_n) begin
-        uv00_reduced_reg <= '0;
-        uv11_reduced_reg <= '0;
-        z1_reg <= '0;
-        w0_reg <= '0;
-        w1_reg <= '0;
-        uv1_o_int_reg <= '0;
+    always_comb begin
+        u0 = pwo_uvw_i.u0_i;
+        u1 = pwo_uvw_i.u1_i;
+        v0 = pwo_uvw_i.v0_i;
+        v1 = pwo_uvw_i.v1_i;
+        w0 = pwo_uvw_i.w0_i;
+        w1 = pwo_uvw_i.w1_i;
+        z1 = pwo_z_i;
     end
-    else if (zeroize) begin
-        uv00_reduced_reg <= '0;
-        uv11_reduced_reg <= '0;
-        z1_reg <= '0;
-        w0_reg <= '0;
-        w1_reg <= '0;
-        uv1_o_int_reg <= '0;
+
+    // Pre-add: sum_a = u0+u1 mod q, sum_b = v0+v1 mod q (1 cycle).
+    logic [REG_SIZE-1:0] add_res_u, add_res_v;
+
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) add_inst_u (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b0),
+        .opa_i(REG_SIZE'(u0)), .opb_i(REG_SIZE'(u1)),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(add_res_u), .ready_o()
+    );
+
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) add_inst_v (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b0),
+        .opa_i(REG_SIZE'(v0)), .opb_i(REG_SIZE'(v1)),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(add_res_v), .ready_o()
+    );
+
+    // m2 = sum_a * sum_b (comb mult + comb barrett, registered to m2_red_reg).
+    logic [(2*MLKEM_REG_SIZE)-1:0] m2_raw;
+    logic [MLKEM_REG_SIZE-1:0]     m2_red_comb, m2_red_reg;
+
+    ntt_mult_dsp #(.RADIX(MLKEM_REG_SIZE)) m2_mul (
+        .A_i(add_res_u[MLKEM_REG_SIZE-1:0]),
+        .B_i(add_res_v[MLKEM_REG_SIZE-1:0]),
+        .P_o(m2_raw)
+    );
+
+    barrett_reduction #(.REG_SIZE(MLKEM_REG_SIZE), .prime(MLKEM_Q)) m2_barrett (
+        .x(m2_raw), .inv(), .r(m2_red_comb)
+    );
+
+    // m1*zeta = m1_red_i * z (comb mult + comb barrett, registered).
+    logic [1:0][MLKEM_REG_SIZE-1:0] z_reg;
+    logic [(2*MLKEM_REG_SIZE)-1:0]  m1z_raw;
+    logic [MLKEM_REG_SIZE-1:0]      m1z_red_comb, m1z_red_reg;
+
+    ntt_mult_dsp #(.RADIX(MLKEM_REG_SIZE)) m1z_mul (
+        .A_i(m1_red_i), .B_i(z_reg[1]), .P_o(m1z_raw)
+    );
+
+    barrett_reduction #(.REG_SIZE(MLKEM_REG_SIZE), .prime(MLKEM_Q)) m1z_barrett (
+        .x(m1z_raw), .inv(), .r(m1z_red_comb)
+    );
+
+    // w delay (4 cycles for accumulate); 1-cycle BF tap delay for c0/c1 stage 2.
+    logic [3:0][MLKEM_REG_SIZE-1:0] w0_reg, w1_reg;
+    logic [MLKEM_REG_SIZE-1:0]      m0_red_d1, m1_red_d1;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            z_reg       <= '0;
+            m2_red_reg  <= '0;
+            m1z_red_reg <= '0;
+            w0_reg      <= '0;
+            w1_reg      <= '0;
+            m0_red_d1   <= '0;
+            m1_red_d1   <= '0;
+        end
+        else if (zeroize) begin
+            z_reg       <= '0;
+            m2_red_reg  <= '0;
+            m1z_red_reg <= '0;
+            w0_reg      <= '0;
+            w1_reg      <= '0;
+            m0_red_d1   <= '0;
+            m1_red_d1   <= '0;
+        end
+        else begin
+            z_reg       <= {z_reg[0], z1};
+            m2_red_reg  <= m2_red_comb;
+            m1z_red_reg <= m1z_red_comb;
+            w0_reg      <= {w0_reg[2:0], w0};
+            w1_reg      <= {w1_reg[2:0], w1};
+            m0_red_d1   <= m0_red_i;
+            m1_red_d1   <= m1_red_i;
+        end
     end
-    else begin
-        uv00_reduced_reg <= {uv00_reduced_reg[1:0], uv00_reduced};
-        uv11_reduced_reg <= {uv11_reduced_reg[1:0], uv11_reduced};
-        z1_reg <= {z1_reg[1:0], z1};
-        w0_reg <= {w0_reg[2:0], w0};
-        w1_reg <= {w1_reg[2:0], w1};
-        uv1_o_int_reg <= uv1_o_int;
-    end
-end
-//--------------------------------
 
-//--------------------------------
-ntt_mult_dsp #(
-    .RADIX(MLKEM_REG_SIZE)
-    )
-    mul_inst_3 (
-    .A_i(u1),
-    .B_i(v1),
-    .P_o(uv11)
-);
+    // c1_int = m2 - m0; c1 = c1_int - m1; c0 = m1*zeta + m0.
+    logic [REG_SIZE-1:0] c1_int, uv1_o_int, uv0_o_int;
 
-barrett_reduction #(
-    .REG_SIZE(MLKEM_REG_SIZE),
-    .prime(MLKEM_Q)
-)
-mul_redux_inst_3 (
-    .x(uv11),
-    .inv(),
-    .r(uv11_reduced)
-);
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) sub_c1_int (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b1),
+        .opa_i(REG_SIZE'(m2_red_reg)), .opb_i(REG_SIZE'(m0_red_i)),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(c1_int), .ready_o()
+    );
 
-ntt_mult_dsp #(
-    .RADIX(MLKEM_REG_SIZE)
-)
-mul_inst_zeta (
-    .A_i(uv11_reduced_reg[2]),
-    .B_i(z1_reg[2]),
-    .P_o(uvz11)
-);
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) sub_c1 (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b1),
+        .opa_i(c1_int), .opb_i(REG_SIZE'(m1_red_d1)),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(uv1_o_int), .ready_o()
+    );
 
-barrett_reduction #(
-    .REG_SIZE(MLKEM_REG_SIZE),
-    .prime(MLKEM_Q)
-)
-mul_zeta_redux_inst (
-    .x(uvz11),
-    .inv(),
-    .r(uvz11_reduced)
-);
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) add_c0 (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b0),
+        .opa_i(REG_SIZE'(m1z_red_reg)), .opb_i(REG_SIZE'(m0_red_d1)),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(uv0_o_int), .ready_o()
+    );
 
-//1 cycle
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE) //generic adder works with MLDSA reg size. In MLKEM, we're keeping the same reg size and just checking [12] for carry bit to reuse butterfly units. However, this instance is specific to MLKEM, so we need to pass reg size + 1 to preserve functionality
-)
-add_inst_uvz11(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b0),
-    .opa_i(REG_SIZE'(uvz11_reduced)),
-    .opb_i(REG_SIZE'(uv00_reduced_reg[2])),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(uv0_o_int),
-    .ready_o()
-);
-//--------------------------------
+    // Accumulate path: c{0,1} + w{0,1}.
+    logic [REG_SIZE-1:0] uv0_o_acc, uv1_o_acc;
 
-//--------------------------------
-//1 cycle
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-add_inst_u(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b0),
-    .opa_i(REG_SIZE'(u0)),
-    .opb_i(REG_SIZE'(u1)),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(add_res_u),
-    .ready_o()
-);
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) add_uv0_acc_inst (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b0),
+        .opa_i(uv0_o_int), .opb_i(REG_SIZE'(w0_reg[3])),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(uv0_o_acc), .ready_o()
+    );
 
-//1 cycle
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-add_inst_v(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b0),
-    .opa_i(REG_SIZE'(v0)),
-    .opb_i(REG_SIZE'(v1)),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(add_res_v),
-    .ready_o()
-);
-//--------------------------------
+    abr_ntt_add_sub_mod #(.REG_SIZE(REG_SIZE)) add_uv1_acc_inst (
+        .clk(clk), .reset_n(reset_n), .zeroize(zeroize),
+        .add_en_i(1'b1), .sub_i(1'b0),
+        .opa_i(uv1_o_int), .opb_i(REG_SIZE'(w1_reg[3])),
+        .prime_i(REG_SIZE'(MLKEM_Q)), .mlkem(1'b1),
+        .res_o(uv1_o_acc), .ready_o()
+    );
 
-//--------------------------------
-ntt_mult_dsp #(
-    .RADIX(MLKEM_REG_SIZE)
-    )
-    mul_inst_12 (
-    .A_i(add_res_u[MLKEM_REG_SIZE-1:0]),
-    .B_i(add_res_v[MLKEM_REG_SIZE-1:0]),
-    .P_o(mul_res_uv12)
-);
-
-barrett_reduction #(
-    .REG_SIZE(MLKEM_REG_SIZE),
-    .prime(MLKEM_Q)
-)
-mul_redux_inst_12 (
-    .x(mul_res_uv12),
-    .inv(),
-    .r(mul_res_uv12_reduced)
-);
-//--------------------------------
-//1 cycle
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-sub_inst_0(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b1),
-    .opa_i(REG_SIZE'(mul_res_uv12_reduced)),
-    .opb_i(REG_SIZE'(uv00_reduced_reg[0])),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(sub_res0),
-    .ready_o()
-);
-
-//1 cycle
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-sub_inst_1(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b1),
-    .opa_i(sub_res0),
-    .opb_i(REG_SIZE'(uv11_reduced_reg[1])),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(uv1_o_int),
-    .ready_o()
-);
-
-//--------------------------------
-//accumulation
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-add_uv0_acc_inst(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b0),
-    .opa_i(uv0_o_int),
-    .opb_i(REG_SIZE'(w0_reg[3])),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(uv0_o_acc),
-    .ready_o()
-);
-
-abr_ntt_add_sub_mod #(
-    .REG_SIZE(REG_SIZE)
-)
-add_uv1_acc_inst(
-    .clk(clk),
-    .reset_n(reset_n),
-    .zeroize(zeroize),
-    .add_en_i(1'b1),
-    .sub_i(1'b0),
-    .opa_i(uv1_o_int_reg),
-    .opb_i(REG_SIZE'(w1_reg[3])),
-    .prime_i(REG_SIZE'(MLKEM_Q)),
-    .mlkem(1'b1),
-    .res_o(uv1_o_acc),
-    .ready_o()
-);
-
-assign pwo_uv_o.uv0_o = accumulate ? uv0_o_acc[MLKEM_REG_SIZE-1:0] : uv0_o_int[MLKEM_REG_SIZE-1:0];
-assign pwo_uv_o.uv1_o = accumulate ? uv1_o_acc[MLKEM_REG_SIZE-1:0] : uv1_o_int_reg[MLKEM_REG_SIZE-1:0];
+    assign pwo_uv_o.uv0_o = accumulate ? uv0_o_acc[MLKEM_REG_SIZE-1:0]
+                                       : uv0_o_int[MLKEM_REG_SIZE-1:0];
+    assign pwo_uv_o.uv1_o = accumulate ? uv1_o_acc[MLKEM_REG_SIZE-1:0]
+                                       : uv1_o_int[MLKEM_REG_SIZE-1:0];
 
 endmodule

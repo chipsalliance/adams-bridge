@@ -22,10 +22,26 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/abr_reg_uvm.sv
 ---
+provides: [abr_ctrl_pkg]
+schema_version: 2.4.0
+requires:
+  - abr_defines
+  - abr_sampler_pkg
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
+  rtl:
+    directories: [$COMPILE_ROOT/rtl]
+    files:
+      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
+---
 provides: [abr_top]
 schema_version: 2.4.0
 requires:
   - abr_defines
+  - abr_ctrl_pkg
   - abr_libs
   - abr_sampler_top
   - ntt_top
@@ -48,7 +64,6 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/abr_ctrl_pkg.sv
       - $COMPILE_ROOT/rtl/abr_mem_if.sv
       - $COMPILE_ROOT/rtl/abr_mem_top.sv
       - $COMPILE_ROOT/rtl/abr_seq.sv
@@ -87,6 +102,9 @@ provides: [abr_coverage]
 schema_version: 2.4.0
 requires: 
   - abr_top
+  - abr_ctrl_pkg
+  - abr_sampler_pkg
+  - abr_defines
 targets:
   tb:
     directories: 

@@ -27,6 +27,7 @@ class ML_DSA_externalmu_ACVP_KATs_test extends test_top;
 
     uvm_config_db#(bit)::set(null, "*", "disable_scrboard_from_test", disable_scrboard_from_test);
     uvm_config_db#(bit)::set(null, "*", "disable_pred_from_test", disable_pred_from_test);
+
   endfunction
 
   virtual task main_phase(uvm_phase phase);
