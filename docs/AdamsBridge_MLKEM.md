@@ -101,7 +101,7 @@ Clears all internal data-path registers holding secret-derived values. See the [
 
 | Bits     | Identifier     | Access | Reset | Decoded | Name |
 | :------- | :------------- | :----- | :---- | :------ | :--- |
-| \[31:2\] | \-             | \-     | \-    |         | \-   |
+| \[31:3\] | \-             | \-     | \-    |         | \-   |
 | \[2\]    | ERROR          | r      | 0x0   |         | \-   |
 | \[1\]    | VALID          | r      | 0x0   |         | \-   |
 | \[0\]    | READY          | r      | 0x0   |         | \-   |

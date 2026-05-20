@@ -82,11 +82,10 @@ Hardware behavior:
 
 # Area Results
 
+**TODO: Area numbers predate the architectural masking refactor. Re-synth required to refresh stdcell + RAM area.**
 - The required area for the protected Adams Bridge (ML-DSA-87 + ML-KEM-1024) is 0.1096mm2 @5nm:
     - 0.0860mm2 for stdcell
     - 0.0236mm2 for ram area.
-
-<!-- TODO: Area numbers predate the architectural masking refactor. Re-synth required to refresh stdcell + RAM area. -->
 
 For per-algorithm performance breakdowns, see the Performance and Area Results sections in [AdamsBridge\_MLDSA.md](AdamsBridge_MLDSA.md) and [AdamsBridge\_MLKEM.md](AdamsBridge_MLKEM.md).
 

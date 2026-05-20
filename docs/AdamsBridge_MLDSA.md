@@ -150,7 +150,7 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 ​Indicates if the core is ready to process the message.
 
-### ​VALID 
+### ​ERROR
 
 ​Indicates if the process could not complete due to an error.
 For ML-DSA this status bit indicates an error while decoding the secret key.
@@ -2079,7 +2079,7 @@ The countermeasure is fully configurable via the top-level `MASKING_EN` paramete
 
 ### Share generation — `abr_splitter`
 
-Shares are produced at every point where secret data enters the memory subsystem: the sampler (rejection / rejection-bounded / CBD / SampleInBall / `exp_mask`), `skdecode`, and `decompress`. The [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv) module is a 2-cycle pure pipeline stage that takes a 96-bit producer word (4 coefficients × 23 bits for MLDSA, or 4 × 12 bits for MLKEM) plus 96 random bits from the top-level LFSR, and emits two 96-bit shares:
+Shares are produced at every point where secret data enters the memory subsystem: the sampler (rejection / rejection-bounded / CBD / SampleInBall / `exp_mask`), `skdecode`, and `decompress`. The [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv) module is a 2-cycle pure pipeline stage that takes a 96-bit producer word containing 4 coefficients in 24-bit lanes (23 bits used for MLDSA, 12 bits used for MLKEM; the remaining lane bits are zero-padded) plus 96 random bits from the top-level LFSR, and emits two 96-bit shares:
 
 - `share0_o = rand`  (the random word delayed two cycles, becomes share 0)
 - `share1_o = (data − rand) mod q`  (computed by `abr_add_sub_mod`)
