@@ -27,6 +27,8 @@
 //
 //======================================================================
 
+`include "abr_sva.svh"
+
 module abr_splitter
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
@@ -50,11 +52,16 @@ module abr_splitter
     assign prime = mode ? NTT_REG_SIZE'(MLKEM_Q) : NTT_REG_SIZE'(MLDSA_Q);
 
     // Unpack 96-bit words into per-coefficient arrays
-    logic [NTT_REG_SIZE-1:0] data_coeff  [COEFF_PER_CLK];
-    logic [NTT_REG_SIZE-1:0] rand_coeff  [COEFF_PER_CLK];
-    logic [NTT_REG_SIZE-1:0] share0_coeff[COEFF_PER_CLK];
-    logic [NTT_REG_SIZE-1:0] share1_coeff[COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] data_coeff      [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] rand_coeff      [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] share0_coeff    [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] share1_coeff    [COEFF_PER_CLK];
     logic [NTT_REG_SIZE-1:0] share1_coeff_reg[COEFF_PER_CLK];
+
+    logic [NTT_REG_SIZE-1:0] rand_raw        [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] rand_reduced    [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] rand_d1         [COEFF_PER_CLK];
+    logic [NTT_REG_SIZE-1:0] rand_d2         [COEFF_PER_CLK];
     logic [COEFF_PER_CLK-1:0] lane_ready;
 
     // Register share1 (add_sub_mod res_o) to make total share1 path = 2 cycles.
@@ -89,13 +96,10 @@ module abr_splitter
             // LFSR produces [0, 2^NTT_REG_SIZE-1]. add_sub_mod assumes inputs < q.
             // Since 2^NTT_REG_SIZE-1 < 2*q for both MLDSA and MLKEM, a single
             // conditional subtraction suffices.
-            logic [NTT_REG_SIZE-1:0] rand_reduced;
-            logic [NTT_REG_SIZE-1:0] rand_raw;
-
-            assign rand_raw = mode ? {{(NTT_REG_SIZE-MLKEM_REG_SIZE){1'b0}},
-                                      rand_coeff[i][MLKEM_REG_SIZE-1:0]}
-                                   : rand_coeff[i];
-            assign rand_reduced = (rand_raw >= prime) ? (rand_raw - prime) : rand_raw;
+            assign rand_raw[i] = mode ? {{(NTT_REG_SIZE-MLKEM_REG_SIZE){1'b0}},
+                                         rand_coeff[i][MLKEM_REG_SIZE-1:0]}
+                                      : rand_coeff[i];
+            assign rand_reduced[i] = (rand_raw[i] >= prime) ? (rand_raw[i] - prime) : rand_raw[i];
 
             // --- share1: (data - rand_reduced) mod q ---
             abr_ntt_add_sub_mod #(
@@ -107,7 +111,7 @@ module abr_splitter
                 .add_en_i (en_i),
                 .sub_i    (1'b1),
                 .opa_i    (data_coeff[i]),
-                .opb_i    (rand_reduced),
+                .opb_i    (rand_reduced[i]),
                 .prime_i  (prime),
                 .mlkem    (mode),
                 .res_o    (share1_coeff[i]),
@@ -115,24 +119,22 @@ module abr_splitter
             );
 
             // --- share0: rand_reduced delayed 2 cycles ---
-            logic [NTT_REG_SIZE-1:0] rand_d1, rand_d2;
-
             always_ff @(posedge clk or negedge reset_n) begin
                 if (!reset_n) begin
-                    rand_d1 <= '0;
-                    rand_d2 <= '0;
+                    rand_d1[i] <= '0;
+                    rand_d2[i] <= '0;
                 end
                 else if (zeroize) begin
-                    rand_d1 <= '0;
-                    rand_d2 <= '0;
+                    rand_d1[i] <= '0;
+                    rand_d2[i] <= '0;
                 end
                 else begin
-                    rand_d1 <= rand_reduced;
-                    rand_d2 <= rand_d1;
+                    rand_d1[i] <= rand_reduced[i];
+                    rand_d2[i] <= rand_d1[i];
                 end
             end
 
-            assign share0_coeff[i] = rand_d2;
+            assign share0_coeff[i] = rand_d2[i];
 
         end
     endgenerate
@@ -141,8 +143,6 @@ module abr_splitter
     assign ready_o = lane_ready[0];
 
     // --- Input data range assertions ---
-    `include "abr_sva.svh"
-
     genvar j;
     generate
         for (j = 0; j < COEFF_PER_CLK; j++) begin : gen_assert

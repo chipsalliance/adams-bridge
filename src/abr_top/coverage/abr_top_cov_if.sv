@@ -162,7 +162,7 @@ interface abr_top_cov_if
 
     // NTT[1] enable (dual-NTT activation) — only exists when MASKING_EN=1
     logic sca_ntt1_enable;
-    assign sca_ntt1_enable = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_enable[1] : 1'b0;
+    assign sca_ntt1_enable = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_enable[abr_top.MASKED_IDX] : 1'b0;
 
     // NTT[0] enable (primary NTT — always active for NTT ops)
     logic sca_ntt0_enable;
@@ -174,7 +174,7 @@ interface abr_top_cov_if
 
     // NTT mode for NTT[1] — should exercise subset of modes when MASKING_EN=1
     abr_ntt_mode_e sca_ntt1_mode;
-    assign sca_ntt1_mode = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_mode[1] : ABR_NTT_NONE;
+    assign sca_ntt1_mode = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_mode[abr_top.MASKED_IDX] : ABR_NTT_NONE;
 
     // Opcode masking/shuffling bits from the instruction
     logic sca_opcode_masking_en;
@@ -203,7 +203,7 @@ interface abr_top_cov_if
 
     // Splitter rand reduction — detect when LFSR rand >= q (reduction path exercised)
     logic sca_splitter_rand_reduced;
-    assign sca_splitter_rand_reduced = abr_top.sampler_top_inst.u_splitter.gen_lane[0].rand_raw >=
+    assign sca_splitter_rand_reduced = abr_top.sampler_top_inst.u_splitter.rand_raw[0] >=
                                        abr_top.sampler_top_inst.u_splitter.prime;
 
     // Recombine pipeline depth tracking
@@ -229,7 +229,7 @@ interface abr_top_cov_if
     // NTT[0]/NTT[1] mode match indicator — when masking, modes should be identical
     logic sca_ntt_modes_match;
     assign sca_ntt_modes_match = (abr_top.ABR_NUM_NTT > 1) ?
-                                 (abr_top.ntt_mode[0] == abr_top.ntt_mode[1]) : 1'b1;
+                                 (abr_top.ntt_mode[0] == abr_top.ntt_mode[abr_top.MASKED_IDX]) : 1'b1;
 
     // MASKED_NTT_NOSHUF detection (bug 6 fix — masking=1, shuffling=0, mode=MLDSA_NTT for NTT(c))
     // Distinguished from REJS_MASKED_* which also have masking=1,shuffling=0 but use PWM_SMPL modes.
