@@ -1156,9 +1156,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       if (sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
         signature_reg.enc.c <= sampler_state_data_i[0][511:0];
       end else if (abr_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-        for (int unsigned dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-          signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
-        end
+        signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
       //HW write h
       if (set_signature_valid) begin
