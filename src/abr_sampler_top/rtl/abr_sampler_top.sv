@@ -166,6 +166,9 @@ module abr_sampler_top
   logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_mem_data_pre;
   logic [ABR_MEM_ADDR_WIDTH-1:0]               sampler_mem_addr_pre;
 
+  logic splitter_en;
+  logic splitter_ready;
+
   //Sampler mode muxes
   always_comb begin
     mode = abr_sha3_pkg::Shake;
@@ -322,16 +325,10 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-// Splitter latency pipeline tracking
-logic [1:0] split_pipe_active;
-always_ff @(posedge clk or negedge rst_b) begin
-  if (!rst_b)    split_pipe_active <= '0;
-  else if (zeroize) split_pipe_active <= '0;
-  else           split_pipe_active <= {split_pipe_active[0], sampler_mem_dv_pre & split_en_i};
-end
+always_comb splitter_en = sampler_mem_dv_pre & split_en_i;
 
 always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != ABR_SAMPLER_IDLE) |
-                             (split_en_i & |split_pipe_active);
+                             (splitter_en | splitter_ready);
 
 //State logic
 always_comb begin : sampler_fsm_out_comb
@@ -683,34 +680,27 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .clk     (clk),
     .reset_n (rst_b),
     .zeroize (zeroize),
-    .en_i    (sampler_mem_dv_pre & split_en_i),
+    .en_i    (splitter_en),
     .mode    (splitter_mode),
     .data_i  (sampler_mem_data_pre),
     .rand_i  (rand_i),
     .share0_o(splitter_share0),
     .share1_o(splitter_share1),
-    .ready_o ()
+    .ready_o (splitter_ready)
   );
 
-  // 2-stage delay for write-enable and address to align with splitter output
-  logic split_dv_d1, split_dv_d2;
+  // Address delay chain to align with splitter output (2-cycle pipeline)
   logic [ABR_MEM_ADDR_WIDTH-1:0] split_addr_d1, split_addr_d2;
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      split_dv_d1   <= '0;
-      split_dv_d2   <= '0;
       split_addr_d1 <= '0;
       split_addr_d2 <= '0;
     end
     else if (zeroize) begin
-      split_dv_d1   <= '0;
-      split_dv_d2   <= '0;
       split_addr_d1 <= '0;
       split_addr_d2 <= '0;
     end
     else begin
-      split_dv_d1   <= sampler_mem_dv_pre;
-      split_dv_d2   <= split_dv_d1;
       split_addr_d1 <= sampler_mem_addr_pre;
       split_addr_d2 <= split_addr_d1;
     end
@@ -719,7 +709,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   // Output mux: split path or bypass
   always_comb begin
     if (split_en_i) begin
-      sampler_mem_dv_o     = split_dv_d2;
+      sampler_mem_dv_o     = splitter_ready;
       sampler_mem_data_o[0] = splitter_share0;
       sampler_mem_addr_o   = split_addr_d2;
     end else begin
