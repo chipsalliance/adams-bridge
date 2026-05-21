@@ -329,6 +329,26 @@ module ntt_butterfly2x2
     end
 
     assign ready_o = ready_reg[0];
-    
+
+    // MLKEM operand-width checks: upper bits of first-stage inputs must be zero
+    // when enable is asserted in MLKEM mode (operands are only valid on enable).
+`ifdef ABR_ASSERT_ON
+    MlkemOpuWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
+        (enable && mlkem) |-> (uvw_i.u00_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0) &&
+                              (uvw_i.u01_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
+        else $error("[%m] uvw_i.u*_i upper bits non-zero in MLKEM mode");
+
+    MlkemOpvWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
+        (enable && mlkem) |-> (uvw_i.v00_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0) &&
+                              (uvw_i.v01_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
+        else $error("[%m] uvw_i.v*_i upper bits non-zero in MLKEM mode");
+
+    MlkemOpwWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
+        (enable && mlkem) |-> (uvw_i.w00_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0) &&
+                              (uvw_i.w01_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0) &&
+                              (uvw_i.w10_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0) &&
+                              (uvw_i.w11_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
+        else $error("[%m] uvw_i.w*_i upper bits non-zero in MLKEM mode");
+`endif
 
 endmodule

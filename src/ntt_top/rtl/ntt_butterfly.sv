@@ -353,19 +353,5 @@ module ntt_butterfly
                               ? REG_SIZE'(mlkem_mul_res_reduced_reg)
                               : 'h0;
 
-    // MLKEM operand-width checks: upper bits must be zero in MLKEM mode
-`ifdef ABR_ASSERT_ON
-    MlkemOpuWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
-        mlkem |-> (opu_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
-        else $error("[%m] opu_i upper bits non-zero in MLKEM mode");
-
-    MlkemOpvWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
-        mlkem |-> (opv_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
-        else $error("[%m] opv_i upper bits non-zero in MLKEM mode");
-
-    MlkemOpwWidth_A: assert property (@(posedge clk) disable iff (!reset_n)
-        mlkem |-> (opw_i[REG_SIZE-1:MLKEM_REG_SIZE] == '0))
-        else $error("[%m] opw_i upper bits non-zero in MLKEM mode");
-`endif
 
 endmodule
