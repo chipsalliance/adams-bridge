@@ -305,12 +305,12 @@ module ntt_butterfly2x2
         else begin
             if (mlkem) begin
                 unique case(mode)
-                    ct:  ready_reg <= {4'h0, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
-                    gs:  ready_reg <= {4'h0, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
+                    ct:  ready_reg <= {enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
+                    gs:  ready_reg <= {enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
                     pwm: ready_reg <= '0;
-                    pwa: ready_reg <= {9'h0, enable};
-                    pws: ready_reg <= {9'h0, enable};
-                    pairwm: ready_reg <= accumulate ? {5'h0, enable, ready_reg[MLKEM_PAIRWM_ACC_LATENCY-1:1]} : {6'h0, enable, ready_reg[MLKEM_PAIRWM_LATENCY-1:1]};
+                    pwa: ready_reg <= BF_LATENCY'(enable);
+                    pws: ready_reg <= BF_LATENCY'(enable);
+                    pairwm: ready_reg <= accumulate ? {enable, ready_reg[MLKEM_PAIRWM_ACC_LATENCY-1:1]} : {enable, ready_reg[MLKEM_PAIRWM_LATENCY-1:1]};
                     default: ready_reg <= 'h0;
                 endcase
             end
@@ -318,9 +318,9 @@ module ntt_butterfly2x2
                 unique case(mode)
                     ct:  ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
                     gs:  ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
-                    pwm: ready_reg <= accumulate ? {5'h0, enable, ready_reg[PWM_LATENCY-1:1]} : {6'h0, enable, ready_reg[PWM_LATENCY-2:1]};
-                    pwa: ready_reg <= {9'h0, enable};
-                    pws: ready_reg <= {9'h0, enable};
+                    pwm: ready_reg <= accumulate ? {enable, ready_reg[PWM_LATENCY-1:1]} : {enable, ready_reg[PWM_LATENCY-2:1]};
+                    pwa: ready_reg <= BF_LATENCY'(enable);
+                    pws: ready_reg <= BF_LATENCY'(enable);
                     pairwm: ready_reg <= 'h0;
                     default: ready_reg <= 'h0;
                 endcase
