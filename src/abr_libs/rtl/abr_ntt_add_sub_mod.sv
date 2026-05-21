@@ -116,10 +116,8 @@ module abr_ntt_add_sub_mod
             push_result_reg <= 2'b0;
         else if (zeroize)
             push_result_reg <= 2'b0;
-        else if (add_en_i)
-            push_result_reg <= 2'b10;
-        else // one shift to right
-            push_result_reg <= 2'(push_result_reg >> 1);
+        else
+            push_result_reg <= {add_en_i, push_result_reg[1]};
     end
 
     assign ready_o = push_result_reg[0];
