@@ -131,10 +131,6 @@ module abr_top
   logic ntt_masking_en_ctrl;
   logic ntt_shuffling_en_ctrl;
   logic split_en;
-  // Recombine: NTT[0] reads pwm_b from masked memory, does PWA, writes to regular memory
-  // recombine_en_ctrl: from sequencer — used for NTT[1] mirroring decision at dispatch time
-  // recombine_en: from NTT mode case handle — tracks the actual in-flight pipeline mode
-  // recombine_en_pipe: delayed recombine_en for data mux (aligned with SRAM read latency)
   logic recombine_en_ctrl;
   logic recombine_en;
   logic [SRAM_LATENCY:0] recombine_en_pipe;
