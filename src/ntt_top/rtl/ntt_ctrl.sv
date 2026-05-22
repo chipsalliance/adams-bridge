@@ -540,7 +540,7 @@ always_ff @(posedge clk or negedge reset_n) begin
     else if (rst_rd_valid_count)
         rd_valid_count <= 'h0;
     else if (rd_data_valid)
-        rd_valid_count <= ct_mode ? (rd_valid_count > (MLDSA_N / COEFF_PER_CLK)) ? 'h0 : rd_valid_count + 'h4 
+        rd_valid_count <= ct_mode ? (rd_valid_count >= (MLDSA_N / COEFF_PER_CLK)) ? 'h0 : rd_valid_count + 'h4 
                                     : rd_valid_count + 'h1;
     
 end

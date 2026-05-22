@@ -266,19 +266,15 @@ ntt_butterfly #(
 );
 
 always_comb begin
-    uv_o.u20_o =    ntt_passthrough ? u10_reg[0]
-                 : intt_passthrough ? u10_reg[0]
-                                    : u20_int;
-    uv_o.v20_o =    ntt_passthrough ? v10_reg[0]
-                 : intt_passthrough ? u11_reg[0]
-                                    : v20_int;
+    uv_o.u20_o = (ntt_passthrough | intt_passthrough) ? u10_reg[0] : u20_int;
+    uv_o.v20_o =  ntt_passthrough ? v10_reg[0]
+                : intt_passthrough ? u11_reg[0]
+                                   : v20_int;
 
-    uv_o.u21_o =    ntt_passthrough ? u11_reg[0]
-                 : intt_passthrough ? v10_reg[0]
-                                    : u21_int;
-    uv_o.v21_o =    ntt_passthrough ? v11_reg[0]
-                 : intt_passthrough ? v11_reg[0]
-                                    : v21_int;
+    uv_o.u21_o =  ntt_passthrough ? u11_reg[0]
+                : intt_passthrough ? v10_reg[0]
+                                   : u21_int;
+    uv_o.v21_o = (ntt_passthrough | intt_passthrough) ? v11_reg[0] : v21_int;
 end
 
 //----------------------------------------------------
