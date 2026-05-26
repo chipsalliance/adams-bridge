@@ -17,12 +17,13 @@
 // abr_splitter.sv
 // --------
 // Arithmetic share splitter for SCA protection.
-// Pure 2-cycle pipeline stage — no handshake, no enable.
+// 2-cycle pipeline stage with `en_i` input qualifier and `ready_o` strobe.
 // Splits a 96-bit memory word (4 coefficients × 23 bits) into two shares:
 //   share0 = rand (delayed 2 cycles)
 //   share1 = (data - rand) mod q (1 cycle from add_sub_mod + 1 output register)
 // Supports MLDSA (q=8380417, 23-bit coefficients) and MLKEM (q=3329, 12-bit).
-// Validity is controlled by the producer's DV/addr delay chain, not by this module.
+// `ready_o` indicates when (share0_o, share1_o) are stable; the wrapper
+// uses it directly as the downstream DV strobe.
 // LFSR is external — this module consumes 96 bits of randomness per word.
 //
 //======================================================================

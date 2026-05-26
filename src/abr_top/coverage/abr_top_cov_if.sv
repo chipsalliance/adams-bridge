@@ -489,8 +489,9 @@ interface abr_top_cov_if
         // proves the retention path was exercised.
         verify_abort_path_cp: coverpoint {sca_normcheck_invalid, sca_sigdecode_h_invalid}
                               iff (sca_clear_verify_valid) {
-            bins by_normcheck = {2'b10};
-            bins by_sigdec_h  = {2'b01};
+            bins by_normcheck         = {2'b10};
+            bins by_sigdec_h          = {2'b01};
+            illegal_bins both_aborts  = {2'b11};
         }
 
     endgroup
