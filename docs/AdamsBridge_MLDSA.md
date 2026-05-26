@@ -2098,7 +2098,7 @@ When `MASKING_EN = 1`, [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv) instantiate
 Both engines receive the same opcode and the same logical address sequence but independent `shuffling_rand` slices, so they execute the same arithmetic on different shares with different per-cycle physical address orderings. Engine `NTT[1]` is enabled only when the current opcode has `masking_en = 1`; otherwise it idles. The sequencer ([`abr_seq.sv`](../src/abr_top/rtl/abr_seq.sv)) issues `MASKED_*` variants of every NTT opcode that touches secret data, including:
 
 - `ABR_UOP_MASKED_NTT`, `ABR_UOP_MASKED_INTT`
-- `ABR_UOP_MASKED_PWM`, `ABR_UOP_MASKED_PWA`, `ABR_UOP_MASKED_PWS`
+- `ABR_UOP_MASKED_PWM`, `ABR_UOP_MASKED_PWA`
 - `ABR_UOP_REJS_MASKED_PWM`, `ABR_UOP_REJS_MASKED_PWMA` (sampler-fed)
 - `ABR_UOP_MASKED_REJB`, `ABR_UOP_MASKED_EXP_MASK`, `ABR_UOP_MASKED_CBD`, `ABR_UOP_MASKED_SKDECODE`, `ABR_UOP_MASKED_DECOMPRESS`
 - ML-KEM mirrors: `ABR_UOP_MLKEM_MASKED_*`
