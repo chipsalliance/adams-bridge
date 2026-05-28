@@ -38,32 +38,33 @@ The project contains comprehensive documentation of all submodules for ML-DSA an
 
 The following table shows the required memory instances for Adam's Bridge:
 
-| Instance            | Depth | Data Width | Strobe Width |
-| --------------------| ----- | ---------- | ------------ |
-| abr_sk_mem_bank0    | 596   | 32         |              |
-| abr_sk_mem_bank1    | 596   | 32         |              |
-| abr_w1_mem          | 512   | 4          |              |
-| abr_mem_inst0_bank0 | 832   | 96         |              |
-| abr_mem_inst0_bank1 | 832   | 96         |              |
-| abr_mem_inst1       | 64    | 96         |              |
-| abr_mem_inst2       | 1536  | 96         |              |
-| abr_sig_z_mem       | 224   | 160        | 20           |
-| abr_pk_mem          | 64    | 320        | 40           |
+| Instance            | Depth | Data Width | Strobe Width | Num Strobes |
+| --------------------| ----- | ---------- | ------------ | ----------- |
+| abr_sk_mem_bank0    | 596   | 32         |              |             |
+| abr_sk_mem_bank1    | 596   | 32         |              |             |
+| abr_w1_mem          | 512   | 4          |              |             |
+| abr_mem_inst0_bank0 | 832   | 96         |              |             |
+| abr_mem_inst0_bank1 | 832   | 96         |              |             |
+| abr_mem_inst1       | 64    | 96         |              |             |
+| abr_mem_inst2       | 1536  | 96         |              |             |
+| abr_sig_z_mem       | 224   | 160        | 8            | 20          |
+| abr_pk_mem          | 64    | 320        | 8            | 40          |
 
 All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
-Strobe width describes the number of bits enabled by each strobe. All strobed memories are byte enabled in the design.
+Strobe width describes the number of data bits enabled by each strobe bit; all strobed memories are byte enabled in the design, so strobe width is 8.
+Num strobes is the total width of the write-strobe bus (= Data Width / Strobe Width) and matches the `WSTROBE_W` localparam in `abr_ctrl_pkg.sv`.
 
 ## Masking-protected memory (MASKING_EN = 1)
 
 When the top-level `MASKING_EN` parameter is set to 1, four additional SRAM instances are generated to hold the second share of all masked operands. These mirror the dimensions of the corresponding regular memory instances:
 
-| Instance                   | Depth | Data Width | Strobe Width |
-| -------------------------- | ----- | ---------- | ------------ |
-| abr_mem_inst0_bank0_masked | 832   | 96         |              |
-| abr_mem_inst0_bank1_masked | 832   | 96         |              |
-| abr_mem_inst1_masked       | 64    | 96         |              |
-| abr_mem_inst2_masked       | 1536  | 96         |              |
+| Instance                   | Depth | Data Width | Strobe Width | Num Strobes |
+| -------------------------- | ----- | ---------- | ------------ | ----------- |
+| abr_mem_inst0_bank0_masked | 832   | 96         |              |             |
+| abr_mem_inst0_bank1_masked | 832   | 96         |              |             |
+| abr_mem_inst1_masked       | 64    | 96         |              |             |
+| abr_mem_inst2_masked       | 1536  | 96         |              |             |
 
 Regular and masked SRAMs together carry the two-share representation of each coefficient: the regular memory holds `share0` (uniform random) and the masked memory holds `share1` where `share0 + share1 = data`. When `MASKING_EN = 0` the masked instances are not instantiated and their interface read data is tied to zero.
 
