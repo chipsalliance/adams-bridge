@@ -39,7 +39,8 @@ module abr_ctrl
   import kv_defines_pkg::*; 
   `endif
   #(
-    parameter SRAM_LATENCY = 1
+    parameter SRAM_LATENCY = 1,
+    parameter bit MASKING_EN = 0
   )
   (
   input logic clk,
@@ -72,19 +73,21 @@ module abr_ctrl
 
   output logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
 
-  //ntt interfaces
-  output logic [ABR_NUM_NTT-1:0]            ntt_enable_o,
-  output abr_ntt_mode_e [ABR_NUM_NTT-1:0]   ntt_mode_o,
-  output ntt_mem_addr_t [ABR_NUM_NTT-1:0]   ntt_mem_base_addr_o,
-  output pwo_mem_addr_t [ABR_NUM_NTT-1:0]   pwo_mem_base_addr_o,
-  output logic [ABR_NUM_NTT-1:0]            ntt_masking_en_o,
-  output logic [ABR_NUM_NTT-1:0]            ntt_shuffling_en_o,
-  input logic [ABR_NUM_NTT-1:0]             ntt_busy_i,
+  //ntt interfaces — single command set, abr_top handles mirroring to NTT[1]
+  output logic                        ntt_enable_o,
+  output abr_ntt_mode_e               ntt_mode_o,
+  output ntt_mem_addr_t               ntt_mem_base_addr_o,
+  output pwo_mem_addr_t               pwo_mem_base_addr_o,
+  output logic                        ntt_masking_en_o,
+  output logic                        ntt_shuffling_en_o,
+  input logic                         ntt_busy_i,
 
   //aux interfaces
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr_o,
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr_o,
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
+
+  output logic                        split_en_o,
 
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
@@ -565,10 +568,10 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic decaps_input_check_failure;
 
   //per controller enable/busy for ntt
-  logic [ABR_NUM_NTT-1:0] ntt_en; //This is the pulse we drive to NTT to start it
-  logic [ABR_NUM_NTT-1:0] ntt_busy;
+  logic ntt_en;
+  logic ntt_busy;
 
-  logic [ABR_NUM_NTT-1:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
+  logic [ABR_MEM_ADDR_WIDTH-1:0] ntt_temp_address;
 
   //Interrupts
   logic abr_status_done;
@@ -803,9 +806,9 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   
     for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);       
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = sampler_state_data_i[0][dword*32 +: 32];
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize | clear_verify_valid;
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | (verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID));
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[0][dword*32 +: 32];
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
     end
   
     abr_reg_hwif_in.MLDSA_MSG_STROBE.STROBE.swwe = stream_msg_rdy;
@@ -1153,9 +1156,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       if (sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
         signature_reg.enc.c <= sampler_state_data_i[0][511:0];
       end else if (abr_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
-        for (int unsigned dword = 0; dword < SIGNATURE_NUM_DWORDS; dword++) begin
-          signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
-        end
+        signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
       //HW write h
       if (set_signature_valid) begin
@@ -1575,7 +1576,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   //ML-DSA sequencer, instruction is busy
   always_comb subcomponent_busy = !(abr_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
-                                  sampler_busy_i | ntt_busy[0];
+                                  sampler_busy_i | ntt_busy;
 
 always_comb begin
   error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
@@ -2038,7 +2039,7 @@ always_comb begin : ctrl_fsm_out_combo
     sampler_start_o = '0;
     sampler_src = '0;
     sampler_imm = '0;
-    ntt_en[0] = '0;
+    ntt_en = '0;
     power2round_enable_o = '0;
     decompose_enable_o = '0;
     skencode_enable_o = '0;
@@ -2058,7 +2059,7 @@ always_comb begin : ctrl_fsm_out_combo
         //load keccak data to SIPO
         if (abr_instr.opcode.keccak_en)
           abr_ctrl_fsm_ns = ABR_CTRL_SHA3_START;
-        else if (abr_instr.opcode.ntt_en & ntt_busy[0])
+        else if (abr_instr.opcode.ntt_en & ntt_busy)
           abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
         else if ((abr_instr.opcode.sampler_en | abr_instr.opcode.aux_en | abr_instr.opcode.ntt_en))
           abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
@@ -2078,7 +2079,7 @@ always_comb begin : ctrl_fsm_out_combo
         sampler_imm = abr_instr.imm;
         if (msg_done) begin
           msg_valid =0;
-          if (abr_instr.opcode.ntt_en & ntt_busy[0]) abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
+          if (abr_instr.opcode.ntt_en & ntt_busy) abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
           else if (abr_instr.opcode.sampler_en | abr_instr.opcode.aux_en | abr_instr.opcode.ntt_en) abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
 	  else abr_ctrl_fsm_ns = ABR_CTRL_MSG_WAIT;
         end
@@ -2088,20 +2089,20 @@ always_comb begin : ctrl_fsm_out_combo
         if (abr_instr.opcode.keccak_en) 
           abr_ctrl_fsm_ns = ABR_CTRL_MSG_LOAD;
         //NTT is stalled
-        else if (abr_instr.opcode.ntt_en & ntt_busy[0]) 
+        else if (abr_instr.opcode.ntt_en & ntt_busy) 
           abr_ctrl_fsm_ns = ABR_CTRL_STALLED;
         //Start the function
         else if ((abr_instr.opcode.sampler_en | abr_instr.opcode.aux_en | abr_instr.opcode.ntt_en))
           abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
       ABR_CTRL_STALLED: begin
-        if (abr_instr.opcode.ntt_en & ~ntt_busy[0]) 
+        if (abr_instr.opcode.ntt_en & ~ntt_busy) 
           abr_ctrl_fsm_ns = ABR_CTRL_FUNC_START;
       end
       ABR_CTRL_FUNC_START: begin
         abr_ctrl_fsm_ns = ABR_CTRL_DONE;
         sampler_start_o = abr_instr.opcode.sampler_en;
-        ntt_en[0] = abr_instr.opcode.ntt_en;
+        ntt_en = abr_instr.opcode.ntt_en;
         if (abr_instr.opcode.aux_en) begin
           power2round_enable_o = (abr_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
           decompose_enable_o = (abr_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT});
@@ -2119,7 +2120,7 @@ always_comb begin : ctrl_fsm_out_combo
         end
       end
       ABR_CTRL_DONE: begin
-        if ((~sampler_busy_i & ~ntt_busy[0] & ~abr_instr.opcode.aux_en) |
+        if ((~sampler_busy_i & ~ntt_busy & ~abr_instr.opcode.aux_en) |
             (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode inside {MLDSA_DECOMP,MLDSA_USEHINT}) & decompose_done_i) |
             (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_PWR2RND)    & power2round_done_i) |
             (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE)   & skencode_done_i) |
@@ -2165,31 +2166,34 @@ abr_seq abr_seq_inst
   .data_o(abr_instr_o)
 );
 
-//NTT gasket
-//Removed support for 2 NTT
-localparam ABR_SEQ_NTT = 0;
-
+//NTT gasket — single command output
 //Check if ntt is being enabled in this clock also
-always_comb ntt_busy[ABR_SEQ_NTT] = abr_instr.opcode.ntt_en & (ntt_busy_i[ABR_SEQ_NTT] | ntt_enable_o[ABR_SEQ_NTT]);
+always_comb begin
+  ntt_busy = abr_instr.opcode.ntt_en & (ntt_busy_i | ntt_enable_o);
+end
 
 always_comb begin
-  ntt_enable_o[ABR_SEQ_NTT] = ntt_en[ABR_SEQ_NTT];
-  ntt_mode_o[ABR_SEQ_NTT] = abr_instr.opcode.mode.ntt_mode;
-  ntt_masking_en_o[ABR_SEQ_NTT] = abr_instr.opcode.masking_en;
-  ntt_shuffling_en_o[ABR_SEQ_NTT] = abr_instr.opcode.shuffling_en;
-  //passing a bit on the immediate field to mux between temp address locations
-  ntt_temp_address[ABR_SEQ_NTT] = abr_instr.imm[0] ? MLDSA_TEMP2_BASE[ABR_MEM_ADDR_WIDTH-1:0] : MLDSA_TEMP0_BASE[ABR_MEM_ADDR_WIDTH-1:0];
-  //optimization - could be one interface here?
-  ntt_mem_base_addr_o[ABR_SEQ_NTT] = '{src_base_addr:abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
-                                        interim_base_addr:ntt_temp_address[ABR_SEQ_NTT],
+  ntt_enable_o = ntt_en;
+  ntt_mode_o = abr_instr.opcode.mode.ntt_mode;
+  ntt_masking_en_o = abr_instr.opcode.masking_en & ntt_en;
+  ntt_shuffling_en_o = abr_instr.opcode.shuffling_en;
+  ntt_temp_address = abr_instr.imm[0] ? MLDSA_TEMP2_BASE[ABR_MEM_ADDR_WIDTH-1:0] : MLDSA_TEMP0_BASE[ABR_MEM_ADDR_WIDTH-1:0];
+  ntt_mem_base_addr_o = '{src_base_addr:abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
+                                        interim_base_addr:ntt_temp_address,
                                         dest_base_addr:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};
-  pwo_mem_base_addr_o[ABR_SEQ_NTT] = '{pw_base_addr_b:abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0], //PWO src
-                                        pw_base_addr_a:abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0], //PWO src or sampler src
+  pwo_mem_base_addr_o = '{pw_base_addr_b:abr_instr.operand1[ABR_MEM_ADDR_WIDTH-1:0],
+                                        pw_base_addr_a:abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0],
                                         pw_base_addr_c:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
 end
 
-//Zeroizer
-always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
+// Splitter is bypassed if masking is disabled.
+always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
+
+logic skip_recombine;
+always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
+                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
+
+always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | skip_recombine) ? '0 : abr_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin

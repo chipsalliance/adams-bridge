@@ -52,7 +52,8 @@ module mlkem_hybrid_bf_tb
         .accumulate(acc_tb),
         .u_o(u_o_tb),
         .v_o(v_o_tb),
-        .pwm_res_o()
+        .pwm_res_o(),
+        .pairwm_mul_red_o()
     );
 
     //----------------------------------------------------------------

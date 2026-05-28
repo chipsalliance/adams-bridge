@@ -32,6 +32,9 @@
 module skdecode_top
     import abr_params_pkg::*;
     import skdecode_defines_pkg::*;
+    #(
+        parameter int ABR_NUM_NTT = 1
+    )
     (
         input logic clk,
         input logic reset_n,
@@ -43,11 +46,16 @@ module skdecode_top
         input logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
         input logic [1:0] keymem_rd_data_valid,
 
+        // Splitter control
+        input logic                          split_en_i,
+        input logic [ABR_MEM_DATA_WIDTH-1:0] rand_i,
+        input logic [ABR_MEM_DATA_WIDTH-1:0] rand_dual_i,
+
         output mem_if_t [1:0] keymem_rd_req,
         output mem_if_t mem_a_wr_req,
         output mem_if_t mem_b_wr_req,
-        output logic [3:0][REG_SIZE-1:0] mem_a_wr_data,
-        output logic [3:0][REG_SIZE-1:0] mem_b_wr_data,
+        output logic [ABR_NUM_NTT-1:0][ABR_MEM_DATA_WIDTH-1:0] mem_a_wr_data,
+        output logic [ABR_NUM_NTT-1:0][ABR_MEM_DATA_WIDTH-1:0] mem_b_wr_data,
         output logic skdecode_error,
         output logic skdecode_done,
         output logic s1_done,
@@ -76,7 +84,9 @@ module skdecode_top
 
     logic s1s2_keymem_b_valid;
 
-    //IO flops
+    logic skdecode_done_int;
+
+    //IO flops (bypass path — 1-stage delay)
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             mem_a_wr_req_reg.rd_wr_en   <= RW_IDLE;
@@ -144,13 +154,115 @@ module skdecode_top
         skdecode_error     = s1s2_error & skdecode_done;
     end
 
-    //Assign outputs
-    always_comb begin
-        mem_a_wr_req = mem_a_wr_req_reg;
-        mem_b_wr_req = mem_b_wr_req_reg;
-        mem_a_wr_data = mem_a_wr_data_reg;
-        mem_b_wr_data = mem_b_wr_data_reg;
+    // --- Arithmetic share splitters ---
+    // Split skdecode writes into share0 (random) and share1 (data - random mod q).
+    // Port A and Port B each get their own splitter with independent randomness.
+    // 2-cycle latency; write request is delayed to align.
+    logic [ABR_MEM_DATA_WIDTH-1:0] split_share0_a, split_share1_a;
+    logic [ABR_MEM_DATA_WIDTH-1:0] split_share0_b, split_share1_b;
+    logic wr_valid_a, wr_valid_b;
+
+    assign wr_valid_a = (mem_a_wr_req_int.rd_wr_en == RW_WRITE);
+    assign wr_valid_b = (mem_b_wr_req_int.rd_wr_en == RW_WRITE);
+
+    abr_splitter u_splitter_a (
+        .clk     (clk),
+        .reset_n (reset_n),
+        .zeroize (zeroize),
+        .en_i    (wr_valid_a & split_en_i),
+        .mode    (1'b0),                        // skdecode is MLDSA-only
+        .data_i  (mem_a_wr_data_int),
+        .rand_i  (rand_i),
+        .share0_o(split_share0_a),
+        .share1_o(split_share1_a),
+        .ready_o ()
+    );
+
+    abr_splitter u_splitter_b (
+        .clk     (clk),
+        .reset_n (reset_n),
+        .zeroize (zeroize),
+        .en_i    (wr_valid_b & split_en_i),
+        .mode    (1'b0),
+        .data_i  (mem_b_wr_data_int),
+        .rand_i  (rand_dual_i),
+        .share0_o(split_share0_b),
+        .share1_o(split_share1_b),
+        .ready_o ()
+    );
+
+    // 2-stage delay for write request to align with splitter output
+    mem_if_t mem_a_wr_req_d1, mem_a_wr_req_d2;
+    mem_if_t mem_b_wr_req_d1, mem_b_wr_req_d2;
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            mem_a_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_a_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_a_wr_req_d1.addr     <= '0;
+            mem_a_wr_req_d2.addr     <= '0;
+            mem_b_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_b_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_b_wr_req_d1.addr     <= '0;
+            mem_b_wr_req_d2.addr     <= '0;
+        end
+        else if (zeroize) begin
+            mem_a_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_a_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_a_wr_req_d1.addr     <= '0;
+            mem_a_wr_req_d2.addr     <= '0;
+            mem_b_wr_req_d1.rd_wr_en <= RW_IDLE;
+            mem_b_wr_req_d2.rd_wr_en <= RW_IDLE;
+            mem_b_wr_req_d1.addr     <= '0;
+            mem_b_wr_req_d2.addr     <= '0;
+        end
+        else begin
+            mem_a_wr_req_d1 <= mem_a_wr_req_int;
+            mem_a_wr_req_d2 <= mem_a_wr_req_d1;
+            mem_b_wr_req_d1 <= mem_b_wr_req_int;
+            mem_b_wr_req_d2 <= mem_b_wr_req_d1;
+        end
     end
+
+    // Splitter pipeline tracker — delays skdecode_done by 1 extra cycle
+    // to let the split pipeline drain (2-stage vs 1-stage output flop)
+    logic [1:0] split_pipe_active;
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)        split_pipe_active <= '0;
+        else if (zeroize)    split_pipe_active <= '0;
+        else                 split_pipe_active <= {split_pipe_active[0], (wr_valid_a | wr_valid_b) & split_en_i};
+    end
+
+    // Output mux: split path (2-cycle delay) or bypass path (1-cycle flop)
+    always_comb begin
+        if (split_en_i) begin
+            mem_a_wr_req     = mem_a_wr_req_d2;
+            mem_b_wr_req     = mem_b_wr_req_d2;
+            mem_a_wr_data[0] = split_share0_a;
+            mem_b_wr_data[0] = split_share0_b;
+        end else begin
+            mem_a_wr_req     = mem_a_wr_req_reg;
+            mem_b_wr_req     = mem_b_wr_req_reg;
+            mem_a_wr_data[0] = mem_a_wr_data_reg;
+            mem_b_wr_data[0] = mem_b_wr_data_reg;
+        end
+    end
+
+    // share[1] output — present only when masking is enabled.
+    generate if (ABR_NUM_NTT > 1) begin : g_skdecode_share1_out
+        always_comb begin
+            if (split_en_i) begin
+                mem_a_wr_data[1] = split_share1_a;
+                mem_b_wr_data[1] = split_share1_b;
+            end else begin
+                mem_a_wr_data[1] = mem_a_wr_data_reg;
+                mem_b_wr_data[1] = mem_b_wr_data_reg;
+            end
+        end
+    end endgenerate
+
+    // Done signal: delay by 1 extra cycle when split pipeline is still draining
+    assign skdecode_done = skdecode_done_int & ~(split_en_i & |split_pipe_active);
 
     //8 s1s2 unpack instances to process 3*8 = 24-bits per cycle. In this case, one addr of key mem is read per cycle
     generate
@@ -228,7 +340,7 @@ module skdecode_top
         .kmem_b_rd_req(keymem_rd_req[1]),
         .s1s2_enable(s1s2_enable),
         .t0_enable(t0_enable),
-        .skdecode_done(skdecode_done),
+        .skdecode_done(skdecode_done_int),
         .s1_done(s1_done),
         .s2_done(s2_done),
         .t0_done(t0_done)

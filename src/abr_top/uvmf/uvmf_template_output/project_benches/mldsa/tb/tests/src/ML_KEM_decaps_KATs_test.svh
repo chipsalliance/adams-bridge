@@ -10,9 +10,7 @@
 //    changes to test_top using the UVM factory type_override:
 //
 //    Test scenario: 
-//      Test uses a random seed to generate a public and private key pair
-//      Next it signs a random message with the private key
-//      Next it verifies that signature using the public key
+//      Runs ML-KEM decapsulation known-answer test vectors (ACVP KATs).
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
 //
@@ -42,6 +40,7 @@ class ML_KEM_decaps_KATs_test extends test_top;
 
     uvm_config_db#(bit)::set(null, "*", "disable_scrboard_from_test", disable_scrboard_from_test);
     uvm_config_db#(bit)::set(null, "*", "disable_pred_from_test", disable_pred_from_test);
+
     // The configuration structure has already been randomized.
     // The configuration structure has already been randomized.
     // pragma uvmf custom configuration_settings_post_randomize end

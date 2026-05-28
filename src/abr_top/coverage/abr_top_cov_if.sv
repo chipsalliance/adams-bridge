@@ -16,6 +16,8 @@
 
 interface abr_top_cov_if
     import abr_params_pkg::*;
+    import abr_ctrl_pkg::*;
+    import abr_sampler_pkg::*;
     `ifdef CALIPTRA
     import kv_defines_pkg::*; 
     `endif  
@@ -127,7 +129,7 @@ interface abr_top_cov_if
     assign mldsa_signing_process = abr_top.abr_ctrl_inst.mldsa_signing_process;
     assign mldsa_verifying_process = abr_top.abr_ctrl_inst.mldsa_verifying_process;
     assign mldsa_keygen_signing_process = abr_top.abr_ctrl_inst.mldsa_keygen_signing_process;
-    assign mlkem_keygen_process = abr_top.abr_ctrl_inst.mldsa_keygen_process;
+    assign mlkem_keygen_process = abr_top.abr_ctrl_inst.mlkem_keygen_process;
     assign mlkem_encaps_process = abr_top.abr_ctrl_inst.mlkem_encaps_process;
     assign mlkem_decaps_process = abr_top.abr_ctrl_inst.mlkem_decaps_process;
     assign mlkem_keygen_decaps_process = abr_top.abr_ctrl_inst.mlkem_keygen_decaps_process;
@@ -142,6 +144,361 @@ interface abr_top_cov_if
     assign external_mu_mode = abr_top.abr_ctrl_inst.external_mu_mode;
     assign stream_msg_mode = abr_top.abr_ctrl_inst.stream_msg_mode;
     assign stream_msg_ip = abr_top.abr_ctrl_inst.stream_msg_ip;
+
+    // =========================================================================
+    // SCA / Masking Coverage Signals
+    // =========================================================================
+
+    // Masking control signals from abr_ctrl
+    logic sca_ntt_masking_en;
+    logic sca_ntt_shuffling_en;
+    logic sca_split_en;
+    logic sca_recombine_en;
+
+    assign sca_ntt_masking_en   = abr_top.ntt_masking_en_ctrl;
+    assign sca_ntt_shuffling_en = abr_top.ntt_shuffling_en_ctrl;
+    assign sca_split_en         = abr_top.split_en;
+    assign sca_recombine_en     = abr_top.recombine_en;
+
+    // NTT[1] enable (dual-NTT activation) — only exists when MASKING_EN=1
+    logic sca_ntt1_enable;
+    assign sca_ntt1_enable = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_enable[abr_top.MASKED_IDX] : 1'b0;
+
+    // NTT[0] enable (primary NTT — always active for NTT ops)
+    logic sca_ntt0_enable;
+    assign sca_ntt0_enable = abr_top.ntt_enable[0];
+
+    // NTT mode for NTT[0] (primary) — covers all operation types including RECOMBINE
+    abr_ntt_mode_e sca_ntt0_mode;
+    assign sca_ntt0_mode = abr_top.ntt_mode[0];
+
+    // NTT mode for NTT[1] — should exercise subset of modes when MASKING_EN=1
+    abr_ntt_mode_e sca_ntt1_mode;
+    assign sca_ntt1_mode = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_mode[abr_top.MASKED_IDX] : ABR_NTT_NONE;
+
+    // Opcode masking/shuffling bits from the instruction
+    logic sca_opcode_masking_en;
+    logic sca_opcode_shuffling_en;
+    logic sca_opcode_ntt_en;
+
+    assign sca_opcode_masking_en   = abr_top.abr_ctrl_inst.abr_instr.opcode.masking_en;
+    assign sca_opcode_shuffling_en = abr_top.abr_ctrl_inst.abr_instr.opcode.shuffling_en;
+    assign sca_opcode_ntt_en       = abr_top.abr_ctrl_inst.abr_instr.opcode.ntt_en;
+
+    // Splitter activity — sampler splitter (one of the three splitter instances)
+    logic sca_sampler_splitter_en;
+    logic sca_sampler_splitter_ready;
+    assign sca_sampler_splitter_en    = abr_top.sampler_top_inst.u_splitter.en_i;
+    assign sca_sampler_splitter_ready = abr_top.sampler_top_inst.u_splitter.ready_o;
+
+    // Splitter activity — skdecode has two splitters (port A and port B)
+    logic sca_skdecode_splitter_a_en;
+    logic sca_skdecode_splitter_b_en;
+    assign sca_skdecode_splitter_a_en = abr_top.skdecode_inst.u_splitter_a.en_i;
+    assign sca_skdecode_splitter_b_en = abr_top.skdecode_inst.u_splitter_b.en_i;
+
+    // Splitter activity — decompress splitter
+    logic sca_decompress_splitter_en;
+    assign sca_decompress_splitter_en = abr_top.decompress_top_inst.u_splitter.en_i;
+
+    // Splitter rand reduction — detect when LFSR rand >= q (reduction path exercised)
+    logic sca_splitter_rand_reduced;
+    assign sca_splitter_rand_reduced = abr_top.sampler_top_inst.u_splitter.rand_raw[0] >=
+                                       abr_top.sampler_top_inst.u_splitter.prime;
+
+    // Recombine pipeline depth tracking
+    logic sca_recombine_en_pipe_last;
+    assign sca_recombine_en_pipe_last = abr_top.recombine_en_pipe[abr_top.SRAM_LATENCY];
+
+    // skip_recombine — when MASKING_EN=0, recombine ops are NOP'd
+    logic sca_skip_recombine;
+    assign sca_skip_recombine = abr_top.abr_ctrl_inst.skip_recombine;
+
+    // NTT[1] SIB read pipeline (bug 9 fix — ntt_sib_rd_detect_d1[0] gates NTT[1] valid)
+    logic sca_ntt_sib_rd_detect_d1;
+    assign sca_ntt_sib_rd_detect_d1 = abr_top.ntt_sib_rd_detect_d1[0];
+
+    // Recombine pipeline first stage (bug 3 fix — recombine_en_pipe timing)
+    logic sca_recombine_en_pipe_first;
+    assign sca_recombine_en_pipe_first = abr_top.recombine_en_pipe[0];
+
+    // Sampler opcode mode (covers masked-sampling dispatch)
+    abr_sampler_mode_e sca_sampler_mode;
+    assign sca_sampler_mode = abr_top.sampler_mode;
+
+    // NTT[0]/NTT[1] mode match indicator — when masking, modes should be identical
+    logic sca_ntt_modes_match;
+    assign sca_ntt_modes_match = (abr_top.ABR_NUM_NTT > 1) ?
+                                 (abr_top.ntt_mode[0] == abr_top.ntt_mode[abr_top.MASKED_IDX]) : 1'b1;
+
+    // MASKED_NTT_NOSHUF detection (bug 6 fix — masking=1, shuffling=0, mode=MLDSA_NTT for NTT(c))
+    // Distinguished from REJS_MASKED_* which also have masking=1,shuffling=0 but use PWM_SMPL modes.
+    logic sca_masked_noshuf;
+    assign sca_masked_noshuf = sca_opcode_masking_en & ~sca_opcode_shuffling_en &
+                               sca_opcode_ntt_en &
+                               (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode == MLDSA_NTT);
+
+    // Zeroize signal (re-tap for SCA covergroup local use)
+    logic sca_zeroize;
+    assign sca_zeroize = abr_top.abr_ctrl_inst.zeroize;
+
+    // VERIFY_RES poison-init: re-tap signals that drive `clear_verify_valid`
+    // so we can cover that both abort paths fire. By design (abr_ctrl.sv:806-810,
+    // hwclr = zeroize only), VERIFY_RES retains the poison `~c~` whenever
+    // clear_verify_valid asserts — coverage on the two source bits is sufficient.
+    logic sca_clear_verify_valid;
+    logic sca_normcheck_invalid;
+    logic sca_sigdecode_h_invalid;
+    assign sca_clear_verify_valid  = abr_top.abr_ctrl_inst.clear_verify_valid;
+    assign sca_normcheck_invalid   = abr_top.abr_ctrl_inst.normcheck_invalid_i;
+    assign sca_sigdecode_h_invalid = abr_top.abr_ctrl_inst.sigdecode_h_invalid_i;
+
+    // =========================================================================
+    // SCA Covergroup
+    // =========================================================================
+
+    covergroup abr_sca_cov_grp @(posedge clk);
+
+        // --- Process coverpoints (declared first so crosses can reference them) ---
+        sca_mldsa_keygen_cp:  coverpoint mldsa_keygen_process;
+        sca_mldsa_signing_cp: coverpoint mldsa_signing_process;
+        sca_mlkem_keygen_cp:  coverpoint mlkem_keygen_process;
+        sca_mlkem_encaps_cp:  coverpoint mlkem_encaps_process;
+        sca_mlkem_decaps_cp:  coverpoint mlkem_decaps_process;
+
+        // --- Masking activation ---
+        ntt_masking_en_cp: coverpoint sca_ntt_masking_en;
+        ntt_shuffling_en_cp: coverpoint sca_ntt_shuffling_en;
+        split_en_cp: coverpoint sca_split_en;
+        recombine_en_cp: coverpoint sca_recombine_en;
+        ntt0_enable_cp: coverpoint sca_ntt0_enable;
+        ntt1_enable_cp: coverpoint sca_ntt1_enable;
+        skip_recombine_cp: coverpoint sca_skip_recombine;
+
+        // --- NTT[0] mode (covers all operation types) ---
+        ntt0_mode_cp: coverpoint sca_ntt0_mode {
+            bins ntt_none        = {ABR_NTT_NONE};
+            bins mldsa_ntt       = {MLDSA_NTT};
+            bins mldsa_intt      = {MLDSA_INTT};
+            bins mldsa_pwm       = {MLDSA_PWM};
+            bins mldsa_pwm_accum = {MLDSA_PWM_ACCUM};
+            bins mldsa_pwm_smpl  = {MLDSA_PWM_SMPL};
+            bins mldsa_pwm_accum_smpl = {MLDSA_PWM_ACCUM_SMPL};
+            bins mldsa_pwa       = {MLDSA_PWA};
+            bins mldsa_pws       = {MLDSA_PWS};
+            bins mldsa_recombine = {MLDSA_RECOMBINE};
+            bins mlkem_ntt       = {MLKEM_NTT};
+            bins mlkem_intt      = {MLKEM_INTT};
+            bins mlkem_pwm       = {MLKEM_PWM};
+            bins mlkem_pwm_accum = {MLKEM_PWM_ACCUM};
+            bins mlkem_pwm_smpl  = {MLKEM_PWM_SMPL};
+            bins mlkem_pwm_accum_smpl = {MLKEM_PWM_ACCUM_SMPL};
+            bins mlkem_pwa       = {MLKEM_PWA};
+            bins mlkem_pws       = {MLKEM_PWS};
+            bins mlkem_recombine = {MLKEM_RECOMBINE};
+        }
+
+        // --- NTT[1] mode (subset — only sampled when NTT[1] is actually firing) ---
+        ntt1_mode_cp: coverpoint sca_ntt1_mode iff (sca_ntt1_enable) {
+            bins mldsa_ntt       = {MLDSA_NTT};
+            bins mldsa_intt      = {MLDSA_INTT};
+            bins mldsa_pwm       = {MLDSA_PWM};
+            bins mldsa_pwm_accum = {MLDSA_PWM_ACCUM};
+            bins mldsa_pwm_smpl  = {MLDSA_PWM_SMPL};
+            bins mldsa_pwm_accum_smpl = {MLDSA_PWM_ACCUM_SMPL};
+            bins mldsa_pwa       = {MLDSA_PWA};
+            bins mldsa_pws       = {MLDSA_PWS};
+            bins mlkem_ntt       = {MLKEM_NTT};
+            bins mlkem_intt      = {MLKEM_INTT};
+            bins mlkem_pwm       = {MLKEM_PWM};
+            bins mlkem_pwm_accum = {MLKEM_PWM_ACCUM};
+            bins mlkem_pwm_smpl  = {MLKEM_PWM_SMPL};
+            bins mlkem_pwm_accum_smpl = {MLKEM_PWM_ACCUM_SMPL};
+            bins mlkem_pwa       = {MLKEM_PWA};
+            bins mlkem_pws       = {MLKEM_PWS};
+        }
+
+        // --- Opcode-level masking/shuffling bits ---
+        opcode_masking_en_cp: coverpoint sca_opcode_masking_en;
+        opcode_shuffling_en_cp: coverpoint sca_opcode_shuffling_en;
+
+        // --- Splitter coverage ---
+        sampler_splitter_en_cp: coverpoint sca_sampler_splitter_en;
+        sampler_splitter_ready_cp: coverpoint sca_sampler_splitter_ready;
+        skdecode_splitter_a_en_cp: coverpoint sca_skdecode_splitter_a_en;
+        skdecode_splitter_b_en_cp: coverpoint sca_skdecode_splitter_b_en;
+        decompress_splitter_en_cp: coverpoint sca_decompress_splitter_en;
+        splitter_rand_reduced_cp: coverpoint sca_splitter_rand_reduced {
+            bins not_reduced = {1'b0};
+            bins reduced     = {1'b1};
+        }
+
+        // --- Recombine pipeline ---
+        recombine_pipe_first_cp: coverpoint sca_recombine_en_pipe_first;
+        recombine_pipe_last_cp:  coverpoint sca_recombine_en_pipe_last;
+
+        // --- NTT[1] SIB read detect (bug 9 fix) ---
+        ntt_sib_rd_detect_cp: coverpoint sca_ntt_sib_rd_detect_d1;
+
+        // --- NTT[0]/NTT[1] mode coherence — when masked, must match ---
+        ntt_modes_match_cp: coverpoint sca_ntt_modes_match;
+        modes_matchXmasking: cross ntt_modes_match_cp, ntt_masking_en_cp {
+            // Modes MUST match whenever masking is active (bug 2 invariant)
+            illegal_bins masked_mode_mismatch =
+                binsof(ntt_modes_match_cp) intersect {0} &&
+                binsof(ntt_masking_en_cp)  intersect {1};
+        }
+
+        // --- MASKED_NTT_NOSHUF (bug 6 fix — NTT(c) sign) ---
+        masked_noshuf_cp: coverpoint sca_masked_noshuf;
+        noshufXmasking: cross sca_masked_noshuf, opcode_masking_en_cp;
+
+        // --- Sampler mode (covers MASKED_REJB / MASKED_EXP_MASK / MASKED_CBD dispatch) ---
+        sampler_mode_cp: coverpoint sca_sampler_mode {
+            bins none      = {ABR_SAMPLER_NONE};
+            bins mldsa_rej = {MLDSA_REJ_SAMPLER};
+            bins mlkem_rej = {MLKEM_REJ_SAMPLER};
+            bins exp_mask  = {ABR_EXP_MASK};
+            bins rej_bnd   = {ABR_REJ_BOUNDED};
+            bins sib       = {ABR_SAMPLE_IN_BALL};
+            bins cbd       = {ABR_CBD_SAMPLER};
+            bins shake256  = {ABR_SHAKE256};
+            bins shake128  = {ABR_SHAKE128};
+            bins sha3_512  = {ABR_SHA512};
+            bins sha3_256  = {ABR_SHA256};
+        }
+        // Crosses isolate the *masked* dispatch path for each sampler mode
+        masked_sampler_mode: cross sampler_mode_cp, opcode_masking_en_cp {
+            // Only the maskable sampling modes are interesting
+            ignore_bins not_maskable = binsof(sampler_mode_cp) intersect
+                {ABR_SAMPLER_NONE, ABR_SHAKE256, ABR_SHAKE128, ABR_SHA512, ABR_SHA256,
+                 ABR_SAMPLE_IN_BALL, MLDSA_REJ_SAMPLER, MLKEM_REJ_SAMPLER};
+        }
+
+        // --- Per-process splitter exercise — each splitter must fire in its algorithm ---
+        sampler_splitterXkeygen:    cross sampler_splitter_en_cp,    sca_mldsa_keygen_cp;
+        sampler_splitterXsigning:   cross sampler_splitter_en_cp,    sca_mldsa_signing_cp;
+        sampler_splitterXmlkem:     cross sampler_splitter_en_cp,    sca_mlkem_keygen_cp;
+        skdecode_splitter_aXsign:   cross skdecode_splitter_a_en_cp, sca_mldsa_signing_cp;
+        skdecode_splitter_bXsign:   cross skdecode_splitter_b_en_cp, sca_mldsa_signing_cp;
+        decompress_splitterXenc:    cross decompress_splitter_en_cp, sca_mlkem_encaps_cp;
+        decompress_splitterXdec:    cross decompress_splitter_en_cp, sca_mlkem_decaps_cp;
+
+        // --- Zeroize interaction with SCA components (safety) ---
+        zeroize_cp_sca: coverpoint sca_zeroize;
+        zeroizeXmasking:   cross zeroize_cp_sca, ntt_masking_en_cp;
+        zeroizeXsplit:     cross zeroize_cp_sca, split_en_cp;
+        zeroizeXrecombine: cross zeroize_cp_sca, recombine_en_cp;
+        zeroizeXntt1:      cross zeroize_cp_sca, ntt1_enable_cp;
+
+        // --- Cross coverage: masking × operation type ---
+        maskingXntt_mode: cross ntt_masking_en_cp, ntt0_mode_cp {
+            ignore_bins idle = binsof(ntt0_mode_cp.ntt_none);
+        }
+
+        // --- Cross coverage: masking × process (keygen/sign/encaps/decaps) ---
+        maskingXmldsa_keygen: cross ntt_masking_en_cp, sca_mldsa_keygen_cp;
+        maskingXmldsa_signing: cross ntt_masking_en_cp, sca_mldsa_signing_cp;
+        maskingXmlkem_keygen: cross ntt_masking_en_cp, sca_mlkem_keygen_cp;
+        maskingXmlkem_encaps: cross ntt_masking_en_cp, sca_mlkem_encaps_cp;
+        maskingXmlkem_decaps: cross ntt_masking_en_cp, sca_mlkem_decaps_cp;
+
+        // --- Cross coverage: shuffling × NTT active ---
+        shufflingXmasking: cross ntt_shuffling_en_cp, opcode_masking_en_cp;
+
+        // --- Cross coverage: recombine × operation ---
+        recombineXmldsa_keygen:  cross recombine_en_cp, sca_mldsa_keygen_cp;   // Bug 4: s1 RECOMBINE in keygen
+        recombineXmldsa_signing: cross recombine_en_cp, sca_mldsa_signing_cp;
+        recombineXmlkem_keygen:  cross recombine_en_cp, sca_mlkem_keygen_cp;   // public-key gen recombine
+        recombineXmlkem_encaps:  cross recombine_en_cp, sca_mlkem_encaps_cp;
+        recombineXmlkem_decaps:  cross recombine_en_cp, sca_mlkem_decaps_cp;   // implicit-reject re-encrypt
+
+        // --- Cross coverage: split × algorithm type ---
+        splitXmldsa_keygen:  cross split_en_cp, sca_mldsa_keygen_cp;
+        splitXmldsa_signing: cross split_en_cp, sca_mldsa_signing_cp;
+        splitXmlkem_keygen:  cross split_en_cp, sca_mlkem_keygen_cp;
+        splitXmlkem_encaps:  cross split_en_cp, sca_mlkem_encaps_cp;
+        splitXmlkem_decaps:  cross split_en_cp, sca_mlkem_decaps_cp;
+
+        // --- Cross coverage: NTT[1] active × recombine (must be mutually exclusive) ---
+        // RTL invariant: ntt_enable[1] = ntt_masking_en_ctrl & !recombine_en_ctrl ? ...
+        //                recombine_en  = ntt_mode[0] inside {MLDSA/MLKEM_RECOMBINE}
+        // Both are driven by the same dispatch-time mode_ctrl, so they are strictly exclusive.
+        ntt1Xrecombine: cross ntt1_enable_cp, recombine_en_cp {
+            illegal_bins ntt1_during_recombine =
+                binsof(ntt1_enable_cp) intersect {1} &&
+                binsof(recombine_en_cp) intersect {1};
+        }
+
+        // --- Cross coverage: NTT[0] enable × masking ---
+        ntt0Xmasking: cross ntt0_enable_cp, ntt_masking_en_cp;
+
+        // --- Invariant: SCA components must not fire when opcode.masking_en=0 ---
+        // Note: ntt_masking_en_ctrl = opcode.masking_en & ntt_en
+        //       split_en           = opcode.masking_en & ~ntt_en
+        //       So ntt_masking_en_ctrl and split_en are MUTUALLY EXCLUSIVE.
+        //       The correct gating signal for "masking is requested" is opcode.masking_en.
+
+        // NTT[1] must stay disabled when opcode.masking_en=0
+        ntt1Xopcode_masking: cross ntt1_enable_cp, opcode_masking_en_cp {
+            illegal_bins ntt1_on_masking_off = binsof(ntt1_enable_cp) intersect {1} &&
+                                               binsof(opcode_masking_en_cp) intersect {0};
+        }
+
+        // Splitter must not fire when opcode.masking_en=0
+        splitXopcode_masking: cross split_en_cp, opcode_masking_en_cp {
+            illegal_bins split_on_masking_off = binsof(split_en_cp) intersect {1} &&
+                                                binsof(opcode_masking_en_cp) intersect {0};
+        }
+
+        // Recombine must not fire when opcode.masking_en=0
+        // (RECOMBINE opcode itself sets masking_en=1; recombine_en is derived from ntt_mode)
+        recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp {
+            illegal_bins recombine_on_masking_off = binsof(recombine_en_cp) intersect {1} &&
+                                                    binsof(opcode_masking_en_cp) intersect {0};
+        }
+
+        // --- Per-splitter masking-off invariant ---
+        // Each splitter instance (sampler / skdecode_a / skdecode_b / decompress) is
+        // driven by local module logic, NOT directly by the top-level split_en.
+        // The local enable is allowed only during a masked opcode → en_i=1 with
+        // opcode.masking_en=0 indicates the local gate is broken.
+        sampler_splitterXopcode_masking: cross sampler_splitter_en_cp, opcode_masking_en_cp {
+            illegal_bins sampler_split_on_masking_off =
+                binsof(sampler_splitter_en_cp) intersect {1} &&
+                binsof(opcode_masking_en_cp) intersect {0};
+        }
+        skdecode_splitter_aXopcode_masking: cross skdecode_splitter_a_en_cp, opcode_masking_en_cp {
+            illegal_bins skdecode_a_split_on_masking_off =
+                binsof(skdecode_splitter_a_en_cp) intersect {1} &&
+                binsof(opcode_masking_en_cp) intersect {0};
+        }
+        skdecode_splitter_bXopcode_masking: cross skdecode_splitter_b_en_cp, opcode_masking_en_cp {
+            illegal_bins skdecode_b_split_on_masking_off =
+                binsof(skdecode_splitter_b_en_cp) intersect {1} &&
+                binsof(opcode_masking_en_cp) intersect {0};
+        }
+        decompress_splitterXopcode_masking: cross decompress_splitter_en_cp, opcode_masking_en_cp {
+            illegal_bins decompress_split_on_masking_off =
+                binsof(decompress_splitter_en_cp) intersect {1} &&
+                binsof(opcode_masking_en_cp) intersect {0};
+        }
+
+        // VERIFY_RES poison-init coverage (abr_ctrl.sv:806-810). With hwclr = zeroize
+        // only, the poison `~c~` survives any abort; covering both abort sources
+        // proves the retention path was exercised.
+        verify_abort_path_cp: coverpoint {sca_normcheck_invalid, sca_sigdecode_h_invalid}
+                              iff (sca_clear_verify_valid) {
+            bins by_normcheck         = {2'b10};
+            bins by_sigdec_h          = {2'b01};
+            illegal_bins both_aborts  = {2'b11};
+        }
+
+    endgroup
+
+    // =========================================================================
+    // Standard covergroup
+    // =========================================================================
 
     covergroup abr_top_cov_grp @(posedge clk);
         reset_cp: coverpoint rst_b;
@@ -415,11 +772,12 @@ interface abr_top_cov_if
     abr_ocp_lock_cov_grp abr_ocp_lock_cov_grp1 = new();
     `endif
 
-    // Instantiate the covergroup
+    // Instantiate the covergroups
     mldsa_skencode_agg_cg mldsa_skencode_agg_cov = new();
     mldsa_sign_z_enc_agg_cg mldsa_sign_z_enc_agg_cov_grp1 = new();
 
     abr_top_cov_grp abr_top_cov_grp1 = new();
+    abr_sca_cov_grp abr_sca_cov_grp1 = new();
 
 endinterface
 

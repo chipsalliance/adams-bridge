@@ -18,7 +18,8 @@ module abr_sampler_top
   import abr_params_pkg::*;
   import abr_prim_alert_pkg::*;
   #(
-    parameter SRAM_LATENCY = 1
+    parameter SRAM_LATENCY = 1,
+    parameter int ABR_NUM_NTT = 1
   )
   (
   input logic clk,
@@ -51,8 +52,12 @@ module abr_sampler_top
   output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data_o,
 
   output logic                                        sampler_mem_dv_o,
-  output logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_mem_data_o,
+  output logic [ABR_MEM_DATA_WIDTH-1:0]               sampler_mem_data_o [ABR_NUM_NTT],
   output logic [ABR_MEM_ADDR_WIDTH-1:0]               sampler_mem_addr_o,
+
+  // Splitter control
+  input  logic                                        split_en_i,
+  input  logic [ABR_MEM_DATA_WIDTH-1:0]               rand_i,
 
   output logic                                        sampler_state_dv_o,
   output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o [Sha3Share]
@@ -156,15 +161,23 @@ module abr_sampler_top
 
   logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_ntt_data[SRAM_LATENCY:0];
 
+  // Pre-split signals (before splitter)
+  logic                                        sampler_mem_dv_pre;
+  logic [COEFF_PER_CLK-1:0][MLDSA_Q_WIDTH-1:0] sampler_mem_data_pre;
+  logic [ABR_MEM_ADDR_WIDTH-1:0]               sampler_mem_addr_pre;
+
+  logic splitter_en;
+  logic splitter_ready;
+
   //Sampler mode muxes
   always_comb begin
     mode = abr_sha3_pkg::Shake;
     strength = abr_sha3_pkg::L256;
     vld_cycle = 0;
     sampler_done = 0;
-    sampler_mem_dv_o = 0;
-    sampler_mem_data_o = 0;
-    sampler_mem_addr_o = 0;
+    sampler_mem_dv_pre = 0;
+    sampler_mem_data_pre = 0;
+    sampler_mem_addr_pre = 0;
     sampler_state_dv_o = 0;
     sampler_state_data_o[0] = 0;
     zeroize_rejb = zeroize;
@@ -235,9 +248,9 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L256;
         vld_cycle = exp_dv;
-        sampler_mem_dv_o = exp_dv;
-        sampler_mem_data_o = exp_data;
-        sampler_mem_addr_o = dest_addr;
+        sampler_mem_dv_pre = exp_dv;
+        sampler_mem_data_pre = exp_data;
+        sampler_mem_addr_pre = dest_addr;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_exp_mask |= sampler_done;
         zeroize_sha3 |= sampler_done;
@@ -248,9 +261,9 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L256;
         vld_cycle = rejb_dv;
-        sampler_mem_dv_o = rejb_dv;
-        sampler_mem_data_o = rejb_data;
-        sampler_mem_addr_o = dest_addr;
+        sampler_mem_dv_pre = rejb_dv;
+        sampler_mem_data_pre = rejb_data;
+        sampler_mem_addr_pre = dest_addr;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_rejb |= sampler_done;
         zeroize_sha3 |= sampler_done;
@@ -271,11 +284,11 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L256;
         vld_cycle = cbd_dv;
-        sampler_mem_dv_o = cbd_dv;
+        sampler_mem_dv_pre = cbd_dv;
         for (int coeff = 0; coeff < COEFF_PER_CLK; coeff++) begin
-          sampler_mem_data_o[coeff][MLKEM_Q_WIDTH-1:0] = cbd_data[coeff];
+          sampler_mem_data_pre[coeff][MLKEM_Q_WIDTH-1:0] = cbd_data[coeff];
         end
-        sampler_mem_addr_o = dest_addr;
+        sampler_mem_addr_pre = dest_addr;
         sampler_done = (coeff_cnt == (ABR_COEFF_CNT/4));
         zeroize_cbd |= sampler_done;
         zeroize_sha3 |= sampler_done;
@@ -312,7 +325,10 @@ always_ff @(posedge clk or negedge rst_b) begin
   end
 end
 
-always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != ABR_SAMPLER_IDLE);
+always_comb splitter_en = sampler_mem_dv_pre & split_en_i;
+
+always_comb sampler_busy_o = sampler_start_i | (sampler_fsm_ps != ABR_SAMPLER_IDLE) |
+                             (splitter_en | splitter_ready);
 
 //State logic
 always_comb begin : sampler_fsm_out_comb
@@ -653,6 +669,63 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   .data_o(cbd_data)
   );
 
+  // --- Arithmetic share splitter ---
+  // Splits sampler memory writes into share0 (random) and share1 (data - random mod q).
+  // 2-cycle latency; address and write-enable are delayed to align.
+  logic [ABR_MEM_DATA_WIDTH-1:0] splitter_share0, splitter_share1;
+  logic splitter_mode; // 0 = MLDSA, 1 = MLKEM
+  assign splitter_mode = (sampler_mode_i == ABR_CBD_SAMPLER);
+
+  abr_splitter u_splitter (
+    .clk     (clk),
+    .reset_n (rst_b),
+    .zeroize (zeroize),
+    .en_i    (splitter_en),
+    .mode    (splitter_mode),
+    .data_i  (sampler_mem_data_pre),
+    .rand_i  (rand_i),
+    .share0_o(splitter_share0),
+    .share1_o(splitter_share1),
+    .ready_o (splitter_ready)
+  );
+
+  // Address delay chain to align with splitter output (2-cycle pipeline)
+  logic [ABR_MEM_ADDR_WIDTH-1:0] split_addr_d1, split_addr_d2;
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      split_addr_d1 <= '0;
+      split_addr_d2 <= '0;
+    end
+    else if (zeroize) begin
+      split_addr_d1 <= '0;
+      split_addr_d2 <= '0;
+    end
+    else begin
+      split_addr_d1 <= sampler_mem_addr_pre;
+      split_addr_d2 <= split_addr_d1;
+    end
+  end
+
+  // Output mux: split path or bypass
+  always_comb begin
+    if (split_en_i) begin
+      sampler_mem_dv_o     = splitter_ready;
+      sampler_mem_data_o[0] = splitter_share0;
+      sampler_mem_addr_o   = split_addr_d2;
+    end else begin
+      sampler_mem_dv_o     = sampler_mem_dv_pre;
+      sampler_mem_data_o[0] = sampler_mem_data_pre;
+      sampler_mem_addr_o   = sampler_mem_addr_pre;
+    end
+  end
+
+  // share[1] output — present only when masking is enabled.
+  generate if (ABR_NUM_NTT > 1) begin : g_sampler_share1_out
+    always_comb begin
+      sampler_mem_data_o[1] = split_en_i ? splitter_share1 : sampler_mem_data_pre;
+    end
+  end endgenerate
+
   `ABR_ASSERT_MUTEX(ERR_SAMPLER_O_MUTEX, {sampler_ntt_dv_o,sampler_mem_dv_o,sampler_state_dv_o}, clk, !rst_b)
 
   `ABR_ASSERT_NEVER(ERR_SIBMEM_ACCESS, (sib_mem_rd_req_i.rd_wr_en == RW_READ) && |sib_mem_cs, clk, !rst_b)
@@ -660,7 +733,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_FSM_X, sampler_fsm_ps, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MODE_X, sampler_mode_i, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_NTT_DATA_X, sampler_ntt_data_o, clk, !rst_b, sampler_ntt_dv_o)
-  `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o, clk, !rst_b, sampler_mem_dv_o)
+  `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o[0], clk, !rst_b, sampler_mem_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o[0], clk, !rst_b, sampler_state_dv_o)
 
 endmodule

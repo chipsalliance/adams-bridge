@@ -101,7 +101,7 @@ Clears all internal data-path registers holding secret-derived values. See the [
 
 | Bits     | Identifier     | Access | Reset | Decoded | Name |
 | :------- | :------------- | :----- | :---- | :------ | :--- |
-| \[31:2\] | \-             | \-     | \-    |         | \-   |
+| \[31:3\] | \-             | \-     | \-    |         | \-   |
 | \[2\]    | ERROR          | r      | 0x0   |         | \-   |
 | \[1\]    | VALID          | r      | 0x0   |         | \-   |
 | \[0\]    | READY          | r      | 0x0   |         | \-   |
@@ -335,7 +335,7 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 | **Decapsulation**      | 11,054           |         0.028 | 36,186                 |     |         0.018 | 54,279                 |
 
 
-**NOTE:** Masking and shuffling countermeasures are integrated into the architecture and there is a work-in-progress to make it configurable to be enabled or disabled at synthesis time.
+**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined via explicit `RECOMBINE` sequencer ops. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
 The performance overhead associated with enabling these countermeasures is as follows:
 
@@ -1082,6 +1082,74 @@ The following table lists different operations used in the high-level controller
 | :------------------------- | :------------------------------------------------------------------------------------------------------------- |
 | COMPRESS src, mode, dest   | Perform compress on data at memory address src with mode configuration and store the results at address dest   |
 | DECOMPRESS src, mode, dest | Perform decompress on data at memory address src with mode configuration and store the results at address dest |
+
+
+## ML-KEM Memory Layout (Unmasked, MASKING_EN=0)
+
+> When `MASKING_EN = 1`, each `inst0` / `inst1` / `inst2` instance below has a same-dimension mirror with the `_masked` suffix holding `share1`; the regular instances hold `share0`. The offset tables apply to both. See [`abr_mem_top.sv`](../src/abr_top/rtl/abr_mem_top.sv) for the gated instantiation.
+
+ML-KEM shares the same three memory instances as MLDSA. ML-KEM coefficients use
+MLKEM_COEFF_DEPTH = 64 entries per polynomial (256 coefficients / 4 per clock).
+
+### inst0 (ML-KEM)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 255 | 256 | S0..S3 | CBD output / skDecode, 4x64 |
+|  256- 447 | 192 | T0..T3 | A*s+e result (KeyGen) / pkDecode (Encaps), 4x64 |
+|  512- 767 | 256 | E0..E3 | CBD noise, 4x64 |
+|  768- 831 |  64 | MU | Decompress(msg) for Encaps |
+|  832-1087 | 256 | U0..U3 | Encaps output / Decaps input, 4x64 |
+| 1088-1151 |  64 | V | t*y+e2+mu result |
+
+### inst1 (ML-KEM)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0-  63 |  64 | AS0 / AY0 / TY_MASKED / SU_MASKED | Accumulator scratch, reused per row |
+
+### inst2 (ML-KEM)
+| Offset | Entries | Name | Notes |
+|--------|---------|------|-------|
+|    0- 255 | 256 | Y0..Y3 / UP0..UP3 / TY / SU | Encaps r-vectors / Decaps NTT(u), 4x64 |
+|  256- 319 |  64 | E_2 | CBD noise for Encaps |
+
+### KeyGen Data Flow
+```
+1. CBD -> S0..S3, E0..E3                               (inst0)
+2. NTT(S_i), NTT(E_i) in-place                        (inst0)
+3. For each row i=0..3:
+   a. ExpandA x S_NTT -> AS0                           (inst0 read, inst1 write)
+   b. AS0 + E_i -> T_i                                 (inst1 read + inst0 read -> inst0 write)
+4. Compress(T) -> ek, Compress(S) -> dk                (inst0 read)
+```
+
+### Decaps Data Flow
+```
+1. Decompress(dk) -> S0..S3                            (inst0)
+2. Decompress(c1) -> U0..U3                            (inst0)
+3. Decompress(c2) -> V                                 (inst0)
+4. NTT(U_i) -> UP_i                                   (inst0 -> inst2)
+5. S_i * UP_i -> SU_MASKED (accumulate)                (inst0 x inst2 -> inst1)
+6. INTT(SU_MASKED) -> SU                               (inst1 -> inst2)
+7. SU - V -> V                                         (inst2 - inst0 -> inst0 in-place)
+8. Compress(V) -> msg                                  (inst0 read)
+```
+
+### Encaps Data Flow
+```
+1. Decompress(ek) -> T0..T3                            (inst0)
+2. CBD -> Y0..Y3 (inst2), E0..E3 (inst0), E_2 (inst2)
+3. NTT(Y_i) in-place                                  (inst2)
+4. For each row i=0..3:
+   a. ExpandA x Y_NTT -> AY0                           (inst2 read -> inst1 write)
+   b. INTT(AY0) -> AY0                                 (inst1 in-place)
+   c. AY0 + E_i -> U_i                                 (inst1 + inst0 -> inst0)
+5. T_i * Y_i -> TY_MASKED (accumulate)                (inst0 x inst2 -> inst1)
+6. INTT(TY_MASKED) -> V                                (inst1 -> inst0)
+7. Decompress(msg) -> MU                               (inst0)
+8. MU + E_2 -> E_2                                     (inst0 + inst2 -> inst2)
+9. V + E_2 -> V                                        (inst0 + inst2 -> inst0)
+10. Compress(U) -> c1, Compress(V) -> c2               (inst0 read)
+```
 
 
 # References:

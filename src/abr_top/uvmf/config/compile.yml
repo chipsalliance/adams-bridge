@@ -109,8 +109,8 @@ global:
       default:
         - '-assert svaext'
         - +define+ABR_ASSERT_ON
-        - '+define+ABR_MASKING_DISABLED'
         - '+define+ABR_SRAM_2CLK_LATENCY'
+        - '+define+ABR_MASKING_DISABLED'
         - '-noinherit_timescale=1ns/1ps'
         # Suppress a warning due to calling $fgets as task instead of function
         # i.e. discarding the return value. This is in auto-generated code.
