@@ -47,8 +47,8 @@ The following table shows the required memory instances for Adam's Bridge:
 | abr_mem_inst0_bank1 | 832   | 96         |              |
 | abr_mem_inst1       | 64    | 96         |              |
 | abr_mem_inst2       | 1536  | 96         |              |
-| abr_sig_z_mem       | 224   | 160        | 8            |
-| abr_pk_mem          | 64    | 320        | 8            |
+| abr_sig_z_mem       | 224   | 160        | 20           |
+| abr_pk_mem          | 64    | 320        | 40           |
 
 All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
