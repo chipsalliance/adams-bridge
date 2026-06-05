@@ -134,6 +134,24 @@ module abr_top
   logic recombine_en_ctrl;
   logic recombine_en;
   logic [SRAM_LATENCY:0] recombine_en_pipe;
+  // Step 27.2.2: shared PWS-fused recombine datapath (dormant in step-2)
+  // pws_recombine_en is asserted by abr_ctrl when an in-flight PWS opcode
+  // carries the recombine_en flag (set by abr_seq for a fused PWS row).
+  // Currently always 0 — the flag is not set in any abr_seq entry yet.
+  // Pipeline depth: SRAM_LATENCY (mem read latency). The recombiner instance below
+  // is configured with LATENCY=0 (combinational), so the recombined data drops
+  // into the pwm_a read window at exactly T = SRAM_LATENCY — matching when
+  // NTT[0] combinationally samples pwm_a_rd_data in its timing-driven PWS path.
+  // Mode pipeline only needs SRAM_LATENCY depth (sampled at recombiner.en_i).
+  logic                          pws_recombine_en;
+  logic [SRAM_LATENCY:0]         pws_recombine_en_pipe;
+  logic [SRAM_LATENCY:0]         pws_recombine_mlkem_mode_pipe;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pws_rec_share0;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pws_rec_share1;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pws_rec_data;
+  logic                          pws_rec_ready;          // unused — mux selector is pipeline-aligned
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data_default0; // Step 27.2.2 (Opt A): intermediate for NTT[0]'s pwm_a (pre-fused-PWS-recombine-mux)
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_default0; // intermediate for NTT[0]'s pwm_b (pre-legacy-recombine-mux)
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_rd_req;
@@ -494,7 +512,8 @@ abr_ctrl_inst
   .aux_dest_base_addr_o(aux_dest_base_addr),
 
   .split_en_o(split_en),
-  
+  .pws_recombine_en_o(pws_recombine_en),
+
   .power2round_enable_o(power2round_enable),
   .pwr2rnd_keymem_if_i(pwr2rnd_keymem_if),
   .pwr2rnd_wr_data_i(pwr2rnd_wr_data),
@@ -1381,20 +1400,32 @@ end
 generate if (MASKING_EN) begin : ntt1_mem_read_mux
   always_comb begin
     for (int unsigned bank = 0; bank < 2; bank++) begin
+      // Step 27.2.2 (Opt A): masked-mem parallel read for share1 fetch.
+      //   - Legacy standalone RECOMBINE (recombine_en): operand1==operand2 in seq, so
+      //     pwm_b address == pwm_a address. Use pwm_b's request to fetch share1.
+      //   - Fused PWS (pws_recombine_en) [2026-06-05 fix]: operand1 is the
+      //     to-be-recombined poly; abr_ctrl swaps operand1→pwm_b at the NTT base-addr
+      //     bus (abr_ctrl.sv:2210), so use pwm_b's request — NOT pwm_a's (which
+      //     carries operand2 = unrelated polynomial like V_BASE).
+      //   (recombine_en and pws_recombine_en are mutually exclusive opcode classes.)
       abr_mem_re0_bank[1][bank] = ntt_mem_re0_bank_mux[1][bank] | pwo_a_mem_re0_bank_mux[1][bank] | pwo_b_mem_re0_bank_mux[1][bank] |
-                                  (recombine_en & pwo_b_mem_re0_bank[0][0][bank]);
+                                  (recombine_en     & pwo_b_mem_re0_bank[0][0][bank]) |
+                                  (pws_recombine_en & pwo_b_mem_re0_bank[0][0][bank]);
       abr_mem_raddr0_bank[1][bank] = ({ABR_MEM_ADDR_WIDTH-4{ntt_mem_re0_bank_mux[1][bank]}}   & ntt_mem_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1]) |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_a_mem_re0_bank_mux[1][bank]}} & pwm_a_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_b_mem_re0_bank_mux[1][bank]}} & pwm_b_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
-                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]);
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en     & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{pws_recombine_en & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]);
     end
     for (int unsigned i = 1; i < 3; i++) begin
       abr_mem_re[1][i] = ntt_mem_re_mux[1][i] | pwo_a_mem_re_mux[1][i] | pwo_b_mem_re_mux[1][i] |
-                          (recombine_en & pwo_b_mem_re[0][0][i]);
+                          (recombine_en     & pwo_b_mem_re[0][0][i]) |
+                          (pws_recombine_en & pwo_b_mem_re[0][0][i]);
       abr_mem_raddr[1][i] = ({ABR_MEM_ADDR_WIDTH-3{ntt_mem_re_mux[1][i]}}   & ntt_mem_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0])   |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_a_mem_re_mux[1][i]}} & pwm_a_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_b_mem_re_mux[1][i]}} & pwm_b_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]);
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en     & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{pws_recombine_en & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]);
     end
   end
 end endgenerate
@@ -1485,6 +1516,8 @@ always_comb begin
   ntt_mem_rd_data = 0;
   pwm_a_rd_data = 0;
   pwm_b_rd_data = 0;
+  pwm_a_rd_data_default0 = 0;
+  pwm_b_rd_data_default0 = 0;
   decomp_mem_rd_data = 0;
   normcheck_mem_rd_data = 0;
   compress_mem_rd_data = 0;
@@ -1494,10 +1527,16 @@ always_comb begin
       for (int unsigned bank = 0; bank < 2; bank++) begin
         for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
           ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
-          pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
-          // RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1)
+          // Step 27.2.2 (Opt A): NTT[0] pwm_a accumulates into _default0 — fused-PWS
+          // recombiner output may override it at the final mux below.
           if (ntt == 0)
-            pwm_b_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} &
+            pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
+          else
+            pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
+          // Legacy RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1).
+          // NTT[0] pwm_b accumulates into _default0 (legacy-RECOMBINE-aware).
+          if (ntt == 0)
+            pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} &
                                  (recombine_en_pipe[SRAM_LATENCY] ?
                                     (MASKING_EN ? abr_mem_rdata0_bank[MASKED_IDX][bank] : '0)
                                   : abr_mem_rdata0_bank[0][bank]));
@@ -1512,10 +1551,16 @@ always_comb begin
     end else begin
       for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
         ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
-        pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
-        // RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1)
+        // Step 27.2.2 (Opt A): NTT[0] pwm_a accumulates into _default0 — fused-PWS
+        // recombiner output may override it at the final mux below.
         if (ntt == 0)
-          pwm_b_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} &
+          pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
+        else
+          pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
+        // Legacy RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1).
+        // NTT[0] pwm_b accumulates into _default0 (legacy-RECOMBINE-aware).
+        if (ntt == 0)
+          pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} &
                                (recombine_en_pipe[SRAM_LATENCY] ?
                                   (MASKING_EN ? abr_mem_rdata[MASKED_IDX][i] : '0)
                                 : abr_mem_rdata[0][i]));
@@ -1531,7 +1576,99 @@ always_comb begin
   // SIB read data to all NTTs — shared public source (c is public)
   for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++)
     ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{sib_mem_re[1]}} & sib_mem_rd_data);
+
+  // Step 27.2.2 (Opt A) / 27.2.3: PWS-fused recombine override for NTT[0]'s pwm_b.
+  //   For a fused PWS row, operand1 is the to-be-recombined poly. abr_ctrl
+  //   (abr_ctrl.sv:2210-2211) swaps operand1→pw_base_addr_b, so the to-be-recombined
+  //   poly is read on pwm_b — NOT pwm_a. Recombiner output therefore replaces
+  //   pwm_b_rd_data[0]. pwm_a carries raw operand2 (the multiplier polynomial).
+  // Selector aligns with the mem-read-data cycle (SRAM_LATENCY); the recombiner is
+  // combinational (LATENCY=0), so pws_rec_data is valid in the same cycle as
+  // pws_rec_share0/share1 — matching NTT[0]'s timing-driven pwm_b sample window.
+  // NOTE: pwm_b_rd_data_default0 already has the legacy `recombine_en` mux baked in
+  // (see L1561-1564). recombine_en and pws_recombine_en are mutually exclusive opcode
+  // classes (one row, one opcode), so the two overrides cannot collide.
+  pwm_a_rd_data[0] = pwm_a_rd_data_default0;
+  pwm_b_rd_data[0] = (MASKING_EN && pws_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data
+                                                                         : pwm_b_rd_data_default0;
 end
+
+//======================================================================
+// Step 27.2.2 / 27.2.3: shared PWS-fused recombiner — pipelines + share comp + instance
+//
+// Pipeline `pws_recombine_en` to align with mem read data arrival
+// (SRAM_LATENCY). The recombiner is combinational (LATENCY=0), so its output
+// `pws_rec_data` is valid in the same cycle as its `share0_i / share1_i`
+// inputs — which is the cycle the masked-mem read returns (T=SRAM_LATENCY).
+// That matches NTT[0]'s expected pwm_a sample window for legacy PWS, so no
+// downstream timing adjustment is needed in NTT[0].
+//======================================================================
+
+assign pws_recombine_en_pipe[0]         = pws_recombine_en;
+assign pws_recombine_mlkem_mode_pipe[0] = mlkem_mode[0];
+
+generate
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_en_pipe
+    always_ff @(posedge clk or negedge rst_b) begin
+      if (!rst_b)
+        pws_recombine_en_pipe[g_stage] <= 1'b0;
+      else if (zeroize_reg)
+        pws_recombine_en_pipe[g_stage] <= 1'b0;
+      else
+        pws_recombine_en_pipe[g_stage] <= pws_recombine_en_pipe[g_stage-1];
+    end
+  end
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_mode_pipe
+    always_ff @(posedge clk or negedge rst_b) begin
+      if (!rst_b)
+        pws_recombine_mlkem_mode_pipe[g_stage] <= 1'b0;
+      else if (zeroize_reg)
+        pws_recombine_mlkem_mode_pipe[g_stage] <= 1'b0;
+      else
+        pws_recombine_mlkem_mode_pipe[g_stage] <= pws_recombine_mlkem_mode_pipe[g_stage-1];
+    end
+  end
+endgenerate
+
+// Share computation (Opt A) — selects the active bank/lane at the cycle the regular
+// pwm_b read enable is asserted (i.e., when mem read data is valid at the read port).
+// For a fused PWS row, operand1 (the to-be-recombined poly) is on pwm_b (operand1→
+// pw_base_addr_b in abr_ctrl.sv:2210); share0 comes from regular mem (NTT[0]); share1
+// comes from masked mem (NTT[1]) at the SAME address. Mirrors the OR-accumulator
+// pattern of pwm_b_rd_data_default0 above.
+always_comb begin
+  pws_rec_share0 = '0;
+  pws_rec_share1 = '0;
+  for (int unsigned bank = 0; bank < 2; bank++) begin
+    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
+    if (MASKING_EN)
+      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[MASKED_IDX][bank]);
+  end
+  for (int unsigned i = 1; i < 3; i++) begin
+    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
+    if (MASKING_EN)
+      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[MASKED_IDX][i]);
+  end
+end
+
+generate if (MASKING_EN) begin : g_pws_recombiner
+  abr_recombiner #(
+    .LATENCY(0)            // 0-cycle combinational: matches NTT[0]'s pwm_a sample window
+  ) u_pws_recombiner (
+    .clk      (clk),
+    .reset_n  (rst_b),
+    .zeroize  (zeroize_reg),
+    .en_i     (pws_recombine_en_pipe[SRAM_LATENCY]),
+    .mode     (pws_recombine_mlkem_mode_pipe[SRAM_LATENCY]),
+    .share0_i (pws_rec_share0),
+    .share1_i (pws_rec_share1),
+    .data_o   (pws_rec_data),
+    .ready_o  (pws_rec_ready)
+  );
+end else begin : g_no_pws_recombiner
+  assign pws_rec_data  = '0;
+  assign pws_rec_ready = 1'b0;
+end endgenerate
 
 always_comb skencode_mem_rd_data = abr_mem_rdata0_bank[0];
 always_comb makehint_mem_rd_data = abr_mem_rdata[0][2];

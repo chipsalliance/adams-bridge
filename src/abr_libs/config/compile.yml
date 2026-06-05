@@ -25,6 +25,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_splitter.sv
+      - $COMPILE_ROOT/rtl/abr_recombiner.sv
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
@@ -45,6 +46,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_ntt_add_sub_mod.sv
       - $COMPILE_ROOT/rtl/abr_splitter.sv
+      - $COMPILE_ROOT/rtl/abr_recombiner.sv
 ---
 provides: [mldsa_uvm_lib]
 schema_version: 2.4.0

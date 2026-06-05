@@ -89,6 +89,14 @@ module abr_ctrl
 
   output logic                        split_en_o,
 
+  // Step 27.2.1 — RECOMBINE fusion (pilot: PWS consumer).
+  // Asserted when the current consumer opcode targets PWS hardware AND its
+  // recombine_en flag is set. Gated by MASKING_EN at the source so MASKING_EN=0
+  // builds make this a constant 0. abr_top uses it to drive the shared
+  // abr_recombiner output mux onto the PWS read-data path. Dormant until a
+  // sequencer entry sets recombine_en=1 on a PWS (step 27.2.3).
+  output logic                        pws_recombine_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2188,6 +2196,17 @@ end
 
 // Splitter is bypassed if masking is disabled.
 always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
+
+// Step 27.2.1 — RECOMBINE fusion (pilot consumer = PWS).
+// Per-consumer recombine enable: asserts when the current uOP targets PWS
+// hardware AND carries the new recombine_en flag. Compile-time gated by
+// MASKING_EN (no-op in unmasked builds — there is nothing to recombine when
+// only one share exists). Uses the gated abr_instr so ZEROIZE/RESET/skip
+// conditions cleanly squash the enable.
+always_comb pws_recombine_en_o = MASKING_EN
+                               & abr_instr.opcode.recombine_en
+                               & abr_instr.opcode.ntt_en
+                               & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS});
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
