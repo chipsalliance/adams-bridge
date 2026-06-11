@@ -724,17 +724,13 @@ module abr_seq
                 MLKEM_DECAPS_S  + 13: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S2_BASE, operand2:MLKEM_UP2_BASE, operand3:MLKEM_SU_MASKED_BASE};
                 MLKEM_DECAPS_S  + 14: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S3_BASE, operand2:MLKEM_UP3_BASE, operand3:MLKEM_SU_MASKED_BASE};
                 MLKEM_DECAPS_S  + 15: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_INTT, imm:'h0000, length:'d00, operand1:MLKEM_SU_MASKED_BASE, operand2:ABR_TEMP0_BASE, operand3:MLKEM_SU_BASE};
-                // Step 27.2.3 PILOT: legacy standalone RECOMBINE replaced by NOP — the next row (MLKEM_PWS_R)
-                // performs the recombine on-the-fly at its pwm_a read port. Keeping the slot avoids renumbering
-                // MLKEM_ENCAPS_S/E. If the fused PWS passes the decaps KAT, this NOP can later be deleted and
-                // the rest of MLKEM_DECAPS compacted by 1 row.
-                MLKEM_DECAPS_S  + 16: data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                // Step 27.2.3 PILOT: fused PWS — reads operand1 from regular mem (share0) AND
-                // masked mem (share1) in parallel, on-the-fly recombines via abr_recombiner
-                // (LATENCY=0), and feeds the recombined value into the PWS arithmetic. Replaces
-                // the standalone RECOMBINE that lived on the prior row.
-                MLKEM_DECAPS_S  + 17: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWS_R, imm:'h0000, length:'d00, operand1:MLKEM_SU_BASE, operand2:MLKEM_V_BASE, operand3:MLKEM_V_BASE};
-                MLKEM_DECAPS_S  + 18: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_MSG_MEM_OFFSET};
+                // Step 27.2.3: fused PWS — replaces the legacy {RECOMBINE; PWS} two-row pair
+                // that used to live at +16 (RECOMBINE) and +17 (PWS). The recombine is now
+                // absorbed into PWS_R's pwm_b read port: NTT[0] reads share0 from regular mem
+                // and NTT[1] reads share1 from masked mem in parallel; abr_recombiner
+                // (LATENCY=0) sums them on-the-fly and feeds the result into the PWS arithmetic.
+                MLKEM_DECAPS_S  + 16: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWS_R, imm:'h0000, length:'d00, operand1:MLKEM_SU_BASE, operand2:MLKEM_V_BASE, operand3:MLKEM_V_BASE};
+                MLKEM_DECAPS_S  + 17: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_MSG_MEM_OFFSET};
                 //MLKEM Encaps
                 //rnd_seed=Keccak(entropy||counter)
                 MLKEM_ENCAPS_S   + 0: data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:ABR_ENTROPY_ID, operand2:ABR_NOP, operand3:ABR_NOP};                
