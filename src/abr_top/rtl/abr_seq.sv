@@ -95,114 +95,106 @@ module abr_seq
                 MLDSA_KG_S+ 32  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0006, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 33  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 34  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b: was RECOMBINE, now fused into next PWA_R
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 35  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_0_BASE, operand3:MLDSA_T0_BASE};
+                MLDSA_KG_S+ 34  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_0_BASE, operand3:MLDSA_T0_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 36  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0100, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 37  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0101, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 38  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0102, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 39  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0103, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 40  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0104, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 41  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0105, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 42  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0106, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 35  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0100, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 36  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0101, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 37  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0102, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 38  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0103, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 39  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0104, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 40  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0105, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 41  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0106, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 43  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 44  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 42  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 45  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_1_BASE, operand3:MLDSA_T1_BASE};
+                MLDSA_KG_S+ 43  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_1_BASE, operand3:MLDSA_T1_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 46  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0200, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 47  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0201, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 48  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0202, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 49  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0203, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 50  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0204, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 51  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0205, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 52  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0206, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 44  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0200, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 45  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0201, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 46  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0202, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 47  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0203, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 48  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0204, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 49  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0205, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 50  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0206, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 53  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 54  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 51  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 55  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_2_BASE, operand3:MLDSA_T2_BASE};
+                MLDSA_KG_S+ 52  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_2_BASE, operand3:MLDSA_T2_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 56  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0300, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 57  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0301, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 58  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0302, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 59  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0303, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 60  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0304, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 61  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0305, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 62  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0306, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 53  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0300, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 54  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0301, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 55  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0302, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 56  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0303, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 57  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0304, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 58  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0305, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 59  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0306, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 63  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 64  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 60  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 65  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_3_BASE, operand3:MLDSA_T3_BASE};
+                MLDSA_KG_S+ 61  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_3_BASE, operand3:MLDSA_T3_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 66  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0400, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 67  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0401, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 68  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0402, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 69  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0403, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 70  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0404, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 71  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0405, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 72  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0406, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 62  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0400, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 63  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0401, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 64  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0402, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 65  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0403, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 66  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0404, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 67  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0405, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 68  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0406, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 73  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 74  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 69  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 75  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_4_BASE, operand3:MLDSA_T4_BASE};
+                MLDSA_KG_S+ 70  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_4_BASE, operand3:MLDSA_T4_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 76  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0500, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 77  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0501, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 78  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0502, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 79  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0503, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 80  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0504, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 81  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0505, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 82  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0506, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 71  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0500, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 72  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0501, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 73  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0502, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 74  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0503, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 75  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0504, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 76  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0505, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 77  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0506, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 83  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 84  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 78  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 85  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_5_BASE, operand3:MLDSA_T5_BASE};
+                MLDSA_KG_S+ 79  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_5_BASE, operand3:MLDSA_T5_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 86  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0600, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 87  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0601, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 88  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0602, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 89  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0603, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 90  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0604, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 91  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0605, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 92  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0606, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 80  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0600, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 81  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0601, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 82  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0602, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 83  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0603, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 84  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0604, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 85  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0605, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 86  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0606, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 93  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 94  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+ 87  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 95  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_6_BASE, operand3:MLDSA_T6_BASE};
+                MLDSA_KG_S+ 88  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_6_BASE, operand3:MLDSA_T6_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
-                MLDSA_KG_S+ 96  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0700, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 97  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0701, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 98  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0702, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 99  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0703, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 100 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0704, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 101 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0705, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
-                MLDSA_KG_S+ 102 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0706, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 89  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0700, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 90  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0701, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 91  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0702, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_2_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+ 92  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0703, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_3_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+  93 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0704, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_4_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+  94 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0705, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_5_NTT_BASE, operand3:MLDSA_AS0_BASE};
+                MLDSA_KG_S+  95 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0706, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
-                MLDSA_KG_S+ 103 : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 104 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
+                MLDSA_KG_S+  96 : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 105 : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
+                MLDSA_KG_S+  97 : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
                 //(t1,t0)←Power2Round(t,d) AND pk ←pkEncode(ρ,t1)
-                MLDSA_KG_S+ 106 : data_o_rom <= '{opcode:ABR_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:ABR_NOP, operand3:MLDSA_SK_T0_OFFSET};
+                MLDSA_KG_S+  98 : data_o_rom <= '{opcode:ABR_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:ABR_NOP, operand3:MLDSA_SK_T0_OFFSET};
                 //tr ←H(BytesToBits(pk),512)
-                MLDSA_KG_S+ 107 : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_TR_REG_ID};
+                MLDSA_KG_S+  99 : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_TR_REG_ID};
                 //Recombine s1 shares before skencode
-                MLDSA_KG_S+ 108 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:MLDSA_S1_0_BASE, operand3:MLDSA_S1_0_BASE};
-                MLDSA_KG_S+ 109 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_1_BASE, operand2:MLDSA_S1_1_BASE, operand3:MLDSA_S1_1_BASE};
-                MLDSA_KG_S+ 110 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_2_BASE, operand2:MLDSA_S1_2_BASE, operand3:MLDSA_S1_2_BASE};
-                MLDSA_KG_S+ 111 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_3_BASE, operand2:MLDSA_S1_3_BASE, operand3:MLDSA_S1_3_BASE};
-                MLDSA_KG_S+ 112 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_4_BASE, operand2:MLDSA_S1_4_BASE, operand3:MLDSA_S1_4_BASE};
-                MLDSA_KG_S+ 113 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_5_BASE, operand2:MLDSA_S1_5_BASE, operand3:MLDSA_S1_5_BASE};
-                MLDSA_KG_S+ 114 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_6_BASE, operand2:MLDSA_S1_6_BASE, operand3:MLDSA_S1_6_BASE};
+                MLDSA_KG_S+ 100 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:MLDSA_S1_0_BASE, operand3:MLDSA_S1_0_BASE};
+                MLDSA_KG_S+ 101 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_1_BASE, operand2:MLDSA_S1_1_BASE, operand3:MLDSA_S1_1_BASE};
+                MLDSA_KG_S+ 102 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_2_BASE, operand2:MLDSA_S1_2_BASE, operand3:MLDSA_S1_2_BASE};
+                MLDSA_KG_S+ 103 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_3_BASE, operand2:MLDSA_S1_3_BASE, operand3:MLDSA_S1_3_BASE};
+                MLDSA_KG_S+ 104 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_4_BASE, operand2:MLDSA_S1_4_BASE, operand3:MLDSA_S1_4_BASE};
+                MLDSA_KG_S+ 105 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_5_BASE, operand2:MLDSA_S1_5_BASE, operand3:MLDSA_S1_5_BASE};
+                MLDSA_KG_S+ 106 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_S1_6_BASE, operand2:MLDSA_S1_6_BASE, operand3:MLDSA_S1_6_BASE};
                 //sk ←skEncode(ρ,K,tr,s1,s2,t0)
-                MLDSA_KG_S+ 115 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_KG_S+ 107 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_KG_JUMP_SIGN : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //KG end
                 MLDSA_KG_E       : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
