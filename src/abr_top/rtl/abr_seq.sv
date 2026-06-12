@@ -95,9 +95,9 @@ module abr_seq
                 MLDSA_KG_S+ 32  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0006, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 33  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 34  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 34  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b: was RECOMBINE, now fused into next PWA_R
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 35  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_0_BASE, operand3:MLDSA_T0_BASE};
+                MLDSA_KG_S+ 35  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_0_BASE, operand3:MLDSA_T0_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 36  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0100, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 37  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0101, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -108,9 +108,9 @@ module abr_seq
                 MLDSA_KG_S+ 42  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0106, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 43  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 44  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 44  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 45  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_1_BASE, operand3:MLDSA_T1_BASE};
+                MLDSA_KG_S+ 45  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_1_BASE, operand3:MLDSA_T1_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 46  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0200, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 47  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0201, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -121,9 +121,9 @@ module abr_seq
                 MLDSA_KG_S+ 52  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0206, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 53  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 54  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 54  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 55  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_2_BASE, operand3:MLDSA_T2_BASE};
+                MLDSA_KG_S+ 55  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_2_BASE, operand3:MLDSA_T2_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 56  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0300, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 57  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0301, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -134,9 +134,9 @@ module abr_seq
                 MLDSA_KG_S+ 62  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0306, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 63  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 64  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 64  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 65  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_3_BASE, operand3:MLDSA_T3_BASE};
+                MLDSA_KG_S+ 65  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_3_BASE, operand3:MLDSA_T3_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 66  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0400, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 67  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0401, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -147,9 +147,9 @@ module abr_seq
                 MLDSA_KG_S+ 72  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0406, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 73  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 74  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 74  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 75  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_4_BASE, operand3:MLDSA_T4_BASE};
+                MLDSA_KG_S+ 75  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_4_BASE, operand3:MLDSA_T4_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 76  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0500, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 77  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0501, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -160,9 +160,9 @@ module abr_seq
                 MLDSA_KG_S+ 82  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0506, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 83  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 84  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 84  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 85  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_5_BASE, operand3:MLDSA_T5_BASE};
+                MLDSA_KG_S+ 85  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_5_BASE, operand3:MLDSA_T5_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 86  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0600, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 87  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0601, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -173,9 +173,9 @@ module abr_seq
                 MLDSA_KG_S+ 92  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0606, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 93  : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 94  : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 94  : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 95  : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_6_BASE, operand3:MLDSA_T6_BASE};
+                MLDSA_KG_S+ 95  : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_6_BASE, operand3:MLDSA_T6_BASE};
                 //ExpandA(ρ) AND Aˆ NTT(s1)
                 MLDSA_KG_S+ 96  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWM,  imm:'h0700, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_0_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 MLDSA_KG_S+ 97  : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0701, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_1_NTT_BASE, operand3:MLDSA_AS0_BASE};
@@ -186,9 +186,9 @@ module abr_seq
                 MLDSA_KG_S+ 102 : data_o_rom <= '{opcode:ABR_UOP_REJS_MASKED_PWMA, imm:'h0706, length:'d34, operand1:MLDSA_RHO_ID, operand2:MLDSA_S1_6_NTT_BASE, operand3:MLDSA_AS0_BASE};
                 //NTT−1(Aˆ ◦NTT(s1))
                 MLDSA_KG_S+ 103 : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT, imm:'d01, length:'d00, operand1:MLDSA_AS0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_AS0_INTT_BASE};
-                MLDSA_KG_S+ 104 : data_o_rom <= '{opcode:ABR_UOP_RECOMBINE, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_AS0_INTT_BASE, operand3:MLDSA_AS0_INTT_BASE};
+                MLDSA_KG_S+ 104 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'d00, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP}; // Step 27.2.4-b
                 //t ←NTT−1(Aˆ ◦NTT(s1))+s2
-                MLDSA_KG_S+ 105 : data_o_rom <= '{opcode:ABR_UOP_PWA, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
+                MLDSA_KG_S+ 105 : data_o_rom <= '{opcode:ABR_UOP_PWA_R, imm:'d00, length:'d00, operand1:MLDSA_AS0_INTT_BASE, operand2:MLDSA_S2_7_BASE, operand3:MLDSA_T7_BASE};
                 //(t1,t0)←Power2Round(t,d) AND pk ←pkEncode(ρ,t1)
                 MLDSA_KG_S+ 106 : data_o_rom <= '{opcode:ABR_UOP_PWR2RND, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:ABR_NOP, operand3:MLDSA_SK_T0_OFFSET};
                 //tr ←H(BytesToBits(pk),512)
