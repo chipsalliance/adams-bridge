@@ -459,12 +459,11 @@ interface abr_top_cov_if
                                                 binsof(opcode_masking_en_cp) intersect {0};
         }
 
-        // Recombine must not fire when opcode.masking_en=0
-        // (RECOMBINE opcode itself sets masking_en=1; recombine_en is derived from ntt_mode)
-        recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp {
-            illegal_bins recombine_on_masking_off = binsof(recombine_en_cp) intersect {1} &&
-                                                    binsof(opcode_masking_en_cp) intersect {0};
-        }
+        // Recombine × opcode.masking_en cross (for coverage only).
+        // recombine_en is derived from ntt_mode[0] inside {MLDSA/MLKEM_RECOMBINE} and can
+        // legitimately fire with opcode.masking_en=0 for non-in-place RECOMBINEs (in-place
+        // ones are NOPed in abr_ctrl). See abr_top.sv:683-685. No illegal_bins here.
+        recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp;
 
         // --- Per-splitter masking-off invariant ---
         // Each splitter instance (sampler / skdecode_a / skdecode_b / decompress) is
