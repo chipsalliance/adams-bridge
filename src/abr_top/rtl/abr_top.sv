@@ -152,6 +152,16 @@ module abr_top
   logic                          pws_rec_ready;          // unused — mux selector is pipeline-aligned
   logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data_default0; // Step 27.2.2 (Opt A): intermediate for NTT[0]'s pwm_a (pre-fused-PWS-recombine-mux)
   logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_default0; // intermediate for NTT[0]'s pwm_b (pre-legacy-recombine-mux)
+  // Step 27.2.4-b commit 0b: NORMCHK fused-recombine datapath (dormant in commit 0b)
+  // Mirror of pws_recombine_en/_pipe — separate signal because NORMCHK uses a
+  // different opcode shape and a different mem read port. SINGLE shared
+  // u_pws_recombiner instance is reused; en_i OR-merges both consumers. NORMCHK
+  // is MLDSA-only, so its share-input override forces mlkem_mode=0 (no separate
+  // mode pipe needed). Currently always 0 — the flag is not set on any NORMCHK
+  // row yet (set in step 27.2.4-b commit C).
+  logic                          normchk_recombine_en;
+  logic [SRAM_LATENCY:0]         normchk_recombine_en_pipe;
+  logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data_default0; // intermediate for NORMCHK (pre-fused-NORMCHK-recombine-mux)
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_rd_req;
@@ -513,6 +523,7 @@ abr_ctrl_inst
 
   .split_en_o(split_en),
   .pws_recombine_en_o(pws_recombine_en),
+  .normchk_recombine_en_o(normchk_recombine_en),
 
   .power2round_enable_o(power2round_enable),
   .pwr2rnd_keymem_if_i(pwr2rnd_keymem_if),
@@ -1407,25 +1418,34 @@ generate if (MASKING_EN) begin : ntt1_mem_read_mux
       //     to-be-recombined poly; abr_ctrl swaps operand1→pwm_b at the NTT base-addr
       //     bus (abr_ctrl.sv:2210), so use pwm_b's request — NOT pwm_a's (which
       //     carries operand2 = unrelated polynomial like V_BASE).
-      //   (recombine_en and pws_recombine_en are mutually exclusive opcode classes.)
+      //   - Fused NORMCHK (normchk_recombine_en) [Step 27.2.4-b commit 0b]: NORMCHK
+      //     reads on its dedicated normcheck_mem_rd_req port (a DIFFERENT bus from
+      //     pwm_b), so the masked-side raddr must come from normcheck_mem_rd_req.addr
+      //     when normchk_recombine_en asserts.
+      //   (recombine_en, pws_recombine_en, and normchk_recombine_en are mutually
+      //    exclusive opcode classes — single-issue sequencer.)
       abr_mem_re0_bank[1][bank] = ntt_mem_re0_bank_mux[1][bank] | pwo_a_mem_re0_bank_mux[1][bank] | pwo_b_mem_re0_bank_mux[1][bank] |
-                                  (recombine_en     & pwo_b_mem_re0_bank[0][0][bank]) |
-                                  (pws_recombine_en & pwo_b_mem_re0_bank[0][0][bank]);
+                                  (recombine_en         & pwo_b_mem_re0_bank[0][0][bank]) |
+                                  (pws_recombine_en     & pwo_b_mem_re0_bank[0][0][bank]) |
+                                  (normchk_recombine_en & normcheck_mem_re0_bank[0][bank]);
       abr_mem_raddr0_bank[1][bank] = ({ABR_MEM_ADDR_WIDTH-4{ntt_mem_re0_bank_mux[1][bank]}}   & ntt_mem_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1]) |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_a_mem_re0_bank_mux[1][bank]}} & pwm_a_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_b_mem_re0_bank_mux[1][bank]}} & pwm_b_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
-                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en     & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{pws_recombine_en & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]);
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en         & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{pws_recombine_en     & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{normchk_recombine_en & normcheck_mem_re0_bank[0][bank]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1]);
     end
     for (int unsigned i = 1; i < 3; i++) begin
       abr_mem_re[1][i] = ntt_mem_re_mux[1][i] | pwo_a_mem_re_mux[1][i] | pwo_b_mem_re_mux[1][i] |
-                          (recombine_en     & pwo_b_mem_re[0][0][i]) |
-                          (pws_recombine_en & pwo_b_mem_re[0][0][i]);
+                          (recombine_en         & pwo_b_mem_re[0][0][i]) |
+                          (pws_recombine_en     & pwo_b_mem_re[0][0][i]) |
+                          (normchk_recombine_en & normcheck_mem_re[0][i]);
       abr_mem_raddr[1][i] = ({ABR_MEM_ADDR_WIDTH-3{ntt_mem_re_mux[1][i]}}   & ntt_mem_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0])   |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_a_mem_re_mux[1][i]}} & pwm_a_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_b_mem_re_mux[1][i]}} & pwm_b_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en     & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{pws_recombine_en & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]);
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en         & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{pws_recombine_en     & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{normchk_recombine_en & normcheck_mem_re[0][i]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]);
     end
   end
 end endgenerate
@@ -1520,6 +1540,7 @@ always_comb begin
   pwm_b_rd_data_default0 = 0;
   decomp_mem_rd_data = 0;
   normcheck_mem_rd_data = 0;
+  normcheck_mem_rd_data_default0 = 0;
   compress_mem_rd_data = 0;
 
   for (int unsigned i = 0; i < 3; i++) begin
@@ -1545,7 +1566,7 @@ always_comb begin
         end
         decomp_mem_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{decomp_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
         decomp_mem_rd_data[1] |= ({ABR_MEM_DATA_WIDTH{decomp_mem_re0_bank[SRAM_LATENCY][1][bank]}} & abr_mem_rdata0_bank[0][bank]);
-        normcheck_mem_rd_data |= ({ABR_MEM_DATA_WIDTH{normcheck_mem_re0_bank[SRAM_LATENCY][bank]}} & abr_mem_rdata0_bank[0][bank]);
+        normcheck_mem_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{normcheck_mem_re0_bank[SRAM_LATENCY][bank]}} & abr_mem_rdata0_bank[0][bank]);
         compress_mem_rd_data |= ({ABR_MEM_DATA_WIDTH{compress_mem_re0_bank[SRAM_LATENCY][bank]}} & abr_mem_rdata0_bank[0][bank]);
       end
     end else begin
@@ -1569,7 +1590,7 @@ always_comb begin
       end
       decomp_mem_rd_data[0] |= ({ABR_MEM_DATA_WIDTH{decomp_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
       decomp_mem_rd_data[1] |= ({ABR_MEM_DATA_WIDTH{decomp_mem_re[SRAM_LATENCY][1][i]}} & abr_mem_rdata[0][i]);
-      normcheck_mem_rd_data |= ({ABR_MEM_DATA_WIDTH{normcheck_mem_re[SRAM_LATENCY][i]}} & abr_mem_rdata[0][i]);
+      normcheck_mem_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{normcheck_mem_re[SRAM_LATENCY][i]}} & abr_mem_rdata[0][i]);
       compress_mem_rd_data |= ({ABR_MEM_DATA_WIDTH{compress_mem_re[SRAM_LATENCY][i]}} & abr_mem_rdata[0][i]);
     end
   end
@@ -1591,6 +1612,15 @@ always_comb begin
   pwm_a_rd_data[0] = pwm_a_rd_data_default0;
   pwm_b_rd_data[0] = (MASKING_EN && pws_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data
                                                                          : pwm_b_rd_data_default0;
+  // Step 27.2.4-b commit 0b: fused-NORMCHK recombine override for
+  // normcheck_mem_rd_data. When normchk_recombine_en asserts, the same shared
+  // u_pws_recombiner (en_i OR-merged below) produces (s0 + s1) mod q on
+  // pws_rec_data, which replaces NORMCHK's share0-only regular-mem read.
+  // pws_recombine_en_pipe and normchk_recombine_en_pipe are mutually exclusive
+  // (single-issue sequencer, one consumer per row), so the recombiner output is
+  // routed to the correct consumer port by its respective override mux.
+  normcheck_mem_rd_data = (MASKING_EN && normchk_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data
+                                                                                  : normcheck_mem_rd_data_default0;
 end
 
 //======================================================================
@@ -1606,6 +1636,8 @@ end
 
 assign pws_recombine_en_pipe[0]         = pws_recombine_en;
 assign pws_recombine_mlkem_mode_pipe[0] = mlkem_mode[0];
+// Step 27.2.4-b commit 0b: stage-0 of the NORMCHK recombine-en pipeline.
+assign normchk_recombine_en_pipe[0]     = normchk_recombine_en;
 
 generate
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_en_pipe
@@ -1628,26 +1660,56 @@ generate
         pws_recombine_mlkem_mode_pipe[g_stage] <= pws_recombine_mlkem_mode_pipe[g_stage-1];
     end
   end
+  // Step 27.2.4-b commit 0b: NORMCHK recombine-en pipeline (mirror of
+  // pws_recombine_en_pipe). Aligns the en_i selector with the SRAM-read-data
+  // arrival cycle so the share-tap accumulator picks up NORMCHK's regular-mem
+  // share0 + masked-mem share1 at exactly the cycle they are valid at the
+  // memory read port. No separate mode pipe — NORMCHK is MLDSA-only, so it
+  // forces mlkem_mode=0 at the recombiner instance below.
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : normchk_rec_en_pipe
+    always_ff @(posedge clk or negedge rst_b) begin
+      if (!rst_b)
+        normchk_recombine_en_pipe[g_stage] <= 1'b0;
+      else if (zeroize_reg)
+        normchk_recombine_en_pipe[g_stage] <= 1'b0;
+      else
+        normchk_recombine_en_pipe[g_stage] <= normchk_recombine_en_pipe[g_stage-1];
+    end
+  end
 endgenerate
 
 // Share computation (Opt A) — selects the active bank/lane at the cycle the regular
-// pwm_b read enable is asserted (i.e., when mem read data is valid at the read port).
-// For a fused PWS row, operand1 (the to-be-recombined poly) is on pwm_b (operand1→
-// pw_base_addr_b in abr_ctrl.sv:2210); share0 comes from regular mem (NTT[0]); share1
-// comes from masked mem (NTT[1]) at the SAME address. Mirrors the OR-accumulator
-// pattern of pwm_b_rd_data_default0 above.
+// mem read enable is asserted (i.e., when mem read data is valid at the read port).
+//   - Fused PWS (pws_recombine_en): operand1 (to-be-recombined) is on pwm_b
+//     (operand1→pw_base_addr_b in abr_ctrl.sv:2210); share0 from regular mem at
+//     NTT[0]'s pwm_b address; share1 from masked mem at SAME address.
+//   - Fused NORMCHK (normchk_recombine_en) [Step 27.2.4-b commit 0b]: the
+//     to-be-recombined poly is on NORMCHK's dedicated normcheck_mem_rd_req port;
+//     share0 from regular mem at NORMCHK's address; share1 from the parallel
+//     masked-mem read at the SAME address (wired in via the abr_mem_re[1]/
+//     abr_mem_re0_bank[1] extensions above). Single-issue sequencer guarantees
+//     pws_recombine_en_pipe and normchk_recombine_en_pipe are never both high in
+//     the same cycle, so OR-merging the two selector sources is race-free.
 always_comb begin
   pws_rec_share0 = '0;
   pws_rec_share1 = '0;
   for (int unsigned bank = 0; bank < 2; bank++) begin
-    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
+    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]     & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
+                                           (normchk_recombine_en_pipe[SRAM_LATENCY] & normcheck_mem_re0_bank[SRAM_LATENCY][bank])}}
+                       & abr_mem_rdata0_bank[0][bank]);
     if (MASKING_EN)
-      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[MASKED_IDX][bank]);
+      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]     & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
+                                             (normchk_recombine_en_pipe[SRAM_LATENCY] & normcheck_mem_re0_bank[SRAM_LATENCY][bank])}}
+                         & abr_mem_rdata0_bank[MASKED_IDX][bank]);
   end
   for (int unsigned i = 1; i < 3; i++) begin
-    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
+    pws_rec_share0 |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]     & pwo_b_mem_re[SRAM_LATENCY][0][i]) |
+                                           (normchk_recombine_en_pipe[SRAM_LATENCY] & normcheck_mem_re[SRAM_LATENCY][i])}}
+                       & abr_mem_rdata[0][i]);
     if (MASKING_EN)
-      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[MASKED_IDX][i]);
+      pws_rec_share1 |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]     & pwo_b_mem_re[SRAM_LATENCY][0][i]) |
+                                             (normchk_recombine_en_pipe[SRAM_LATENCY] & normcheck_mem_re[SRAM_LATENCY][i])}}
+                         & abr_mem_rdata[MASKED_IDX][i]);
   end
 end
 
@@ -1658,8 +1720,11 @@ generate if (MASKING_EN) begin : g_pws_recombiner
     .clk      (clk),
     .reset_n  (rst_b),
     .zeroize  (zeroize_reg),
-    .en_i     (pws_recombine_en_pipe[SRAM_LATENCY]),
-    .mode     (pws_recombine_mlkem_mode_pipe[SRAM_LATENCY]),
+    // Step 27.2.4-b commit 0b: SINGLE shared instance — en_i OR-merges both
+    // consumer enables (PWS_R and NORMCHK_R). mode forces MLKEM mode to 0 when
+    // NORMCHK is active (NORMCHK is MLDSA-only — no MLKEM equivalent exists).
+    .en_i     (pws_recombine_en_pipe[SRAM_LATENCY] | normchk_recombine_en_pipe[SRAM_LATENCY]),
+    .mode     (pws_recombine_mlkem_mode_pipe[SRAM_LATENCY] & ~normchk_recombine_en_pipe[SRAM_LATENCY]),
     .share0_i (pws_rec_share0),
     .share1_i (pws_rec_share1),
     .data_o   (pws_rec_data),

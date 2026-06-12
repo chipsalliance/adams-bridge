@@ -97,6 +97,16 @@ module abr_ctrl
   // sequencer entry sets recombine_en=1 on a PWS (step 27.2.3).
   output logic                        pws_recombine_en_o,
 
+  // Step 27.2.4-b commit 0b — RECOMBINE fusion for NORMCHK consumer (separate
+  // signal from pws_recombine_en_o because NORMCHK uses aux_en=1, ntt_en=0
+  // opcode shape — incompatible with the pws gate). abr_top OR-merges this with
+  // pws_recombine_en_o at the SHARED u_pws_recombiner.en_i, and uses it to
+  // (a) feed NORMCHK's regular-mem read enables/address into the share-tap
+  // accumulator and the parallel masked-mem read, and (b) override
+  // normcheck_mem_rd_data with the recombiner output. Dormant until a
+  // sequencer entry sets recombine_en=1 on a NORMCHK (step 27.2.4-b commit C).
+  output logic                        normchk_recombine_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2213,6 +2223,16 @@ always_comb pws_recombine_en_o = MASKING_EN
                                & abr_instr.opcode.recombine_en
                                & abr_instr.opcode.ntt_en
                                & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
+
+// Step 27.2.4-b commit 0b — NORMCHK consumer recombine-enable.
+// Separate gate from pws_recombine_en_o: NORMCHK opcode shape is
+// {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_NORMCHK}, incompatible with the
+// pws gate. Same compile-time MASKING_EN gating + same gated abr_instr so
+// ZEROIZE/RESET/skip cleanly squash the enable.
+always_comb normchk_recombine_en_o = MASKING_EN
+                                   & abr_instr.opcode.recombine_en
+                                   & abr_instr.opcode.aux_en
+                                   & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &

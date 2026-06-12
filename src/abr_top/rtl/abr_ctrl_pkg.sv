@@ -299,6 +299,16 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_SKENCODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MAKEHINT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_NORMCHK         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
+    // Step 27.2.4-b commit 0b: Fused-recombine MLDSA NORMCHK variant — same as
+    // ABR_UOP_NORMCHK with recombine_en=1. The address NORMCHK requests on its
+    // dedicated normcheck_mem_rd_req port is treated as the to-be-recombined poly:
+    // share0 from regular mem + share1 from the parallel masked-mem read at the
+    // SAME address are fed to the SHARED u_pws_recombiner, and its output overrides
+    // normcheck_mem_rd_data. Replaces RECOMBINE+NORMCHK pairs in MLDSA SIGN.
+    // Opcode shape (aux_en=1, ntt_en=0) is incompatible with pws_recombine_en_o
+    // gate (which requires ntt_en=1), hence a separate normchk_recombine_en_o
+    // signal is added in abr_ctrl.sv.
+    localparam abr_opcode_t ABR_UOP_NORMCHK_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGENCODE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_H        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
