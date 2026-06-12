@@ -253,6 +253,14 @@ package abr_ctrl_pkg;
     // recombiner produces the unmasked share on the pwm_b read port, and PWS
     // subtracts it from operand2. Replaces RECOMBINE+PWS pairs in MLDSA SIGN.
     localparam abr_opcode_t ABR_UOP_PWS_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
+    // Step 27.2.4-b commit 0a: Fused-recombine MLDSA PWA variant — same as ABR_UOP_PWA
+    // with recombine_en=1. operand1 (the to-be-recombined poly) reads from masked memory
+    // (shares); the shared recombiner produces the unmasked value on the pwm_b read port
+    // (after the abr_ctrl operand-swap fix from 27.2.3), and PWA adds it to operand2.
+    // Replaces RECOMBINE+PWA pairs in MLDSA KG. Reuses 100% of the pwm_b infrastructure
+    // built in 27.2.2/27.2.3 — no abr_top.sv changes; only the pws_recombine_en_o gate's
+    // mode allow-list is extended in abr_ctrl.sv.
+    localparam abr_opcode_t ABR_UOP_PWA_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_NTT_NOSHUF = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_INTT      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};

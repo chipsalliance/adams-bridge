@@ -2203,10 +2203,16 @@ always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
 // MASKING_EN (no-op in unmasked builds — there is nothing to recombine when
 // only one share exists). Uses the gated abr_instr so ZEROIZE/RESET/skip
 // conditions cleanly squash the enable.
+// Step 27.2.4-b commit 0a — historical signal name kept; now also covers
+// MLDSA_PWA (the to-be-recombined operand1 lands on pwm_b for PWA as well,
+// after the abr_ctrl operand-swap convention added in 27.2.3, so no
+// abr_top.sv datapath changes are needed for PWA_R — the existing pwm_b
+// override mux, share-tap accumulator, and parallel masked-mem read all
+// fire on PWA's pwm_b reads identically).
 always_comb pws_recombine_en_o = MASKING_EN
                                & abr_instr.opcode.recombine_en
                                & abr_instr.opcode.ntt_en
-                               & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS});
+                               & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
