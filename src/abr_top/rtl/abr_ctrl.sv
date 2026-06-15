@@ -107,6 +107,17 @@ module abr_ctrl
   // sequencer entry sets recombine_en=1 on a NORMCHK (step 27.2.4-b commit C).
   output logic                        normchk_recombine_en_o,
 
+  // Step 27.2.4-b commit 0d — RECOMBINE fusion for SIGENCODE consumer (separate
+  // signal from both pws_recombine_en_o (needs ntt_en=1) and
+  // normchk_recombine_en_o (needs mode==MLDSA_NORMCHK) — SIGENCODE opcode shape
+  // is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SIGENC}). SIGENCODE issues TWO
+  // concurrent banked reads per cycle (port↔bank fixed, both fire same cycle),
+  // so abr_top.sv routes this enable to the per-bank dual-recombiner pair added
+  // in commit 0d; each bank's recombiner overrides the matching
+  // sigencode_mem_rd_data[bank] port. Dormant until a sequencer entry sets
+  // recombine_en=1 on a SIGENCODE row.
+  output logic                        sigencode_recombine_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2233,6 +2244,18 @@ always_comb normchk_recombine_en_o = MASKING_EN
                                    & abr_instr.opcode.recombine_en
                                    & abr_instr.opcode.aux_en
                                    & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+
+// Step 27.2.4-b commit 0d — SIGENCODE consumer recombine-enable.
+// Separate gate from pws_recombine_en_o and normchk_recombine_en_o:
+// SIGENCODE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SIGENC}.
+// Same compile-time MASKING_EN gating + same gated abr_instr so ZEROIZE/RESET/
+// skip cleanly squash the enable. Routed in abr_top.sv to the per-bank
+// dual-recombiner pair; each bank's recombiner output overrides the matching
+// sigencode_mem_rd_data[bank] port (SIGENCODE consumes both banks concurrently).
+always_comb sigencode_recombine_en_o = MASKING_EN
+                                     & abr_instr.opcode.recombine_en
+                                     & abr_instr.opcode.aux_en
+                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &

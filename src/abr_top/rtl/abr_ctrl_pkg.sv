@@ -310,6 +310,21 @@ package abr_ctrl_pkg;
     // signal is added in abr_ctrl.sv.
     localparam abr_opcode_t ABR_UOP_NORMCHK_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGENCODE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
+    // Step 27.2.4-b commit 0d: Fused-recombine MLDSA SIGENCODE variant — same as
+    // ABR_UOP_SIGENCODE with recombine_en=1. SIGENCODE issues TWO concurrent
+    // banked reads per cycle (mem_a_rd_req on bank 0 + mem_b_rd_req on bank 1,
+    // see sigencode_z_top.sv:191-193 and abr_top.sv:1365 — port↔bank mapping is
+    // FIXED, not addr[0]-selected). The fused variant treats each bank's source
+    // as a to-be-recombined poly: share0 from regular mem + share1 from the
+    // parallel masked-mem read at the SAME bank/address are fed to a DEDICATED
+    // bank recombiner (Step 27.2.4-b commit 0d added a 2nd abr_recombiner
+    // instance per bank), and each recombiner output overrides the matching
+    // sigencode_mem_rd_data[bank] port. Opcode shape (aux_en=1, ntt_en=0,
+    // mode.aux_mode==MLDSA_SIGENC) is incompatible with both pws_recombine_en_o
+    // (needs ntt_en=1) and normchk_recombine_en_o (needs mode==MLDSA_NORMCHK),
+    // hence a separate sigencode_recombine_en_o signal is added in abr_ctrl.sv.
+    // Dormant until a sequencer entry sets recombine_en=1 on a SIGENCODE row.
+    localparam abr_opcode_t ABR_UOP_SIGENCODE_R     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_H        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_Z         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
