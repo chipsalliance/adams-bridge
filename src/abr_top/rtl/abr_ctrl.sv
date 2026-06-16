@@ -118,6 +118,22 @@ module abr_ctrl
   // recombine_en=1 on a SIGENCODE row.
   output logic                        sigencode_recombine_en_o,
 
+  // Step 27.2.4-c — RECOMBINE fusion for COMPRESS consumer (separate signal
+  // from all prior recombine gates). COMPRESS uses a single read port
+  // (compress_mem_rd_req) spanning both banked and non-banked memories; the
+  // fused variant taps the shared per-bank recombiner pair. COMPRESS is
+  // MLKEM-only, so it forces mode=1 at the recombiner. Dormant until a
+  // sequencer entry sets recombine_en=1 on a COMPRESS row.
+  output logic                        compress_recombine_en_o,
+
+  // Step 27.2.4-c — RECOMBINE fusion for SKENCODE consumer (separate signal
+  // from all prior recombine gates). SKENCODE issues TWO concurrent banked
+  // reads per cycle (skencode_mem_rd_req[0]→bank0, [1]→bank1); the fused
+  // variant uses the per-bank dual-recombiner pair (same pattern as
+  // SIGENCODE_R). SKENCODE is MLDSA-only, so it contributes mode=0. Dormant
+  // until a sequencer entry sets recombine_en=1 on a SKENCODE row.
+  output logic                        skencode_recombine_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2256,6 +2272,25 @@ always_comb sigencode_recombine_en_o = MASKING_EN
                                      & abr_instr.opcode.recombine_en
                                      & abr_instr.opcode.aux_en
                                      & (abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
+
+// Step 27.2.4-c — COMPRESS consumer recombine-enable.
+// COMPRESS opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLKEM_COMPRESS}.
+// COMPRESS is MLKEM-only; mode=1 forced at the recombiner via OR into mode port.
+// Single-port reader spanning banked + non-banked memories — same OR-merge
+// pattern as NORMCHK_R at the consumer data mux.
+always_comb compress_recombine_en_o = MASKING_EN
+                                    & abr_instr.opcode.recombine_en
+                                    & abr_instr.opcode.aux_en
+                                    & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS);
+
+// Step 27.2.4-c — SKENCODE consumer recombine-enable.
+// SKENCODE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SKENCODE}.
+// SKENCODE is MLDSA-only and dual-port (same pattern as SIGENCODE). Each bank's
+// recombiner output overrides the matching skencode_mem_rd_data[bank] port.
+always_comb skencode_recombine_en_o = MASKING_EN
+                                    & abr_instr.opcode.recombine_en
+                                    & abr_instr.opcode.aux_en
+                                    & (abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
