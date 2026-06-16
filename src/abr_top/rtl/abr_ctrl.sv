@@ -134,6 +134,13 @@ module abr_ctrl
   // until a sequencer entry sets recombine_en=1 on a SKENCODE row.
   output logic                        skencode_recombine_en_o,
 
+  // Step 27.2.4-c — RECOMBINE fusion for DECOMPOSE consumer (separate signal
+  // from all prior recombine gates). DECOMPOSE is a single-port reader spanning
+  // banked + non-banked memories — same OR-merge pattern as COMPRESS_R / NORMCHK_R.
+  // MLDSA-only (mode=0). Dormant until a sequencer entry sets recombine_en=1 on
+  // a DECOMPOSE row.
+  output logic                        decompose_recombine_en_o,
+
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
   input logic [1:0] [ABR_REG_WIDTH-1:0] pwr2rnd_wr_data_i,
@@ -2291,6 +2298,15 @@ always_comb skencode_recombine_en_o = MASKING_EN
                                     & abr_instr.opcode.recombine_en
                                     & abr_instr.opcode.aux_en
                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
+
+// Step 27.2.4-c — DECOMPOSE consumer recombine-enable.
+// DECOMPOSE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_DECOMP}.
+// DECOMPOSE is MLDSA-only and single-port (same pattern as NORMCHK/COMPRESS).
+// The recombiner output overrides decomp_mem_rd_data[0].
+always_comb decompose_recombine_en_o = MASKING_EN
+                                     & abr_instr.opcode.recombine_en
+                                     & abr_instr.opcode.aux_en
+                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_DECOMP);
 
 logic skip_recombine;
 always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
