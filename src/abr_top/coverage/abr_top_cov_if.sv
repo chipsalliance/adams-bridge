@@ -169,12 +169,15 @@ interface abr_top_cov_if
     assign sca_ntt0_enable = abr_top.ntt_enable[0];
 
     // NTT mode for NTT[0] (primary) — covers all operation types including RECOMBINE
-    abr_ntt_mode_e sca_ntt0_mode;
+    // NOTE: Use packed logic instead of enum types to avoid VCS partition-compile
+    // "different enum types" errors when this cov_if is elaborated in both RTL
+    // and TB scopes (the imported pkg ends up duplicated across scopes).
+    logic [4:0] sca_ntt0_mode;
     assign sca_ntt0_mode = abr_top.ntt_mode[0];
 
     // NTT mode for NTT[1] — should exercise subset of modes when MASKING_EN=1
-    abr_ntt_mode_e sca_ntt1_mode;
-    assign sca_ntt1_mode = (abr_top.ABR_NUM_NTT > 1) ? abr_top.ntt_mode[abr_top.MASKED_IDX] : ABR_NTT_NONE;
+    logic [4:0] sca_ntt1_mode;
+    assign sca_ntt1_mode = (abr_top.ABR_NUM_NTT > 1) ? 5'(abr_top.ntt_mode[abr_top.MASKED_IDX]) : 5'(ABR_NTT_NONE);
 
     // Opcode masking/shuffling bits from the instruction
     logic sca_opcode_masking_en;
@@ -247,8 +250,9 @@ interface abr_top_cov_if
     logic sca_masking_en_param;
     assign sca_masking_en_param = abr_top.MASKING_EN;
 
-    // Sampler opcode mode (covers masked-sampling dispatch)
-    abr_sampler_mode_e sca_sampler_mode;
+    // Sampler opcode mode (covers masked-sampling dispatch).
+    // Packed logic to dodge VCS dual-scope enum mismatch (see note above).
+    logic [4:0] sca_sampler_mode;
     assign sca_sampler_mode = abr_top.sampler_mode;
 
     // NTT[0]/NTT[1] mode match indicator — when masking, modes should be identical
@@ -258,10 +262,14 @@ interface abr_top_cov_if
 
     // MASKED_NTT_NOSHUF detection (bug 6 fix — masking=1, shuffling=0, mode=MLDSA_NTT for NTT(c))
     // Distinguished from REJS_MASKED_* which also have masking=1,shuffling=0 but use PWM_SMPL modes.
+    // Re-tap the RTL ntt_mode into a packed-logic local so the == compares values, not
+    // cross-scope enum types (VCS partcomp duplicates the pkg across RTL/TB scopes).
+    logic [4:0] sca_instr_ntt_mode;
+    assign sca_instr_ntt_mode = abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode;
     logic sca_masked_noshuf;
     assign sca_masked_noshuf = sca_opcode_masking_en & ~sca_opcode_shuffling_en &
                                sca_opcode_ntt_en &
-                               (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode == MLDSA_NTT);
+                               (sca_instr_ntt_mode == MLDSA_NTT);
 
     // Zeroize signal (re-tap for SCA covergroup local use)
     logic sca_zeroize;
@@ -476,12 +484,11 @@ interface abr_top_cov_if
                                                 binsof(opcode_masking_en_cp) intersect {0};
         }
 
-        // Recombine must not fire when opcode.masking_en=0
-        // (RECOMBINE opcode itself sets masking_en=1; recombine_en is derived from ntt_mode)
-        recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp {
-            illegal_bins recombine_on_masking_off = binsof(recombine_en_cp) intersect {1} &&
-                                                    binsof(opcode_masking_en_cp) intersect {0};
-        }
+        // Recombine × opcode.masking_en cross (for coverage only).
+        // recombine_en is derived from ntt_mode[0] inside {MLDSA/MLKEM_RECOMBINE} and can
+        // legitimately fire with opcode.masking_en=0 for non-in-place RECOMBINEs (in-place
+        // ones are NOPed in abr_ctrl). See abr_top.sv:683-685. No illegal_bins here.
+        recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp;
 
         // =====================================================================
         // Per-consumer fused-recombine coverpoints + crosses
