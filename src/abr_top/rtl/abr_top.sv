@@ -1787,9 +1787,7 @@ generate if (MASKING_EN) begin : g_pws_recombiner
   // (SIGENCODE_R/SKENCODE_R/PWR2RND_R). Single-port consumers see
   // share0=share1=0 on the inactive bank → output 0, OR-merges harmlessly.
   for (genvar bank = 0; bank < 2; bank++) begin : g_per_bank
-    abr_recombiner #(
-      .LATENCY(0)
-    ) u_pws_recombiner (
+    abr_recombiner u_pws_recombiner (
       .clk      (clk),
       .reset_n  (rst_b),
       .zeroize  (zeroize_reg),

@@ -18,7 +18,8 @@
 // --------
 // Arithmetic share recombiner — symmetric counterpart to abr_splitter.sv.
 // data_o = (share0_i + share1_i) mod q   (MLDSA q=8380417 / MLKEM q=3329)
-// LATENCY parameter selects combinational (0) or 2-cycle pipelined path.
+// Combinational path. Timing alignment with SRAM read latency is handled
+// externally by the caller via *_recombine_en_pipe shift registers.
 // Inputs assumed pre-reduced to [0, q-1].
 //
 //======================================================================
@@ -28,9 +29,6 @@
 module abr_recombiner
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
-    #(
-    parameter LATENCY = 2  // 2 = pipelined (abr_ntt_add_sub_mod), 0 = combinational
-    )
     (
     input  wire                          clk,
     input  wire                          reset_n,
@@ -63,63 +61,21 @@ module abr_recombiner
         end
     endgenerate
 
+    // Combinational (a + b) mod q: one compare + conditional subtract.
+    logic [NTT_REG_SIZE:0] sum_lane [COEFF_PER_CLK];
     generate
-    if (LATENCY == 0) begin : g_comb_recombiner
-        // Combinational (a + b) mod q: one compare + conditional subtract.
-        logic [NTT_REG_SIZE:0] sum_lane [COEFF_PER_CLK];
         genvar c;
         for (c = 0; c < COEFF_PER_CLK; c++) begin : gen_comb_lane
             assign sum_lane[c]   = {1'b0, share0_coeff[c]} + {1'b0, share1_coeff[c]};
             assign data_coeff[c] = (sum_lane[c] >= {1'b0, prime}) ? (sum_lane[c] - {1'b0, prime})
                                                                   : sum_lane[c][NTT_REG_SIZE-1:0];
         end
-        assign ready_o = en_i;
+
         for (k = 0; k < COEFF_PER_CLK; k++) begin : gen_comb_pack
             assign data_o[k*REG_SIZE +: REG_SIZE] = {1'b0, data_coeff[k]};
         end
-    end
-    else begin : g_pipe_recombiner
-        // 2-cycle pipelined path via abr_ntt_add_sub_mod.
-        logic [NTT_REG_SIZE-1:0] data_coeff_reg [COEFF_PER_CLK];
-        logic [COEFF_PER_CLK-1:0] lane_ready;
-
-        // Flop res_o so data_o is aligned with ready_o (2 cycles after en_i).
-        always_ff @(posedge clk or negedge reset_n) begin
-            if (!reset_n)
-                for (int idx = 0; idx < COEFF_PER_CLK; idx++) data_coeff_reg[idx] <= '0;
-            else if (zeroize)
-                for (int idx = 0; idx < COEFF_PER_CLK; idx++) data_coeff_reg[idx] <= '0;
-            else
-                data_coeff_reg <= data_coeff;
-        end
-
-        for (k = 0; k < COEFF_PER_CLK; k++) begin : gen_pipe_pack
-            assign data_o[k*REG_SIZE +: REG_SIZE] = {1'b0, data_coeff_reg[k]};
-        end
-
-        genvar i;
-        for (i = 0; i < COEFF_PER_CLK; i++) begin : gen_lane
-
-            abr_ntt_add_sub_mod #(
-                .REG_SIZE(NTT_REG_SIZE)
-            ) u_add (
-                .clk      (clk),
-                .reset_n  (reset_n),
-                .zeroize  (zeroize),
-                .add_en_i (en_i),
-                .sub_i    (1'b0),
-                .opa_i    (share0_coeff[i]),
-                .opb_i    (share1_coeff[i]),
-                .prime_i  (prime),
-                .mlkem    (mode),
-                .res_o    (data_coeff[i]),
-                .ready_o  (lane_ready[i])
-            );
-
-        end
-
-        assign ready_o = lane_ready[0];
-    end
     endgenerate
+
+    assign ready_o = en_i;
 
 endmodule
