@@ -337,7 +337,7 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 
 **NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined inline at each unmasked consumer via the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
-The performance overhead associated with enabling these countermeasures is as follows:
+Masking imposes **zero cycle overhead**. The only cost of enabling masking is area:
 
 |                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
