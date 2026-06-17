@@ -131,36 +131,19 @@ module abr_top
   logic ntt_masking_en_ctrl;
   logic ntt_shuffling_en_ctrl;
   logic split_en;
-  logic recombine_en_ctrl;
-  logic recombine_en;
-  logic [SRAM_LATENCY:0] recombine_en_pipe;
-  // Consumer-recombine datapaths (one *_recombine_en per fused consumer opcode).
-  // When asserted, the shared abr_recombiner instance(s) produce (share0+share1) mod q
-  // at the consumer's read window. Per-bank arrays support dual-port consumers
-  // (SIGENCODE_R/SKENCODE_R/PWR2RND_R); single-port consumers OR-merge harmlessly.
-  logic                          pws_recombine_en;
-  logic [SRAM_LATENCY:0]         pws_recombine_en_pipe;
-  logic [SRAM_LATENCY:0]         pws_recombine_mlkem_mode_pipe;
+  // Aggregate recombine enable + mode driven by abr_ctrl.
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_share0;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_share1;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_data;
   logic [1:0]                         pws_rec_ready;
   logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data_default0;
   logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_default0;
-  logic                          normchk_recombine_en;
-  logic [SRAM_LATENCY:0]         normchk_recombine_en_pipe;
   logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data_default0;
-  logic                          sigencode_recombine_en;
-  logic [SRAM_LATENCY:0]         sigencode_recombine_en_pipe;
-  logic                          compress_recombine_en;
-  logic [SRAM_LATENCY:0]         compress_recombine_en_pipe;
   logic [ABR_MEM_DATA_WIDTH-1:0] compress_mem_rd_data_default0;
-  logic                          skencode_recombine_en;
-  logic [SRAM_LATENCY:0]         skencode_recombine_en_pipe;
-  logic                          decompose_recombine_en;
-  logic [SRAM_LATENCY:0]         decompose_recombine_en_pipe;
-  logic                          pwr2rnd_recombine_en;
-  logic [SRAM_LATENCY:0]         pwr2rnd_recombine_en_pipe;
+  logic                          recombine_en;
+  logic [SRAM_LATENCY:0]         recombine_en_pipe;
+  logic                          recombine_mode;       // 0 = MLDSA, 1 = MLKEM
+  logic [SRAM_LATENCY:0]         recombine_mode_pipe;
   logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data_default0;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
@@ -522,13 +505,8 @@ abr_ctrl_inst
   .aux_dest_base_addr_o(aux_dest_base_addr),
 
   .split_en_o(split_en),
-  .pws_recombine_en_o(pws_recombine_en),
-  .normchk_recombine_en_o(normchk_recombine_en),
-  .sigencode_recombine_en_o(sigencode_recombine_en),
-  .compress_recombine_en_o(compress_recombine_en),
-  .skencode_recombine_en_o(skencode_recombine_en),
-  .decompose_recombine_en_o(decompose_recombine_en),
-  .pwr2rnd_recombine_en_o(pwr2rnd_recombine_en),
+  .recombine_en_o(recombine_en),
+  .recombine_mode_o(recombine_mode),
 
   .power2round_enable_o(power2round_enable),
   .pwr2rnd_keymem_if_i(pwr2rnd_keymem_if),
@@ -686,16 +664,12 @@ always_comb begin
   ntt_mem_base_addr[0] = ntt_mem_base_addr_ctrl;
   pwo_mem_base_addr[0] = pwo_mem_base_addr_ctrl;
   ntt_shuffling_en[0]  = ntt_shuffling_en_ctrl;
-  // RECOMBINE runs on NTT[0] only. Not MASKING_EN-gated so it can suppress
-  // NTT[1] (mirror block below) and steer the pwm_b read mux.
-  recombine_en_ctrl = ntt_masking_en_ctrl &
-                 (ntt_mode_ctrl inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
 end
 
 // NTT[1] mirror — only present when MASKING_EN (else share[1] is out of bounds).
 generate if (MASKING_EN) begin : ntt1_ctrl_mirror
   always_comb begin
-    ntt_enable[1]        = ntt_masking_en_ctrl & !recombine_en_ctrl ? ntt_enable_ctrl : '0;
+    ntt_enable[1]        = ntt_masking_en_ctrl ? ntt_enable_ctrl : '0;
     ntt_mode[1]          = ntt_mode_ctrl;
     ntt_mem_base_addr[1] = ntt_mem_base_addr_ctrl;
     pwo_mem_base_addr[1] = pwo_mem_base_addr_ctrl;
@@ -714,11 +688,6 @@ always_ff @(posedge clk or negedge rst_b) begin
     sampler_ntt_dv_f <= sampler_ntt_dv;
   end
 end
-
-// recombine_en tracks the in-flight RECOMBINE on NTT[0]. In MASKING_EN=0 it
-// fires only for non-in-place RECOMBINEs (in-place ones are NOPed in abr_ctrl).
-always_comb recombine_en = (ntt_mode[0] inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
-assign recombine_en_pipe[0] = recombine_en;
 
 generate
   for (genvar g_inst = 0; g_inst < ABR_NUM_NTT; g_inst++) begin : ntt_gen
@@ -768,10 +737,6 @@ generate
           mode[g_inst] = pwa;
           sampler_valid[g_inst] = 1;
         end
-        MLDSA_RECOMBINE: begin
-          mode[g_inst] = pwa;
-          sampler_valid[g_inst] = 1;
-        end
         MLDSA_PWS: begin
           mode[g_inst] = pws;
           sampler_valid[g_inst] = 1;
@@ -812,11 +777,6 @@ generate
           mlkem_mode[g_inst] = 1;
         end
         MLKEM_PWA: begin
-          mode[g_inst] = pwa;
-          sampler_valid[g_inst] = 1;
-          mlkem_mode[g_inst] = 1;
-        end
-        MLKEM_RECOMBINE: begin
           mode[g_inst] = pwa;
           sampler_valid[g_inst] = 1;
           mlkem_mode[g_inst] = 1;
@@ -1259,7 +1219,7 @@ always_comb begin
       ntt_mem_we_mux[ntt][i] = ntt_mem_we[ntt][i];
       ntt_mem_re_mux[ntt][i] = ntt_mem_re[0][ntt][i];
       pwo_a_mem_re_mux[ntt][i] = pwo_a_mem_re[0][ntt][i];
-      pwo_b_mem_re_mux[ntt][i] = pwo_b_mem_re[0][ntt][i] & ~(recombine_en & (ntt == 0));
+      pwo_b_mem_re_mux[ntt][i] = pwo_b_mem_re[0][ntt][i];
 
       ntt_mem_wr_req_mux[ntt][i]  = ({ABR_MEM_ADDR_WIDTH{ntt_mem_we[ntt][i]}}   & ntt_mem_wr_req[ntt].addr);
       ntt_mem_rd_req_mux[ntt][i]  = ({ABR_MEM_ADDR_WIDTH{ntt_mem_re[0][ntt][i]}}   & ntt_mem_rd_req[ntt].addr);
@@ -1359,7 +1319,7 @@ always_comb begin
           pwo_b_mem_re0_bank[0][ntt][bank] = (ntt_shuffling_en[ntt] ? ~sampler_ntt_dv_f[ntt] : ~sampler_ntt_dv[ntt]) & (pwm_b_rd_req[ntt].rd_wr_en == RW_READ) & (pwm_b_rd_req[ntt].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i) & (pwm_b_rd_req[ntt].addr[0] == bank);
           ntt_mem_re0_bank_mux[ntt][bank] |= ntt_mem_re0_bank[0][ntt][bank];
           pwo_a_mem_re0_bank_mux[ntt][bank] |= pwo_a_mem_re0_bank[0][ntt][bank];
-          pwo_b_mem_re0_bank_mux[ntt][bank] |= pwo_b_mem_re0_bank[0][ntt][bank] & ~(recombine_en & (ntt == 0));
+          pwo_b_mem_re0_bank_mux[ntt][bank] |= pwo_b_mem_re0_bank[0][ntt][bank];
         end
     
         decomp_mem_re0_bank[0][0][bank] = (decomp_mem_rd_req[0].rd_wr_en == RW_READ) & (decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-1:ABR_MEM_ADDR_WIDTH-3] == i) & (decomp_mem_rd_req[0].addr[0] == bank);
@@ -1419,45 +1379,41 @@ generate if (MASKING_EN) begin : ntt1_mem_read_mux
       // Masked-mem parallel read for share1 fetch on any active fused consumer.
       // For PWS_R, operand1→pwm_b at abr_ctrl (operand-swap convention), so PWS_R
       // also uses pwm_b's request — NOT pwm_a's (which carries an unrelated operand2).
-      // *_recombine_en classes are mutually exclusive (single-issue sequencer).
+      // recombine_en from abr_ctrl; *_mem_re* steers active consumer (mutex).
       abr_mem_re0_bank[1][bank] = ntt_mem_re0_bank_mux[1][bank] | pwo_a_mem_re0_bank_mux[1][bank] | pwo_b_mem_re0_bank_mux[1][bank] |
-                                  (recombine_en           & pwo_b_mem_re0_bank[0][0][bank]) |
-                                  (pws_recombine_en       & pwo_b_mem_re0_bank[0][0][bank]) |
-                                  (normchk_recombine_en   & normcheck_mem_re0_bank[0][bank]) |
-                                  (sigencode_recombine_en & sigencode_mem_re0_bank[0][bank]) |
-                                  (compress_recombine_en  & compress_mem_re0_bank[0][bank])  |
-                                  (skencode_recombine_en  & skencode_mem_re0_bank[0][bank]) |
-                                  (decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]) |
-                                  (pwr2rnd_recombine_en   & pwr2rnd_mem_re0_bank[0][bank]);
+                                  (recombine_en & (pwo_b_mem_re0_bank[0][0][bank] |
+                                                   normcheck_mem_re0_bank[0][bank] |
+                                                   sigencode_mem_re0_bank[0][bank] |
+                                                   compress_mem_re0_bank[0][bank]  |
+                                                   skencode_mem_re0_bank[0][bank]  |
+                                                   decomp_mem_re0_bank[0][0][bank] |
+                                                   pwr2rnd_mem_re0_bank[0][bank]));
       abr_mem_raddr0_bank[1][bank] = ({ABR_MEM_ADDR_WIDTH-4{ntt_mem_re0_bank_mux[1][bank]}}   & ntt_mem_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1]) |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_a_mem_re0_bank_mux[1][bank]}} & pwm_a_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_b_mem_re0_bank_mux[1][bank]}} & pwm_b_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
-                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en           & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{pws_recombine_en       & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{normchk_recombine_en   & normcheck_mem_re0_bank[0][bank]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{sigencode_recombine_en & sigencode_mem_re0_bank[0][bank]}} & sigencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{compress_recombine_en  & compress_mem_re0_bank[0][bank]}}  & compress_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1])      |
-                                    ({ABR_MEM_ADDR_WIDTH-4{skencode_recombine_en  & skencode_mem_re0_bank[0][bank]}}  & skencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{pwr2rnd_recombine_en   & pwr2rnd_mem_re0_bank[0][bank]}}   & pwr2rnd_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]);
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & pwo_b_mem_re0_bank[0][0][bank]}} & pwm_b_rd_req_mux[0][0][ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & normcheck_mem_re0_bank[0][bank]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & sigencode_mem_re0_bank[0][bank]}} & sigencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & compress_mem_re0_bank[0][bank]}}  & compress_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1])      |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & skencode_mem_re0_bank[0][bank]}}  & skencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & decomp_mem_re0_bank[0][0][bank]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{recombine_en & pwr2rnd_mem_re0_bank[0][bank]}}   & pwr2rnd_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]);
     end
     for (int unsigned i = 1; i < 3; i++) begin
       // Non-banked memories (i=1,2). SIGENCODE/SKENCODE/PWR2RND consume only
       // banked memories; COMPRESS_R and DECOMPOSE_R (port [0]) also span here.
       abr_mem_re[1][i] = ntt_mem_re_mux[1][i] | pwo_a_mem_re_mux[1][i] | pwo_b_mem_re_mux[1][i] |
-                          (recombine_en         & pwo_b_mem_re[0][0][i]) |
-                          (pws_recombine_en     & pwo_b_mem_re[0][0][i]) |
-                          (normchk_recombine_en & normcheck_mem_re[0][i]) |
-                          (compress_recombine_en & compress_mem_re[0][i]) |
-                          (decompose_recombine_en & decomp_mem_re[0][0][i]);
+                          (recombine_en & (pwo_b_mem_re[0][0][i]   |
+                                           normcheck_mem_re[0][i]  |
+                                           compress_mem_re[0][i]   |
+                                           decomp_mem_re[0][0][i]));
       abr_mem_raddr[1][i] = ({ABR_MEM_ADDR_WIDTH-3{ntt_mem_re_mux[1][i]}}   & ntt_mem_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0])   |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_a_mem_re_mux[1][i]}} & pwm_a_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
                            ({ABR_MEM_ADDR_WIDTH-3{pwo_b_mem_re_mux[1][i]}} & pwm_b_rd_req_mux[1][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en         & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{pws_recombine_en     & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{normchk_recombine_en & normcheck_mem_re[0][i]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{compress_recombine_en & compress_mem_re[0][i]}} & compress_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]) |
-                           ({ABR_MEM_ADDR_WIDTH-3{decompose_recombine_en & decomp_mem_re[0][0][i]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:0]);
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en & pwo_b_mem_re[0][0][i]}} & pwm_b_rd_req_mux[0][i][ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en & normcheck_mem_re[0][i]}} & normcheck_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en & compress_mem_re[0][i]}} & compress_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:0]) |
+                           ({ABR_MEM_ADDR_WIDTH-3{recombine_en & decomp_mem_re[0][0][i]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:0]);
     end
   end
 end endgenerate
@@ -1483,7 +1439,6 @@ generate
         skencode_mem_re0_bank[g_stage] <= '{default: '0};
         sigencode_mem_re0_bank[g_stage] <= '{default: '0};
         pwr2rnd_mem_re0_bank[g_stage] <= '{default: '0}; 
-        recombine_en_pipe[g_stage] <= '0;
       end
       else if (zeroize_reg) begin
         ntt_mem_re[g_stage] <= '{default: '0};
@@ -1502,7 +1457,6 @@ generate
         skencode_mem_re0_bank[g_stage] <= '{default: '0};
         sigencode_mem_re0_bank[g_stage] <= '{default: '0};
         pwr2rnd_mem_re0_bank[g_stage] <= '{default: '0}; 
-        recombine_en_pipe[g_stage] <= '0;
       end
       else begin
         ntt_mem_re[g_stage] <= ntt_mem_re[g_stage-1];
@@ -1521,7 +1475,6 @@ generate
         skencode_mem_re0_bank[g_stage] <= skencode_mem_re0_bank[g_stage-1];
         sigencode_mem_re0_bank[g_stage] <= sigencode_mem_re0_bank[g_stage-1];
         pwr2rnd_mem_re0_bank[g_stage] <= pwr2rnd_mem_re0_bank[g_stage-1]; 
-        recombine_en_pipe[g_stage] <= recombine_en_pipe[g_stage-1];
       end
     end  
   end
@@ -1567,13 +1520,9 @@ always_comb begin
             pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
           else
             pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
-          // Legacy RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1).
-          // NTT[0] pwm_b accumulates into _default0 (legacy-RECOMBINE-aware).
+          // NTT[0] pwm_b accumulates into _default0.
           if (ntt == 0)
-            pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} &
-                                 (recombine_en_pipe[SRAM_LATENCY] ?
-                                    (MASKING_EN ? abr_mem_rdata0_bank[MASKED_IDX][bank] : '0)
-                                  : abr_mem_rdata0_bank[0][bank]));
+            pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
           else
             pwm_b_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
         end
@@ -1591,13 +1540,9 @@ always_comb begin
           pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
         else
           pwm_a_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
-        // Legacy RECOMBINE: pwm_b sources share1 from masked mem (MASKING_EN=1).
-        // NTT[0] pwm_b accumulates into _default0 (legacy-RECOMBINE-aware).
+        // NTT[0] pwm_b accumulates into _default0.
         if (ntt == 0)
-          pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} &
-                               (recombine_en_pipe[SRAM_LATENCY] ?
-                                  (MASKING_EN ? abr_mem_rdata[MASKED_IDX][i] : '0)
-                                : abr_mem_rdata[0][i]));
+          pwm_b_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
         else
           pwm_b_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{pwo_b_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
       end
@@ -1614,120 +1559,46 @@ always_comb begin
   // PWS_R consumer mux on NTT[0]'s pwm_b. operand1 (to-be-recombined poly)
   // is swapped to pwm_b at abr_ctrl; recombiner is combinational (LATENCY=0)
   // so its output is valid in the same cycle as the masked-mem read return.
-  // pwm_b_rd_data_default0 already has the legacy `recombine_en` mux baked in;
-  // PWS_R is single-port — only one bank's shares are non-zero per cycle, the
-  // other bank's recombiner outputs 0, so OR-merge yields the right value.
+  // Aggregate recombine_en_pipe gates all consumer muxes — mutex by single-issue
+  // sequencer guarantees only the firing consumer's downstream block latches.
+  // Single-port consumers see share0=share1=0 on the inactive bank → OR-merge harmless.
   pwm_a_rd_data[0] = pwm_a_rd_data_default0;
-  pwm_b_rd_data[0] = (MASKING_EN && pws_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
-                                                                         : pwm_b_rd_data_default0;
+  pwm_b_rd_data[0] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
+                                                                     : pwm_b_rd_data_default0;
   // NORMCHK_R / COMPRESS_R consumer muxes (single-port, OR-merge across banks).
-  normcheck_mem_rd_data = (MASKING_EN && normchk_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
-                                                                                  : normcheck_mem_rd_data_default0;
-  compress_mem_rd_data  = (MASKING_EN && compress_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
-                                                                                   : compress_mem_rd_data_default0;
+  normcheck_mem_rd_data = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
+                                                                          : normcheck_mem_rd_data_default0;
+  compress_mem_rd_data  = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
+                                                                          : compress_mem_rd_data_default0;
   // DECOMPOSE_R: only port [0] (main read) is recombined; port [1] (hint) is regular-mem only.
-  decomp_mem_rd_data[0] = (MASKING_EN && decompose_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
-                                                                                    : decomp_mem_rd_data_default0;
+  decomp_mem_rd_data[0] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
+                                                                          : decomp_mem_rd_data_default0;
 end
 
 //======================================================================
-// Shared consumer-recombiner — pipelines + share comp + per-bank instances.
-// Each *_recombine_en is pipelined SRAM_LATENCY deep to align with mem read
-// data arrival. The recombiner itself is combinational (LATENCY=0), so output
-// is valid in the same cycle as masked-mem read return.
+// Shared consumer-recombiner. recombine_en/_mode from abr_ctrl, pipelined
+// SRAM_LATENCY deep to align with mem-read return. Recombiner is
+// combinational (LATENCY=0).
 //======================================================================
 
-assign pws_recombine_en_pipe[0]         = pws_recombine_en;
-assign pws_recombine_mlkem_mode_pipe[0] = mlkem_mode[0];
-assign normchk_recombine_en_pipe[0]     = normchk_recombine_en;
-assign sigencode_recombine_en_pipe[0]   = sigencode_recombine_en;
-assign compress_recombine_en_pipe[0]    = compress_recombine_en;
-assign skencode_recombine_en_pipe[0]    = skencode_recombine_en;
-assign decompose_recombine_en_pipe[0]   = decompose_recombine_en;
-assign pwr2rnd_recombine_en_pipe[0]     = pwr2rnd_recombine_en;
+assign recombine_en_pipe[0]   = recombine_en;
+assign recombine_mode_pipe[0] = recombine_mode;
 
 generate
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_en_pipe
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : recombine_en_pipe_gen
     always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        pws_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        pws_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        pws_recombine_en_pipe[g_stage] <= pws_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_mode_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        pws_recombine_mlkem_mode_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        pws_recombine_mlkem_mode_pipe[g_stage] <= 1'b0;
-      else
-        pws_recombine_mlkem_mode_pipe[g_stage] <= pws_recombine_mlkem_mode_pipe[g_stage-1];
-    end
-  end
-  // Per-consumer recombine-en pipelines — aligns the en_i / share-tap selectors
-  // with the SRAM-read-data arrival cycle. All consumers except PWS_MLKEM and
-  // COMPRESS_R contribute mode=0 (MLDSA); mode is OR-folded at the recombiner.
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : normchk_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        normchk_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        normchk_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        normchk_recombine_en_pipe[g_stage] <= normchk_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : sigencode_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        sigencode_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        sigencode_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        sigencode_recombine_en_pipe[g_stage] <= sigencode_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : compress_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        compress_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        compress_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        compress_recombine_en_pipe[g_stage] <= compress_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : skencode_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        skencode_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        skencode_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        skencode_recombine_en_pipe[g_stage] <= skencode_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : decompose_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        decompose_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        decompose_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        decompose_recombine_en_pipe[g_stage] <= decompose_recombine_en_pipe[g_stage-1];
-    end
-  end
-  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pwr2rnd_rec_en_pipe
-    always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b)
-        pwr2rnd_recombine_en_pipe[g_stage] <= 1'b0;
-      else if (zeroize_reg)
-        pwr2rnd_recombine_en_pipe[g_stage] <= 1'b0;
-      else
-        pwr2rnd_recombine_en_pipe[g_stage] <= pwr2rnd_recombine_en_pipe[g_stage-1];
+      if (!rst_b) begin
+        recombine_en_pipe[g_stage]   <= 1'b0;
+        recombine_mode_pipe[g_stage] <= 1'b0;
+      end
+      else if (zeroize_reg) begin
+        recombine_en_pipe[g_stage]   <= 1'b0;
+        recombine_mode_pipe[g_stage] <= 1'b0;
+      end
+      else begin
+        recombine_en_pipe[g_stage]   <= recombine_en_pipe[g_stage-1];
+        recombine_mode_pipe[g_stage] <= recombine_mode_pipe[g_stage-1];
+      end
     end
   end
 endgenerate
@@ -1742,24 +1613,27 @@ always_comb begin
     pws_rec_share1[bank] = '0;
   end
   // Banked memory (i==0): each bank captures its own source independently
-  // (no OR-merge across banks — needed for dual-port consumers).
+  // (no OR-merge across banks — needed for dual-port consumers). Aggregate
+  // recombine_en_pipe gates; per-consumer *_mem_re* selectors steer the source.
   for (int unsigned bank = 0; bank < 2; bank++) begin
-    pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]       & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
-                                                 (normchk_recombine_en_pipe[SRAM_LATENCY]   & normcheck_mem_re0_bank[SRAM_LATENCY][bank]) |
-                                                 (sigencode_recombine_en_pipe[SRAM_LATENCY] & sigencode_mem_re0_bank[SRAM_LATENCY][bank]) |
-                                                 (compress_recombine_en_pipe[SRAM_LATENCY]  & compress_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                 (skencode_recombine_en_pipe[SRAM_LATENCY]  & skencode_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                 (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank]) |
-                                                 (pwr2rnd_recombine_en_pipe[SRAM_LATENCY]   & pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
+    pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
+                                                 (pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                                                  normcheck_mem_re0_bank[SRAM_LATENCY][bank] |
+                                                  sigencode_mem_re0_bank[SRAM_LATENCY][bank] |
+                                                  compress_mem_re0_bank[SRAM_LATENCY][bank]  |
+                                                  skencode_mem_re0_bank[SRAM_LATENCY][bank]  |
+                                                  decomp_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                                                  pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
                              & abr_mem_rdata0_bank[0][bank]);
     if (MASKING_EN)
-      pws_rec_share1[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]       & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
-                                                   (normchk_recombine_en_pipe[SRAM_LATENCY]   & normcheck_mem_re0_bank[SRAM_LATENCY][bank]) |
-                                                   (sigencode_recombine_en_pipe[SRAM_LATENCY] & sigencode_mem_re0_bank[SRAM_LATENCY][bank]) |
-                                                   (compress_recombine_en_pipe[SRAM_LATENCY]  & compress_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                   (skencode_recombine_en_pipe[SRAM_LATENCY]  & skencode_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                   (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank]) |
-                                                   (pwr2rnd_recombine_en_pipe[SRAM_LATENCY]   & pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
+      pws_rec_share1[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
+                                                   (pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                                                    normcheck_mem_re0_bank[SRAM_LATENCY][bank] |
+                                                    sigencode_mem_re0_bank[SRAM_LATENCY][bank] |
+                                                    compress_mem_re0_bank[SRAM_LATENCY][bank]  |
+                                                    skencode_mem_re0_bank[SRAM_LATENCY][bank]  |
+                                                    decomp_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                                                    pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
                                & abr_mem_rdata0_bank[MASKED_IDX][bank]);
   end
   // Non-banked memories (i==1,2): only PWS_R, NORMCHK_R, COMPRESS_R, DECOMPOSE_R
@@ -1767,16 +1641,18 @@ always_comb begin
   // bank recombiners — the single-port consumer mux below OR-merges harmlessly.
   for (int unsigned i = 1; i < 3; i++) begin
     for (int unsigned bank = 0; bank < 2; bank++) begin
-      pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]      & pwo_b_mem_re[SRAM_LATENCY][0][i]) |
-                                                   (normchk_recombine_en_pipe[SRAM_LATENCY]  & normcheck_mem_re[SRAM_LATENCY][i]) |
-                                                   (compress_recombine_en_pipe[SRAM_LATENCY] & compress_mem_re[SRAM_LATENCY][i]) |
-                                                   (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re[SRAM_LATENCY][0][i])}}
+      pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
+                                                   (pwo_b_mem_re[SRAM_LATENCY][0][i] |
+                                                    normcheck_mem_re[SRAM_LATENCY][i] |
+                                                    compress_mem_re[SRAM_LATENCY][i] |
+                                                    decomp_mem_re[SRAM_LATENCY][0][i])}}
                                & abr_mem_rdata[0][i]);
       if (MASKING_EN)
-        pws_rec_share1[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]      & pwo_b_mem_re[SRAM_LATENCY][0][i]) |
-                                                     (normchk_recombine_en_pipe[SRAM_LATENCY]  & normcheck_mem_re[SRAM_LATENCY][i]) |
-                                                     (compress_recombine_en_pipe[SRAM_LATENCY] & compress_mem_re[SRAM_LATENCY][i]) |
-                                                     (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re[SRAM_LATENCY][0][i])}}
+        pws_rec_share1[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
+                                                     (pwo_b_mem_re[SRAM_LATENCY][0][i] |
+                                                      normcheck_mem_re[SRAM_LATENCY][i] |
+                                                      compress_mem_re[SRAM_LATENCY][i] |
+                                                      decomp_mem_re[SRAM_LATENCY][0][i])}}
                                  & abr_mem_rdata[MASKED_IDX][i]);
     end
   end
@@ -1792,21 +1668,9 @@ generate if (MASKING_EN) begin : g_pws_recombiner
       .reset_n  (rst_b),
       .zeroize  (zeroize_reg),
       // Mutex by single-issue sequencer — at most one consumer fires per cycle.
-      .en_i     (pws_recombine_en_pipe[SRAM_LATENCY]      |
-                 normchk_recombine_en_pipe[SRAM_LATENCY]  |
-                 sigencode_recombine_en_pipe[SRAM_LATENCY] |
-                 compress_recombine_en_pipe[SRAM_LATENCY]  |
-                 skencode_recombine_en_pipe[SRAM_LATENCY]  |
-                 decompose_recombine_en_pipe[SRAM_LATENCY] |
-                 pwr2rnd_recombine_en_pipe[SRAM_LATENCY]),
+      .en_i     (recombine_en_pipe[SRAM_LATENCY]),
       // mode=MLKEM iff PWS-MLKEM or COMPRESS_R fires; all other consumers force MLDSA.
-      .mode     ((pws_recombine_mlkem_mode_pipe[SRAM_LATENCY] &
-                  ~normchk_recombine_en_pipe[SRAM_LATENCY]    &
-                  ~sigencode_recombine_en_pipe[SRAM_LATENCY]  &
-                  ~skencode_recombine_en_pipe[SRAM_LATENCY]   &
-                  ~decompose_recombine_en_pipe[SRAM_LATENCY]  &
-                  ~pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) |
-                 compress_recombine_en_pipe[SRAM_LATENCY]),
+      .mode     (recombine_mode_pipe[SRAM_LATENCY]),
       .share0_i (pws_rec_share0[bank]),
       .share1_i (pws_rec_share1[bank]),
       .data_o   (pws_rec_data[bank]),
@@ -1822,23 +1686,23 @@ end endgenerate
 // maps to its own bank's recombiner output. Dormant case falls through to the
 // regular-mem path (bit-identical to baseline).
 always_comb begin
-  skencode_mem_rd_data[0] = (MASKING_EN && skencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
-                                                                                     : abr_mem_rdata0_bank[0][0];
-  skencode_mem_rd_data[1] = (MASKING_EN && skencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
-                                                                                     : abr_mem_rdata0_bank[0][1];
+  skencode_mem_rd_data[0] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
+                                                                            : abr_mem_rdata0_bank[0][0];
+  skencode_mem_rd_data[1] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
+                                                                            : abr_mem_rdata0_bank[0][1];
 end
 always_comb makehint_mem_rd_data = abr_mem_rdata[0][2];
 always_comb begin
-  sigencode_mem_rd_data[0] = (MASKING_EN && sigencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
-                                                                                       : abr_mem_rdata0_bank[0][0];
-  sigencode_mem_rd_data[1] = (MASKING_EN && sigencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
-                                                                                       : abr_mem_rdata0_bank[0][1];
+  sigencode_mem_rd_data[0] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
+                                                                             : abr_mem_rdata0_bank[0][0];
+  sigencode_mem_rd_data[1] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
+                                                                             : abr_mem_rdata0_bank[0][1];
 end
 always_comb begin
-  pwr2rnd_mem_rd_data[0] = (MASKING_EN && pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
-                                                                                   : abr_mem_rdata0_bank[0][0];
-  pwr2rnd_mem_rd_data[1] = (MASKING_EN && pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
-                                                                                   : abr_mem_rdata0_bank[0][1];
+  pwr2rnd_mem_rd_data[0] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
+                                                                           : abr_mem_rdata0_bank[0][0];
+  pwr2rnd_mem_rd_data[1] = (MASKING_EN && recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
+                                                                           : abr_mem_rdata0_bank[0][1];
 end
 
 //Read data valids

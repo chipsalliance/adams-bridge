@@ -88,18 +88,8 @@ module abr_ctrl
   output logic [ABR_MEM_ADDR_WIDTH-1:0] aux_dest_base_addr_o,
 
   output logic                        split_en_o,
-
-  // Per-consumer recombine enable gates. Each asserts when the current opcode
-  // targets that consumer's hardware AND its recombine_en flag is set. All
-  // compile-time gated by MASKING_EN (constant 0 in unmasked builds).
-  // PWS gate also covers MLDSA_PWA (operand1→pwm_b swap convention).
-  output logic                        pws_recombine_en_o,
-  output logic                        normchk_recombine_en_o,
-  output logic                        sigencode_recombine_en_o,
-  output logic                        compress_recombine_en_o,
-  output logic                        skencode_recombine_en_o,
-  output logic                        decompose_recombine_en_o,
-  output logic                        pwr2rnd_recombine_en_o,
+  output logic                        recombine_en_o,
+  output logic                        recombine_mode_o,    // 0 = MLDSA, 1 = MLKEM
 
   output logic power2round_enable_o,
   input mem_if_t [1:0] pwr2rnd_keymem_if_i,
@@ -2198,51 +2188,15 @@ always_comb begin
                                         pw_base_addr_c:abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0]};                                   
 end
 
-// Splitter is bypassed if masking is disabled.
+// Splitter/recombine is bypassed if masking is disabled.
 always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
+always_comb recombine_en_o = MASKING_EN & abr_instr.opcode.recombine_en;
 
-// Per-consumer recombine-enable assigns. All gated by MASKING_EN + opcode.recombine_en.
-// PWS gate also covers MLDSA_PWA (operand1→pwm_b swap, see ~L2210).
-always_comb pws_recombine_en_o = MASKING_EN
-                               & abr_instr.opcode.recombine_en
-                               & abr_instr.opcode.ntt_en
-                               & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
+always_comb recombine_mode_o =
+    (abr_instr.opcode.ntt_en & (abr_instr.opcode.mode.ntt_mode == MLKEM_PWS)) |
+    (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS));
 
-always_comb normchk_recombine_en_o = MASKING_EN
-                                   & abr_instr.opcode.recombine_en
-                                   & abr_instr.opcode.aux_en
-                                   & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
-
-always_comb sigencode_recombine_en_o = MASKING_EN
-                                     & abr_instr.opcode.recombine_en
-                                     & abr_instr.opcode.aux_en
-                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
-
-always_comb compress_recombine_en_o = MASKING_EN
-                                    & abr_instr.opcode.recombine_en
-                                    & abr_instr.opcode.aux_en
-                                    & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS);
-
-always_comb skencode_recombine_en_o = MASKING_EN
-                                    & abr_instr.opcode.recombine_en
-                                    & abr_instr.opcode.aux_en
-                                    & (abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
-
-always_comb decompose_recombine_en_o = MASKING_EN
-                                     & abr_instr.opcode.recombine_en
-                                     & abr_instr.opcode.aux_en
-                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_DECOMP);
-
-always_comb pwr2rnd_recombine_en_o = MASKING_EN
-                                   & abr_instr.opcode.recombine_en
-                                   & abr_instr.opcode.aux_en
-                                   & (abr_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
-
-logic skip_recombine;
-always_comb skip_recombine = !MASKING_EN & abr_instr_o.opcode.ntt_en &
-                             (abr_instr_o.opcode.mode.ntt_mode inside {MLDSA_RECOMBINE, MLKEM_RECOMBINE});
-
-always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | skip_recombine) ? '0 : abr_instr_o;
+always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin
