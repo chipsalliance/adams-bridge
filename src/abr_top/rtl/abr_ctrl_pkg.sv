@@ -346,6 +346,17 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_SIGDEC_Z         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_USEHINT         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PWR2RND         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
+    // Step 27.2.4-e: Fused-recombine MLDSA PWR2RND variant — same as
+    // ABR_UOP_PWR2RND with recombine_en=1. Reads the to-be-recombined poly
+    // (split between regular and masked memory) from BOTH bank ports
+    // concurrently (pwr2rnd_mem_rd_req[0]→bank0, [1]→bank1, identical to
+    // SKENCODE), and each bank's per-bank u_pws_recombiner output overrides
+    // the matching pwr2rnd_mem_rd_data[bank] port. power2round_top sees what
+    // looks like normal regular-memory data — no internal change. Opcode
+    // shape (aux_en=1, ntt_en=0, mode.aux_mode==MLDSA_PWR2RND) is
+    // incompatible with pws/normchk/sigencode/skencode gates, hence a
+    // separate pwr2rnd_recombine_en_o signal in abr_ctrl.sv.
+    localparam abr_opcode_t ABR_UOP_PWR2RND_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_LFSR            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_COMPRESS        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     // Step 27.2.4-c: Fused-recombine MLKEM COMPRESS variant — same as

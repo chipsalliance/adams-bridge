@@ -203,6 +203,12 @@ module abr_top
   // from regular memory only. MLDSA-only (mode=0).
   logic                          decompose_recombine_en;
   logic [SRAM_LATENCY:0]         decompose_recombine_en_pipe;
+  // Step 27.2.4-e: PWR2RND fused-recombine datapath.
+  // PWR2RND uses two concurrent banked reads (same pattern as SKENCODE_R /
+  // SIGENCODE_R). PWR2RND is MLDSA-only, so it contributes mode=0. Currently
+  // gated by recombine_en flag set on a PWR2RND_R sequencer row.
+  logic                          pwr2rnd_recombine_en;
+  logic [SRAM_LATENCY:0]         pwr2rnd_recombine_en_pipe;
   logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data_default0; // pre-fused-recombine mux
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
@@ -570,6 +576,7 @@ abr_ctrl_inst
   .compress_recombine_en_o(compress_recombine_en),
   .skencode_recombine_en_o(skencode_recombine_en),
   .decompose_recombine_en_o(decompose_recombine_en),
+  .pwr2rnd_recombine_en_o(pwr2rnd_recombine_en),
 
   .power2round_enable_o(power2round_enable),
   .pwr2rnd_keymem_if_i(pwr2rnd_keymem_if),
@@ -1486,7 +1493,8 @@ generate if (MASKING_EN) begin : ntt1_mem_read_mux
                                   (sigencode_recombine_en & sigencode_mem_re0_bank[0][bank]) |
                                   (compress_recombine_en  & compress_mem_re0_bank[0][bank])  |
                                   (skencode_recombine_en  & skencode_mem_re0_bank[0][bank]) |
-                                  (decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]);
+                                  (decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]) |
+                                  (pwr2rnd_recombine_en   & pwr2rnd_mem_re0_bank[0][bank]);
       abr_mem_raddr0_bank[1][bank] = ({ABR_MEM_ADDR_WIDTH-4{ntt_mem_re0_bank_mux[1][bank]}}   & ntt_mem_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1]) |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_a_mem_re0_bank_mux[1][bank]}} & pwm_a_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
                                     ({ABR_MEM_ADDR_WIDTH-4{pwo_b_mem_re0_bank_mux[1][bank]}} & pwm_b_rd_req_mux[1][0][ABR_MEM_ADDR_WIDTH-4:1])   |
@@ -1496,7 +1504,8 @@ generate if (MASKING_EN) begin : ntt1_mem_read_mux
                                     ({ABR_MEM_ADDR_WIDTH-4{sigencode_recombine_en & sigencode_mem_re0_bank[0][bank]}} & sigencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
                                     ({ABR_MEM_ADDR_WIDTH-4{compress_recombine_en  & compress_mem_re0_bank[0][bank]}}  & compress_mem_rd_req.addr[ABR_MEM_ADDR_WIDTH-4:1])      |
                                     ({ABR_MEM_ADDR_WIDTH-4{skencode_recombine_en  & skencode_mem_re0_bank[0][bank]}}  & skencode_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
-                                    ({ABR_MEM_ADDR_WIDTH-4{decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:1]);
+                                    ({ABR_MEM_ADDR_WIDTH-4{decompose_recombine_en & decomp_mem_re0_bank[0][0][bank]}} & decomp_mem_rd_req[0].addr[ABR_MEM_ADDR_WIDTH-4:1]) |
+                                    ({ABR_MEM_ADDR_WIDTH-4{pwr2rnd_recombine_en   & pwr2rnd_mem_re0_bank[0][bank]}}   & pwr2rnd_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]);
     end
     for (int unsigned i = 1; i < 3; i++) begin
       // Non-banked memories (i=1,2). SIGENCODE_R does NOT contribute here —
@@ -1740,6 +1749,8 @@ assign compress_recombine_en_pipe[0]    = compress_recombine_en;
 assign skencode_recombine_en_pipe[0]    = skencode_recombine_en;
 // Step 27.2.4-c: stage-0 of the DECOMPOSE recombine-en pipeline.
 assign decompose_recombine_en_pipe[0]   = decompose_recombine_en;
+// Step 27.2.4-e: stage-0 of the PWR2RND recombine-en pipeline.
+assign pwr2rnd_recombine_en_pipe[0]     = pwr2rnd_recombine_en;
 
 generate
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pws_rec_en_pipe
@@ -1831,6 +1842,18 @@ generate
         decompose_recombine_en_pipe[g_stage] <= decompose_recombine_en_pipe[g_stage-1];
     end
   end
+  // Step 27.2.4-e: PWR2RND recombine-en pipeline. PWR2RND is MLDSA-only —
+  // no separate mode pipe needed (mode=0). Dual-port banked reads only.
+  for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pwr2rnd_rec_en_pipe
+    always_ff @(posedge clk or negedge rst_b) begin
+      if (!rst_b)
+        pwr2rnd_recombine_en_pipe[g_stage] <= 1'b0;
+      else if (zeroize_reg)
+        pwr2rnd_recombine_en_pipe[g_stage] <= 1'b0;
+      else
+        pwr2rnd_recombine_en_pipe[g_stage] <= pwr2rnd_recombine_en_pipe[g_stage-1];
+    end
+  end
 endgenerate
 
 // Share computation (Opt A) — selects the active bank/lane at the cycle the regular
@@ -1868,7 +1891,8 @@ always_comb begin
                                                  (sigencode_recombine_en_pipe[SRAM_LATENCY] & sigencode_mem_re0_bank[SRAM_LATENCY][bank]) |
                                                  (compress_recombine_en_pipe[SRAM_LATENCY]  & compress_mem_re0_bank[SRAM_LATENCY][bank])  |
                                                  (skencode_recombine_en_pipe[SRAM_LATENCY]  & skencode_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                 (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank])}}
+                                                 (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank]) |
+                                                 (pwr2rnd_recombine_en_pipe[SRAM_LATENCY]   & pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
                              & abr_mem_rdata0_bank[0][bank]);
     if (MASKING_EN)
       pws_rec_share1[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]       & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
@@ -1876,7 +1900,8 @@ always_comb begin
                                                    (sigencode_recombine_en_pipe[SRAM_LATENCY] & sigencode_mem_re0_bank[SRAM_LATENCY][bank]) |
                                                    (compress_recombine_en_pipe[SRAM_LATENCY]  & compress_mem_re0_bank[SRAM_LATENCY][bank])  |
                                                    (skencode_recombine_en_pipe[SRAM_LATENCY]  & skencode_mem_re0_bank[SRAM_LATENCY][bank])  |
-                                                   (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank])}}
+                                                   (decompose_recombine_en_pipe[SRAM_LATENCY] & decomp_mem_re0_bank[SRAM_LATENCY][0][bank]) |
+                                                   (pwr2rnd_recombine_en_pipe[SRAM_LATENCY]   & pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
                                & abr_mem_rdata0_bank[MASKED_IDX][bank]);
   end
   // Non-banked memories (i==1,2): SIGENCODE_R does NOT use non-banked memory
@@ -1918,24 +1943,26 @@ generate if (MASKING_EN) begin : g_pws_recombiner
       .clk      (clk),
       .reset_n  (rst_b),
       .zeroize  (zeroize_reg),
-      // OR-merge all five consumer enables. Mutex by single-issue sequencer
+      // OR-merge all consumer enables. Mutex by single-issue sequencer
       // (at most one of PWS_R / NORMCHK_R / SIGENCODE_R / COMPRESS_R /
-      // SKENCODE_R fires per cycle).
+      // SKENCODE_R / DECOMPOSE_R / PWR2RND_R fires per cycle).
       .en_i     (pws_recombine_en_pipe[SRAM_LATENCY]      |
                  normchk_recombine_en_pipe[SRAM_LATENCY]  |
                  sigencode_recombine_en_pipe[SRAM_LATENCY] |
                  compress_recombine_en_pipe[SRAM_LATENCY]  |
                  skencode_recombine_en_pipe[SRAM_LATENCY]  |
-                 decompose_recombine_en_pipe[SRAM_LATENCY]),
+                 decompose_recombine_en_pipe[SRAM_LATENCY] |
+                 pwr2rnd_recombine_en_pipe[SRAM_LATENCY]),
       // mode: MLKEM iff the firing consumer is PWS-MLKEM or COMPRESS_R
-      // (always MLKEM). NORMCHK_R, SIGENCODE_R, SKENCODE_R, and DECOMPOSE_R
-      // are all MLDSA-only — exclude them from the mode=1 term. COMPRESS_R
-      // force-OR's mode=1 via compress_recombine_en_pipe.
+      // (always MLKEM). NORMCHK_R, SIGENCODE_R, SKENCODE_R, DECOMPOSE_R, and
+      // PWR2RND_R are all MLDSA-only — exclude them from the mode=1 term.
+      // COMPRESS_R force-OR's mode=1 via compress_recombine_en_pipe.
       .mode     ((pws_recombine_mlkem_mode_pipe[SRAM_LATENCY] &
                   ~normchk_recombine_en_pipe[SRAM_LATENCY]    &
                   ~sigencode_recombine_en_pipe[SRAM_LATENCY]  &
                   ~skencode_recombine_en_pipe[SRAM_LATENCY]   &
-                  ~decompose_recombine_en_pipe[SRAM_LATENCY]) |
+                  ~decompose_recombine_en_pipe[SRAM_LATENCY]  &
+                  ~pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) |
                  compress_recombine_en_pipe[SRAM_LATENCY]),
       .share0_i (pws_rec_share0[bank]),
       .share1_i (pws_rec_share1[bank]),
@@ -1973,7 +2000,12 @@ always_comb begin
   sigencode_mem_rd_data[1] = (MASKING_EN && sigencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
                                                                                        : abr_mem_rdata0_bank[0][1];
 end
-always_comb pwr2rnd_mem_rd_data = abr_mem_rdata0_bank[0];
+always_comb begin
+  pwr2rnd_mem_rd_data[0] = (MASKING_EN && pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
+                                                                                   : abr_mem_rdata0_bank[0][0];
+  pwr2rnd_mem_rd_data[1] = (MASKING_EN && pwr2rnd_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[1]
+                                                                                   : abr_mem_rdata0_bank[0][1];
+end
 
 //Read data valids
 always_comb compress_mem_rd_data_valid = (|compress_mem_re[SRAM_LATENCY]) || (|compress_mem_re0_bank[SRAM_LATENCY]);
