@@ -330,21 +330,21 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 |                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Unprotected"**      | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Key Generation**     | 6,603            |         0.017 | 60,579                 |     |         0.011 | 90,868                 |
+| **Key Generation**     | 6,640            |         0.017 | 60,241                 |     |         0.011 | 90,361                 |
 | **Encapsulation**      | 7,930            |         0.020 | 50,441                 |     |         0.013 | 75,662                 |
 | **Decapsulation**      | 11,054           |         0.028 | 36,186                 |     |         0.018 | 54,279                 |
 
 
-**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined via explicit `RECOMBINE` sequencer ops. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
+**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined inline at each unmasked consumer via the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
 The performance overhead associated with enabling these countermeasures is as follows:
 
 |                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Protected"**        | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Key Generation**     | 6,603            |         0.017 | 60,579                 |     |         0.011 | 90,868                 |
-| **Encapsulation**      | 8,509            |         0.021 | 47,009                 |     |         0.014 | 70,514                 |
-| **Decapsulation**      | 12,117           |         0.030 | 33,011                 |     |         0.020 | 49,517                 |
+| **Key Generation**     | 6,640            |         0.017 | 60,241                 |     |         0.011 | 90,361                 |
+| **Encapsulation**      | 7,930            |         0.020 | 50,441                 |     |         0.013 | 75,662                 |
+| **Decapsulation**      | 11,056           |         0.028 | 36,179                 |     |         0.018 | 54,269                 |
 
 
 
