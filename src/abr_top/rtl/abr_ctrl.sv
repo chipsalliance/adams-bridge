@@ -89,65 +89,16 @@ module abr_ctrl
 
   output logic                        split_en_o,
 
-  // Step 27.2.1 — RECOMBINE fusion (pilot: PWS consumer).
-  // Asserted when the current consumer opcode targets PWS hardware AND its
-  // recombine_en flag is set. Gated by MASKING_EN at the source so MASKING_EN=0
-  // builds make this a constant 0. abr_top uses it to drive the shared
-  // abr_recombiner output mux onto the PWS read-data path. Dormant until a
-  // sequencer entry sets recombine_en=1 on a PWS (step 27.2.3).
+  // Per-consumer recombine enable gates. Each asserts when the current opcode
+  // targets that consumer's hardware AND its recombine_en flag is set. All
+  // compile-time gated by MASKING_EN (constant 0 in unmasked builds).
+  // PWS gate also covers MLDSA_PWA (operand1→pwm_b swap convention).
   output logic                        pws_recombine_en_o,
-
-  // Step 27.2.4-b commit 0b — RECOMBINE fusion for NORMCHK consumer (separate
-  // signal from pws_recombine_en_o because NORMCHK uses aux_en=1, ntt_en=0
-  // opcode shape — incompatible with the pws gate). abr_top OR-merges this with
-  // pws_recombine_en_o at the SHARED u_pws_recombiner.en_i, and uses it to
-  // (a) feed NORMCHK's regular-mem read enables/address into the share-tap
-  // accumulator and the parallel masked-mem read, and (b) override
-  // normcheck_mem_rd_data with the recombiner output. Dormant until a
-  // sequencer entry sets recombine_en=1 on a NORMCHK (step 27.2.4-b commit C).
   output logic                        normchk_recombine_en_o,
-
-  // Step 27.2.4-b commit 0d — RECOMBINE fusion for SIGENCODE consumer (separate
-  // signal from both pws_recombine_en_o (needs ntt_en=1) and
-  // normchk_recombine_en_o (needs mode==MLDSA_NORMCHK) — SIGENCODE opcode shape
-  // is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SIGENC}). SIGENCODE issues TWO
-  // concurrent banked reads per cycle (port↔bank fixed, both fire same cycle),
-  // so abr_top.sv routes this enable to the per-bank dual-recombiner pair added
-  // in commit 0d; each bank's recombiner overrides the matching
-  // sigencode_mem_rd_data[bank] port. Dormant until a sequencer entry sets
-  // recombine_en=1 on a SIGENCODE row.
   output logic                        sigencode_recombine_en_o,
-
-  // Step 27.2.4-c — RECOMBINE fusion for COMPRESS consumer (separate signal
-  // from all prior recombine gates). COMPRESS uses a single read port
-  // (compress_mem_rd_req) spanning both banked and non-banked memories; the
-  // fused variant taps the shared per-bank recombiner pair. COMPRESS is
-  // MLKEM-only, so it forces mode=1 at the recombiner. Dormant until a
-  // sequencer entry sets recombine_en=1 on a COMPRESS row.
   output logic                        compress_recombine_en_o,
-
-  // Step 27.2.4-c — RECOMBINE fusion for SKENCODE consumer (separate signal
-  // from all prior recombine gates). SKENCODE issues TWO concurrent banked
-  // reads per cycle (skencode_mem_rd_req[0]→bank0, [1]→bank1); the fused
-  // variant uses the per-bank dual-recombiner pair (same pattern as
-  // SIGENCODE_R). SKENCODE is MLDSA-only, so it contributes mode=0. Dormant
-  // until a sequencer entry sets recombine_en=1 on a SKENCODE row.
   output logic                        skencode_recombine_en_o,
-
-  // Step 27.2.4-c — RECOMBINE fusion for DECOMPOSE consumer (separate signal
-  // from all prior recombine gates). DECOMPOSE is a single-port reader spanning
-  // banked + non-banked memories — same OR-merge pattern as COMPRESS_R / NORMCHK_R.
-  // MLDSA-only (mode=0). Dormant until a sequencer entry sets recombine_en=1 on
-  // a DECOMPOSE row.
   output logic                        decompose_recombine_en_o,
-
-  // Step 27.2.4-e — RECOMBINE fusion for PWR2RND consumer (separate signal
-  // from all prior recombine gates). PWR2RND issues TWO concurrent banked
-  // reads per cycle (pwr2rnd_mem_rd_req[0]→bank0, [1]→bank1); the fused
-  // variant uses the per-bank dual-recombiner pair (same pattern as
-  // SKENCODE_R / SIGENCODE_R). PWR2RND is MLDSA-only, so it contributes
-  // mode=0. Dormant until a sequencer entry sets recombine_en=1 on a
-  // PWR2RND row.
   output logic                        pwr2rnd_recombine_en_o,
 
   output logic power2round_enable_o,
@@ -2250,77 +2201,38 @@ end
 // Splitter is bypassed if masking is disabled.
 always_comb split_en_o = MASKING_EN & abr_instr.opcode.masking_en & ~ntt_en;
 
-// Step 27.2.1 — RECOMBINE fusion (pilot consumer = PWS).
-// Per-consumer recombine enable: asserts when the current uOP targets PWS
-// hardware AND carries the new recombine_en flag. Compile-time gated by
-// MASKING_EN (no-op in unmasked builds — there is nothing to recombine when
-// only one share exists). Uses the gated abr_instr so ZEROIZE/RESET/skip
-// conditions cleanly squash the enable.
-// Step 27.2.4-b commit 0a — historical signal name kept; now also covers
-// MLDSA_PWA (the to-be-recombined operand1 lands on pwm_b for PWA as well,
-// after the abr_ctrl operand-swap convention added in 27.2.3, so no
-// abr_top.sv datapath changes are needed for PWA_R — the existing pwm_b
-// override mux, share-tap accumulator, and parallel masked-mem read all
-// fire on PWA's pwm_b reads identically).
+// Per-consumer recombine-enable assigns. All gated by MASKING_EN + opcode.recombine_en.
+// PWS gate also covers MLDSA_PWA (operand1→pwm_b swap, see ~L2210).
 always_comb pws_recombine_en_o = MASKING_EN
                                & abr_instr.opcode.recombine_en
                                & abr_instr.opcode.ntt_en
                                & (abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
 
-// Step 27.2.4-b commit 0b — NORMCHK consumer recombine-enable.
-// Separate gate from pws_recombine_en_o: NORMCHK opcode shape is
-// {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_NORMCHK}, incompatible with the
-// pws gate. Same compile-time MASKING_EN gating + same gated abr_instr so
-// ZEROIZE/RESET/skip cleanly squash the enable.
 always_comb normchk_recombine_en_o = MASKING_EN
                                    & abr_instr.opcode.recombine_en
                                    & abr_instr.opcode.aux_en
                                    & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
 
-// Step 27.2.4-b commit 0d — SIGENCODE consumer recombine-enable.
-// Separate gate from pws_recombine_en_o and normchk_recombine_en_o:
-// SIGENCODE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SIGENC}.
-// Same compile-time MASKING_EN gating + same gated abr_instr so ZEROIZE/RESET/
-// skip cleanly squash the enable. Routed in abr_top.sv to the per-bank
-// dual-recombiner pair; each bank's recombiner output overrides the matching
-// sigencode_mem_rd_data[bank] port (SIGENCODE consumes both banks concurrently).
 always_comb sigencode_recombine_en_o = MASKING_EN
                                      & abr_instr.opcode.recombine_en
                                      & abr_instr.opcode.aux_en
                                      & (abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
 
-// Step 27.2.4-c — COMPRESS consumer recombine-enable.
-// COMPRESS opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLKEM_COMPRESS}.
-// COMPRESS is MLKEM-only; mode=1 forced at the recombiner via OR into mode port.
-// Single-port reader spanning banked + non-banked memories — same OR-merge
-// pattern as NORMCHK_R at the consumer data mux.
 always_comb compress_recombine_en_o = MASKING_EN
                                     & abr_instr.opcode.recombine_en
                                     & abr_instr.opcode.aux_en
                                     & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS);
 
-// Step 27.2.4-c — SKENCODE consumer recombine-enable.
-// SKENCODE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_SKENCODE}.
-// SKENCODE is MLDSA-only and dual-port (same pattern as SIGENCODE). Each bank's
-// recombiner output overrides the matching skencode_mem_rd_data[bank] port.
 always_comb skencode_recombine_en_o = MASKING_EN
                                     & abr_instr.opcode.recombine_en
                                     & abr_instr.opcode.aux_en
                                     & (abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
 
-// Step 27.2.4-c — DECOMPOSE consumer recombine-enable.
-// DECOMPOSE opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_DECOMP}.
-// DECOMPOSE is MLDSA-only and single-port (same pattern as NORMCHK/COMPRESS).
-// The recombiner output overrides decomp_mem_rd_data[0].
 always_comb decompose_recombine_en_o = MASKING_EN
                                      & abr_instr.opcode.recombine_en
                                      & abr_instr.opcode.aux_en
                                      & (abr_instr.opcode.mode.aux_mode == MLDSA_DECOMP);
 
-// Step 27.2.4-e — PWR2RND consumer recombine-enable.
-// PWR2RND opcode shape is {aux_en:1, ntt_en:0, mode.aux_mode==MLDSA_PWR2RND}.
-// PWR2RND is MLDSA-only and dual-port (same pattern as SKENCODE / SIGENCODE).
-// Each bank's recombiner output overrides the matching pwr2rnd_mem_rd_data[bank] port.
 always_comb pwr2rnd_recombine_en_o = MASKING_EN
                                    & abr_instr.opcode.recombine_en
                                    & abr_instr.opcode.aux_en

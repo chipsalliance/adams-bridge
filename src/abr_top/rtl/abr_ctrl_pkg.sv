@@ -215,10 +215,9 @@ package abr_ctrl_pkg;
         logic aux_en;
         abr_opcode_mode_u mode;
         logic masking_en;
-        // Step 27.2.1 — RECOMBINE fusion: when set on a consumer opcode (e.g. PWS),
-        // abr_top's shared abr_recombiner combines (share0+share1) on-the-fly so the
-        // consumer reads the recombined poly directly. Default 0 keeps legacy behavior.
-        // Effective only when MASKING_EN=1 (gated in abr_ctrl); a no-op otherwise.
+        // When set on a consumer opcode, abr_top's shared recombiner produces
+        // (share0+share1) mod q on-the-fly so the consumer reads recombined data.
+        // Effective only when MASKING_EN=1.
         logic recombine_en;
         logic shuffling_en;
     } abr_opcode_t;
@@ -248,18 +247,8 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_PWM              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWA              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
-    // Step 27.2.4-a: Fused-recombine MLDSA PWS variant — same as ABR_UOP_PWS with
-    // recombine_en=1. operand1 reads from masked memory (shares), the shared
-    // recombiner produces the unmasked share on the pwm_b read port, and PWS
-    // subtracts it from operand2. Replaces RECOMBINE+PWS pairs in MLDSA SIGN.
+    // Fused-recombine variants: same as the base opcode with recombine_en=1.
     localparam abr_opcode_t ABR_UOP_PWS_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
-    // Step 27.2.4-b commit 0a: Fused-recombine MLDSA PWA variant — same as ABR_UOP_PWA
-    // with recombine_en=1. operand1 (the to-be-recombined poly) reads from masked memory
-    // (shares); the shared recombiner produces the unmasked value on the pwm_b read port
-    // (after the abr_ctrl operand-swap fix from 27.2.3), and PWA adds it to operand2.
-    // Replaces RECOMBINE+PWA pairs in MLDSA KG. Reuses 100% of the pwm_b infrastructure
-    // built in 27.2.2/27.2.3 — no abr_top.sv changes; only the pws_recombine_en_o gate's
-    // mode allow-list is extended in abr_ctrl.sv.
     localparam abr_opcode_t ABR_UOP_PWA_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_NTT       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MASKED_NTT_NOSHUF = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
@@ -281,10 +270,6 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWMA      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM,      masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
-    // Step 27.2.3: Fused-recombine PWS variant — reads operand1 from masked memory (shares),
-    // runs the shared recombiner at the pwm_a read port, and feeds the recombined value
-    // into the PWS arithmetic. Lets us drop the standalone RECOMBINE that would otherwise
-    // precede this PWS in the seq. Same as ABR_UOP_MLKEM_PWS but with recombine_en=1.
     localparam abr_opcode_t ABR_UOP_MLKEM_PWS_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_RECOMBINE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_RECOMBINE,      masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
 
@@ -295,81 +280,23 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_RUN_SHAKE256 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     // Aux functions
     localparam abr_opcode_t ABR_UOP_DECOMPOSE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-c: Fused-recombine MLDSA DECOMPOSE variant — same as
-    // ABR_UOP_DECOMPOSE with recombine_en=1. DECOMPOSE is a single-port reader
-    // (one bank/cycle) spanning banked + non-banked memories — same OR-merge
-    // pattern as COMPRESS_R / NORMCHK_R at the consumer data mux. MLDSA-only
-    // (mode=0 at the recombiner).
     localparam abr_opcode_t ABR_UOP_DECOMPOSE_R     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_SKDECODE = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SKENCODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-c: Fused-recombine MLDSA SKENCODE variant — same as
-    // ABR_UOP_SKENCODE with recombine_en=1. SKENCODE issues TWO concurrent
-    // banked reads per cycle (skencode_mem_rd_req[0]→bank0, [1]→bank1), so the
-    // fused variant uses the per-bank dual-recombiner pair (same infrastructure
-    // as SIGENCODE_R). Each bank's recombiner output overrides the matching
-    // skencode_mem_rd_data[bank] port. Opcode shape (aux_en=1, ntt_en=0,
-    // mode.aux_mode==MLDSA_SKENCODE) is incompatible with pws/normchk/sigencode
-    // gates, hence a separate skencode_recombine_en_o signal in abr_ctrl.sv.
-    // Dormant until a sequencer entry sets recombine_en=1 on a SKENCODE row.
     localparam abr_opcode_t ABR_UOP_SKENCODE_R      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MAKEHINT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_NORMCHK         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-b commit 0b: Fused-recombine MLDSA NORMCHK variant — same as
-    // ABR_UOP_NORMCHK with recombine_en=1. The address NORMCHK requests on its
-    // dedicated normcheck_mem_rd_req port is treated as the to-be-recombined poly:
-    // share0 from regular mem + share1 from the parallel masked-mem read at the
-    // SAME address are fed to the SHARED u_pws_recombiner, and its output overrides
-    // normcheck_mem_rd_data. Replaces RECOMBINE+NORMCHK pairs in MLDSA SIGN.
-    // Opcode shape (aux_en=1, ntt_en=0) is incompatible with pws_recombine_en_o
-    // gate (which requires ntt_en=1), hence a separate normchk_recombine_en_o
-    // signal is added in abr_ctrl.sv.
     localparam abr_opcode_t ABR_UOP_NORMCHK_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGENCODE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-b commit 0d: Fused-recombine MLDSA SIGENCODE variant — same as
-    // ABR_UOP_SIGENCODE with recombine_en=1. SIGENCODE issues TWO concurrent
-    // banked reads per cycle (mem_a_rd_req on bank 0 + mem_b_rd_req on bank 1,
-    // see sigencode_z_top.sv:191-193 and abr_top.sv:1365 — port↔bank mapping is
-    // FIXED, not addr[0]-selected). The fused variant treats each bank's source
-    // as a to-be-recombined poly: share0 from regular mem + share1 from the
-    // parallel masked-mem read at the SAME bank/address are fed to a DEDICATED
-    // bank recombiner (Step 27.2.4-b commit 0d added a 2nd abr_recombiner
-    // instance per bank), and each recombiner output overrides the matching
-    // sigencode_mem_rd_data[bank] port. Opcode shape (aux_en=1, ntt_en=0,
-    // mode.aux_mode==MLDSA_SIGENC) is incompatible with both pws_recombine_en_o
-    // (needs ntt_en=1) and normchk_recombine_en_o (needs mode==MLDSA_NORMCHK),
-    // hence a separate sigencode_recombine_en_o signal is added in abr_ctrl.sv.
-    // Dormant until a sequencer entry sets recombine_en=1 on a SIGENCODE row.
     localparam abr_opcode_t ABR_UOP_SIGENCODE_R     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_H        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_Z         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_USEHINT         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PWR2RND         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-e: Fused-recombine MLDSA PWR2RND variant — same as
-    // ABR_UOP_PWR2RND with recombine_en=1. Reads the to-be-recombined poly
-    // (split between regular and masked memory) from BOTH bank ports
-    // concurrently (pwr2rnd_mem_rd_req[0]→bank0, [1]→bank1, identical to
-    // SKENCODE), and each bank's per-bank u_pws_recombiner output overrides
-    // the matching pwr2rnd_mem_rd_data[bank] port. power2round_top sees what
-    // looks like normal regular-memory data — no internal change. Opcode
-    // shape (aux_en=1, ntt_en=0, mode.aux_mode==MLDSA_PWR2RND) is
-    // incompatible with pws/normchk/sigencode/skencode gates, hence a
-    // separate pwr2rnd_recombine_en_o signal in abr_ctrl.sv.
     localparam abr_opcode_t ABR_UOP_PWR2RND_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_LFSR            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_COMPRESS        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    // Step 27.2.4-c: Fused-recombine MLKEM COMPRESS variant — same as
-    // ABR_UOP_COMPRESS with recombine_en=1. COMPRESS uses a single read port
-    // (compress_mem_rd_req) that reads from both banked and non-banked memories.
-    // The fused variant taps the shared per-bank recombiner pair; since COMPRESS
-    // is single-port (one bank/cycle), the OR-merge of both bank outputs yields
-    // the correct recombined value (same pattern as NORMCHK_R). COMPRESS is
-    // MLKEM-only, so it forces mode=1 at the recombiner (MLKEM_Q=3329). Opcode
-    // shape (aux_en=1, ntt_en=0, mode.aux_mode==MLKEM_COMPRESS) is incompatible
-    // with pws/normchk/sigencode/skencode gates, hence a separate
-    // compress_recombine_en_o signal in abr_ctrl.sv.
-    // Dormant until a sequencer entry sets recombine_en=1 on a COMPRESS row.
     localparam abr_opcode_t ABR_UOP_COMPRESS_R      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_DECOMPRESS      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_DECOMPRESS = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_DECOMPRESS, masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};

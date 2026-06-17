@@ -185,10 +185,7 @@ module abr_seq
                 MLDSA_KG_S+  98 : data_o_rom <= '{opcode:ABR_UOP_PWR2RND_R, imm:'h0000, length:'d00, operand1:MLDSA_T0_BASE, operand2:ABR_NOP, operand3:MLDSA_SK_T0_OFFSET};
                 //tr ←H(BytesToBits(pk),512)
                 MLDSA_KG_S+  99 : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:PUBKEY_NUM_BYTES, operand1:MLDSA_PK_REG_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_TR_REG_ID};
-                //Step 27.2.4-e: S1 and S2 are masked (split shares) throughout keygen.
-                //S2 sampling = MASKED_REJB; AS0_INTT+S2 = MASKED_PWA produces split t;
-                //PWR2RND_R recombines t on read; SKENCODE_R recombines s1 on read.
-                //sk ←skEncode(ρ,K,tr,s1,s2,t0) — fused with consumer-side recombine of s1 (SKENCODE_R)
+                //sk ←skEncode(ρ,K,tr,s1,s2,t0) — s1 recombined on read via SKENCODE_R
                 MLDSA_KG_S+ 100 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE_R, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_KG_JUMP_SIGN : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //KG end
@@ -338,8 +335,7 @@ module abr_seq
                 MLDSA_SIGN_MAKE_W_S+ 63 : data_o_rom <= '{opcode:ABR_UOP_MASKED_INTT,  imm:'h0001, length:'d00, operand1:MLDSA_AY0_BASE, operand2:MLDSA_TEMP2_BASE, operand3:MLDSA_W0_7_BASE};
                 
                 //(w1,w0) ←Decompose(w) AND c˜←H(μ||w1Encode(w1),2λ)
-                // Step 27.2.4-c: Fused DECOMPOSE_R — absorbs W0_0..W0_7
-                // recombine into DECOMPOSE's read pipeline (8 RECOMBINE slots removed).
+                // DECOMPOSE_R absorbs W0_0..W0_7 recombine into its read pipeline.
                 MLDSA_SIGN_MAKE_W_S+ 64 : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_SIGN_MAKE_W       : data_o_rom <= '{opcode:ABR_UOP_DECOMPOSE_R, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:ABR_NOP, operand3:MLDSA_W0_0_BASE}; 
 
@@ -671,11 +667,7 @@ module abr_seq
                 MLKEM_DECAPS_S  + 13: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S2_BASE, operand2:MLKEM_UP2_BASE, operand3:MLKEM_SU_MASKED_BASE};
                 MLKEM_DECAPS_S  + 14: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_PWMA, imm:'h0000, length:'d00, operand1:MLKEM_S3_BASE, operand2:MLKEM_UP3_BASE, operand3:MLKEM_SU_MASKED_BASE};
                 MLKEM_DECAPS_S  + 15: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_INTT, imm:'h0000, length:'d00, operand1:MLKEM_SU_MASKED_BASE, operand2:ABR_TEMP0_BASE, operand3:MLKEM_SU_BASE};
-                // Step 27.2.3: fused PWS — replaces the legacy {RECOMBINE; PWS} two-row pair
-                // that used to live at +16 (RECOMBINE) and +17 (PWS). The recombine is now
-                // absorbed into PWS_R's pwm_b read port: NTT[0] reads share0 from regular mem
-                // and NTT[1] reads share1 from masked mem in parallel; abr_recombiner
-                // (LATENCY=0) sums them on-the-fly and feeds the result into the PWS arithmetic.
+                // Fused PWS_R — absorbs the prior RECOMBINE into PWS's pwm_b read.
                 MLKEM_DECAPS_S  + 16: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWS_R, imm:'h0000, length:'d00, operand1:MLKEM_SU_BASE, operand2:MLKEM_V_BASE, operand3:MLKEM_V_BASE};
                 MLKEM_DECAPS_S  + 17: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0100, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_MSG_MEM_OFFSET};
                 //MLKEM Encaps
@@ -707,10 +699,7 @@ module abr_seq
                 MLKEM_ENCAPS_S  + 24: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_REJS_PWMA, imm:'h0300, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y3_BASE, operand3:MLKEM_AY0_BASE};
                 MLKEM_ENCAPS_S  + 25: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_INTT, imm:'h0000, length:'d00, operand1:MLKEM_AY0_BASE, operand2:ABR_TEMP0_BASE, operand3:MLKEM_UP0_BASE};
                 MLKEM_ENCAPS_S  + 26: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_UP0_BASE, operand2:MLKEM_E0_BASE, operand3:MLKEM_UP0_BASE};
-                // Step 27.2.4-c: RECOMBINE(UP0) removed — COMPRESS_R at +53 fuses it.
-                // Masked mem at UP0 retains share1 from MASKED_INTT; PWA only
-                // updates regular mem (share0 += E0). No intervening write to
-                // UP0's masked address before COMPRESS_R reads it.
+                // RECOMBINE(UP0) absorbed into COMPRESS_R at +53.
                 MLKEM_ENCAPS_S  + 27: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_REJS_PWM, imm:'h0001, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y0_BASE, operand3:MLKEM_AY0_BASE};
                 MLKEM_ENCAPS_S  + 28: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_REJS_PWMA, imm:'h0101, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y1_BASE, operand3:MLKEM_AY0_BASE};
                 MLKEM_ENCAPS_S  + 29: data_o_rom <= '{opcode:ABR_UOP_MLKEM_MASKED_REJS_PWMA, imm:'h0201, length:'d34, operand1:MLKEM_RHO_ID, operand2:MLKEM_Y2_BASE, operand3:MLKEM_AY0_BASE};

@@ -134,82 +134,34 @@ module abr_top
   logic recombine_en_ctrl;
   logic recombine_en;
   logic [SRAM_LATENCY:0] recombine_en_pipe;
-  // Step 27.2.2: shared PWS-fused recombine datapath (dormant in step-2)
-  // pws_recombine_en is asserted by abr_ctrl when an in-flight PWS opcode
-  // carries the recombine_en flag (set by abr_seq for a fused PWS row).
-  // Currently always 0 — the flag is not set in any abr_seq entry yet.
-  // Pipeline depth: SRAM_LATENCY (mem read latency). The recombiner instance below
-  // is configured with LATENCY=0 (combinational), so the recombined data drops
-  // into the pwm_a read window at exactly T = SRAM_LATENCY — matching when
-  // NTT[0] combinationally samples pwm_a_rd_data in its timing-driven PWS path.
-  // Mode pipeline only needs SRAM_LATENCY depth (sampled at recombiner.en_i).
+  // Consumer-recombine datapaths (one *_recombine_en per fused consumer opcode).
+  // When asserted, the shared abr_recombiner instance(s) produce (share0+share1) mod q
+  // at the consumer's read window. Per-bank arrays support dual-port consumers
+  // (SIGENCODE_R/SKENCODE_R/PWR2RND_R); single-port consumers OR-merge harmlessly.
   logic                          pws_recombine_en;
   logic [SRAM_LATENCY:0]         pws_recombine_en_pipe;
   logic [SRAM_LATENCY:0]         pws_recombine_mlkem_mode_pipe;
-  // Step 27.2.4-b commit 0d: pws_rec_share0/share1/data are now PER-BANK arrays
-  // — the share-tap accumulator captures each bank independently (no OR-merge
-  // across banks), and the recombiner is instantiated 2× (one per bank). This
-  // is required to support SIGENCODE_R, which issues two concurrent banked
-  // reads per cycle (port↔bank fixed). The existing single-port consumers
-  // (PWS_R, NORMCHK_R) fire on only one bank per cycle so the other bank's
-  // recombiner sees share0=share1=0 → outputs 0 (combinational LATENCY=0
-  // recombiner: (0+0) mod q = 0), which OR-merges harmlessly into their
-  // consumer mux. SIGENCODE_R's dual-port consumer maps sigencode[bank] to
-  // pws_rec_data[bank] literally.
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_share0;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_share1;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] pws_rec_data;
-  logic [1:0]                         pws_rec_ready;       // unused — mux selector is pipeline-aligned
-  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data_default0; // Step 27.2.2 (Opt A): intermediate for NTT[0]'s pwm_a (pre-fused-PWS-recombine-mux)
-  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_default0; // intermediate for NTT[0]'s pwm_b (pre-legacy-recombine-mux)
-  // Step 27.2.4-b commit 0b: NORMCHK fused-recombine datapath (dormant in commit 0b)
-  // Mirror of pws_recombine_en/_pipe — separate signal because NORMCHK uses a
-  // different opcode shape and a different mem read port. SINGLE shared
-  // u_pws_recombiner instance is reused; en_i OR-merges both consumers. NORMCHK
-  // is MLDSA-only, so its share-input override forces mlkem_mode=0 (no separate
-  // mode pipe needed). Currently always 0 — the flag is not set on any NORMCHK
-  // row yet (set in step 27.2.4-b commit C).
+  logic [1:0]                         pws_rec_ready;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_a_rd_data_default0;
+  logic [ABR_MEM_DATA_WIDTH-1:0] pwm_b_rd_data_default0;
   logic                          normchk_recombine_en;
   logic [SRAM_LATENCY:0]         normchk_recombine_en_pipe;
-  logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data_default0; // intermediate for NORMCHK (pre-fused-NORMCHK-recombine-mux)
-  // Step 27.2.4-b commit 0d: SIGENCODE fused-recombine datapath (dormant in commit 0d).
-  // Mirror of normchk_recombine_en/_pipe — separate signal because SIGENCODE
-  // uses mode==MLDSA_SIGENC (not MLDSA_NORMCHK). SIGENCODE consumes BOTH banks
-  // concurrently each cycle (sigencode_z_top.sv:191-193: mem_a→bank0, mem_b→bank1),
-  // so it needs per-bank recombiner outputs — hence the per-bank refactor of
-  // pws_rec_data above and the 2× recombiner instantiation in g_pws_recombiner
-  // below. SIGENCODE is MLDSA-only, so its share-input override forces
-  // mlkem_mode=0 (no separate mode pipe needed). Currently always 0 — the flag
-  // is not set on any SIGENCODE row yet.
+  logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data_default0;
   logic                          sigencode_recombine_en;
   logic [SRAM_LATENCY:0]         sigencode_recombine_en_pipe;
-  // Step 27.2.4-c: COMPRESS fused-recombine datapath (dormant in this commit).
-  // COMPRESS uses a single read port spanning banked + non-banked memories.
-  // Same recombiner infrastructure as NORMCHK_R (single-port, OR-merge).
-  // COMPRESS is MLKEM-only, so it forces mode=1 at the recombiner — no separate
-  // mode pipe needed (forced via OR into mode expression).
   logic                          compress_recombine_en;
   logic [SRAM_LATENCY:0]         compress_recombine_en_pipe;
-  logic [ABR_MEM_DATA_WIDTH-1:0] compress_mem_rd_data_default0; // intermediate for COMPRESS (pre-fused-COMPRESS-recombine-mux)
-  // Step 27.2.4-c: SKENCODE fused-recombine datapath (dormant in this commit).
-  // SKENCODE uses two concurrent banked reads (same pattern as SIGENCODE_R).
-  // SKENCODE is MLDSA-only, so it contributes mode=0. Currently always 0 —
-  // the flag is not set on any SKENCODE row yet.
+  logic [ABR_MEM_DATA_WIDTH-1:0] compress_mem_rd_data_default0;
   logic                          skencode_recombine_en;
   logic [SRAM_LATENCY:0]         skencode_recombine_en_pipe;
-  // Step 27.2.4-c: DECOMPOSE fused-recombine datapath.
-  // DECOMPOSE is a single-port reader (same pattern as COMPRESS_R / NORMCHK_R).
-  // Only the main read port [0] is recombined; the hint read port [1] reads
-  // from regular memory only. MLDSA-only (mode=0).
   logic                          decompose_recombine_en;
   logic [SRAM_LATENCY:0]         decompose_recombine_en_pipe;
-  // Step 27.2.4-e: PWR2RND fused-recombine datapath.
-  // PWR2RND uses two concurrent banked reads (same pattern as SKENCODE_R /
-  // SIGENCODE_R). PWR2RND is MLDSA-only, so it contributes mode=0. Currently
-  // gated by recombine_en flag set on a PWR2RND_R sequencer row.
   logic                          pwr2rnd_recombine_en;
   logic [SRAM_LATENCY:0]         pwr2rnd_recombine_en_pipe;
-  logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data_default0; // pre-fused-recombine mux
+  logic [ABR_MEM_DATA_WIDTH-1:0] decomp_mem_rd_data_default0;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_rd_req;
@@ -1464,28 +1416,10 @@ end
 generate if (MASKING_EN) begin : ntt1_mem_read_mux
   always_comb begin
     for (int unsigned bank = 0; bank < 2; bank++) begin
-      // Step 27.2.2 (Opt A): masked-mem parallel read for share1 fetch.
-      //   - Legacy standalone RECOMBINE (recombine_en): operand1==operand2 in seq, so
-      //     pwm_b address == pwm_a address. Use pwm_b's request to fetch share1.
-      //   - Fused PWS (pws_recombine_en) [2026-06-05 fix]: operand1 is the
-      //     to-be-recombined poly; abr_ctrl swaps operand1→pwm_b at the NTT base-addr
-      //     bus (abr_ctrl.sv:2210), so use pwm_b's request — NOT pwm_a's (which
-      //     carries operand2 = unrelated polynomial like V_BASE).
-      //   - Fused NORMCHK (normchk_recombine_en) [Step 27.2.4-b commit 0b]: NORMCHK
-      //     reads on its dedicated normcheck_mem_rd_req port (a DIFFERENT bus from
-      //     pwm_b), so the masked-side raddr must come from normcheck_mem_rd_req.addr
-      //     when normchk_recombine_en asserts.
-      //   - Fused SIGENCODE (sigencode_recombine_en) [Step 27.2.4-b commit 0d]:
-      //     SIGENCODE issues TWO concurrent banked reads per cycle on
-      //     sigencode_mem_rd_req[bank] (port↔bank fixed; port[0]→bank0,
-      //     port[1]→bank1). Each bank independently OR-asserts its own
-      //     masked-side read using sigencode_mem_re0_bank[0][bank] (loop iterator
-      //     bank), with the address coming from sigencode_mem_rd_req[bank].addr.
-      //     Unlike PWS/NORMCHK, BOTH banks can fire same cycle — the per-bank
-      //     loop construct naturally supports this.
-      //   (recombine_en, pws_recombine_en, normchk_recombine_en, and
-      //    sigencode_recombine_en are mutually exclusive opcode classes —
-      //    single-issue sequencer.)
+      // Masked-mem parallel read for share1 fetch on any active fused consumer.
+      // For PWS_R, operand1→pwm_b at abr_ctrl (operand-swap convention), so PWS_R
+      // also uses pwm_b's request — NOT pwm_a's (which carries an unrelated operand2).
+      // *_recombine_en classes are mutually exclusive (single-issue sequencer).
       abr_mem_re0_bank[1][bank] = ntt_mem_re0_bank_mux[1][bank] | pwo_a_mem_re0_bank_mux[1][bank] | pwo_b_mem_re0_bank_mux[1][bank] |
                                   (recombine_en           & pwo_b_mem_re0_bank[0][0][bank]) |
                                   (pws_recombine_en       & pwo_b_mem_re0_bank[0][0][bank]) |
@@ -1508,14 +1442,8 @@ generate if (MASKING_EN) begin : ntt1_mem_read_mux
                                     ({ABR_MEM_ADDR_WIDTH-4{pwr2rnd_recombine_en   & pwr2rnd_mem_re0_bank[0][bank]}}   & pwr2rnd_mem_rd_req[bank].addr[ABR_MEM_ADDR_WIDTH-4:1]);
     end
     for (int unsigned i = 1; i < 3; i++) begin
-      // Non-banked memories (i=1,2). SIGENCODE_R does NOT contribute here —
-      // sigencode reads only from banked memories (see sigencode_mem_re0_bank
-      // setup at L1365; there is no sigencode_mem_re[0][i] for i>=1).
-      // SKENCODE_R also does NOT contribute here — skencode reads only from
-      // banked memories (skencode_mem_re0_bank, no skencode_mem_re for i>=1).
-      // COMPRESS_R DOES contribute — compress uses both banked and non-banked.
-      // DECOMPOSE_R also contributes — decompose uses both banked and non-banked
-      // (only port [0]; hint port [1] is not recombined).
+      // Non-banked memories (i=1,2). SIGENCODE/SKENCODE/PWR2RND consume only
+      // banked memories; COMPRESS_R and DECOMPOSE_R (port [0]) also span here.
       abr_mem_re[1][i] = ntt_mem_re_mux[1][i] | pwo_a_mem_re_mux[1][i] | pwo_b_mem_re_mux[1][i] |
                           (recombine_en         & pwo_b_mem_re[0][0][i]) |
                           (pws_recombine_en     & pwo_b_mem_re[0][0][i]) |
@@ -1633,8 +1561,8 @@ always_comb begin
       for (int unsigned bank = 0; bank < 2; bank++) begin
         for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
           ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re0_bank[SRAM_LATENCY][ntt][bank]}} & abr_mem_rdata0_bank[ntt][bank]);
-          // Step 27.2.2 (Opt A): NTT[0] pwm_a accumulates into _default0 — fused-PWS
-          // recombiner output may override it at the final mux below.
+          // NTT[0] pwm_a accumulates into _default0; fused-PWS recombiner
+          // output may override at the final mux below.
           if (ntt == 0)
             pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re0_bank[SRAM_LATENCY][0][bank]}} & abr_mem_rdata0_bank[0][bank]);
           else
@@ -1657,8 +1585,8 @@ always_comb begin
     end else begin
       for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++) begin
         ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{ntt_mem_re[SRAM_LATENCY][ntt][i]}} & abr_mem_rdata[ntt][i]);
-        // Step 27.2.2 (Opt A): NTT[0] pwm_a accumulates into _default0 — fused-PWS
-        // recombiner output may override it at the final mux below.
+        // NTT[0] pwm_a accumulates into _default0; fused-PWS recombiner
+        // output may override at the final mux below.
         if (ntt == 0)
           pwm_a_rd_data_default0 |= ({ABR_MEM_DATA_WIDTH{pwo_a_mem_re[SRAM_LATENCY][0][i]}} & abr_mem_rdata[0][i]);
         else
@@ -1683,73 +1611,39 @@ always_comb begin
   for (int unsigned ntt = 0; ntt < ABR_NUM_NTT; ntt++)
     ntt_mem_rd_data[ntt] |= ({ABR_MEM_DATA_WIDTH{sib_mem_re[1]}} & sib_mem_rd_data);
 
-  // Step 27.2.2 (Opt A) / 27.2.3: PWS-fused recombine override for NTT[0]'s pwm_b.
-  //   For a fused PWS row, operand1 is the to-be-recombined poly. abr_ctrl
-  //   (abr_ctrl.sv:2210-2211) swaps operand1→pw_base_addr_b, so the to-be-recombined
-  //   poly is read on pwm_b — NOT pwm_a. Recombiner output therefore replaces
-  //   pwm_b_rd_data[0]. pwm_a carries raw operand2 (the multiplier polynomial).
-  // Selector aligns with the mem-read-data cycle (SRAM_LATENCY); the recombiner is
-  // combinational (LATENCY=0), so pws_rec_data is valid in the same cycle as
-  // pws_rec_share0/share1 — matching NTT[0]'s timing-driven pwm_b sample window.
-  // NOTE: pwm_b_rd_data_default0 already has the legacy `recombine_en` mux baked in
-  // (see L1561-1564). recombine_en and pws_recombine_en are mutually exclusive opcode
-  // classes (one row, one opcode), so the two overrides cannot collide.
-  // Step 27.2.4-b commit 0d: pws_rec_data is now a per-bank array (one
-  // recombiner per bank). PWS_R is a single-port consumer — only one bank's
-  // shares are non-zero per cycle, so the other bank's recombiner outputs 0
-  // (combinational recombine(0,0)=0). OR-merging the two bank outputs yields
-  // the correct single-bank result without an explicit bank selector.
+  // PWS_R consumer mux on NTT[0]'s pwm_b. operand1 (to-be-recombined poly)
+  // is swapped to pwm_b at abr_ctrl; recombiner is combinational (LATENCY=0)
+  // so its output is valid in the same cycle as the masked-mem read return.
+  // pwm_b_rd_data_default0 already has the legacy `recombine_en` mux baked in;
+  // PWS_R is single-port — only one bank's shares are non-zero per cycle, the
+  // other bank's recombiner outputs 0, so OR-merge yields the right value.
   pwm_a_rd_data[0] = pwm_a_rd_data_default0;
   pwm_b_rd_data[0] = (MASKING_EN && pws_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
                                                                          : pwm_b_rd_data_default0;
-  // Step 27.2.4-b commit 0b: fused-NORMCHK recombine override for
-  // normcheck_mem_rd_data. When normchk_recombine_en asserts, the shared
-  // (per-bank) recombiner pair produces (s0 + s1) mod q on pws_rec_data[bank],
-  // which replaces NORMCHK's share0-only regular-mem read.
-  // pws_recombine_en_pipe, normchk_recombine_en_pipe, and sigencode_recombine_en_pipe
-  // are mutually exclusive (single-issue sequencer, one consumer per row), so the
-  // recombiner output is routed to the correct consumer port by its respective
-  // override mux. NORMCHK_R is single-port (one bank/cycle) — same OR-merge logic as PWS_R.
+  // NORMCHK_R / COMPRESS_R consumer muxes (single-port, OR-merge across banks).
   normcheck_mem_rd_data = (MASKING_EN && normchk_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
                                                                                   : normcheck_mem_rd_data_default0;
-  // Step 27.2.4-c: fused-COMPRESS recombine override for compress_mem_rd_data.
-  // COMPRESS_R is single-port (one bank/cycle or one non-banked mem/cycle) —
-  // same OR-merge logic as NORMCHK_R. All consumer recombine enables are
-  // mutually exclusive (single-issue sequencer).
-  compress_mem_rd_data = (MASKING_EN && compress_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
-                                                                                  : compress_mem_rd_data_default0;
-  // Step 27.2.4-c: fused-DECOMPOSE recombine override for decomp_mem_rd_data[0].
-  // DECOMPOSE_R is single-port (one bank/cycle or one non-banked mem/cycle) —
-  // same OR-merge logic as COMPRESS_R. Only port [0] (main read) is overridden;
-  // port [1] (hint read) comes from regular memory and is NOT recombined.
+  compress_mem_rd_data  = (MASKING_EN && compress_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
+                                                                                   : compress_mem_rd_data_default0;
+  // DECOMPOSE_R: only port [0] (main read) is recombined; port [1] (hint) is regular-mem only.
   decomp_mem_rd_data[0] = (MASKING_EN && decompose_recombine_en_pipe[SRAM_LATENCY]) ? (pws_rec_data[0] | pws_rec_data[1])
                                                                                     : decomp_mem_rd_data_default0;
 end
 
 //======================================================================
-// Step 27.2.2 / 27.2.3: shared PWS-fused recombiner — pipelines + share comp + instance
-//
-// Pipeline `pws_recombine_en` to align with mem read data arrival
-// (SRAM_LATENCY). The recombiner is combinational (LATENCY=0), so its output
-// `pws_rec_data` is valid in the same cycle as its `share0_i / share1_i`
-// inputs — which is the cycle the masked-mem read returns (T=SRAM_LATENCY).
-// That matches NTT[0]'s expected pwm_a sample window for legacy PWS, so no
-// downstream timing adjustment is needed in NTT[0].
+// Shared consumer-recombiner — pipelines + share comp + per-bank instances.
+// Each *_recombine_en is pipelined SRAM_LATENCY deep to align with mem read
+// data arrival. The recombiner itself is combinational (LATENCY=0), so output
+// is valid in the same cycle as masked-mem read return.
 //======================================================================
 
 assign pws_recombine_en_pipe[0]         = pws_recombine_en;
 assign pws_recombine_mlkem_mode_pipe[0] = mlkem_mode[0];
-// Step 27.2.4-b commit 0b: stage-0 of the NORMCHK recombine-en pipeline.
 assign normchk_recombine_en_pipe[0]     = normchk_recombine_en;
-// Step 27.2.4-b commit 0d: stage-0 of the SIGENCODE recombine-en pipeline.
 assign sigencode_recombine_en_pipe[0]   = sigencode_recombine_en;
-// Step 27.2.4-c: stage-0 of the COMPRESS recombine-en pipeline.
 assign compress_recombine_en_pipe[0]    = compress_recombine_en;
-// Step 27.2.4-c: stage-0 of the SKENCODE recombine-en pipeline.
 assign skencode_recombine_en_pipe[0]    = skencode_recombine_en;
-// Step 27.2.4-c: stage-0 of the DECOMPOSE recombine-en pipeline.
 assign decompose_recombine_en_pipe[0]   = decompose_recombine_en;
-// Step 27.2.4-e: stage-0 of the PWR2RND recombine-en pipeline.
 assign pwr2rnd_recombine_en_pipe[0]     = pwr2rnd_recombine_en;
 
 generate
@@ -1773,12 +1667,9 @@ generate
         pws_recombine_mlkem_mode_pipe[g_stage] <= pws_recombine_mlkem_mode_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-b commit 0b: NORMCHK recombine-en pipeline (mirror of
-  // pws_recombine_en_pipe). Aligns the en_i selector with the SRAM-read-data
-  // arrival cycle so the share-tap accumulator picks up NORMCHK's regular-mem
-  // share0 + masked-mem share1 at exactly the cycle they are valid at the
-  // memory read port. No separate mode pipe — NORMCHK is MLDSA-only, so it
-  // forces mlkem_mode=0 at the recombiner instance below.
+  // Per-consumer recombine-en pipelines — aligns the en_i / share-tap selectors
+  // with the SRAM-read-data arrival cycle. All consumers except PWS_MLKEM and
+  // COMPRESS_R contribute mode=0 (MLDSA); mode is OR-folded at the recombiner.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : normchk_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1789,12 +1680,6 @@ generate
         normchk_recombine_en_pipe[g_stage] <= normchk_recombine_en_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-b commit 0d: SIGENCODE recombine-en pipeline (mirror of
-  // normchk_recombine_en_pipe). Aligns the en_i selector with the SRAM-read-data
-  // arrival cycle so the per-bank share-tap accumulator picks up SIGENCODE's
-  // regular-mem share0 + masked-mem share1 at exactly the cycle they are valid
-  // at the memory read port. No separate mode pipe — SIGENCODE is MLDSA-only,
-  // so it forces mlkem_mode=0 at the recombiner instances below.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : sigencode_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1805,9 +1690,6 @@ generate
         sigencode_recombine_en_pipe[g_stage] <= sigencode_recombine_en_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-c: COMPRESS recombine-en pipeline. COMPRESS is MLKEM-only —
-  // no separate mode pipe needed (mode=1 is forced at the recombiner via OR
-  // into the mode expression). Spans banked + non-banked memories.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : compress_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1818,8 +1700,6 @@ generate
         compress_recombine_en_pipe[g_stage] <= compress_recombine_en_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-c: SKENCODE recombine-en pipeline. SKENCODE is MLDSA-only —
-  // no separate mode pipe needed (mode=0). Dual-port banked reads only.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : skencode_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1830,8 +1710,6 @@ generate
         skencode_recombine_en_pipe[g_stage] <= skencode_recombine_en_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-c: DECOMPOSE recombine-en pipeline. DECOMPOSE is MLDSA-only —
-  // no separate mode pipe needed (mode=0). Single-port, banked + non-banked.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : decompose_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1842,8 +1720,6 @@ generate
         decompose_recombine_en_pipe[g_stage] <= decompose_recombine_en_pipe[g_stage-1];
     end
   end
-  // Step 27.2.4-e: PWR2RND recombine-en pipeline. PWR2RND is MLDSA-only —
-  // no separate mode pipe needed (mode=0). Dual-port banked reads only.
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : pwr2rnd_rec_en_pipe
     always_ff @(posedge clk or negedge rst_b) begin
       if (!rst_b)
@@ -1856,35 +1732,17 @@ generate
   end
 endgenerate
 
-// Share computation (Opt A) — selects the active bank/lane at the cycle the regular
-// mem read enable is asserted (i.e., when mem read data is valid at the read port).
-//   - Fused PWS (pws_recombine_en): operand1 (to-be-recombined) is on pwm_b
-//     (operand1→pw_base_addr_b in abr_ctrl.sv:2210); share0 from regular mem at
-//     NTT[0]'s pwm_b address; share1 from masked mem at SAME address.
-//   - Fused NORMCHK (normchk_recombine_en) [Step 27.2.4-b commit 0b]: the
-//     to-be-recombined poly is on NORMCHK's dedicated normcheck_mem_rd_req port;
-//     share0 from regular mem at NORMCHK's address; share1 from the parallel
-//     masked-mem read at the SAME address (wired in via the abr_mem_re[1]/
-//     abr_mem_re0_bank[1] extensions above). Single-issue sequencer guarantees
-//     pws_recombine_en_pipe and normchk_recombine_en_pipe are never both high in
-//     the same cycle, so OR-merging the two selector sources is race-free.
-//   - Fused SIGENCODE (sigencode_recombine_en) [Step 27.2.4-b commit 0d]:
-//     SIGENCODE issues TWO concurrent banked reads per cycle on
-//     sigencode_mem_rd_req[bank] (port↔bank fixed). Each bank's share0 (regular
-//     mem) and share1 (parallel masked mem) flow into THIS bank's dedicated
-//     recombiner — the per-bank array refactor below replaces the prior
-//     OR-merge-across-banks single recombiner, allowing both banks to recombine
-//     concurrently. PWS/NORMCHK single-port consumers fire only one bank per
-//     cycle so the other bank's recombiner sees zero shares → zero output, which
-//     OR-merges harmlessly into their single-port consumer mux below.
+// Per-bank share capture. For PWS_R, operand1 (to-be-recombined) is on pwm_b
+// (abr_ctrl operand1→pw_base_addr_b swap). Single-port consumers fire on one
+// bank/cycle; the inactive bank sees share0=share1=0 → recombine=0, harmless.
+// SIGENCODE_R/SKENCODE_R/PWR2RND_R fire both banks concurrently (port↔bank fixed).
 always_comb begin
   for (int unsigned bank = 0; bank < 2; bank++) begin
     pws_rec_share0[bank] = '0;
     pws_rec_share1[bank] = '0;
   end
-  // Banked memory (i==0): each bank independently captures its own bank's
-  // read source. No OR-merge across banks — that's the whole point of the
-  // per-bank refactor.
+  // Banked memory (i==0): each bank captures its own source independently
+  // (no OR-merge across banks — needed for dual-port consumers).
   for (int unsigned bank = 0; bank < 2; bank++) begin
     pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]       & pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank]) |
                                                  (normchk_recombine_en_pipe[SRAM_LATENCY]   & normcheck_mem_re0_bank[SRAM_LATENCY][bank]) |
@@ -1904,12 +1762,9 @@ always_comb begin
                                                    (pwr2rnd_recombine_en_pipe[SRAM_LATENCY]   & pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
                                & abr_mem_rdata0_bank[MASKED_IDX][bank]);
   end
-  // Non-banked memories (i==1,2): SIGENCODE_R does NOT use non-banked memory
-  // (only banked reads via sigencode_mem_re0_bank). SKENCODE_R also does NOT
-  // use non-banked memory. PWS_R, NORMCHK_R, and COMPRESS_R may, so we
-  // broadcast their contribution to BOTH bank recombiners — the single-port
-  // consumer mux below OR-merges them (the inactive bank's recombiner outputs
-  // 0 for share0=share1=0; broadcast is harmless).
+  // Non-banked memories (i==1,2): only PWS_R, NORMCHK_R, COMPRESS_R, DECOMPOSE_R
+  // contribute (SIGENCODE/SKENCODE/PWR2RND are banked-only). Broadcast to both
+  // bank recombiners — the single-port consumer mux below OR-merges harmlessly.
   for (int unsigned i = 1; i < 3; i++) begin
     for (int unsigned bank = 0; bank < 2; bank++) begin
       pws_rec_share0[bank] |= ({ABR_MEM_DATA_WIDTH{(pws_recombine_en_pipe[SRAM_LATENCY]      & pwo_b_mem_re[SRAM_LATENCY][0][i]) |
@@ -1928,24 +1783,17 @@ always_comb begin
 end
 
 generate if (MASKING_EN) begin : g_pws_recombiner
-  // Step 27.2.4-b commit 0d: TWO recombiner instances (one per bank), both
-  // LATENCY=0 combinational. en_i / mode are shared across both banks (they
-  // depend only on which consumer opcode is firing this cycle, not on which
-  // bank); share0/share1/data_o are per-bank arrays. Required for SIGENCODE_R
-  // dual-port (both banks recombine concurrently); for PWS_R/NORMCHK_R single
-  // port, only one bank's shares are non-zero so the other bank's output is
-  // 0 (recombine(0,0)=(0+0) mod q = 0) — OR-merges harmlessly into their
-  // consumer mux.
+  // Per-bank dual recombiner — required by dual-port consumers
+  // (SIGENCODE_R/SKENCODE_R/PWR2RND_R). Single-port consumers see
+  // share0=share1=0 on the inactive bank → output 0, OR-merges harmlessly.
   for (genvar bank = 0; bank < 2; bank++) begin : g_per_bank
     abr_recombiner #(
-      .LATENCY(0)            // 0-cycle combinational: matches NTT[0]'s pwm_a sample window
+      .LATENCY(0)
     ) u_pws_recombiner (
       .clk      (clk),
       .reset_n  (rst_b),
       .zeroize  (zeroize_reg),
-      // OR-merge all consumer enables. Mutex by single-issue sequencer
-      // (at most one of PWS_R / NORMCHK_R / SIGENCODE_R / COMPRESS_R /
-      // SKENCODE_R / DECOMPOSE_R / PWR2RND_R fires per cycle).
+      // Mutex by single-issue sequencer — at most one consumer fires per cycle.
       .en_i     (pws_recombine_en_pipe[SRAM_LATENCY]      |
                  normchk_recombine_en_pipe[SRAM_LATENCY]  |
                  sigencode_recombine_en_pipe[SRAM_LATENCY] |
@@ -1953,10 +1801,7 @@ generate if (MASKING_EN) begin : g_pws_recombiner
                  skencode_recombine_en_pipe[SRAM_LATENCY]  |
                  decompose_recombine_en_pipe[SRAM_LATENCY] |
                  pwr2rnd_recombine_en_pipe[SRAM_LATENCY]),
-      // mode: MLKEM iff the firing consumer is PWS-MLKEM or COMPRESS_R
-      // (always MLKEM). NORMCHK_R, SIGENCODE_R, SKENCODE_R, DECOMPOSE_R, and
-      // PWR2RND_R are all MLDSA-only — exclude them from the mode=1 term.
-      // COMPRESS_R force-OR's mode=1 via compress_recombine_en_pipe.
+      // mode=MLKEM iff PWS-MLKEM or COMPRESS_R fires; all other consumers force MLDSA.
       .mode     ((pws_recombine_mlkem_mode_pipe[SRAM_LATENCY] &
                   ~normchk_recombine_en_pipe[SRAM_LATENCY]    &
                   ~sigencode_recombine_en_pipe[SRAM_LATENCY]  &
@@ -1975,12 +1820,9 @@ end else begin : g_no_pws_recombiner
   assign pws_rec_ready = '0;
 end endgenerate
 
-// Step 27.2.4-c: SKENCODE_R consumer mux — per-bank override using the
-// dual-recombiner outputs. SKENCODE consumes BOTH banks concurrently each
-// cycle (skencode_mem_rd_req[0]→bank0, [1]→bank1), so each port literally
-// maps to its own bank's recombiner output (same pattern as SIGENCODE_R).
-// When skencode_recombine_en_pipe is low (dormant case), falls through to the
-// regular-mem path (abr_mem_rdata0_bank[0][bank]) — bit-identical to baseline.
+// SKENCODE_R / SIGENCODE_R / PWR2RND_R consumer muxes — dual-port: each port
+// maps to its own bank's recombiner output. Dormant case falls through to the
+// regular-mem path (bit-identical to baseline).
 always_comb begin
   skencode_mem_rd_data[0] = (MASKING_EN && skencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
                                                                                      : abr_mem_rdata0_bank[0][0];
@@ -1988,12 +1830,6 @@ always_comb begin
                                                                                      : abr_mem_rdata0_bank[0][1];
 end
 always_comb makehint_mem_rd_data = abr_mem_rdata[0][2];
-// Step 27.2.4-b commit 0d: SIGENCODE_R consumer mux — per-bank override using
-// the dual-recombiner outputs. SIGENCODE consumes BOTH banks concurrently each
-// cycle (sigencode_z_top.sv:191-193), so each port literally maps to its own
-// bank's recombiner output (no OR-merge here — banks are independent consumers).
-// When sigencode_recombine_en_pipe is low (dormant case), falls through to the
-// regular-mem path (abr_mem_rdata0_bank[0][bank]) — bit-identical to baseline.
 always_comb begin
   sigencode_mem_rd_data[0] = (MASKING_EN && sigencode_recombine_en_pipe[SRAM_LATENCY]) ? pws_rec_data[0]
                                                                                        : abr_mem_rdata0_bank[0][0];
