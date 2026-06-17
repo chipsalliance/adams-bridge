@@ -188,15 +188,8 @@ module abr_seq
                 //Step 27.2.4-e: S1 and S2 are masked (split shares) throughout keygen.
                 //S2 sampling = MASKED_REJB; AS0_INTT+S2 = MASKED_PWA produces split t;
                 //PWR2RND_R recombines t on read; SKENCODE_R recombines s1 on read.
-                MLDSA_KG_S+ 100 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 101 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 102 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 103 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 104 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 105 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_KG_S+ 106 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //sk ←skEncode(ρ,K,tr,s1,s2,t0) — fused with consumer-side recombine of s1 (SKENCODE_R)
-                MLDSA_KG_S+ 107 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE_R, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_KG_S+ 100 : data_o_rom <= '{opcode:ABR_UOP_SKENCODE_R, imm:'h0000, length:'d00, operand1:MLDSA_S1_0_BASE, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_KG_JUMP_SIGN : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 //KG end
                 MLDSA_KG_E       : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};

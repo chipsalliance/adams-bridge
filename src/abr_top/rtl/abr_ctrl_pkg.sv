@@ -618,7 +618,7 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_RESET          = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ZEROIZE        = ABR_RESET + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = ABR_ZEROIZE + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 108;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_KG_E + 2;
