@@ -138,8 +138,7 @@ module abr_top
   logic [1:0]                         recombine_ready;
   logic                          recombine_en;
   logic [SRAM_LATENCY:0]         recombine_en_pipe;
-  logic                          recombine_mode;       // 0 = MLDSA, 1 = MLKEM
-  logic [SRAM_LATENCY:0]         recombine_mode_pipe;
+  logic                          recombine_mode;       // 0 = MLDSA, 1 = MLKEM (stable for entire op)
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_wr_req;
   logic [ABR_NUM_NTT-1:0][2:0][ABR_MEM_ADDR_WIDTH-1:0] ntt_mem_wr_req_mux;
   mem_if_t [ABR_NUM_NTT-1:0] ntt_mem_rd_req;
@@ -1544,24 +1543,17 @@ end
 // combinational (LATENCY=0).
 //======================================================================
 
-assign recombine_en_pipe[0]   = recombine_en;
-assign recombine_mode_pipe[0] = recombine_mode;
+assign recombine_en_pipe[0] = recombine_en;
 
 generate
   for (genvar g_stage = 1; g_stage <= SRAM_LATENCY; g_stage++) begin : recombine_en_pipe_gen
     always_ff @(posedge clk or negedge rst_b) begin
-      if (!rst_b) begin
-        recombine_en_pipe[g_stage]   <= 1'b0;
-        recombine_mode_pipe[g_stage] <= 1'b0;
-      end
-      else if (zeroize_reg) begin
-        recombine_en_pipe[g_stage]   <= 1'b0;
-        recombine_mode_pipe[g_stage] <= 1'b0;
-      end
-      else begin
-        recombine_en_pipe[g_stage]   <= recombine_en_pipe[g_stage-1];
-        recombine_mode_pipe[g_stage] <= recombine_mode_pipe[g_stage-1];
-      end
+      if (!rst_b)
+        recombine_en_pipe[g_stage] <= 1'b0;
+      else if (zeroize_reg)
+        recombine_en_pipe[g_stage] <= 1'b0;
+      else
+        recombine_en_pipe[g_stage] <= recombine_en_pipe[g_stage-1];
     end
   end
 endgenerate
@@ -1631,7 +1623,7 @@ generate if (MASKING_EN) begin : g_recombiner
       .reset_n  (rst_b),
       .zeroize  (zeroize_reg),
       .en_i     (recombine_en_pipe[SRAM_LATENCY]),
-      .mode     (recombine_mode_pipe[SRAM_LATENCY]),
+      .mode     (recombine_mode),
       .share0_i (recombine_share0[bank]),
       .share1_i (recombine_share1[bank]),
       .data_o   (recombine_data[bank]),
