@@ -213,9 +213,6 @@ package abr_ctrl_pkg;
         logic aux_en;
         abr_opcode_mode_u mode;
         logic masking_en;
-        // When set on a consumer opcode, abr_top's shared recombiner produces
-        // (share0+share1) mod q on-the-fly so the consumer reads recombined data.
-        // Effective only when MASKING_EN=1.
         logic recombine_en;
         logic shuffling_en;
     } abr_opcode_t;
@@ -232,7 +229,6 @@ package abr_ctrl_pkg;
     // MLDSA ISA
     localparam abr_opcode_t ABR_UOP_NOP              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SAMPLER_NONE,     masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SHAKE256         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256,         masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_REJB             = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_REJ_BOUNDED,      masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_REJB      = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_REJ_BOUNDED,      masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_PWM         = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_SMPL,       masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_REJS_PWMA        = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM_ACCUM_SMPL, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
@@ -243,7 +239,6 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_NTT              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_NTT,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_INTT             = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_INTT,           masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWM              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWM,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
-    localparam abr_opcode_t ABR_UOP_PWA              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWA,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     // Fused-recombine variants: same as the base opcode with recombine_en=1.
     localparam abr_opcode_t ABR_UOP_PWS_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLDSA_PWS,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
@@ -266,7 +261,6 @@ package abr_ctrl_pkg;
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWA       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWA,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWM       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM,            masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_PWMA      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM,      masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b1};
-    localparam abr_opcode_t ABR_UOP_MLKEM_PWS              = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b1};
     localparam abr_opcode_t ABR_UOP_MLKEM_PWS_R            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWS,            masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b1};
 
     //Load Keccak with data but don't run it yet
@@ -275,21 +269,17 @@ package abr_ctrl_pkg;
     //Run Keccak but don't load it
     localparam abr_opcode_t ABR_UOP_RUN_SHAKE256 = '{keccak_en: 1'b0, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHAKE256, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     // Aux functions
-    localparam abr_opcode_t ABR_UOP_DECOMPOSE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_DECOMPOSE_R     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_DECOMP, masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_SKDECODE = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKDECODE, masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SKENCODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SKENCODE_R      = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SKENCODE, masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MAKEHINT        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_MAKEHINT, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_NORMCHK         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_NORMCHK_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_NORMCHK,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_SIGENCODE       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGENCODE_R     = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGENC,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PKDECODE        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PKDECODE,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_H        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_H,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SIGDEC_Z         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_SIGDEC_Z,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_USEHINT         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_USEHINT,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_PWR2RND         = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_PWR2RND_R       = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_PWR2RND,  masking_en:1'b0, recombine_en:1'b1, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_LFSR            = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLDSA_LFSR,     masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_COMPRESS        = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b1, mode:MLKEM_COMPRESS, masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
