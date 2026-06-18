@@ -67,7 +67,7 @@ module abr_recombiner
         genvar c;
         for (c = 0; c < COEFF_PER_CLK; c++) begin : gen_comb_lane
             assign sum_lane[c]   = {1'b0, share0_coeff[c]} + {1'b0, share1_coeff[c]};
-            assign data_coeff[c] = (sum_lane[c] >= {1'b0, prime}) ? (sum_lane[c] - {1'b0, prime})
+            assign data_coeff[c] = (sum_lane[c] >= {1'b0, prime}) ? NTT_REG_SIZE'(sum_lane[c] - {1'b0, prime})
                                                                   : sum_lane[c][NTT_REG_SIZE-1:0];
         end
 
