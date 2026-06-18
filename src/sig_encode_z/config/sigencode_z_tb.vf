@@ -24,6 +24,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_splitter.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_recombiner.sv
 ${ADAMSBRIDGE_ROOT}/src/sig_encode_z/rtl/sigencode_z_defines_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly2x2.sv

@@ -28,6 +28,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_adder.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_ntt_add_sub_mod.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_splitter.sv
+${ADAMSBRIDGE_ROOT}/src/abr_libs/rtl/abr_recombiner.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_util_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_alert_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_subreg_pkg.sv
