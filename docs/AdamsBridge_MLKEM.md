@@ -177,7 +177,7 @@ Output:
     encaps_key
     decaps_key
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
@@ -190,7 +190,7 @@ write(ADDR_ENTROPY, entropy)
 // Trigger the core for performing Keygen
 write(ADDR_CTRL, KEYGEN_CMD)  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
@@ -198,6 +198,13 @@ while read_data == 0:
 // Reading the outputs
 encaps_key = read(ADDR_EK)
 decaps_key = read(ADDR_DK)
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD)
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0
+while read_data == 0:
+    read_data = read(ADDR_STATUS)
 
 // Return the outputs
 return encaps_key, decaps_key
@@ -215,7 +222,7 @@ Output:
     shared_key
     ciphertext
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -229,7 +236,7 @@ write(ADDR_ENTROPY, entropy);
 // Trigger the core for performing Encapsulation
 write(ADDR_CTRL, ENCAPS_CMD);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -238,6 +245,14 @@ while (read_data == 0) {
 // Reading the outputs
 shared_key = read(ADDR_SHAREDKEY);
 ciphertext = read(ADDR_CIPHERTEXT);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output
 return shared_key, ciphertext;
@@ -254,7 +269,7 @@ Input:
 Output:
     shared_key
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -268,7 +283,7 @@ write(ADDR_ENTROPY, entropy);
 // Trigger the core for performing decapsulation
 write(ADDR_CTRL, DECAPS_CMD);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -276,6 +291,14 @@ while (read_data == 0) {
 
 // Reading the output
 shared_key = read(ADDR_SHAREDKEY);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output
 return shared_key;
@@ -295,7 +318,7 @@ Input:
 Output:
     shared_key
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
@@ -309,13 +332,21 @@ write(ADDR_ENTROPY, entropy)
 // Trigger the core for performing Keygen + Decapsulation
 write(ADDR_CTRL, KEYGEN_DECAPS_CMD)  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
 
 // Reading the output
 shared_key = read(ADDR_SHAREDKEY);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the outputs
 return shared_key;
