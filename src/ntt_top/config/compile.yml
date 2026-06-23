@@ -32,21 +32,6 @@ targets:
     directories: []
     files: []
 ---
-provides: [butterfly_top_tb]  
-schema_version: 2.4.0
-requires: 
-  - ntt_top
-  - ntt_pkg
-targets:
-  tb:
-    directories: 
-      - $COMPILE_ROOT/tb
-    files:
-      - $COMPILE_ROOT/tb/butterfly_top_tb.sv
-    tops: [butterfly_top_tb]
-  sim:
-    pre_exec: 'echo "[PRE-EXEC] Copying ntt hex to $PWD" && cp $COMPILE_ROOT/tb/test_vectors/kyber_zeta.txt . && cp $COMPILE_ROOT/tb/test_vectors/kyber_zeta_inv.hex . && cp $COMPILE_ROOT/tb/test_vectors/kyber_stage0.hex . && cp $COMPILE_ROOT/tb/test_vectors/kyber_stage0_out.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage2.hex . && cp $COMPILE_ROOT/tb/test_vectors/ntt_stage2_out.hex .'
----
 provides: [ntt_top]
 schema_version: 2.4.0
 requires:
@@ -56,7 +41,6 @@ targets:
   rtl:
     directories: [$COMPILE_ROOT/rtl]
     files:
-      - $COMPILE_ROOT/rtl/ntt_butterfly2x2.sv
       - $COMPILE_ROOT/rtl/ntt_butterfly.sv
       - $COMPILE_ROOT/rtl/ntt_mult_dsp.sv
       - $COMPILE_ROOT/rtl/ntt_div2.sv
