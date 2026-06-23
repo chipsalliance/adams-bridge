@@ -193,7 +193,6 @@ package abr_ctrl_pkg;
         MLDSA_SIGENC,
         MLDSA_SIGDEC_H,
         MLDSA_SIGDEC_Z,
-        MLDSA_HINTSUM,
         MLDSA_DECOMP,
         MLDSA_LFSR,
         MLKEM_COMPRESS,
@@ -292,9 +291,8 @@ package abr_ctrl_pkg;
     localparam [ABR_IMM_WIDTH-1:0] MLDSA_NORMCHK_R0 = 'h0001;
     localparam [ABR_IMM_WIDTH-1:0] MLDSA_NORMCHK_CT0 = 'h0002;
 
-    // MLDSA REGISTERS ID listing
+    // REGISTERS ID listing
     localparam [ABR_OPR_WIDTH-1 : 0] ABR_NOP = 'd0;
-    localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_NOP = 'd0;
 
     // DEST register IDs
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_DEST_K_RHO_REG_ID = 'd2;
@@ -562,7 +560,6 @@ package abr_ctrl_pkg;
 
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ERROR               = '1;
 
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_RESET = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 43;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
