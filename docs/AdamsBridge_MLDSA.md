@@ -3577,7 +3577,7 @@ In the UseHint phase, the decompose unit retrieves w from memory and divides it 
 ### Memory Instances
 | Instance | Type | Depth | Width | Size |
 |----------|------|-------|-------|------|
-| inst0 | Banked (2 banks) | 832/bank (1664 total) | 96-bit | 19.5 KB |
+| inst0 | Banked (2 banks) | 800/bank (1600 total) | 96-bit | 18.75 KB |
 | inst1 | Single | 64 | 96-bit | 0.75 KB |
 | inst2 | Single | 1536 | 96-bit | 18 KB |
 | SIB | Single | - | - | SampleInBall |
