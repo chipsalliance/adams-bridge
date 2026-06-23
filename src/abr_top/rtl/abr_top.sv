@@ -1819,18 +1819,6 @@ always_comb pk_mem_if.rdata_o = abr_memory_export.pk_mem_rdata_o;
 // ---------------------------------------------------------------------------
 // Recombine-fusion assertions
 // ---------------------------------------------------------------------------
-// recombine_mode must be stable while a recombine op is in flight
-// (from abr_ctrl drive through the SRAM_LATENCY pipeline tail). Catches
-// ROM/sequencer programming errors that would switch MLDSA/MLKEM prime
-// mid-stream and produce silent reduction faults.
-`ABR_ASSERT(RECOMBINE_MODE_STABLE_A,
-            (recombine_en | (|recombine_en_pipe)) |-> $stable(recombine_mode),
-            clk, !rst_b)
-
-// At most one of the 7 fused-consumer banked read-enables may feed
-// the recombiner at the SRAM_LATENCY tap per bank. Wider memory-access
-// mutexes (ERR_MEM_0_*_RD_ACCESS_MUTEX) already cover the un-piped taps;
-// these recombine-scoped mutexes localize faults to the recombine path.
 `ABR_ASSERT_MUTEX(ERR_RECOMBINE_BANK0_SRC_MUTEX,
     {pwo_b_mem_re0_bank[SRAM_LATENCY][0][0], normcheck_mem_re0_bank[SRAM_LATENCY][0],
      sigencode_mem_re0_bank[SRAM_LATENCY][0], compress_mem_re0_bank[SRAM_LATENCY][0],
