@@ -24,23 +24,15 @@
 //
 //======================================================================
 
-`include "abr_sva.svh"
-
 module abr_recombiner
     import abr_params_pkg::*;
     import ntt_defines_pkg::*;
     (
-    input  wire                          clk,
-    input  wire                          reset_n,
-    input  wire                          zeroize,
-
-    input  wire                          en_i,
     input  wire                          mode,              // 0 = MLDSA, 1 = MLKEM
     input  wire  [REG_SIZE*COEFF_PER_CLK-1:0] share0_i,    // 96-bit share 0
     input  wire  [REG_SIZE*COEFF_PER_CLK-1:0] share1_i,    // 96-bit share 1
 
-    output logic [REG_SIZE*COEFF_PER_CLK-1:0] data_o,      // 96-bit recombined word
-    output logic                          ready_o
+    output logic [REG_SIZE*COEFF_PER_CLK-1:0] data_o       // 96-bit recombined word
 );
 
     // Prime selection based on mode
@@ -75,7 +67,5 @@ module abr_recombiner
             assign data_o[k*REG_SIZE +: REG_SIZE] = {1'b0, data_coeff[k]};
         end
     endgenerate
-
-    assign ready_o = en_i;
 
 endmodule

@@ -135,7 +135,6 @@ module abr_top
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] recombine_share0;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] recombine_share1;
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] recombine_data;
-  logic [1:0]                         recombine_ready;
   logic                          recombine_en;
   logic [SRAM_LATENCY:0]         recombine_en_pipe;
   logic                          recombine_mode;       // 0 = MLDSA, 1 = MLKEM (stable for entire op)
@@ -1567,48 +1566,37 @@ always_comb begin
     recombine_share0[bank] = '0;
     recombine_share1[bank] = '0;
   end
-  // Banked memory (i==0): each bank captures its own source independently
-  // (no OR-merge across banks — needed for dual-port consumers). Aggregate
-  // recombine_en_pipe gates; per-consumer *_mem_re* selectors steer the source.
+  // Banked memory (i==0): per-bank one-hot source selector OR-reduces the 7
+  // fused-consumer read-enables (already mutexed by ERR_MEM_0_*_RD_ACCESS_MUTEX
+  // and the recombine-scoped mutex below).
   for (int unsigned bank = 0; bank < 2; bank++) begin
-    recombine_share0[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
-                                                 (pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank] |
-                                                  normcheck_mem_re0_bank[SRAM_LATENCY][bank] |
-                                                  sigencode_mem_re0_bank[SRAM_LATENCY][bank] |
-                                                  compress_mem_re0_bank[SRAM_LATENCY][bank]  |
-                                                  skencode_mem_re0_bank[SRAM_LATENCY][bank]  |
-                                                  decomp_mem_re0_bank[SRAM_LATENCY][0][bank] |
-                                                  pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
-                             & abr_mem_rdata0_bank[0][bank]);
+    automatic logic bank_src_sel;
+    bank_src_sel = recombine_en_pipe[SRAM_LATENCY] &
+                   (pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                    normcheck_mem_re0_bank[SRAM_LATENCY][bank] |
+                    sigencode_mem_re0_bank[SRAM_LATENCY][bank] |
+                    compress_mem_re0_bank[SRAM_LATENCY][bank]  |
+                    skencode_mem_re0_bank[SRAM_LATENCY][bank]  |
+                    decomp_mem_re0_bank[SRAM_LATENCY][0][bank] |
+                    pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank]);
+    recombine_share0[bank] |= ({ABR_MEM_DATA_WIDTH{bank_src_sel}} & abr_mem_rdata0_bank[0][bank]);
     if (MASKING_EN)
-      recombine_share1[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
-                                                   (pwo_b_mem_re0_bank[SRAM_LATENCY][0][bank] |
-                                                    normcheck_mem_re0_bank[SRAM_LATENCY][bank] |
-                                                    sigencode_mem_re0_bank[SRAM_LATENCY][bank] |
-                                                    compress_mem_re0_bank[SRAM_LATENCY][bank]  |
-                                                    skencode_mem_re0_bank[SRAM_LATENCY][bank]  |
-                                                    decomp_mem_re0_bank[SRAM_LATENCY][0][bank] |
-                                                    pwr2rnd_mem_re0_bank[SRAM_LATENCY][bank])}}
-                               & abr_mem_rdata0_bank[MASKED_IDX][bank]);
+      recombine_share1[bank] |= ({ABR_MEM_DATA_WIDTH{bank_src_sel}} & abr_mem_rdata0_bank[MASKED_IDX][bank]);
   end
   // Non-banked memories (i==1,2): only PWS_R, NORMCHK_R, COMPRESS_R, DECOMPOSE_R
   // contribute (SIGENCODE/SKENCODE/PWR2RND are banked-only). Broadcast to both
   // bank recombiners — the single-port consumer mux below OR-merges harmlessly.
   for (int unsigned i = 1; i < 3; i++) begin
+    automatic logic other_src_sel;
+    other_src_sel = recombine_en_pipe[SRAM_LATENCY] &
+                    (pwo_b_mem_re[SRAM_LATENCY][0][i] |
+                     normcheck_mem_re[SRAM_LATENCY][i] |
+                     compress_mem_re[SRAM_LATENCY][i] |
+                     decomp_mem_re[SRAM_LATENCY][0][i]);
     for (int unsigned bank = 0; bank < 2; bank++) begin
-      recombine_share0[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
-                                                   (pwo_b_mem_re[SRAM_LATENCY][0][i] |
-                                                    normcheck_mem_re[SRAM_LATENCY][i] |
-                                                    compress_mem_re[SRAM_LATENCY][i] |
-                                                    decomp_mem_re[SRAM_LATENCY][0][i])}}
-                               & abr_mem_rdata[0][i]);
+      recombine_share0[bank] |= ({ABR_MEM_DATA_WIDTH{other_src_sel}} & abr_mem_rdata[0][i]);
       if (MASKING_EN)
-        recombine_share1[bank] |= ({ABR_MEM_DATA_WIDTH{recombine_en_pipe[SRAM_LATENCY] &
-                                                     (pwo_b_mem_re[SRAM_LATENCY][0][i] |
-                                                      normcheck_mem_re[SRAM_LATENCY][i] |
-                                                      compress_mem_re[SRAM_LATENCY][i] |
-                                                      decomp_mem_re[SRAM_LATENCY][0][i])}}
-                                 & abr_mem_rdata[MASKED_IDX][i]);
+        recombine_share1[bank] |= ({ABR_MEM_DATA_WIDTH{other_src_sel}} & abr_mem_rdata[MASKED_IDX][i]);
     end
   end
 end
@@ -1619,20 +1607,14 @@ generate if (MASKING_EN) begin : g_recombiner
   // share0=share1=0 on the inactive bank → output 0, OR-merges harmlessly.
   for (genvar bank = 0; bank < 2; bank++) begin : g_per_bank
     abr_recombiner u_recombiner (
-      .clk      (clk),
-      .reset_n  (rst_b),
-      .zeroize  (zeroize_reg),
-      .en_i     (recombine_en_pipe[SRAM_LATENCY]),
       .mode     (recombine_mode),
       .share0_i (recombine_share0[bank]),
       .share1_i (recombine_share1[bank]),
-      .data_o   (recombine_data[bank]),
-      .ready_o  (recombine_ready[bank])
+      .data_o   (recombine_data[bank])
     );
   end
 end else begin : g_no_recombiner
   assign recombine_data  = '0;
-  assign recombine_ready = '0;
 end endgenerate
 
 // SKENCODE_R / SIGENCODE_R / PWR2RND_R consumer muxes — dual-port: each port
@@ -1833,6 +1815,34 @@ always_comb pk_mem_if.rdata_o = abr_memory_export.pk_mem_rdata_o;
 `ABR_ASSERT_KNOWN(ERR_MEM_0_RDATA_X, {ntt_mem_rd_data}, clk, !rst_b)
 `ABR_ASSERT_KNOWN(ERR_MEM_1_RDATA_X, {pwm_a_rd_data}, clk, !rst_b)
 `ABR_ASSERT_KNOWN(ERR_MEM_2_RDATA_X, {pwm_b_rd_data}, clk, !rst_b)
+
+// ---------------------------------------------------------------------------
+// Recombine-fusion assertions
+// ---------------------------------------------------------------------------
+// recombine_mode must be stable while a recombine op is in flight
+// (from abr_ctrl drive through the SRAM_LATENCY pipeline tail). Catches
+// ROM/sequencer programming errors that would switch MLDSA/MLKEM prime
+// mid-stream and produce silent reduction faults.
+`ABR_ASSERT(RECOMBINE_MODE_STABLE_A,
+            (recombine_en | (|recombine_en_pipe)) |-> $stable(recombine_mode),
+            clk, !rst_b)
+
+// At most one of the 7 fused-consumer banked read-enables may feed
+// the recombiner at the SRAM_LATENCY tap per bank. Wider memory-access
+// mutexes (ERR_MEM_0_*_RD_ACCESS_MUTEX) already cover the un-piped taps;
+// these recombine-scoped mutexes localize faults to the recombine path.
+`ABR_ASSERT_MUTEX(ERR_RECOMBINE_BANK0_SRC_MUTEX,
+    {pwo_b_mem_re0_bank[SRAM_LATENCY][0][0], normcheck_mem_re0_bank[SRAM_LATENCY][0],
+     sigencode_mem_re0_bank[SRAM_LATENCY][0], compress_mem_re0_bank[SRAM_LATENCY][0],
+     skencode_mem_re0_bank[SRAM_LATENCY][0],  decomp_mem_re0_bank[SRAM_LATENCY][0][0],
+     pwr2rnd_mem_re0_bank[SRAM_LATENCY][0]},
+    clk, !rst_b, recombine_en_pipe[SRAM_LATENCY])
+`ABR_ASSERT_MUTEX(ERR_RECOMBINE_BANK1_SRC_MUTEX,
+    {pwo_b_mem_re0_bank[SRAM_LATENCY][0][1], normcheck_mem_re0_bank[SRAM_LATENCY][1],
+     sigencode_mem_re0_bank[SRAM_LATENCY][1], compress_mem_re0_bank[SRAM_LATENCY][1],
+     skencode_mem_re0_bank[SRAM_LATENCY][1],  decomp_mem_re0_bank[SRAM_LATENCY][0][1],
+     pwr2rnd_mem_re0_bank[SRAM_LATENCY][1]},
+    clk, !rst_b, recombine_en_pipe[SRAM_LATENCY])
 
   abr_prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o;
   logic clk_i;
