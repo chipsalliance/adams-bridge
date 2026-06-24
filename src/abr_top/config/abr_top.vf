@@ -106,7 +106,6 @@ ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3pad.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sha3/rtl/abr_sha3.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_top.sv
 ${ADAMSBRIDGE_ROOT}/src/barrett_reduction/rtl/barrett_reduction.sv
-${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly2x2.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_butterfly.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_mult_dsp.sv
 ${ADAMSBRIDGE_ROOT}/src/ntt_top/rtl/ntt_div2.sv
