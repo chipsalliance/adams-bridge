@@ -140,11 +140,13 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 ### READY 
 
-​Indicates if the core is ready to process the inputs. 
+​Indicates if the core is ready to process the inputs.
 
-### ​VALID 
+After a completed operation, READY remains de-asserted (with VALID asserted) until firmware issues a ZEROIZE command. Firmware must zeroize between operations before issuing the next command.
 
-​Indicates if the process is computed and the output is valid.
+### ​VALID 
+
+​Indicates if the process is computed and the output is valid. VALID stays asserted until a ZEROIZE command (or reset) clears it.
 
 ### MSG_STREAM_READY
 
@@ -237,7 +239,7 @@ Output:
     sk_out
     pk
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
@@ -249,7 +251,7 @@ write(ADDR_ENTROPY, entropy)
 // Trigger the core for performing Keygen
 write(ADDR_CTRL, KEYGEN_CMD)  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0
 while read_data == 0:
     read_data = read(ADDR_STATUS)
@@ -257,6 +259,13 @@ while read_data == 0:
 // Reading the outputs
 sk_out = read(ADDR_SK)
 pk = read(ADDR_PK)
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD)
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0
+while read_data == 0:
+    read_data = read(ADDR_STATUS)
 
 // Return the outputs
 return sk_out, pk
@@ -274,7 +283,7 @@ return sk_out, pk
 Output:
     signature  
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -289,7 +298,7 @@ write(ADDR_ENTROPY, entropy);
 // Trigger the core for performing Signing
 write(ADDR_CTRL, SIGN_CMD);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -297,6 +306,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
@@ -313,7 +330,7 @@ Input:
 Output:
     verification_result   
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -327,7 +344,7 @@ write(ADDR_SIGNATURE, signature);
 // Trigger the core for performing Verifying
 write(ADDR_CTRL, VERIFY_CMD);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -335,6 +352,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (verification_result)
 return verification_result;
@@ -354,7 +379,7 @@ Input:
 Output:
     signature  
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -369,7 +394,7 @@ write(ADDR_ENTROPY, entropy);
 // Trigger the core for performing Keygen + Signing
 write(ADDR_CTRL, KEYGEN_SIGN_CMD);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -377,6 +402,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
@@ -396,7 +429,7 @@ Input:
 Output:
     signature
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -412,7 +445,7 @@ write(ADDR_ENTROPY, entropy);
 // CTRL = SIGN_CMD | EXTERNAL_MU
 write(ADDR_CTRL, SIGN_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -420,6 +453,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
@@ -438,7 +479,7 @@ Input:
 Output:
     verification_result
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -453,7 +494,7 @@ write(ADDR_SIGNATURE, signature);
 // CTRL = VERIFY_CMD | EXTERNAL_MU
 write(ADDR_CTRL, VERIFY_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -461,6 +502,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (verification_result)
 return verification_result;
@@ -480,7 +529,7 @@ Input:
 Output:
     signature
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -496,7 +545,7 @@ write(ADDR_ENTROPY, entropy);
 // CTRL = KEYGEN_SIGN_CMD | EXTERNAL_MU
 write(ADDR_CTRL, KEYGEN_SIGN_CMD | EXTERNAL_MU);  // (STATUS flag will be changed to 2'b00)
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -504,6 +553,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
@@ -525,7 +582,7 @@ Input:
 Output:
     signature
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -566,7 +623,7 @@ for (i = 0; i < msg_full_dwords; i++) {
 write(ADDR_MSG_STROBE, last_strobe);  // 0x0 if aligned, 0x1/0x3/0x7 if partial
 write(ADDR_MSG[0], last_dword);
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -574,6 +631,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
@@ -594,7 +659,7 @@ Input:
 Output:
     verification_result
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -628,7 +693,7 @@ for (i = 0; i < msg_full_dwords; i++) {
 write(ADDR_MSG_STROBE, last_strobe);
 write(ADDR_MSG[0], last_dword);
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -636,6 +701,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (verification_result)
 return verification_result;
@@ -657,7 +730,7 @@ Input:
 Output:
     signature
 
-// Wait for the core to be ready (STATUS flag should be 2'b01 or 2'b11)
+// Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -692,7 +765,7 @@ for (i = 0; i < msg_full_dwords; i++) {
 write(ADDR_MSG_STROBE, last_strobe);
 write(ADDR_MSG[0], last_dword);
 
-// Wait for the core to be ready and valid (STATUS flag should be 2'b11)
+// Wait for the operation to complete (STATUS flag should be 2'b10, i.e., READY=0, VALID=1).
 read_data = 0;
 while (read_data == 0) {
     read_data = read(ADDR_STATUS);
@@ -700,6 +773,14 @@ while (read_data == 0) {
 
 // Reading the outputs
 signature = read(ADDR_SIGNATURE);
+
+// Zeroize (mandatory after every completed operation)
+write(ADDR_CTRL, ZEROIZE_CMD);
+// Wait for the core to be ready again (STATUS flag should be 2'b01)
+read_data = 0;
+while (read_data == 0) {
+    read_data = read(ADDR_STATUS);
+}
 
 // Return the output (signature)
 return signature;
