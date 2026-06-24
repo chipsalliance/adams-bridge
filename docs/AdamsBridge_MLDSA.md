@@ -795,23 +795,23 @@ The performance results for two operational frequencies, 400 MHz and 600 MHz, ar
 |                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Unprotected"**     | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Keygen**            | 15,600           |         0.039 | 25,641                 |     |         0.026 | 38,462                 |
-| **Signing (1 round)** | 26,600           |         0.067 | 15,038                 |     |         0.044 | 22,556                 |
-| **Signing (Ave)**     | 106,400          |         0.266 | 3,759                  |     |         0.177 | 5,639                  |
-| **Verifying**         | 18,800           |         0.047 | 21,277                 |     |         0.031 | 31,915                 |
+| **Keygen**            | 15,154           |         0.038 | 26,396                 |     |         0.025 | 39,594                 |
+| **Signing (1 round)** | 34,928           |         0.087 | 11,452                 |     |         0.058 | 17,179                 |
+| **Signing (Ave)**     | 134,473          |         0.336 | 2,975                  |     |         0.224 | 4,462                  |
+| **Verifying**         | 18,252           |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
 
 
-**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined via explicit `RECOMBINE` sequencer ops. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
+**NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined inline at each unmasked consumer via the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
-The area overhead associated with enabling these countermeasures is as follows:
+Masking imposes **zero cycle overhead**. The only cost of enabling masking is area:
 
 |                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
 | --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
 | **"Protected"**       | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **keygen**            | 15,600           |         0.039 | 25,641                 |     |         0.026 | 38,462                 |
-| **Signing (1 round)** | 36,700           |         0.092 | 10,899                 |     |         0.061 | 16,349                 |
-| **Signing (Ave)**     | 146,800          |         0.367 | 2,725                  |     |         0.245 | 4,087                  |
-| **Verifying**         | 18,800           |         0.047 | 21,277                 |     |         0.031 | 31,915                 |
+| **keygen**            | 15,154           |         0.038 | 26,396                 |     |         0.025 | 39,594                 |
+| **Signing (1 round)** | 34,928           |         0.087 | 11,452                 |     |         0.058 | 17,179                 |
+| **Signing (Ave)**     | 134,473          |         0.336 | 2,975                  |     |         0.224 | 4,462                  |
+| **Verifying**         | 18,252           |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
 
 
 
@@ -2156,7 +2156,7 @@ The proposed NTT method preserves the memory contents in sequence without needin
 
 Adams-Bridge implements an **architectural-level arithmetic masking** countermeasure: every secret coefficient `x` is represented as a pair of additive shares `(share0, share1)` such that `share0 + share1 ≡ x (mod q)`, where `q` is the algorithm prime (`MLDSA_Q = 8380417` for ML-DSA-87, `MLKEM_Q = 3329` for ML-KEM-1024). The two shares travel through two parallel, cycle-aligned NTT engines on disjoint storage, and are recombined only at the boundary of any unmasked downstream consumer. No masking logic exists *inside* the NTT engine itself — the engine is an unchanged datapath that operates on whatever value is in memory.
 
-The countermeasure is fully configurable via the top-level `MASKING_EN` parameter (see [`abr_params_pkg.sv`](../src/abr_top/rtl/abr_params_pkg.sv) and [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv)). When `MASKING_EN = 0`, all `MASKED_*` opcodes degrade to their unmasked equivalents, `RECOMBINE` opcodes become no-ops via `skip_recombine`, and the masked memory instances are not generated.
+The countermeasure is fully configurable via the top-level `MASKING_EN` parameter (see [`abr_params_pkg.sv`](../src/abr_top/rtl/abr_params_pkg.sv) and [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv)). When `MASKING_EN = 0`, all `MASKED_*` opcodes degrade to their unmasked equivalents, the fused-recombine consumer opcodes (`*_R` variants) behave identically to their non-fused counterparts (the recombine path is tied off), and the masked memory instances are not generated.
 
 ### Share generation — `abr_splitter`
 
@@ -2188,9 +2188,13 @@ Both engines receive the same opcode and the same logical address sequence but i
 
 For the `NTT(c)` step in signing, the operand `c` is a public challenge polynomial produced by SampleInBall. Both NTTs must produce the *same* result at the *same* memory address so that subsequent masked PWMs against `c` work correctly. The dedicated [`ABR_UOP_MASKED_NTT_NOSHUF`](../src/abr_top/rtl/abr_ctrl_pkg.sv) opcode (`masking_en = 1, shuffling_en = 0`) drives both engines through cycle-aligned identical schedules so that `NTT[0]` and `NTT[1]` arrive at the same `C_NTT` polynomial in their respective memories. SIB read data is broadcast to both engines from `NTT[0]`'s shared read port.
 
-### Recombination — `RECOMBINE`
+### Recombination — fused-consumer model
 
-Before any *unmasked* consumer (signature encoding, public-key encoding, hashing for `μ`, decompose, norm-check, makehint, compress) reads a masked value, the sequencer issues a `RECOMBINE` opcode. `RECOMBINE` runs on `NTT[0]` in pass-through mode: it reads `share0` from the regular memory and `share1` from the masked memory at the same address, computes `(share0 + share1) mod q`, and writes the combined value back to the regular memory. The recombined value is in-place, hence, when `MASKING_EN = 0`, the `skip_recombine` decoder in [`abr_ctrl.sv`](../src/abr_top/rtl/abr_ctrl.sv) converts every `RECOMBINE` opcode into a no-op, since the data is already in the regular memory in its non-shared form.
+Every unmasked consumer that needs a recombined value (signature encoding, public-key encoding, hashing for `μ`, decompose, norm-check, makehint, compress, power-of-2 round, sk-encode) uses a dedicated fused opcode (suffixed `_R`) that performs the recombination on the fly while feeding the consumer. The fused-consumer opcodes currently used by the sequencer are:
+
+- `ABR_UOP_PWS_R`, `ABR_UOP_PWA_R`, `ABR_UOP_NORMCHK_R`, `ABR_UOP_SIGENCODE_R`, `ABR_UOP_COMPRESS_R`, `ABR_UOP_DECOMPOSE_R`, `ABR_UOP_SKENCODE_R`, `ABR_UOP_PWR2RND_R`
+
+When such an opcode is issued, the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive reads `share0` from the regular memory and `share1` from the masked memory at the same address, computes `(share0 + share1) mod q`, and forwards the result on the consumer-side read port — no in-place writeback and no separate sequencer pass. When `MASKING_EN = 0`, the recombine input from the masked memory is tied to zero and the consumer reads the regular memory directly, making the `_R` opcode behaviorally identical to its non-fused variant.
 
 ## RejBounded architecture
 
@@ -3654,7 +3658,7 @@ In the UseHint phase, the decompose unit retrieves w from memory and divides it 
 ### Memory Instances
 | Instance | Type | Depth | Width | Size |
 |----------|------|-------|-------|------|
-| inst0 | Banked (2 banks) | 832/bank (1664 total) | 96-bit | 19.5 KB |
+| inst0 | Banked (2 banks) | 800/bank (1600 total) | 96-bit | 18.75 KB |
 | inst1 | Single | 64 | 96-bit | 0.75 KB |
 | inst2 | Single | 1536 | 96-bit | 18 KB |
 | SIB | Single | - | - | SampleInBall |

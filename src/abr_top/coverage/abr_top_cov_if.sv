@@ -213,10 +213,6 @@ interface abr_top_cov_if
     logic sca_recombine_en_pipe_last;
     assign sca_recombine_en_pipe_last = abr_top.recombine_en_pipe[abr_top.SRAM_LATENCY];
 
-    // skip_recombine — when MASKING_EN=0, recombine ops are NOP'd
-    logic sca_skip_recombine;
-    assign sca_skip_recombine = abr_top.abr_ctrl_inst.skip_recombine;
-
     // NTT[1] SIB read pipeline (bug 9 fix — ntt_sib_rd_detect_d1[0] gates NTT[1] valid)
     logic sca_ntt_sib_rd_detect_d1;
     assign sca_ntt_sib_rd_detect_d1 = abr_top.ntt_sib_rd_detect_d1[0];
@@ -224,6 +220,49 @@ interface abr_top_cov_if
     // Recombine pipeline first stage (bug 3 fix — recombine_en_pipe timing)
     logic sca_recombine_en_pipe_first;
     assign sca_recombine_en_pipe_first = abr_top.recombine_en_pipe[0];
+
+    // Per-consumer fused-recombine coverage taps — re-derived from abr_ctrl
+    // opcode (per-consumer enables collapsed to single recombine_en at source).
+    logic sca_pws_recombine_en;
+    logic sca_normchk_recombine_en;
+    logic sca_sigencode_recombine_en;
+    logic sca_compress_recombine_en;
+    logic sca_skencode_recombine_en;
+    logic sca_decompose_recombine_en;
+    logic sca_pwr2rnd_recombine_en;
+
+    assign sca_pws_recombine_en       = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.ntt_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
+    assign sca_normchk_recombine_en   = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+    assign sca_sigencode_recombine_en = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
+    assign sca_compress_recombine_en  = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS);
+    assign sca_skencode_recombine_en  = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
+    assign sca_decompose_recombine_en = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_DECOMP);
+    assign sca_pwr2rnd_recombine_en   = abr_top.MASKING_EN
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
+                                      & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
+                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
+
+    // Build-time MASKING_EN tap for cross axes.
+    logic sca_masking_en_param;
+    assign sca_masking_en_param = abr_top.MASKING_EN;
 
     // Sampler opcode mode (covers masked-sampling dispatch).
     // Packed logic to dodge VCS dual-scope enum mismatch (see note above).
@@ -281,7 +320,6 @@ interface abr_top_cov_if
         recombine_en_cp: coverpoint sca_recombine_en;
         ntt0_enable_cp: coverpoint sca_ntt0_enable;
         ntt1_enable_cp: coverpoint sca_ntt1_enable;
-        skip_recombine_cp: coverpoint sca_skip_recombine;
 
         // --- NTT[0] mode (covers all operation types) ---
         ntt0_mode_cp: coverpoint sca_ntt0_mode {
@@ -294,7 +332,6 @@ interface abr_top_cov_if
             bins mldsa_pwm_accum_smpl = {MLDSA_PWM_ACCUM_SMPL};
             bins mldsa_pwa       = {MLDSA_PWA};
             bins mldsa_pws       = {MLDSA_PWS};
-            bins mldsa_recombine = {MLDSA_RECOMBINE};
             bins mlkem_ntt       = {MLKEM_NTT};
             bins mlkem_intt      = {MLKEM_INTT};
             bins mlkem_pwm       = {MLKEM_PWM};
@@ -303,7 +340,6 @@ interface abr_top_cov_if
             bins mlkem_pwm_accum_smpl = {MLKEM_PWM_ACCUM_SMPL};
             bins mlkem_pwa       = {MLKEM_PWA};
             bins mlkem_pws       = {MLKEM_PWS};
-            bins mlkem_recombine = {MLKEM_RECOMBINE};
         }
 
         // --- NTT[1] mode (subset — only sampled when NTT[1] is actually firing) ---
@@ -428,10 +464,7 @@ interface abr_top_cov_if
         splitXmlkem_encaps:  cross split_en_cp, sca_mlkem_encaps_cp;
         splitXmlkem_decaps:  cross split_en_cp, sca_mlkem_decaps_cp;
 
-        // --- Cross coverage: NTT[1] active × recombine (must be mutually exclusive) ---
-        // RTL invariant: ntt_enable[1] = ntt_masking_en_ctrl & !recombine_en_ctrl ? ...
-        //                recombine_en  = ntt_mode[0] inside {MLDSA/MLKEM_RECOMBINE}
-        // Both are driven by the same dispatch-time mode_ctrl, so they are strictly exclusive.
+        // NTT[1] active × recombine — mutually exclusive (different cycles)
         ntt1Xrecombine: cross ntt1_enable_cp, recombine_en_cp {
             illegal_bins ntt1_during_recombine =
                 binsof(ntt1_enable_cp) intersect {1} &&
@@ -459,11 +492,83 @@ interface abr_top_cov_if
                                                 binsof(opcode_masking_en_cp) intersect {0};
         }
 
-        // Recombine × opcode.masking_en cross (for coverage only).
-        // recombine_en is derived from ntt_mode[0] inside {MLDSA/MLKEM_RECOMBINE} and can
-        // legitimately fire with opcode.masking_en=0 for non-in-place RECOMBINEs (in-place
-        // ones are NOPed in abr_ctrl). See abr_top.sv:683-685. No illegal_bins here.
+        // Recombine × opcode.masking_en (coverage only)
         recombineXopcode_masking: cross recombine_en_cp, opcode_masking_en_cp;
+
+        // =====================================================================
+        // Per-consumer fused-recombine coverpoints + crosses
+        // =====================================================================
+        pws_recombine_en_cp:       coverpoint sca_pws_recombine_en;
+        normchk_recombine_en_cp:   coverpoint sca_normchk_recombine_en;
+        sigencode_recombine_en_cp: coverpoint sca_sigencode_recombine_en;
+        compress_recombine_en_cp:  coverpoint sca_compress_recombine_en;
+        skencode_recombine_en_cp:  coverpoint sca_skencode_recombine_en;
+        decompose_recombine_en_cp: coverpoint sca_decompose_recombine_en;
+        pwr2rnd_recombine_en_cp:   coverpoint sca_pwr2rnd_recombine_en;
+
+        // Build-time MASKING_EN — per-build constant; stable axis for crosses.
+        masking_en_param_cp: coverpoint sca_masking_en_param;
+
+        // Per-consumer × MASKING_EN — illegal: recombine asserted with MASKING_EN=0.
+        pws_recombineXmasking_param: cross pws_recombine_en_cp, masking_en_param_cp {
+            illegal_bins pws_recombine_with_masking_off =
+                binsof(pws_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        normchk_recombineXmasking_param: cross normchk_recombine_en_cp, masking_en_param_cp {
+            illegal_bins normchk_recombine_with_masking_off =
+                binsof(normchk_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        sigencode_recombineXmasking_param: cross sigencode_recombine_en_cp, masking_en_param_cp {
+            illegal_bins sigencode_recombine_with_masking_off =
+                binsof(sigencode_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        compress_recombineXmasking_param: cross compress_recombine_en_cp, masking_en_param_cp {
+            illegal_bins compress_recombine_with_masking_off =
+                binsof(compress_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        skencode_recombineXmasking_param: cross skencode_recombine_en_cp, masking_en_param_cp {
+            illegal_bins skencode_recombine_with_masking_off =
+                binsof(skencode_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        decompose_recombineXmasking_param: cross decompose_recombine_en_cp, masking_en_param_cp {
+            illegal_bins decompose_recombine_with_masking_off =
+                binsof(decompose_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+        pwr2rnd_recombineXmasking_param: cross pwr2rnd_recombine_en_cp, masking_en_param_cp {
+            illegal_bins pwr2rnd_recombine_with_masking_off =
+                binsof(pwr2rnd_recombine_en_cp) intersect {1} &&
+                binsof(masking_en_param_cp) intersect {0};
+        }
+
+        // Port-conflict invariant: PWS is the only fused consumer on the NTT
+        // datapath. ABR_UOP_PWS_R sets opcode.masking_en=0, forcing NTT[1] off.
+        // The other six fused consumers are aux-side and have no NTT[1] path.
+        pws_recombineXntt1: cross pws_recombine_en_cp, ntt1_enable_cp {
+            illegal_bins pws_recombine_during_ntt1 =
+                binsof(pws_recombine_en_cp) intersect {1} &&
+                binsof(ntt1_enable_cp)     intersect {1};
+        }
+
+        // Per-consumer × process — verify each fused consumer fires.
+        pws_recombineXmldsa_signing:        cross pws_recombine_en_cp,       sca_mldsa_signing_cp;
+        pws_recombineXmldsa_keygen:         cross pws_recombine_en_cp,       sca_mldsa_keygen_cp;
+        pws_recombineXmlkem_keygen:         cross pws_recombine_en_cp,       sca_mlkem_keygen_cp;
+        pws_recombineXmlkem_encaps:         cross pws_recombine_en_cp,       sca_mlkem_encaps_cp;
+        pws_recombineXmlkem_decaps:         cross pws_recombine_en_cp,       sca_mlkem_decaps_cp;
+        normchk_recombineXmldsa_signing:    cross normchk_recombine_en_cp,   sca_mldsa_signing_cp;
+        sigencode_recombineXmldsa_signing:  cross sigencode_recombine_en_cp, sca_mldsa_signing_cp;
+        skencode_recombineXmldsa_keygen:    cross skencode_recombine_en_cp,  sca_mldsa_keygen_cp;
+        decompose_recombineXmldsa_signing:  cross decompose_recombine_en_cp, sca_mldsa_signing_cp;
+        pwr2rnd_recombineXmldsa_keygen:     cross pwr2rnd_recombine_en_cp,   sca_mldsa_keygen_cp;
+        compress_recombineXmlkem_keygen:    cross compress_recombine_en_cp,  sca_mlkem_keygen_cp;
+        compress_recombineXmlkem_encaps:    cross compress_recombine_en_cp,  sca_mlkem_encaps_cp;
+        compress_recombineXmlkem_decaps:    cross compress_recombine_en_cp,  sca_mlkem_decaps_cp;
 
         // --- Per-splitter masking-off invariant ---
         // Each splitter instance (sampler / skdecode_a / skdecode_b / decompress) is
