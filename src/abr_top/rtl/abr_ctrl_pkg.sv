@@ -341,6 +341,11 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_R_ID           = 'd34;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SEED_Z_ID      = 'd35;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_CIPHERTEXT_ID  = 'd36;
+    localparam [ABR_OPR_WIDTH-1 : 0] CONSTANT_VAL_REG_ID  = 'd37;
+
+    // Fixed 512-bit constant fed to SIB sampler in place of c_tilde for
+    // deterministic SIB output regardless of message/seed.
+    localparam logic [15:0][31:0] CONSTANT_VAL = 512'h357bbde78e64b7731370d445b2138d74f34697369c3889dd8170e2f3ba8d65e83a2a686c73da532dade8a8cac8bf3cb99ca25b4c0f9b0c017e1fb4d842c7ca9b;
     
     //SK offsets in dwords
     localparam [ABR_OPR_WIDTH-1 : 0] MLDSA_SK_S1_OFFSET = 'd32;

@@ -1365,6 +1365,7 @@ always_comb kv_mlkem_msg_write_data = '0;
         MLDSA_SIGN_RND_ID:    msg_data <= {sign_rnd_reg[{sampler_src_offset[1:0],1'b1}],sign_rnd_reg[{sampler_src_offset[1:0],1'b0}]};
         MLDSA_RHO_P_KAPPA_ID: msg_data <= msg_last ? {48'b0,kappa_sum} : abr_scratch_reg.mldsa_enc.rho_p[sampler_src_offset[2:0]];
         MLDSA_SIG_C_REG_ID:   msg_data <= {signature_reg.enc.c[{sampler_src_offset[2:0],1'b1}], signature_reg.enc.c[{sampler_src_offset[2:0],1'b0}]};
+        CONSTANT_VAL_REG_ID:  msg_data <= {CONSTANT_VAL[{sampler_src_offset[2:0],1'b1}], CONSTANT_VAL[{sampler_src_offset[2:0],1'b0}]};
         MLDSA_PK_REG_ID:      msg_data <= abr_scratch_reg.mldsa_enc.rho[sampler_src_offset[1:0]];
         ABR_ENTROPY_ID:       msg_data <= lfsr_entropy_reg[sampler_src_offset[2:0]];
         MLKEM_SEED_D_ID:      msg_data <= msg_last ? {48'b0,sampler_imm} : {mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b1}],mlkem_seed_d_reg[{sampler_src_offset[1:0],1'b0}]};

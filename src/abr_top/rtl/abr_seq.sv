@@ -340,7 +340,7 @@ module abr_seq
                 MLDSA_SIGN_MAKE_W       : data_o_rom <= '{opcode:ABR_UOP_DECOMPOSE_R, imm:'h0000, length:'d00, operand1:MLDSA_W0_0_BASE, operand2:ABR_NOP, operand3:MLDSA_W0_0_BASE}; 
 
                 MLDSA_SIGN_MAKE_C       : data_o_rom <= '{opcode:ABR_UOP_RUN_SHAKE256, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_DEST_SIG_C_REG_ID};
-                MLDSA_SIGN_MAKE_C+ 1    : data_o_rom <= '{opcode:ABR_UOP_SIB, imm:'h0000, length:'d64, operand1:MLDSA_SIG_C_REG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_SIGN_MAKE_C+ 1    : data_o_rom <= '{opcode:ABR_UOP_SIB, imm:'h0000, length:'d64, operand1:CONSTANT_VAL_REG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
 
                 //NTT(C) — MASKED_NTT_NOSHUF: both NTTs produce identical C_NTT
                 //at identical addresses (no shuffling divergence since c is public)
