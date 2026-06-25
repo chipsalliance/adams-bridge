@@ -69,9 +69,9 @@ module makehint
     logic max_index_buffer_rd;
 
     //Sample buffer wires
-    //Flush buffer will perform last write of last polynomial irrespective of data_valid from sample buffer.
-    //This will take care of the case where at the end of index count, if buffer has < NUM_WR values, we still want to capture into reg API, padded with 0s
-    //For each poly_done, sample_buffer continues to capture values as they come in and this extra write is not required until the end
+    //Flush buffer only performs the final write after the last polynomial irrespective of data_valid from sample buffer.
+    //This handles the case where the encoded h stream ends with < NUM_WR indices and the final dword still needs to be committed to the reg API.
+    //Intermediate polynomials must not flush/pad the buffer because the encoded h indices are packed contiguously across polynomial boundaries.
     logic flush_buffer, flush_buffer_reg;
     logic sample_valid;
     logic [3:0][BUFFER_DATA_W-1:0] sample_data;
@@ -203,7 +203,7 @@ module makehint
 
     //Reg API
     //Write from sample buffer for each dword captured per polynomial.
-    //If last poly is done, flush buffer and write to reg API
+    //If the last poly is done, flush the final partial buffer contents and write them to the reg API
     //After that, write the max_index_buffer contents to reg API - using delayed poly_last as the wren in this case
     assign reg_wren = sample_valid | flush_buffer | max_index_buffer_rd;
     assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : '0;
