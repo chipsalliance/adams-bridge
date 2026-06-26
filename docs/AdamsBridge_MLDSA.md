@@ -2548,6 +2548,8 @@ At the end of all polynomials, the hintsum is written to the register API to con
 
 It is possible that during the last cycle of the last polynomial, the index buffer contains \< 1 dword of index values to be written to the reg API. To accommodate this scenario, the controller flushes out the buffer at the end of the last polynomial and writes the remaining data to the register API.
 
+The flush is only applied after the final polynomial. Across intermediate polynomial boundaries, the packed hint indices remain contiguous in y\[ω-1:0\]; inserting padding at each polynomial boundary would break the cumulative hintsum byte ranges used by HintBitUnpack/sigDecode_h.
+
 ## W1Encode Architecture
 
 The signer’s commitment is shown by w, while this value needs to be decomposed into two shares to provide the required hint as a part of signature. The output of decompose is shown by (w1, w0) which presents the higher and lower parts of the given input. While w0 can be stored into the memory, the value of w1 is required to compute commitment hash using SHAKE256 operation. The following equation shows this operation:
