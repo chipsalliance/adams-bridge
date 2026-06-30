@@ -156,7 +156,6 @@ module abr_top
   logic [ABR_NUM_NTT-1:0] pwm_b_rd_data_valid;
   logic [ABR_NUM_NTT-1:0] ntt_busy;
   logic [ABR_NUM_NTT-1:0] ntt_done;
-  logic [ABR_NUM_NTT-1:0] ntt_random_en;
   logic [ABR_NUM_NTT-1:0] ntt_shuffling_en;
 
   mem_if_t w1_mem_wr_req;
@@ -691,7 +690,6 @@ generate
       accumulate[g_inst] = '0;
       sampler_valid[g_inst] = 0;
       sampler_ntt_mode[g_inst] = 0;
-      ntt_random_en[g_inst] = 0; //Turn off random in NTT for all ops except PWM, INTT
       mlkem_mode[g_inst] = 0;
 
       unique case (ntt_mode[g_inst]) inside
@@ -702,7 +700,6 @@ generate
         end
         MLDSA_INTT: begin
           mode[g_inst] = gs;
-          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWM_SMPL: begin
           mode[g_inst] = pwm;
@@ -718,13 +715,11 @@ generate
         MLDSA_PWM: begin
           mode[g_inst] = pwm;
           sampler_valid[g_inst] = 1;
-          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWM_ACCUM: begin
           mode[g_inst] = pwm;
           accumulate[g_inst] = 1;
           sampler_valid[g_inst] = 1;
-          ntt_random_en[g_inst] = 1;
         end
         MLDSA_PWA: begin
           mode[g_inst] = pwa;
@@ -740,7 +735,6 @@ generate
         end
         MLKEM_INTT: begin
           mode[g_inst] = gs;
-          ntt_random_en[g_inst] = 1;
           mlkem_mode[g_inst] = 1;
         end
         MLKEM_PWM_SMPL: begin
@@ -759,14 +753,12 @@ generate
         MLKEM_PWM: begin
           mode[g_inst] = pairwm;
           sampler_valid[g_inst] = 1;
-          ntt_random_en[g_inst] = 1;
           mlkem_mode[g_inst] = 1;
         end
         MLKEM_PWM_ACCUM: begin
           mode[g_inst] = pairwm;
           accumulate[g_inst] = 1;
           sampler_valid[g_inst] = 1;
-          ntt_random_en[g_inst] = 1;
           mlkem_mode[g_inst] = 1;
         end
         MLKEM_PWA: begin
