@@ -231,34 +231,37 @@ interface abr_top_cov_if
     logic sca_decompose_recombine_en;
     logic sca_pwr2rnd_recombine_en;
 
+    // NOTE: cast both sides of enum comparisons to packed logic to avoid VCS
+    // DTIE/DTIIO "different enum types" errors caused by abr_ctrl_pkg being
+    // elaborated in both RTL and TB scopes (see note above at sca_ntt0_mode).
     assign sca_pws_recombine_en       = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.ntt_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode inside {MLDSA_PWS, MLKEM_PWS, MLDSA_PWA});
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.ntt_mode) inside {5'(MLDSA_PWS), 5'(MLKEM_PWS), 5'(MLDSA_PWA)});
     assign sca_normchk_recombine_en   = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLDSA_NORMCHK));
     assign sca_sigencode_recombine_en = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_SIGENC);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLDSA_SIGENC));
     assign sca_compress_recombine_en  = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLKEM_COMPRESS));
     assign sca_skencode_recombine_en  = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_SKENCODE);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLDSA_SKENCODE));
     assign sca_decompose_recombine_en = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_DECOMP);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLDSA_DECOMP));
     assign sca_pwr2rnd_recombine_en   = abr_top.MASKING_EN
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.recombine_en
                                       & abr_top.abr_ctrl_inst.abr_instr.opcode.aux_en
-                                      & (abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode == MLDSA_PWR2RND);
+                                      & (5'(abr_top.abr_ctrl_inst.abr_instr.opcode.mode.aux_mode) == 5'(MLDSA_PWR2RND));
 
     // Build-time MASKING_EN tap for cross axes.
     logic sca_masking_en_param;
