@@ -122,6 +122,7 @@ contents:
         path: "{template_basename}__1.yml"
       templates:
         - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_zeroize_stream_msg_test
+        - $ADAMSBRIDGE_ROOT/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_randomized_zeroize_mid_op_test
   - generator:
       tags: ["L0", "uvmf_mldsa",  "directed", "smoke_test"]
       path: ""
