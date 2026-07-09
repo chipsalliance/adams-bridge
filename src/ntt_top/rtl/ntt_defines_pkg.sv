@@ -45,7 +45,6 @@ parameter MLKEM_INTT_WRBUF_LATENCY   = 9;
 parameter MLKEM_PAIRWM_ACC_LATENCY = 5;
 parameter MLKEM_PAIRWM_LATENCY = 4;
 parameter MLKEM_BF_STAGE1_LATENCY = 3;
-parameter MLKEM_BF_LATENCY  = MLKEM_BF_STAGE1_LATENCY * 2;
 
 parameter MLKEM_BARRETT_REDUCTION_LATENCY = 6;
 // typedef enum logic [2:0] {ct, gs, pwm, pwa, pws} mode_t;

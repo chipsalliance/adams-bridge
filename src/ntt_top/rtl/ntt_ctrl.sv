@@ -93,7 +93,7 @@ localparam [ABR_MEM_ADDR_WIDTH-1:0] MEM_LAST_ADDR = 63;
 localparam SRAM_DELAY = SRAM_LATENCY-1;
 localparam INTT_WRBUF_LATENCY_SRAM_DELAY = INTT_WRBUF_LATENCY + SRAM_DELAY;
 
-localparam PAIRWM_PWO_ENTRY    = MLKEM_PAIRWM_LATENCY + MLKEM_BF_LATENCY + SRAM_DELAY;
+localparam PAIRWM_PWO_ENTRY    = MLKEM_PAIRWM_LATENCY + BF_LATENCY + SRAM_DELAY;
 localparam MAX_RDPTR_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
 localparam MAX_CHUNK_REG_DEPTH = PAIRWM_PWO_ENTRY + 1;
 
@@ -314,7 +314,7 @@ always_comb begin
 
     if (shuffle_en) begin
         mem_rd_addr_nxt    = (gs_mode) ? (COEFF_PER_CLK*chunk_count) + (rd_addr_step*mem_rd_index_ofst) + mem_rd_base_addr : mem_rd_addr + rd_addr_step;
-        mem_wr_addr_nxt    = ct_mode ? (ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*(mlkem ? chunk_count_reg[BF_LATENCY-MLKEM_BF_LATENCY] : chunk_count_reg[0])) + (wr_addr_step*(mlkem ? buf_rdptr_reg[BF_LATENCY-MLKEM_BF_LATENCY] : buf_rdptr_reg[0])) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : '0 /*(ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*chunk_count_reg[4]) + (wr_addr_step*buf_rdptr_reg[4]))*/;
+        mem_wr_addr_nxt    = ct_mode ? (ABR_MEM_ADDR_WIDTH+1)'((COEFF_PER_CLK*chunk_count_reg[0]) + (wr_addr_step*buf_rdptr_reg[0]) + mem_wr_base_addr) : gs_mode ? mem_wr_addr + wr_addr_step : '0;
     end
     else begin
         mem_rd_addr_nxt = mem_rd_addr + rd_addr_step;

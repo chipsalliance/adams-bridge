@@ -353,8 +353,8 @@ end
         else begin
             if (mlkem) begin
                 unique case(mode)
-                    ct: ready_reg <= {{(BF_LATENCY-MLKEM_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
-                    gs: ready_reg <= {{(BF_LATENCY-MLKEM_BF_LATENCY){1'b0}}, enable, ready_reg[MLKEM_BF_LATENCY-1:1]};
+                    ct: ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
+                    gs: ready_reg <= {enable, ready_reg[BF_LATENCY-1:1]};
                     pwm: ready_reg <= 'b0;
                     pwa: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
                     pws: ready_reg <= {{BF_LATENCY-1{1'b0}}, enable};
