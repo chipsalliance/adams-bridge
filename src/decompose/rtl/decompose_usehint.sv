@@ -42,6 +42,7 @@ module decompose_usehint
         output logic ready_o
     );
 
+    logic [4:0] w1_plus_one_ext, w1_minus_one_ext;
     logic [3:0] w1_plus_one, w1_minus_one;
     logic [3:0] w1_mux;
     logic ready;
@@ -68,8 +69,10 @@ module decompose_usehint
         end
     end
 
+    // Fix for issue #210: widen operands to 5 bits so the modulus (16) is
+    // representable; otherwise prime_i truncates to 0 and no mod occurs.
     abr_add_sub_mod #(
-        .REG_SIZE(4)
+        .REG_SIZE(5)
     ) 
     usehint_add_inst (
         .clk(clk),
@@ -77,15 +80,15 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b0),
-        .opa_i(w1_i),
-        .opb_i(4'(1)),
-        .prime_i(4'(16)),
-        .res_o(w1_plus_one),
+        .opa_i({1'b0, w1_i}),
+        .opb_i(5'(1)),
+        .prime_i(5'(16)),
+        .res_o(w1_plus_one_ext),
         .ready_o()
     );
 
     abr_add_sub_mod #(
-        .REG_SIZE(4)
+        .REG_SIZE(5)
     ) 
     usehint_sub_inst (
         .clk(clk),
@@ -93,12 +96,15 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b1),
-        .opa_i(w1_i),
-        .opb_i(4'(1)),
-        .prime_i(4'(16)),
-        .res_o(w1_minus_one),
+        .opa_i({1'b0, w1_i}),
+        .opb_i(5'(1)),
+        .prime_i(5'(16)),
+        .res_o(w1_minus_one_ext),
         .ready_o()
     );
+
+    assign w1_plus_one  = w1_plus_one_ext[3:0];
+    assign w1_minus_one = w1_minus_one_ext[3:0];
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
