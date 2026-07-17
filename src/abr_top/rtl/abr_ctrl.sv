@@ -931,7 +931,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sk_raddr = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
   always_comb api_sk_reg_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
-  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[31:PRIVKEY_NUM_DWORDS-1]} & ~kv_mlkem_msg_data_present;
+  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[32:PRIVKEY_NUM_DWORDS-1]} & ~kv_mlkem_msg_data_present;
 
   always_comb api_sk_reg_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
   always_comb api_keymem_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
@@ -2319,6 +2319,43 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (mldsa_seed_reg === '0), clk, !rst_b)
+
+  // ------------------------------------------------------------------
+  // Decode-partition mutex checks
+  //
+  // For every API bus that is partitioned between a scratch-reg region
+  // and a memory region (or between multiple memory regions), the decode
+  // signals must be mutually exclusive on any given cycle. A shared
+  // endpoint (e.g. write decode [0:31] AND [31:...]) collapses two
+  // buffers onto the same address and drives a spurious write; that is
+  // exactly the class of bug tracked as adams-bridge #284.
+  //
+  // These MUTEX assertions catch overlap the first time the boundary
+  // address is exercised, regardless of which side of the split is the
+  // logically intended target.
+  // ------------------------------------------------------------------
+  `ABR_ASSERT_MUTEX(ERR_MLDSA_PRIVKEY_IN_DEC_MUTEX,
+                    {api_sk_reg_wr_dec, api_keymem_wr_dec}, clk, !rst_b)
+  `ABR_ASSERT_MUTEX(ERR_MLDSA_PRIVKEY_OUT_DEC_MUTEX,
+                    {api_sk_reg_rd_dec, api_keymem_rd_dec}, clk, !rst_b)
+  `ABR_ASSERT_MUTEX(ERR_MLKEM_DK_DEC_MUTEX,
+                    {mlkem_api_dk_reg_dec, mlkem_api_dk_mem_dec}, clk, !rst_b)
+  `ABR_ASSERT_MUTEX(ERR_MLKEM_EK_DEC_MUTEX,
+                    {mlkem_api_ek_reg_dec, mlkem_api_ek_mem_dec}, clk, !rst_b)
+  `ABR_ASSERT_MUTEX(ERR_MLDSA_SIG_DEC_MUTEX,
+                    {api_sig_c_dec, api_sig_z_dec, api_sig_h_dec}, clk, !rst_b)
+  `ABR_ASSERT_MUTEX(ERR_MLDSA_PUBKEY_DEC_MUTEX,
+                    {api_pubkey_rho_dec, api_pubkey_dec}, clk, !rst_b)
+
+  `ABR_ASSERT(ERR_MLDSA_PRIVKEY_WR_REG_MATCHES_RD,
+              api_sk_reg_wr_dec |-> (api_sk_waddr < 'd32), clk, !rst_b)
+  `ABR_ASSERT(ERR_MLDSA_PRIVKEY_WR_MEM_MATCHES_RD,
+              api_keymem_wr_dec |-> (api_sk_waddr >= 'd32), clk, !rst_b)
+
+  `ABR_ASSERT(ERR_MLDSA_PRIVKEY_SK_MEM_WADDR_IN_RANGE,
+              (abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & abr_ready & api_keymem_wr_dec)
+                |-> (api_sk_mem_waddr < (PRIVKEY_NUM_DWORDS - 32)),
+              clk, !rst_b)
 
 `ifdef CALIPTRA
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
