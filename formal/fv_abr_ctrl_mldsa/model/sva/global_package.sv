@@ -110,7 +110,7 @@ typedef logic unsigned [7:0][14:0] a_unsigned_15_8;
 
 typedef logic unsigned [9:0][31:0] a_unsigned_32_10;
 
-typedef logic unsigned [16:0][31:0] a_unsigned_32_17;
+typedef logic unsigned [17:0][31:0] a_unsigned_32_17;
 
 
 // Constants

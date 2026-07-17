@@ -314,6 +314,8 @@ SC_MODULE(AdamsBridge) {
   shared_in<bool> sig_vld_chk_done_in;
   shared_out<bool> sha3_start_o;
   shared_out<bool> msg_start_o;
+  shared_in<bool> streaming_mode;
+  shared_in<bool> stream_done;
   shared_in<sc_uint<3>> sampler_offset_f;
   shared_in<std::array<sc_biguint<32>,10>> pk_ram_data;
   shared_in<sc_biguint<512>> from_ext_mu;
@@ -345,6 +347,7 @@ SC_MODULE(AdamsBridge) {
     registers.c[0]      = 0;
     sha3_start_o -> set(false);
     msg_start_o -> set(false);
+    bool streaming_mode_reg = false;
     sc_biguint<512> entropy = 0;
     sc_biguint<64> counter = 0;
     sc_biguint<1600> sampled_value = 0;
@@ -356,7 +359,7 @@ SC_MODULE(AdamsBridge) {
         api_in->get(from_api);
 
       } while (from_api.instr == InstructionType::NoOp);
-
+      
       // Work off the sequence of computations to perform the current command
       if (from_api.instr == InstructionType::Keygen || from_api.instr == InstructionType::KeygenSign) {
         sha3_start_o -> set(true);
@@ -527,14 +530,14 @@ SC_MODULE(AdamsBridge) {
             GET_ADDR(rho_id);
 
             to_sampler->try_write({ .mode = SamplerMode::RejSampler,
-                .destination = as_addr /* It is directly forwareded to the ntt component, not sure what to put here */ },
+                .destination = as_addr },
                 unused, "keygen_pwm_a_rejection_sampling_start");
 
             //WAIT_UNTIL_DONE(sampler_done_in, "keygen_pwm_a_rejection_sampling");
 
            
             to_ntt->try_write({ .mode = (keygen_pwm_a_idx > 0 ? NttMode::PwmAccuSampler : NttMode::PwmSampler),
-                .operand1 = rho_id /* Is directly taken from the sampler, not sure what to put here */,
+                .operand1 = rho_id,
                 .operand2 = s1_ntt_addrs.at(keygen_pwm_a_idx), .destination = as_addr }, unused, "keygen_pwm_a_start");
 
             WAIT_FOR_SUBS(ntt_done_in,sampler_done_in, "keygen_pwm_a");
@@ -628,7 +631,7 @@ SC_MODULE(AdamsBridge) {
         }
       }
 
-
+    
       api_in->get(from_api);
       if (from_api.instr == InstructionType::Sign) {
         // rnd_seed = Keccak(entropy | counter)
@@ -691,15 +694,21 @@ SC_MODULE(AdamsBridge) {
         WAIT_UNTIL_DONE(to_keccak_rdy,"sign_compute_mu_write_tr_msg_done");
         sipo_chunk_idx = 0;
         insert_state("sign_compute_mu_wait");
-        for (sipo_chunk_idx = 0; sipo_chunk_idx < 9; ++sipo_chunk_idx) {
-          std::array<sc_biguint<32>,17> msg_prime;
-          msg_prime_in->get(msg_prime);
-          WAIT_UNTIL_DONE(to_keccak_rdy, "sign_compute_mu_write_msg_prime");
-          to_keccak->master_write(func_concat_msg_p(msg_prime, sipo_chunk_idx.range(3,0)));
+        streaming_mode -> get(streaming_mode_reg);
+        if(!streaming_mode_reg) {
+          for (sipo_chunk_idx = 0; sipo_chunk_idx < 9; ++sipo_chunk_idx) {
+            std::array<sc_biguint<32>,17> msg_prime;
+            msg_prime_in->get(msg_prime);
+            WAIT_UNTIL_DONE(to_keccak_rdy, "sign_compute_mu_write_msg_prime");
+            to_keccak->master_write(func_concat_msg_p(msg_prime, sipo_chunk_idx.range(3,0)));
+          }
+          sipo_chunk_idx = sipo_chunk_idx + 1;
+          WAIT_UNTIL_DONE(to_keccak_rdy,"sign_compute_mu_write_msg_prime_msg_done");
+          sipo_chunk_idx = 0;
         }
-        sipo_chunk_idx = sipo_chunk_idx + 1;
-        WAIT_UNTIL_DONE(to_keccak_rdy,"sign_compute_mu_write_msg_prime_msg_done");
-        sipo_chunk_idx = 0;
+        else {
+          WAIT_FOR_SUBS(to_keccak_rdy, stream_done, "sign_compute_mu_write_msg_prime_streaming");
+        }
 
         GET_ADDR(mu_reg_id);
         to_sampler->try_write({ .mode = SamplerMode::Shake256, .destination = mu_reg_id },
@@ -1041,7 +1050,7 @@ SC_MODULE(AdamsBridge) {
       insert_state("sign_end_state");
       }
       
-
+      
       api_in->get(from_api);
       if (from_api.instr == InstructionType::Verify) {
         GET_ADDRS(t_addrs, 8);
@@ -1131,15 +1140,21 @@ SC_MODULE(AdamsBridge) {
         WAIT_UNTIL_DONE(to_keccak_rdy,"verify_compute_mu_write_tr_msg_done");
         sipo_chunk_idx = 0;
         insert_state("verify_compute_mu_wait");
-        for (sipo_chunk_idx = 0; sipo_chunk_idx < 9; ++sipo_chunk_idx) {
-          std::array<sc_biguint<32>,17> msg_prime;
-          msg_prime_in->get(msg_prime);
-          WAIT_UNTIL_DONE(to_keccak_rdy,"verify_compute_mu_write_msg_prime");
-          to_keccak->master_write(func_concat_msg_p(msg_prime, sipo_chunk_idx.range(3,0)));
+        streaming_mode -> get(streaming_mode_reg);
+        if(!streaming_mode_reg){
+          for (sipo_chunk_idx = 0; sipo_chunk_idx < 9; ++sipo_chunk_idx) {
+            std::array<sc_biguint<32>,17> msg_prime;
+            msg_prime_in->get(msg_prime);
+            WAIT_UNTIL_DONE(to_keccak_rdy,"verify_compute_mu_write_msg_prime");
+            to_keccak->master_write(func_concat_msg_p(msg_prime, sipo_chunk_idx.range(3,0)));
+          }
+           sipo_chunk_idx = sipo_chunk_idx + 1;
+          WAIT_UNTIL_DONE(to_keccak_rdy,"verify_compute_mu_write_msg_prime_msg_done");
+          sipo_chunk_idx = 0;
         }
-         sipo_chunk_idx = sipo_chunk_idx + 1;
-        WAIT_UNTIL_DONE(to_keccak_rdy,"verify_compute_mu_write_msg_prime_msg_done");
-        sipo_chunk_idx = 0;
+        else {
+          WAIT_FOR_SUBS(to_keccak_rdy, stream_done, "verify_compute_mu_write_msg_prime_streaming");
+        }
         GET_ADDR(mu_reg_id);
         to_sampler->try_write({ .mode = SamplerMode::Shake256, .destination = mu_reg_id },
             unused, "verify_compute_mu_sampling_start");
@@ -1319,7 +1334,7 @@ SC_MODULE(AdamsBridge) {
 
         WAIT_UNTIL_DONE(sampler_done_in, "verify_mu_sampling");
         insert_state("verify_end_state");
-      }
+      } 
     }
   }
 };

@@ -177,7 +177,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
   .temp_addr_in(((mldsa_ctrl.ntt_mode_o[0] == MLDSA_NTT && mldsa_ctrl.keygen_process) || (mldsa_ctrl.verifying_process)) ?
        MLDSA_TEMP0_BASE :
 ((mldsa_ctrl.ntt_mode_o[0] == MLDSA_INTT && mldsa_ctrl.keygen_process) || (mldsa_ctrl.signing_process))?
-       MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE),
+       MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE),
 
   .to_keccak_rdy(mldsa_ctrl.msg_rdy_i),
 
@@ -226,8 +226,9 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
   .to_norm_check_vld(mldsa_ctrl.normcheck_enable[0]),
   .to_norm_check_rdy(1'b0),
   .to_norm_check(to_norm_check),
+  .norm_check_invalid(mldsa_ctrl.normcheck_invalid_i),
 
-  .to_ntt_vld(mldsa_ctrl.ntt_enable_o[0]),
+  .to_ntt_vld(mldsa_ctrl.ntt_active[0] && mldsa_ctrl.ntt_en[0]),
   .to_ntt_rdy(1'b0),
   .to_ntt(to_ntt),
 
@@ -256,6 +257,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
   .to_sig_decode_h_vld(mldsa_ctrl.sigdecode_h_enable_o),
   .to_sig_decode_h_rdy(1'b0),
   .to_sig_decode_h(to_sig_decode_h),
+  .sig_decode_h_invalid(mldsa_ctrl.sigdecode_h_invalid_i),
 
   .to_sig_decode_z_vld(mldsa_ctrl.sigdecode_z_enable_o),
   .to_sig_decode_z_rdy(1'b0),
@@ -268,6 +270,8 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
   .to_use_hint_vld(mldsa_ctrl.decompose_enable_o && (mldsa_ctrl.prim_instr.opcode == MLDSA_UOP_USEHINT)),
   .to_use_hint_rdy(1'b0),
   .to_use_hint(to_use_hint),
+  .streaming_mode (mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value),
+  .stream_done (mldsa_ctrl.stream_msg_done),
 
   // Registers
   .as_addr(MLDSA_AS0_BASE),
@@ -407,54 +411,54 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
   .z_ntt_addrs_ForStmt_1272_11({MLDSA_Z_NTT_6_BASE,MLDSA_Z_NTT_5_BASE,MLDSA_Z_NTT_4_BASE,MLDSA_Z_NTT_3_BASE,MLDSA_Z_NTT_2_BASE,MLDSA_Z_NTT_1_BASE,MLDSA_Z_NTT_0_BASE}),
 
   // States
-  .idle((mldsa_ctrl.prim_prog_cntr == MLDSA_RESET) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)),
+  .idle((mldsa_ctrl.prim_prog_cntr == MLDSA_RESET) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)),
   .keygen_compute_t(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 34) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 43) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 52) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 61) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 70) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 79) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 88) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 97) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .keygen_compute_t_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 34) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 43) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 52) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 61) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 70) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 79) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 88) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 97) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_compute_tr_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_compute_tr_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_compute_tr_write_pk((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_done ),
-  .keygen_compute_tr_write_pk_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .keygen_compute_tr_write_pk_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .keygen_compute_tr_write_pk_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_compute_tr_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_compute_tr_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_compute_tr_write_pk((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_done ),
+  .keygen_compute_tr_write_pk_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .keygen_compute_tr_write_pk_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .keygen_compute_tr_write_pk_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 99)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)),
   .keygen_end_state((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_E) ),
-  .keygen_expand_seed_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_expand_seed_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_expand_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .keygen_expand_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .keygen_expand_seed_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_expand_seed_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_expand_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .keygen_expand_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
   .keygen_intt_a(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 33) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 42) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 51) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 60) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 69) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 78) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 87) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 96) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .keygen_intt_a_idle(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 33) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 42) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 51) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 60) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 69) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 78) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 87) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 96) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
   .keygen_intt_a_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 33) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 42) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 51) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 60) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 69) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 78) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 87) || (mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 96) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&&  ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&&  ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
   .keygen_jump_sign((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_JUMP_SIGN) ),
-  .keygen_ntt_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_ntt_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) &&  ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .Keygen_ntt_s1_idle((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE) && (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
-  .keygen_power_2_round((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 98)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_power_2_round_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 98)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.ctrl_fsm_ps)==MLDSA_CTRL_IDLE)),
+  .keygen_ntt_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_ntt_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) &&  ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .Keygen_ntt_s1_idle((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 19) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 25) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE) && (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+  .keygen_power_2_round((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 98)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_power_2_round_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 98)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.prim_ctrl_fsm_ps)==MLDSA_CTRL_IDLE)),
   .keygen_pwm_a((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -464,7 +468,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .keygen_pwm_a_rejection_sampling_start((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -474,7 +478,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .keygen_pwm_a_start((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -484,7 +488,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) ),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) ),
   .keygen_pwm_a_write_immediate((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -494,7 +498,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
   .keygen_pwm_a_write_immediate_msg_done((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -504,7 +508,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
   .keygen_pwm_a_write_rho((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -514,7 +518,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95)))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
   .keygen_pwm_a_write_rho_SHA3_START((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -524,7 +528,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95))) 
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
   .keygen_pwm_a_write_rho_start((((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 26) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 32)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 35) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 41)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 44) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 50)) ||
@@ -534,95 +538,96 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 80) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 86)) ||
  ((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 89) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 95))) 
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .keygen_rejbounded_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_rejbounded_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_rejbounded_s2((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_rejbounded_s2_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_rnd_seed_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE) ),
-  .keygen_rnd_seed_lfsr((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && $past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE),
-  .keygen_rnd_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .keygen_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .keygen_rnd_seed_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .keygen_sample_rnd_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_sample_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_sk_encode((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 100) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .keygen_sk_encode_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 100) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .keygen_write_counter((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .keygen_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .keygen_write_entropy(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)) && !mldsa_ctrl.msg_done  ),
-  .keygen_write_entropy_msg_done(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)) && mldsa_ctrl.msg_done ),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .keygen_rejbounded_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_rejbounded_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_rejbounded_s2((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_rejbounded_s2_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_rnd_seed_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE) ),
+  .keygen_rnd_seed_lfsr((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && $past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE),
+  .keygen_rnd_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .keygen_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .keygen_rnd_seed_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .keygen_sample_rnd_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_sample_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_sk_encode((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 100) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .keygen_sk_encode_start((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 100) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .keygen_write_counter((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .keygen_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .keygen_write_entropy(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)) && !mldsa_ctrl.msg_done  ),
+  .keygen_write_entropy_msg_done(((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)) && mldsa_ctrl.msg_done ),
   .keygen_write_rejbounded_immediate_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_last),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_last),
   .keygen_write_rejbounded_immediate_s1_msg_done((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_done),
   .keygen_write_rejbounded_immediate_s2((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_last),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_last),
   .keygen_write_rejbounded_immediate_s2_msg_done((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)  && mldsa_ctrl.msg_done),
   .keygen_write_rejbounded_input_s1((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
-  .keygen_write_rejbounded_input_s1_SHA3_START((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .keygen_write_rejbounded_input_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
+  .keygen_write_rejbounded_input_s1_SHA3_START((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .keygen_write_rejbounded_input_s1_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 4) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 10)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
   .keygen_write_rejbounded_input_s2((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
-  .keygen_write_rejbounded_input_s2_SHA3_START((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .keygen_write_rejbounded_input_s2_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .keygen_write_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_last &&  !mldsa_ctrl.msg_done ),
-  .keygen_write_seed_immediate((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last ),
-  .keygen_write_seed_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_c( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_compute_c_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_compute_lfsr_seed_lfsr( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_compute_lfsr_seed_sampling( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_compute_lfsr_seed_sampling_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_compute_lfsr_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
-  .sign_compute_lfsr_seed_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_compute_lfsr_seed_wait((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .sign_compute_lfsr_seed_write_counter((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_lfsr_seed_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_lfsr_seed_write_entropy((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done  ),
-  .sign_compute_lfsr_seed_write_entropy_msg_done((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
-  .sign_compute_mu_idle((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
-  .sign_compute_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_compute_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_compute_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .sign_compute_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_compute_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .sign_compute_mu_write_msg_prime((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_mu_write_msg_prime_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_mu_write_tr((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_mu_write_tr_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_rho_prime_sampling((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_compute_rho_prime_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_compute_rho_prime_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P)&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .sign_compute_rho_prime_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P)&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_compute_rho_prime_wait_0((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .sign_compute_rho_prime_wait_1((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .sign_compute_rho_prime_write_K((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_rho_prime_write_K_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_rho_prime_write_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_rho_prime_write_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_compute_rho_prime_write_sign_rnd((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_compute_rho_prime_write_sign_rnd_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
+  .keygen_write_rejbounded_input_s2_SHA3_START((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .keygen_write_rejbounded_input_s2_start((mldsa_ctrl.prim_prog_cntr >= MLDSA_KG_S+ 11) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_KG_S+ 18) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .keygen_write_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_last &&  !mldsa_ctrl.msg_done ),
+  .keygen_write_seed_immediate((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last ),
+  .keygen_write_seed_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_KG_S+ 3) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_compute_c( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_compute_c_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_compute_lfsr_seed_lfsr( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_compute_lfsr_seed_sampling( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_compute_lfsr_seed_sampling_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_compute_lfsr_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
+  .sign_compute_lfsr_seed_start( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_compute_lfsr_seed_wait((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .sign_compute_lfsr_seed_write_counter((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_compute_lfsr_seed_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_compute_lfsr_seed_write_entropy((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done  ),
+  .sign_compute_lfsr_seed_write_entropy_msg_done((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
+  .sign_compute_mu_idle((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+  .sign_compute_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_compute_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_compute_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .sign_compute_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_compute_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .sign_compute_mu_write_msg_prime_streaming((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value),
+  .sign_compute_mu_write_msg_prime((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done  && !mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value  ),
+  .sign_compute_mu_write_msg_prime_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done  && !mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value ),
+  .sign_compute_mu_write_tr((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_compute_mu_write_tr_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_MU) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_compute_rho_prime_sampling((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_compute_rho_prime_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_compute_rho_prime_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P)&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .sign_compute_rho_prime_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P)&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_compute_rho_prime_wait_0((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .sign_compute_rho_prime_wait_1((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .sign_compute_rho_prime_write_K((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_compute_rho_prime_write_K_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_compute_rho_prime_write_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_compute_rho_prime_write_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 2) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_compute_rho_prime_write_sign_rnd((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_compute_rho_prime_write_sign_rnd_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_H_RHO_P+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
   .sign_compute_w0_intt(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 15) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 23) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 31) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 39) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 47) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 55) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 63) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .sign_compute_w0_intt_idle(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 15) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 23) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 31) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 39) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 47) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 55) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 63) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
   .sign_compute_w0_intt_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 15) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 23) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 31) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 39) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 47) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 55) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 63) )
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_compute_w0_pwm(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -632,7 +637,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .sign_compute_w0_pwm_samp_ntt(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -642,7 +647,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_compute_w0_pwm_sampling_start(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -652,7 +657,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_compute_w0_pwm_SHA3_START(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -662,7 +667,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
   .sign_compute_w0_pwm_start(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -672,7 +677,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
   .sign_compute_w0_pwm_write_immediate(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -682,7 +687,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
   .sign_compute_w0_pwm_write_immediate_msg_done(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -692,7 +697,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
   .sign_compute_w0_pwm_write_rho(((mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S      ) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 6) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S + 8) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 14) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +16) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 22) ||
@@ -702,101 +707,101 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +48) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 54) ||
 (mldsa_ctrl.prim_prog_cntr >= MLDSA_SIGN_MAKE_W_S +56) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_SIGN_MAKE_W_S+ 62))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last&& !mldsa_ctrl.msg_done ),
-  .sign_decompose_w((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_decompose_w_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last&& !mldsa_ctrl.msg_done ),
+  .sign_decompose_w((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_decompose_w_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_end_of_challenge((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_CHL_E)),
   .sign_end_state((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_E)),
-  .sign_expand_mask_done( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_expand_mask_done( (mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_LFSR_S+ 2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .sign_expand_mask_sampling(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .sign_expand_mask_sampling_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_expand_mask_SHA3_START(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
   .sign_expand_mask_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&& (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+&& (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
   .sign_expand_mask_write_kappa_immediate(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_last),
   .sign_expand_mask_write_kappa_immediate_msg_done(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
   .sign_expand_mask_write_rho_prime(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 1) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 2) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 3) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 4) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 5) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 6))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
-  .sign_load_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_load_mu_idle((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
-  .sign_load_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_load_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .sign_load_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_load_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
+  .sign_load_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_load_mu_idle((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+  .sign_load_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_load_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .sign_load_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W_S+ 65)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_load_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_W) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
   .sign_ntt_y(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S +7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 8) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 9) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 10) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+11) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 12) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 13))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .sign_ntt_y_idle(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S +7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 8) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 9) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 10) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+11) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 12) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 13))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
   .sign_ntt_y_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S +7) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 8) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 9) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 10) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+11) || (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 12) ||
  (mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_Y_S+ 13))
 
-&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_check_mode((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_CHECK_MODE)),
-  .sign_rnd_seed_lfsr((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 2)  && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && $past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE),
-  .sign_rnd_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .sign_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_rnd_seed_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S +1 ) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .sign_sample_in_ball_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_sample_in_ball_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .sign_sample_in_ball_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .sign_sample_in_ball_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .sign_sample_in_ball_write_c((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_sample_in_ball_write_c_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .sign_sample_rnd_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .sign_sample_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_rnd_seed_lfsr((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 2)  && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && $past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE),
+  .sign_rnd_seed_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .sign_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_rnd_seed_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S +1 ) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .sign_sample_in_ball_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_sample_in_ball_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .sign_sample_in_ball_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .sign_sample_in_ball_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .sign_sample_in_ball_write_c((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_sample_in_ball_write_c_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_MAKE_C+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_sample_rnd_seed((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .sign_sample_rnd_seed_start((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .sign_set_c_valid((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_SET_C) ),
   .sign_set_w0_valid((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_SET_W0) ),
   .sign_set_y_valid((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_SET_Y) ),
   .sign_wait_for_c_clear((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_CHECK_C_CLR) ),
   .sign_wait_for_w0_clear((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_CHECK_W0_CLR)),
-  .sign_wait_for_y_and_w0_clear((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_CHECK_Y_CLR ) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)),
-  .sign_write_counter((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_done ),
-  .sign_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& mldsa_ctrl.msg_done),
-  .sign_write_entropy((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .sign_write_entropy_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S)  &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .sign_wait_for_y_and_w0_clear((mldsa_ctrl.prim_prog_cntr ==MLDSA_SIGN_CHECK_Y_CLR ) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)),
+  .sign_write_counter((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& !mldsa_ctrl.msg_done ),
+  .sign_write_counter_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S+ 1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD)&& mldsa_ctrl.msg_done),
+  .sign_write_entropy((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .sign_write_entropy_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_SIGN_S)  &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
   .verify_check_mode((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_CHECK_MODE)),
   .verify_compute_az_pwm(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
@@ -807,7 +812,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
   .verify_compute_az_pwm_start(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -817,7 +822,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .verify_compute_az_sampling_start(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -827,7 +832,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .verify_compute_az_SHA3_START(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -837,7 +842,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
   .verify_compute_az_start(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -847,7 +852,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
   .verify_compute_az_write_immediate(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -857,7 +862,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps ==MLDSA_CTRL_MSG_LOAD ) && mldsa_ctrl.msg_last),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps ==MLDSA_CTRL_MSG_LOAD ) && mldsa_ctrl.msg_last),
   .verify_compute_az_write_immediate_msg_done(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -867,7 +872,7 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps ==MLDSA_CTRL_MSG_LOAD ) && mldsa_ctrl.msg_done),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps ==MLDSA_CTRL_MSG_LOAD ) && mldsa_ctrl.msg_done),
   .verify_compute_az_write_rho(((mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 6) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 10) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 16) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 20) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 26) ||
@@ -877,59 +882,60 @@ fv_mldsa_ctrl_m fv_mldsa_ctrl(
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 60) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 66) ||
  (mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_EXP_A+ 70) && (mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_EXP_A+ 76))
 
- && (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
-  .verify_compute_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_compute_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_compute_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .verify_compute_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .verify_compute_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .verify_compute_mu_write_msg_prime((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .verify_compute_mu_write_msg_prime_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .verify_compute_mu_write_tr((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .verify_compute_mu_write_tr_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
-  .verify_compute_tr_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_compute_tr_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_compute_tr_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
-  .verify_compute_tr_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)   && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .verify_compute_tr_write_pk((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .verify_compute_tr_write_pk_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
-  .verify_compute_w0_intt(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_compute_w0_intt_idle(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
-  .verify_compute_w0_intt_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_compute_w0_pwm(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 7)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 17)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 27)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 37)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 47)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 57)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 67)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 77))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_compute_w0_pwm_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 7)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 17)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 27)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 37)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 47)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 57)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 67)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 77))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_compute_w0_pws(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 8)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 18)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 28)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 38)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 48)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 58)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 68)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 78))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_compute_w0_pws_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 8)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 18)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 28)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 38)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 48)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 58)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 68)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 78))&&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+ && (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_last && !mldsa_ctrl.msg_done ),
+  .verify_compute_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_compute_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_compute_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .verify_compute_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .verify_compute_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .verify_compute_mu_write_msg_prime((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done && !mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value ),
+  .verify_compute_mu_write_msg_prime_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done  && !mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value ),
+  .verify_compute_mu_write_msg_prime_streaming((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.mldsa_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value),
+  .verify_compute_mu_write_tr((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .verify_compute_mu_write_tr_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_MU) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
+  .verify_compute_tr_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_compute_tr_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_compute_tr_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
+  .verify_compute_tr_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)   && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .verify_compute_tr_write_pk((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .verify_compute_tr_write_pk_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_H_TR) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done ),
+  .verify_compute_w0_intt(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_compute_w0_intt_idle(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE)&&  (mldsa_ctrl.prim_ctrl_fsm_ns != MLDSA_CTRL_IDLE)),
+  .verify_compute_w0_intt_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 9)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 19)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 29)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 39)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 49)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 59)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 69)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 79))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_compute_w0_pwm(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 7)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 17)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 27)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 37)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 47)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 57)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 67)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 77))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_compute_w0_pwm_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 7)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 17)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 27)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 37)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 47)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 57)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 67)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 77))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_compute_w0_pws(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 8)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 18)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 28)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 38)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 48)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 58)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 68)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 78))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_compute_w0_pws_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 8)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 18)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 28)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 38)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 48)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 58)| (mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 68)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_EXP_A+ 78))&&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
   .verify_end_state((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_E)),
-  .verify_load_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
-  .verify_load_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .verify_load_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
-  .verify_load_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .verify_load_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
-  .verify_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+3) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+3) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_norm_check((mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_S+8)&&(mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_S+2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_norm_check_start((mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_S+8)&&(mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_S+2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_ntt_c((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_ntt_c_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_ntt_t(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+6)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+7)) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_ntt_t_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+6)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+7)) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_ntt_z(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+6)) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_ntt_z_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+6)) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_pk_decode((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_pk_decode_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_sample_in_ball_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_sample_in_ball_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
-  .verify_sample_in_ball_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
-  .verify_sample_in_ball_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
-  .verify_sample_in_ball_write_c((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && ! mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)&& !mldsa_ctrl.msg_done ),
-  .verify_sample_in_ball_write_c_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
-  .verify_sig_decode_h((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_sig_decode_h_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
-  .verify_sig_decode_z((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_sig_decode_z_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S+1) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.ctrl_fsm_ps) ==MLDSA_CTRL_IDLE)),
-  .verify_use_hint((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_DONE)),
-  .verify_use_hint_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) )
+  .verify_load_mu((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && !mldsa_ctrl.msg_done ),
+  .verify_load_mu_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .verify_load_mu_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START) ),
+  .verify_load_mu_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START)  && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .verify_load_mu_wait((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_WAIT)),
+  .verify_mu_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+3) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_mu_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+3) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_norm_check((mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_S+8)&&(mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_S+2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_norm_check_start((mldsa_ctrl.prim_prog_cntr <= MLDSA_VERIFY_S+8)&&(mldsa_ctrl.prim_prog_cntr >= MLDSA_VERIFY_S+2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_ntt_c((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_ntt_c_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_ntt_t(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+6)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+7)) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_ntt_t_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+6)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_T1+7)) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_ntt_z(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+6)) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_ntt_z_start(((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+1)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+2)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+3)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+4)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+5)|(mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_NTT_Z+6)) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_pk_decode((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_pk_decode_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)&& ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_sample_in_ball_sampling((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_sample_in_ball_sampling_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START)),
+  .verify_sample_in_ball_SHA3_START((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_SHA3_START)),
+  .verify_sample_in_ball_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_START) && $past(mldsa_ctrl.sha3_start_o) && mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)),
+  .verify_sample_in_ball_write_c((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && ! mldsa_ctrl.msg_start_o && !(mldsa_ctrl.sha3_start_o)&& !mldsa_ctrl.msg_done ),
+  .verify_sample_in_ball_write_c_msg_done((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_MAKE_C) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD) && mldsa_ctrl.msg_done),
+  .verify_sig_decode_h((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_sig_decode_h_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.prim_ctrl_fsm_ps) == MLDSA_CTRL_IDLE)),
+  .verify_sig_decode_z((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_sig_decode_z_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_S+1) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) && ($past(mldsa_ctrl.prim_ctrl_fsm_ps) ==MLDSA_CTRL_IDLE)),
+  .verify_use_hint((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_DONE)),
+  .verify_use_hint_start((mldsa_ctrl.prim_prog_cntr == MLDSA_VERIFY_RES+2) &&  (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_FUNC_START) )
 );
 
 

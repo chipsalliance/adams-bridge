@@ -24,6 +24,7 @@ Author: LUBIS EDA GmbH
 The following files and subdirectories are part of the main directory **formal/fv_abr_ctrl_mldsa**
 
 - `fv_mldsa_ctrl_constraints.sv`: Environment constraints that abstract submodule interfaces and restrict input stimuli to valid protocol scenarios
+- `fv_mldsa_ctrl_stream_msg.sv`: Contains the scoreboarding approach to verify the packet flow when the streaming mode is enabled.
 - `fv_mldsa_ctrl_whitebox.sv`: White-box assertions for internal register state, output signal correctness, and combinational invariants
 - `fv_mldsa_ctrl_wrapper.sv`: Top-level wrapper that instantiates the whitebox and constraints modules and binds them to the DUT
 - `fv_mldsa_ctrl_secondary_additional_properties.sv`: Supplementary properties for the secondary control path

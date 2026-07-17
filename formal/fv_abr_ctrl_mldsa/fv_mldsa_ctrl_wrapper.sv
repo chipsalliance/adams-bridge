@@ -79,8 +79,8 @@ module fv_mldsa_ctrl_wrapper
     input mem_if_t [1:0]                pi_pwr2rnd_keymem_if_i,
     input logic [1:0] [DATA_WIDTH-1:0]  pi_pwr2rnd_wr_data_i,
     input logic                         pi_pk_t1_wren_i,
-    input logic [7:0][9:0]              pi_pk_t1_wrdata_i, // change to parameter
-    input logic [7:0]                   pi_pk_t1_wr_addr_i, // change to parameter
+    input logic [7:0][9:0]              pi_pk_t1_wrdata_i, // TODO: change to parameter
+    input logic [7:0]                   pi_pk_t1_wr_addr_i, // TODO: change to parameter
     input logic                         pi_power2round_done_i,
 
     input logic po_decompose_enable_o,
@@ -192,6 +192,9 @@ fv_mldsa_ctrl_whitebox fv_mldsa_ctrl_whitebox_inst (.*);
 // constraints module instantiation
 
 fv_mldsa_ctrl_constraints fv_mldsa_ctrl_constraints_inst (.*);
+
+
+fv_mldsa_ctrl_stream_msg fv_mldsa_ctrl_stream_msg_inst (.*);
 endmodule
 
 bind mldsa_ctrl fv_mldsa_ctrl_wrapper fv_mldsa_ctrl_wrapper_i (

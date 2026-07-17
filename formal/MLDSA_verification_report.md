@@ -19,10 +19,10 @@ limitations under the License.
 ## Overview
 
 - Number of blocks: 31
-- Number of assertions: 1681
-- Number of assumptions: 229
-- Lines of Code: >96 k
-- Reported Bugs/Enhancements: 21
+- Number of assertions: 1716
+- Number of assumptions: 234
+- Lines of Code: >98 k
+- Reported Bugs/Enhancements: 22
 
 This report outlines the formal verification effort and sign-off process.
 
@@ -47,7 +47,7 @@ The goal of this detailed breakdown is to provide information about the verifica
 |---|---------|-------|-------------:|-------------:|--------:|--------------------:|----------|
 | 1  | 1.0 | sha3/Keccak Round          |  10  |  1  |  722   | 0 | |
 | 2  | 1.0 | sha3/keccak                |  45  | 35  |  2262  | 3 | #127, #126, #128 |
-| 3  | 1.0 | adamsbridge_ctrl           | 872  | 60  | 46178  | 6 | #85, #78, #64, #55, #43, #46 |
+| 3  | 1.0 | adamsbridge_ctrl (with external mu) | 872  | 60  | 46178  | 6 | #85, #78, #64, #55, #43, #46 |
 | 4  | 1.0 | sample_in_ball_ctrl        |  21  |  1  |  2056  | 1 | #62 |
 | 5  | 1.0 | exp_mask_ctrl              |   1  |  0  |   166  | 0 | |
 | 6  | 1.0 | rej_bounded_ctrl           |  12  |  1  |  1744  | 0 | |
@@ -75,6 +75,7 @@ The goal of this detailed breakdown is to provide information about the verifica
 | 28 | 1.0 | sigdecode_h                |  32  |  4  |  1752  | 3 | #131, #130, #132 |
 | 29 | 1.0 | sampler_top                |  54  | 25  |   784  | 0 | |
 | 30 | 1.0 | ntt_top                    |  50  |  7  |  1616  | 0 | |
+| 31 | 1.0 | adamsbridge_ctrl (stream_msg) |  35  |  5  |  1924  | 1 | #145 (found in simulation and then in FPV) |
 
 ---
 
@@ -108,6 +109,27 @@ Formal coverage is one of the key metrics we rely on to judge how complete our f
 
 Coverage numbers like checker and stimuli coverage help us decide if we've verified a block well enough. Higher coverage means we've done a good job exploring the design and its behavior.
 
+**Formal Coverage Type: Proof Core Coverage**
+
+The formal coverage type used is proof core coverage. Unlike simulation coverage, which is measured against a fixed set of test vectors, proof core coverage is derived directly from the formal engines' proof of each assertion, reporting on the RTL that was actually necessary to determine the result — the "core" of the proof. Proof core coverage is composed of three complementary results:
+
+- **Formal (structural) coverage** — Identifies the RTL statements, branches, and signals that are structurally reachable and were actually exercised by the cone-of-influence of a proven property. Code excluded from the proof core is flagged as either unreachable, dead code, or a genuine coverage hole that needs an additional assertion or a relaxed constraint.
+- **Stimuli coverage** — Measures how much of the legal input space, as bounded by our assumptions, is actually being explored by the formal engines. Low stimuli coverage on a signal is a strong indicator that an assumption is over-constraining the environment and masking valid design behavior from the proof.
+- **Checker coverage** — Measures how much of the reached design behavior is actually being checked by an assertion, as opposed to merely being reached without any property observing it. This distinguishes RTL that is exercised but unverified from RTL that is both exercised and verified, and helps us catch blind spots where assertions are missing or too weak.
+
+Together, these three views let us distinguish "not reached" (a testbench/constraint gap), "reached but not checked" (a missing assertion), and "reached and proven" (fully verified) — which is a materially stronger signal than reachability alone.
+
+**Coverage Models**
+
+Within each of the three proof core results above, coverage is broken down by the following structural models, applied per block as required by its RTL constructs:
+
+- **Statement coverage** — Every executable statement in the RTL is exercised at least once within the proof core.
+- **Branch coverage** — Every branch of every conditional construct (`if`/`else`, `case`, ternary) is taken in both/all directions within the proof core, ensuring no conditional path is only partially explored.
+- **Expression coverage** — Each operand and sub-term within a Boolean or arithmetic expression is shown to independently affect the expression's outcome, catching cases where a term is present in the code but never actually influences the evaluated result.
+- **Toggle coverage** — Every bit of every signal in scope is shown to transition both 0→1 and 1→0 within the proof core, confirming that both logic values of a signal were actually explored by the formal engines rather than being held constant.
+
+Any gaps identified through this breakdown were reviewed block-by-block (see Coverage Review below) and, where applicable, closed by adding assertions, relaxing over-constraining assumptions, or waived with justification (e.g., unreachable code, reset-only logic).
+
 ### Code and Constraints Review
 
 We didn't rely on the tools alone. All the code and constraints were reviewed manually to make sure they reflect what we want to test and match the expected behavior. This step also helped us avoid over-constraining the design unintentionally.
@@ -124,7 +146,7 @@ Each block was given a minimum prove time so the tool could properly explore the
 |---|---------|-------|:--------------:|:--------------:|:-----------:|:----------------:|:----------:|:-----------------:|
 | 1  | 1.0 | sha3/keccak Round          | 100% | Yes | Yes | Yes | Yes | < 1h  |
 | 2  | 1.0 | sha3/keccak                | 100% | Yes | Yes | Yes | Yes | < 1h  |
-| 3  | 1.0 | adamsbridge_ctrl           | 100% | Yes | Yes | Yes | Yes | < 24h |
+| 3  | 1.0 | adamsbridge_ctrl (with external mu) | 100% | Yes | Yes | Yes | Yes | < 24h |
 | 4  | 1.0 | sample_in_ball_ctrl        | 100% | Yes | Yes | Yes | Yes | < 1h  |
 | 5  | 1.0 | exp_mask_ctrl              | 100% | Yes | Yes | Yes | Yes | < 1h  |
 | 6  | 1.0 | rej_bounded_ctrl           | 100% | Yes | Yes | Yes | Yes | < 1h  |
@@ -152,6 +174,7 @@ Each block was given a minimum prove time so the tool could properly explore the
 | 28 | 1.0 | sigdecode_h                | 100% | Yes | Yes | Yes | Yes | < 4h  |
 | 29 | 1.0 | sampler_top                | 100% | Yes | Yes | Yes | Yes | < 2h  |
 | 30 | 1.0 | ntt_top                    | 100% | Yes | Yes | Yes | Yes | < 2h  |
+| 31 | 1.0 | adamsbridge_ctrl (stream_msg) | 100% | Yes | Yes | Yes | Yes | < 24h |
 
 > \*) Formal coverage is 100% excluding unreachable and deadcode.
 >

@@ -78,8 +78,8 @@ module fv_mldsa_ctrl_whitebox
     input mem_if_t [1:0]                pi_pwr2rnd_keymem_if_i,
     input logic [1:0] [DATA_WIDTH-1:0]  pi_pwr2rnd_wr_data_i,
     input logic                         pi_pk_t1_wren_i,
-    input logic [7:0][9:0]              pi_pk_t1_wrdata_i, // change to parameter
-    input logic [7:0]                   pi_pk_t1_wr_addr_i, // change to parameter
+    input logic [7:0][9:0]              pi_pk_t1_wrdata_i, // TODO: change to parameter
+    input logic [7:0]                   pi_pk_t1_wr_addr_i, // TODO: change to parameter
     input logic                         pi_power2round_done_i,
 
     input logic po_decompose_enable_o,
@@ -183,6 +183,13 @@ module fv_mldsa_ctrl_whitebox
     // Define default clock
     default clocking default_clk @(posedge pi_clk); endclocking
 
+
+  property msg_buffer_P;
+    mldsa_ctrl.stream_msg_buffer_flush
+  ;endproperty
+
+  cover_msg_buffer_P: cover property(disable iff(!pi_rst_b)msg_buffer_P);
+  
     property reset_P;
       $past(!pi_rst_b || po_zeroize) 
       |->
@@ -252,7 +259,7 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
 // Outputs combination for the data out parts which involves the dwords
 
     property entropy_reg_per_word(dword);
-       mldsa_ctrl.entropy_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_ENTROPY[ENTROPY_NUM_DWORDS-1-dword].ENTROPY.value &&
+       mldsa_ctrl.entropy_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_ENTROPY[dword].ENTROPY.value &&
       po_abr_reg_hwif_in_o.MLDSA_ENTROPY[dword].ENTROPY.hwclr == po_zeroize
     ;endproperty
 
@@ -261,11 +268,11 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
     end
 
     property seed_reg_per_dword(dword);
-      mldsa_ctrl.seed_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_SEED[SEED_NUM_DWORDS-1-dword].SEED.value &&
+      mldsa_ctrl.seed_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_SEED[dword].SEED.value &&
 
       `ifdef CALIPTRA
-      po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.we == (mldsa_ctrl.pcr_sign_mode | (mldsa_ctrl.kv_seed_write_en & (mldsa_ctrl.kv_seed_write_offset == dword))) & ~po_zeroize &&
-      po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.next == mldsa_ctrl.pcr_sign_mode   ? mldsa_ctrl.pcr_signing_data.pcr_mldsa_signing_seed[dword]  &&
+      po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.we == (mldsa_ctrl.pcr_sign_mode | (mldsa_ctrl.kv_seed_write_en & (mldsa_ctrl.kv_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~po_zeroize &&
+      po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.next == mldsa_ctrl.pcr_sign_mode   ? mldsa_ctrl.pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword]  &&
                                                       mldsa_ctrl.kv_seed_write_data &&
       po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.hwclr == po_zeroize | mldsa_ctrl.kv_seed_data_present_reset | (mldsa_ctrl.kv_seed_error == KV_READ_FAIL) &&
       po_abr_reg_hwif_in_o.MLDSA_SEED[dword].SEED.swwe == mldsa_ctrl.mldsa_ready & ~mldsa_ctrl.kv_seed_data_present
@@ -282,10 +289,11 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
     end
 
     property msg_reg_per_dword(dword);
-      mldsa_ctrl.msg_reg[dword] ==( mldsa_ctrl.external_mu_mode? '0 : pi_abr_reg_hwif_out_i.MLDSA_MSG[MSG_NUM_DWORDS-1-dword].MSG.value) &&
+      mldsa_ctrl.msg_reg[dword] ==( mldsa_ctrl.external_mu_mode? '0 : pi_abr_reg_hwif_out_i.MLDSA_MSG[dword].MSG.value) &&
+       po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.swwe == (  mldsa_ctrl.mldsa_ready |  mldsa_ctrl.stream_msg_rdy) &&
       `ifdef CALIPTRA
       po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.we == mldsa_ctrl.pcr_sign_mode & !mldsa_ctrl.external_mu & !po_zeroize &&
-      po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.next == mldsa_ctrl.pcr_signing_data.pcr_hash[dword] &&
+      po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.next == mldsa_ctrl.pcr_signing_data.pcr_hash[MSG_NUM_DWORDS-1-dword] &&
       po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.hwclr == po_zeroize
       `else
       po_abr_reg_hwif_in_o.MLDSA_MSG[dword].MSG.we == '0 &&
@@ -298,9 +306,9 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
     end
 
     property external_mu_reg_per_dword(dword);
-      mldsa_ctrl.external_mu_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[MU_NUM_DWORDS-1-dword].EXTERNAL_MU.value &&
+      mldsa_ctrl.external_mu_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.value &&
       po_abr_reg_hwif_in_o.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.we == (pi_sampler_state_dv_i & (mldsa_ctrl.prim_instr.operand3 == MLDSA_DEST_MU_REG_ID) & !mldsa_ctrl.external_mu & !po_zeroize) &&
-      po_abr_reg_hwif_in_o.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next == mldsa_ctrl.internal_mu_reg[MU_NUM_DWORDS-1-dword] &&
+      po_abr_reg_hwif_in_o.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.next == mldsa_ctrl.internal_mu_reg[dword] &&
       po_abr_reg_hwif_in_o.MLDSA_EXTERNAL_MU[dword].EXTERNAL_MU.hwclr == po_zeroize
     ;endproperty
 
@@ -311,7 +319,7 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
 
 
     property sign_rnd_reg_per_dword(dword);
-      mldsa_ctrl.sign_rnd_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_SIGN_RND[SIGN_RND_NUM_DWORDS-1-dword].SIGN_RND.value &&
+      mldsa_ctrl.sign_rnd_reg[dword] == pi_abr_reg_hwif_out_i.MLDSA_SIGN_RND[dword].SIGN_RND.value &&
       po_abr_reg_hwif_in_o.MLDSA_SIGN_RND[dword].SIGN_RND.hwclr == po_zeroize
     ;endproperty
     for (genvar dword=0; dword < SIGN_RND_NUM_DWORDS; dword++)begin
@@ -320,7 +328,7 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
 
     property verify_reg_per_dword(dword);
       po_abr_reg_hwif_in_o.MLDSA_VERIFY_RES[dword].VERIFY_RES.we == ( mldsa_ctrl.verify_valid & pi_sampler_state_dv_i & (mldsa_ctrl.prim_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID)) &&      
-      po_abr_reg_hwif_in_o.MLDSA_VERIFY_RES[VERIFY_RES_NUM_DWORDS-1-dword].VERIFY_RES.next == pi_sampler_state_data_i[0][dword*32 +: 32] &&
+      po_abr_reg_hwif_in_o.MLDSA_VERIFY_RES[dword].VERIFY_RES.next == pi_sampler_state_data_i[0][dword*32 +: 32] &&
       po_abr_reg_hwif_in_o.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr == (po_zeroize | (mldsa_ctrl.verifying_process & ((pi_normcheck_done_i & pi_normcheck_invalid_i) | 
                                    (mldsa_ctrl.prim_instr.opcode.aux_en & (mldsa_ctrl.prim_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & pi_sigdecode_h_invalid_i))))
     ;endproperty
@@ -337,6 +345,22 @@ assert_mldsa_reg_hwif_in_comb_P: assert property(mldsa_reg_hwif_in_comb_P);
         assert_entropy_clr_per_dword: assert property(entropy_clr_per_dword(dword));
     end
   
+  property ctx_stream_msg_comb_outputs_P;
+    po_abr_reg_hwif_in_o.MLDSA_CTRL.STREAM_MSG.hwclr == po_zeroize &&
+    po_abr_reg_hwif_in_o.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr == po_zeroize &&
+    po_abr_reg_hwif_in_o.MLDSA_MSG_STROBE.STROBE.swwe == mldsa_ctrl.stream_msg_rdy &&
+    po_abr_reg_hwif_in_o.MLDSA_STATUS.MSG_STREAM_READY.next == mldsa_ctrl.stream_msg_rdy &&
+    po_abr_reg_hwif_in_o.MLDSA_MSG_STROBE.STROBE.hwclr == po_zeroize;
+  endproperty
+
+  assert_ctx_stream_msg_comb_outputs_A: assert property( ctx_stream_msg_comb_outputs_P);
+
+   property ctx_clr_per_dword(dword);
+      po_abr_reg_hwif_in_o.MLDSA_CTX[dword].CTX.hwclr == po_zeroize;
+    endproperty
+  for (genvar dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
+    assert_ctx_clr_per_dword: assert property(ctx_clr_per_dword(dword));
+    end
 
 ///////////////////////////
 // Memory INterface outputs
@@ -424,7 +448,7 @@ logic fv_api_pubkey_re;
 
 
   always_comb begin
-    fv_api_sig_addr = SIGNATURE_NUM_DWORDS-1-pi_abr_reg_hwif_out_i.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
+    fv_api_sig_addr = pi_abr_reg_hwif_out_i.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
     fv_api_sig_c_dec = pi_abr_reg_hwif_out_i.MLDSA_SIGNATURE.req & fv_api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
     fv_api_sig_z_dec = pi_abr_reg_hwif_out_i.MLDSA_SIGNATURE.req & fv_api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
     fv_api_sig_h_dec = pi_abr_reg_hwif_out_i.MLDSA_SIGNATURE.req & fv_api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
@@ -506,8 +530,8 @@ assert_sig_z_mem_outputs_comb : assert property(disable iff(!pi_rst_b || po_zero
                                  ({PK_MEM_ADDR_W{fv_api_pubkey_re}} & mldsa_ctrl.api_pubkey_mem_addr.addr);
 
   always_comb begin
-    fv_api_pubkey_re = mldsa_ctrl.mldsa_valid_reg & pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req &((PUBKEY_NUM_DWORDS-1-pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2]) inside {[8:PUBKEY_NUM_DWORDS-1]}) & ~pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req_is_wr;
-    fv_api_pubkey_we = mldsa_ctrl.mldsa_ready & pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req &((PUBKEY_NUM_DWORDS-1-pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2]) inside {[8:PUBKEY_NUM_DWORDS-1]}) & po_abr_reg_hwif_in_o.MLDSA_PUBKEY.wr_ack;
+    fv_api_pubkey_re = mldsa_ctrl.mldsa_valid_reg & pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req &((pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2]) inside {[8:PUBKEY_NUM_DWORDS-1]}) & ~pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req_is_wr;
+    fv_api_pubkey_we = mldsa_ctrl.mldsa_ready & pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.req &((pi_abr_reg_hwif_out_i.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2]) inside {[8:PUBKEY_NUM_DWORDS-1]}) & po_abr_reg_hwif_in_o.MLDSA_PUBKEY.wr_ack;
   end
 
 property pk_mem_if_comb_outputs;
@@ -543,10 +567,19 @@ always_ff @(posedge pi_clk, negedge pi_rst_b) begin
 end
 
 property zeroize_mem_if_zeroize_cntr;
-  zeroize_mem_o.rd_wr_en == (((mldsa_ctrl.prim_prog_cntr == MLDSA_ZEROIZE) ) ? RW_WRITE:RW_IDLE )&&
+  mldsa_ctrl.prim_prog_cntr == MLDSA_ZEROIZE
+  |->
+  zeroize_mem_o.rd_wr_en ==  RW_WRITE &&
   zeroize_mem_o.addr == fv_mem_addr_cntr
 ;endproperty
 assert_zeroize_mem_if_zeroize_cntr: assert property(zeroize_mem_if_zeroize_cntr);
+
+property not_zeroize_mem_if_zeroize_cntr_reset;
+  mldsa_ctrl.prim_prog_cntr != MLDSA_ZEROIZE
+  |->
+  zeroize_mem_o.rd_wr_en ==  RW_IDLE 
+;endproperty
+assert_not_zeroize_mem_if_zeroize_cntr_reset: assert property(not_zeroize_mem_if_zeroize_cntr_reset);
 
 
 
@@ -800,7 +833,7 @@ assert_signature_reg_rdata_stable_P: assert property(disable iff(!pi_rst_b || po
 // privkey reg rdata
 logic[SK_MEM_BANK_ADDR_W:0] fv_api_sk_raddr;
 
-assign fv_api_sk_raddr =  PRIVKEY_NUM_DWORDS-1-pi_abr_reg_hwif_out_i.MLDSA_PRIVKEY_OUT.addr[12:2];
+assign fv_api_sk_raddr =  pi_abr_reg_hwif_out_i.MLDSA_PRIVKEY_OUT.addr[12:2];
 
 property privkey_reg_rdata_set;
   fv_api_keymem_rd_vld &&
@@ -875,31 +908,37 @@ assert_valid_Reg_set_P: assert property(disable iff(!pi_rst_b || po_zeroize) val
 // msg_strobe_o
 
 property msg_strobe_o_if_done;
-  mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  !mldsa_ctrl.stream_msg_ip &&
   ((mldsa_ctrl.msg_last &&
   pi_msg_rdy_i) )&&
-  mldsa_ctrl.prim_instr.length[$clog2(MsgStrbW)-1:0] == '0
+  mldsa_ctrl.prim_instr.length[$clog2(MsgStrbW)-1:0] == '0 &&
+  !pi_abr_reg_hwif_out_i.MLDSA_CTRL.STREAM_MSG.value
   |=>
   po_msg_strobe_o == '0
 ;endproperty
 assert_msg_strobe_o_if_done: assert property (disable iff (!pi_rst_b || po_zeroize)msg_strobe_o_if_done);
 
 property msg_strobe_o_full_if_not_last;
-  mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  !mldsa_ctrl.stream_msg_ip &&
   !mldsa_ctrl.msg_done &&
   !mldsa_ctrl.msg_last &&
-  pi_msg_rdy_i
-  |=>
+  pi_msg_rdy_i &&
+  po_msg_valid_o
+  |->
   po_msg_strobe_o == '1
 ;endproperty
 assert_msg_strobe_o_full_if_not_last: assert property (disable iff (!pi_rst_b || po_zeroize)msg_strobe_o_full_if_not_last);
 
 
 property msg_strobe_o_if_last;
-  mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  !mldsa_ctrl.stream_msg_ip &&
   mldsa_ctrl.msg_last &&
   pi_msg_rdy_i &&
-  (mldsa_ctrl.prim_instr.length[$clog2(MsgStrbW)-1:0] != '0)
+  (mldsa_ctrl.prim_instr.length[$clog2(MsgStrbW)-1:0] != '0) &&
+  !pi_abr_reg_hwif_out_i.MLDSA_CTRL.STREAM_MSG.value
   |=>
   po_msg_strobe_o == ~(MsgStrbW'('1) << mldsa_ctrl.prim_instr.length[$clog2(MsgStrbW)-1:0])
 ;endproperty
@@ -907,10 +946,11 @@ assert_msg_strobe_o_if_last: assert property (disable iff (!pi_rst_b || po_zeroi
 
 
 property msg_strobe_o_stable_if_no_ready;
-  mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
-  !pi_msg_rdy_i
+  mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&
+  !pi_msg_rdy_i &&
+  po_msg_valid_o
   |=>
-  $stable(po_msg_strobe_o)
+  $stable(po_msg_strobe_o && po_msg_valid_o)
 ;endproperty
 assert_msg_strobe_o_stable_if_no_ready: assert property(disable iff(!pi_rst_b || po_zeroize)msg_strobe_o_stable_if_no_ready);
 
@@ -1085,13 +1125,13 @@ assert_privkey_lock_reset_A: assert property(disable iff(!pi_rst_b || po_zeroize
             fv_msg_cnt <= '0;
         end
         else begin
-            if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE) begin
+            if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE) begin
                 fv_msg_cnt <= '0;
             end
-            else if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&  pi_msg_rdy_i && (fv_msg_cnt <= mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]) ) begin
+            else if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD &&  pi_msg_rdy_i && (fv_msg_cnt <= mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]) ) begin
                 fv_msg_cnt <= fv_msg_cnt + 1;
             end
-            else if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && !pi_msg_rdy_i) begin
+            else if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && !pi_msg_rdy_i) begin
                 fv_msg_cnt <= fv_msg_cnt;
             end
             else begin
@@ -1250,7 +1290,7 @@ logic [7:0][T1_COEFF_W-1:0] fv_pkdecode_rd_data_o;
                                  (mldsa_ctrl.sec_instr.opcode.aux_en & (mldsa_ctrl.sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? mldsa_ctrl.sec_instr.imm[1:0] : '0) &&
     po_normcheck_src_addr_o == ((mldsa_ctrl.prim_instr.opcode.aux_en & (mldsa_ctrl.prim_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? mldsa_ctrl.aux_src0_base_addr_o[0] :
                                      (mldsa_ctrl.sec_instr.opcode.aux_en & (mldsa_ctrl.sec_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? mldsa_ctrl.aux_src0_base_addr_o[1] : '0) &&
-    mldsa_ctrl.ntt_temp_address[0] == (mldsa_ctrl.prim_instr.imm[0] ? MLDSA_TEMP3_BASE : MLDSA_TEMP0_BASE)
+    mldsa_ctrl.ntt_temp_address[0] == (mldsa_ctrl.prim_instr.imm[0] ? MLDSA_TEMP2_BASE : MLDSA_TEMP0_BASE)
   ;endproperty
 
   assert_norm_check_out_P: assert property(norm_check_out_P);
@@ -1313,4 +1353,8 @@ logic [SIGNATURE_H_VALID_NUM_BYTES-1:0][7:0] fv_signature_h_o;
   ;endproperty
 
   assert_decompose_mode_P: assert property(decompose_mode_P);
+
+  // cover the valid sig is generated.
+
+  cover_vld_sig_generated: cover property (mldsa_ctrl.signature_validity_chk_done);
 endmodule

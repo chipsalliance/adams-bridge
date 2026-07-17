@@ -65,7 +65,7 @@ function logic unsigned [63:0] func_concat_sig_c(logic unsigned [15:0][31:0] who
 endfunction
 
 
-function logic unsigned [63:0] func_concat_msg_p(logic unsigned [16:0][31:0] whole_value, logic unsigned [3:0] chunk_idx);
+function logic unsigned [63:0] func_concat_msg_p(logic unsigned [17:0][31:0] whole_value, logic unsigned [3:0] chunk_idx);
   logic unsigned [63:0] temp; // @ AdamsBridge.h:199:3
 
   temp = 64'd0;

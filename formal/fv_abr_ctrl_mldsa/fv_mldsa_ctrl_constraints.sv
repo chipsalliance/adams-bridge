@@ -223,6 +223,10 @@ module fv_mldsa_ctrl_constraints
       assume_sigdecode_h_done: assume property(
             pi_sigdecode_h_done_i |-> (sigdecode_h_en)
         );
+
+         assume_sigdecode_h_invalid: assume property(
+            !pi_sigdecode_h_done_i |-> !(pi_sigdecode_h_invalid_i)
+        );
      `ifdef EVENTUAL_ASSUME
         assume_sigdecode_h_done_eventually: assume property(
                s_eventually(pi_sigdecode_h_done_i)
@@ -356,7 +360,7 @@ module fv_mldsa_ctrl_constraints
         // disable iff(!pi_rst_b)
         !pi_normcheck_done_i
     |->
-        $stable(pi_normcheck_invalid_i)
+       !(pi_normcheck_invalid_i)
     );
 
      assume_normcheck_done: assume property(
@@ -576,9 +580,9 @@ module fv_mldsa_ctrl_constraints
 
 
    
-        assume_msg_rdy_eventually: assume property(
-            s_eventually(pi_msg_rdy_i)
-        );
+        // assume_msg_rdy_eventually: assume property(
+        //     s_eventually(pi_msg_rdy_i)
+        // );
    
         assume_msg_rdy_: assume property(
             po_msg_valid_o && !pi_msg_rdy_i
@@ -689,10 +693,121 @@ module fv_mldsa_ctrl_constraints
             $stable(pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[12].EXTERNAL_MU.value) &&
             $stable(pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[13].EXTERNAL_MU.value) &&
             $stable(pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[14].EXTERNAL_MU.value) &&
-            $stable(pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[15].EXTERNAL_MU.value)
+            $stable(pi_abr_reg_hwif_out_i.MLDSA_EXTERNAL_MU[15].EXTERNAL_MU.value) &&
+            $stable(pi_abr_reg_hwif_out_i.MLDSA_CTRL.EXTERNAL_MU.value) &&
+            $stable(pi_abr_reg_hwif_out_i.MLDSA_CTX_CONFIG.CTX_SIZE.value)&&         // new interface
+            $stable(pi_abr_reg_hwif_out_i.MLDSA_CTRL.STREAM_MSG.value)            //new interface
     );
 
+    property hw_if_ctx_stable(i);
+         !po_abr_reg_hwif_in_o.mldsa_ready
+        |->
+         $stable(pi_abr_reg_hwif_out_i.MLDSA_CTX[i].CTX.value)
+    ;endproperty
+         for (genvar dword = 0; dword < CTX_NUM_DWORDS; dword++) begin
+            assume_hw_if_ctx_stable: assume property(hw_if_ctx_stable(dword));
+        end
 
+    // property temp_ctx_size_less_than_10;
+    //     pi_abr_reg_hwif_out_i.MLDSA_CTX_CONFIG.CTX_SIZE.value < 10
+    // ;endproperty
+    // assume_temp_ctx_size_less_than_10: assume property(temp_ctx_size_less_than_10);
+
+    // property temp_msg_trans_less_than_20;
+    //     (fv_stream_msg_valid_reg[->20]) 
+    //     |->
+    //     (pi_abr_reg_hwif_out_i.MLDSA_MSG_STROBE.STROBE.value inside {4'b0000, 4'b0001, 4'b0011, 4'b0111})
+    // ;endproperty    
+    // assume_temp_msg_trans_less_than_20: assume property(temp_msg_trans_less_than_20);
+    //-------------------------Constrain for MSG interface-------------------------------------//
+
+    
+    property stream_valid_stable_if_no_ready_P;
+        !po_abr_reg_hwif_in_o.MLDSA_MSG[0].MSG.swwe &&// ready
+        pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod  //valid
+        |=>
+        //$stable(pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod) &&
+        $stable(pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.value)
+    ;endproperty
+
+    //assume_stream_valid_stable_if_no_ready_P: assume property(stream_valid_stable_if_no_ready_P);
+
+    // The stream msg input valid should have atleast a clk cycle gap between the valids
+    property stream_valid_toggles_min_P;
+        //po_abr_reg_hwif_in_o.MLDSA_MSG[0].MSG.swwe && // ready
+        pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod //valid
+        |=>
+        !pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod
+    ;endproperty
+
+    assume_stream_valid_toggles_min_P: assume property(stream_valid_toggles_min_P);
+
+
+    // Fairness constraints such that we could leave the MSG_LOAD state at some point
+    logic fv_stream_msg_valid_reg;
+    always_ff @(posedge pi_clk, negedge pi_rst_b) begin: fv_flop_valid
+        if(!pi_rst_b) begin
+        end
+        else begin
+            fv_stream_msg_valid_reg <= pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod;
+        end
+    end
+
+    property eventually_stream_valid_msg_P;
+        po_abr_reg_hwif_in_o.MLDSA_MSG[0].MSG.swwe // ready
+         //valid
+        |->
+        s_eventually(fv_stream_msg_valid_reg &&
+        (pi_abr_reg_hwif_out_i.MLDSA_MSG_STROBE.STROBE.value inside {4'b0000, 4'b0001, 4'b0011, 4'b0111}))
+    ;endproperty
+
+    assume_eventually_stream_valid_msg_P: assume property(eventually_stream_valid_msg_P);
+    
+    property stream_valid_msg_P;
+        po_abr_reg_hwif_in_o.MLDSA_MSG[0].MSG.swwe // ready
+         //valid
+        |->
+        ##ADAMSBRIDGE_CNTRL_RDY_DELAY pi_abr_reg_hwif_out_i.MLDSA_MSG[0].MSG.swmod
+    ;endproperty
+    //assume_stream_valid_msg_P: assume property(stream_valid_msg_P);
+
+        logic [4:0] fv_msg_rdy_counter;
+        lubis_incr_decr_counter_m #(
+        .INCR_VAL_WIDTH(2),
+        .COUNTER_WIDTH (5),
+        .NUM_INC_SRCS  (1)       
+        ) fv_counter_msg_rdy_inst
+        (
+            .clk           (pi_clk      ),
+            .rst           (!pi_rst_b ),
+            .soft_rst      (po_zeroize || (fv_msg_rdy_counter == 16 && !(po_msg_valid_o &&
+            po_msg_strobe_o != '1))|| (fv_msg_rdy_counter == 17)),
+            .incr_en       (mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD),
+            .decr_en       (1'b0      ),
+            .incr_val      (po_msg_valid_o),
+            .decr_val      ('0        ),
+            .count         (fv_msg_rdy_counter),
+            .count_next    (/* open */)
+        );
+
+        property msg_rdy_counter_based_P;
+            fv_msg_rdy_counter != 16 ||
+            (fv_msg_rdy_counter == 16 && po_msg_valid_o &&
+            po_msg_strobe_o != '1) // partial buffer an extra buffer in the keccak
+            |->
+            pi_msg_rdy_i
+        ;endproperty
+
+        assume_msg_rdy_counter_based_P: assume property(msg_rdy_counter_based_P);
+
+    cover_fv_msg_counter_reach_17: cover property(disable iff(!pi_rst_b || po_zeroize) fv_msg_rdy_counter == 17);
+
+
+    property strobe_has_no_bubbles_P;
+        pi_abr_reg_hwif_out_i.MLDSA_MSG_STROBE.STROBE.value inside {4'b0000, 4'b0001, 4'b0011, 4'b0111, 4'b1111}
+    ;endproperty
+
+    assume_strobe_has_no_bubbles_P: assume property(strobe_has_no_bubbles_P);
     //-------------------------Constrain memory interface signals-------------------------------------//
 
     property stable_data_no_req_P(req, data);
@@ -717,16 +832,16 @@ module fv_mldsa_ctrl_constraints
             fv_msg_cnt <= '0;
         end
         else begin
-            if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_IDLE) begin
+            if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_IDLE || mldsa_ctrl.stream_msg_ip) begin
                 fv_msg_cnt <= '0;
             end
-            else if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && (((fv_msg_cnt == '0)|| (fv_msg_cnt == mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]-1) || (fv_msg_cnt == mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)])) && pi_msg_rdy_i)) begin
+            else if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && (((fv_msg_cnt == '0)|| (fv_msg_cnt == mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]-1) || (fv_msg_cnt == mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)])) && pi_msg_rdy_i)) begin
                 fv_msg_cnt <= fv_msg_cnt + 1;
             end
-            else if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && (fv_msg_cnt == 1) && pi_msg_rdy_i) begin
+            else if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && (fv_msg_cnt == 1) && pi_msg_rdy_i) begin
                 fv_msg_cnt <= mldsa_ctrl.prim_instr.length[MLDSA_OPR_WIDTH-1:$clog2(MsgStrbW)]-1;
             end
-            else if(mldsa_ctrl.ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && !pi_msg_rdy_i) begin
+            else if(mldsa_ctrl.prim_ctrl_fsm_ps == MLDSA_CTRL_MSG_LOAD && !pi_msg_rdy_i) begin
                 fv_msg_cnt <= fv_msg_cnt;
             end
             else begin

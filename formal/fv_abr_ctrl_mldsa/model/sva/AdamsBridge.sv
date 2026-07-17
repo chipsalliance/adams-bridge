@@ -196,6 +196,13 @@ module fv_mldsa_ctrl_m(
 
   input logic unsigned [511:0] from_ext_mu,
 
+  input logic streaming_mode,
+
+  input logic stream_done,
+
+  input logic sig_decode_h_invalid,
+  input logic norm_check_invalid,
+
   // Registers
   input logic unsigned [14:0] as_addr,
   input logic unsigned [14:0] ay0_addr,
@@ -312,6 +319,7 @@ module fv_mldsa_ctrl_m(
   input logic sign_compute_mu_wait,
   input logic sign_compute_mu_write_msg_prime,
   input logic sign_compute_mu_write_msg_prime_msg_done,
+  input logic sign_compute_mu_write_msg_prime_streaming,
   input logic sign_compute_mu_sampling_start,
   input logic sign_compute_mu_sampling,
   input logic sign_compute_rho_prime_SHA3_START,
@@ -403,6 +411,7 @@ module fv_mldsa_ctrl_m(
   input logic verify_compute_mu_wait,
   input logic verify_compute_mu_write_msg_prime,
   input logic verify_compute_mu_write_msg_prime_msg_done,
+  input logic verify_compute_mu_write_msg_prime_streaming,
   input logic verify_compute_mu_sampling_start,
   input logic verify_compute_mu_sampling,
   input logic verify_sample_in_ball_SHA3_START,
@@ -478,7 +487,8 @@ assign msg_prime_0_i = '{
   13: 0,
   14: 0,
   15: 0,
-  16: 0
+  16: 0,
+  17: 0
 };
 
 st_RegsType registers_0_i;
@@ -6770,7 +6780,8 @@ ctrl_sign_compute_mu_start_to_sign_compute_mu_write_tr_a: assert property (disab
 
 
 property ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_p;
-  sign_compute_mu_wait
+  sign_compute_mu_wait &&
+  !streaming_mode
 |->
   ##1 ($stable(enable_lfsr)) and
   ##1 ($stable(msg_start_o)) and
@@ -6808,6 +6819,89 @@ property ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_p;
 endproperty
 ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_p);
 
+
+property ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_streaming_p;
+  sign_compute_mu_wait &&
+  streaming_mode
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  sign_compute_mu_write_msg_prime_streaming &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_streaming_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_wait_to_sign_compute_mu_write_msg_prime_streaming_p);
+
+
+property ctrl_sign_compute_mu_write_msg_prime_msg_streaming_to_sign_compute_mu_sampling_start_p;
+  sign_compute_mu_write_msg_prime_streaming &&
+  to_keccak_rdy &&
+  stream_done
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  sign_compute_mu_sampling_start &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  to_sampler == $past(to_sampler_6_i, 1) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx) &&
+  to_sampler_vld == 1;
+endproperty
+ctrl_sign_compute_mu_write_msg_prime_msg_streaming_to_sign_compute_mu_sampling_start_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_write_msg_prime_msg_streaming_to_sign_compute_mu_sampling_start_p);
 
 property ctrl_sign_compute_mu_write_msg_prime_msg_done_to_sign_compute_mu_sampling_start_p;
   sign_compute_mu_write_msg_prime_msg_done &&
@@ -6891,6 +6985,46 @@ property ctrl_sign_compute_mu_write_msg_prime_msg_done_to_sign_compute_mu_write_
 endproperty
 ctrl_sign_compute_mu_write_msg_prime_msg_done_to_sign_compute_mu_write_msg_prime_msg_done_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_write_msg_prime_msg_done_to_sign_compute_mu_write_msg_prime_msg_done_p);
 
+
+property ctrl_sign_compute_mu_write_msg_prime_streaming_to_sign_compute_mu_write_msg_prime_streaming_p;
+   sign_compute_mu_write_msg_prime_streaming &&
+  !(to_keccak_rdy && stream_done)
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  //##1 ($stable(to_keccak_vld) && $stable(to_keccak)) and //commented out since this check is part of stream scoreboard
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  sign_compute_mu_write_msg_prime_streaming &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_sign_compute_mu_write_msg_prime_streaming_to_sign_compute_mu_write_msg_prime_streaming_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_write_msg_prime_streaming_to_sign_compute_mu_write_msg_prime_streaming_p);
 
 property ctrl_sign_compute_mu_write_msg_prime_to_sign_compute_mu_write_msg_prime_p;
   sign_compute_mu_write_msg_prime &&
@@ -11509,8 +11643,8 @@ property ctrl_sign_wait_for_w0_clear_to_sign_wait_for_w0_clear_p;
   $stable(verify_ntt_t_idx) &&
   $stable(verify_ntt_z_idx);
 endproperty
-ctrl_sign_wait_for_w0_clear_to_sign_wait_for_w0_clear_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_wait_for_w0_clear_to_sign_wait_for_w0_clear_p);
-
+//ctrl_sign_wait_for_w0_clear_to_sign_wait_for_w0_clear_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_wait_for_w0_clear_to_sign_wait_for_w0_clear_p);
+// This trigger could never happen in the design even though the condition itself is present, so we disable it
 
 property ctrl_sign_wait_for_y_and_w0_clear_to_sign_compute_lfsr_seed_SHA3_START_p;
   sign_wait_for_y_and_w0_clear &&
@@ -12149,39 +12283,39 @@ property ctrl_verify_check_mode_to_verify_sample_in_ball_SHA3_START_p;
   verify_check_mode &&
   from_ext_mu_mode_in
 |->
-  ##1 ($stable(enable_lfsr)) and
-  ##1 ($stable(set_c_valid_out)) and
-  ##1 ($stable(set_w0_valid_out)) and
-  ##1 ($stable(set_y_valid_out)) and
-  ##1 (to_decompose_vld == 0) and
-  ##1 (to_keccak_vld == 0) and
-  ##1 (to_norm_check_vld == 0) and
-  ##1 (to_ntt_vld == 0) and
-  ##1 (to_pk_decode_vld == 0) and
-  ##1 (to_power_2_round_vld == 0) and
-  ##1 (to_sampler_vld == 0) and
-  ##1 (to_sig_decode_h_vld == 0) and
-  ##1 (to_sig_decode_z_vld == 0) and
-  ##1 (to_sk_encode_vld == 0) and
-  ##1 (to_use_hint_vld == 0) and
-  ##1
+  ##1 ($stable(enable_lfsr))[*2] and
+  ##1 ($stable(set_c_valid_out))[*2] and
+  ##1 ($stable(set_w0_valid_out))[*2] and
+  ##1 ($stable(set_y_valid_out))[*2] and
+  ##1 (to_decompose_vld == 0)[*2] and
+  ##1 (to_keccak_vld == 0)[*2] and
+  ##1 (to_norm_check_vld == 0)[*2] and
+  ##1 (to_ntt_vld == 0)[*2] and
+  ##1 (to_pk_decode_vld == 0)[*2] and
+  ##1 (to_power_2_round_vld == 0)[*2] and
+  ##1 (to_sampler_vld == 0)[*2] and
+  ##1 (to_sig_decode_h_vld == 0)[*2] and
+  ##1 (to_sig_decode_z_vld == 0)[*2] and
+  ##1 (to_sk_encode_vld == 0)[*2] and
+  ##1 (to_use_hint_vld == 0)[*2] and
+  ##2
   verify_sample_in_ball_SHA3_START &&
-  $stable(keygen_ntt_s1_idx) &&
-  $stable(keygen_pwm_a_idx) &&
-  $stable(keygen_t_idx) &&
+  keygen_ntt_s1_idx == $past(keygen_ntt_s1_idx, 2) &&
+  keygen_pwm_a_idx == $past(keygen_pwm_a_idx, 2) &&
+  keygen_t_idx == $past(keygen_t_idx, 2) &&
   msg_start_o == 0 &&
-  $stable(registers) &&
-  $stable(rejbounded_counter) &&
+  registers == $past(registers, 2) &&
+  rejbounded_counter == $past(rejbounded_counter, 2) &&
   sha3_start_o == 1 &&
-  $stable(sign_compute_w0_idx) &&
-  $stable(sign_compute_w0_y_idx) &&
-  $stable(sign_expand_mask_idx) &&
-  $stable(sign_ntt_y_idx) &&
-  $stable(verify_compute_az_idx) &&
-  $stable(verify_compute_w0_idx) &&
-  $stable(verify_norm_check_idx) &&
-  $stable(verify_ntt_t_idx) &&
-  $stable(verify_ntt_z_idx);
+  sign_compute_w0_idx == $past(sign_compute_w0_idx, 2) &&
+  sign_compute_w0_y_idx == $past(sign_compute_w0_y_idx, 2) &&
+  sign_expand_mask_idx == $past(sign_expand_mask_idx, 2) &&
+  sign_ntt_y_idx == $past(sign_ntt_y_idx, 2) &&
+  verify_compute_az_idx == $past(verify_compute_az_idx, 2) &&
+  verify_compute_w0_idx == $past(verify_compute_w0_idx, 2) &&
+  verify_norm_check_idx == $past(verify_norm_check_idx, 2) &&
+  verify_ntt_t_idx == $past(verify_ntt_t_idx, 2) &&
+  verify_ntt_z_idx == $past(verify_ntt_z_idx, 2);
 endproperty
 ctrl_verify_check_mode_to_verify_sample_in_ball_SHA3_START_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_check_mode_to_verify_sample_in_ball_SHA3_START_p);
 
@@ -12959,7 +13093,8 @@ ctrl_verify_compute_mu_start_to_verify_compute_mu_write_tr_a: assert property (d
 
 
 property ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_p;
-  verify_compute_mu_wait
+  verify_compute_mu_wait &&
+  !streaming_mode
 |->
   ##1 ($stable(enable_lfsr)) and
   ##1 ($stable(msg_start_o)) and
@@ -12997,6 +13132,45 @@ property ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_p;
 endproperty
 ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_p);
 
+property ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_streaming_p;
+  verify_compute_mu_wait &&
+  streaming_mode
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  verify_compute_mu_write_msg_prime_streaming &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_streaming_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_wait_to_verify_compute_mu_write_msg_prime_streaming_p);
 
 property ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_sampling_start_p;
   verify_compute_mu_write_msg_prime_msg_done &&
@@ -13040,6 +13214,48 @@ endproperty
 ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_sampling_start_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_sampling_start_p);
 
 
+property ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_sampling_start_p;
+  verify_compute_mu_write_msg_prime_streaming &&
+  to_keccak_rdy &&
+  stream_done
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  verify_compute_mu_sampling_start &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  to_sampler == $past(to_sampler_6_i, 1) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx) &&
+  to_sampler_vld == 1;
+endproperty
+ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_sampling_start_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_sampling_start_p);
+
 property ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_write_msg_prime_msg_done_p;
   verify_compute_mu_write_msg_prime_msg_done &&
   !to_keccak_rdy
@@ -13079,6 +13295,46 @@ property ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_wr
   $stable(verify_ntt_z_idx);
 endproperty
 ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_write_msg_prime_msg_done_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_write_msg_prime_msg_done_to_verify_compute_mu_write_msg_prime_msg_done_p);
+
+property ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_write_msg_prime_msg_streaming_p;
+  verify_compute_mu_write_msg_prime_streaming &&
+  !(to_keccak_rdy && stream_done)
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  //##1 ($stable(to_keccak_vld) && $stable(to_keccak)) and //commented out since this check is part of stream scoreboard
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  verify_compute_mu_write_msg_prime_streaming &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_write_msg_prime_msg_streaming_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_write_msg_prime_msg_streaming_to_verify_compute_mu_write_msg_prime_msg_streaming_p);
 
 
 property ctrl_verify_compute_mu_write_msg_prime_to_verify_compute_mu_write_msg_prime_p;
@@ -14442,7 +14698,12 @@ property ctrl_verify_end_state_to_idle_p;
   $stable(keygen_ntt_s1_idx) &&
   $stable(keygen_pwm_a_idx) &&
   $stable(keygen_t_idx) &&
-  $stable(registers) &&
+  $stable(registers.rho_prime) &&
+  $stable(registers.K) &&
+  $stable(registers.mu) &&
+  $stable(registers.kappa) &&
+  $stable(registers.c) &&
+  //$stable(registers) && rho changes and this is not stable as expected
   $stable(rejbounded_counter) &&
   $stable(sign_compute_w0_idx) &&
   $stable(sign_compute_w0_y_idx) &&
@@ -14952,6 +15213,7 @@ ctrl_verify_norm_check_start_to_verify_norm_check_a: assert property (disable if
 property ctrl_verify_norm_check_to_verify_compute_tr_SHA3_START_p;
   verify_norm_check &&
   norm_check_done_in &&
+  !norm_check_invalid &&
   ((64'd1 + ({ 56'h0, verify_norm_check_idx} )) >= 64'd7)
 |->
   ##1 ($stable(enable_lfsr))[*2] and
@@ -15037,6 +15299,7 @@ ctrl_verify_norm_check_to_verify_norm_check_a: assert property (disable iff(!mld
 property ctrl_verify_norm_check_to_verify_norm_check_start_p;
   verify_norm_check &&
   norm_check_done_in &&
+  !norm_check_invalid &&
   ((64'd1 + ({ 56'h0, verify_norm_check_idx} )) < 64'd7)
 |->
   ##1 ($stable(enable_lfsr))[*2] and
@@ -15077,6 +15340,45 @@ property ctrl_verify_norm_check_to_verify_norm_check_start_p;
 endproperty
 ctrl_verify_norm_check_to_verify_norm_check_start_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_norm_check_to_verify_norm_check_start_p);
 
+property ctrl_verify_norm_check_to_verify_end_state_p;
+  verify_norm_check &&
+  norm_check_invalid
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  verify_end_state &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  (verify_norm_check_idx == '0) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_verify_norm_check_to_verify_end_state_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_norm_check_to_verify_end_state_p);
 
 property ctrl_verify_ntt_c_start_to_verify_ntt_c_p;
   verify_ntt_c_start
@@ -16120,7 +16422,8 @@ ctrl_verify_sig_decode_h_start_to_verify_sig_decode_h_a: assert property (disabl
 
 property ctrl_verify_sig_decode_h_to_verify_load_mu_SHA3_START_p;
   verify_sig_decode_h &&
-  sig_decode_h_done_in
+  sig_decode_h_done_in &&
+  !sig_decode_h_invalid
 |->
   ##1 ($stable(enable_lfsr))[*2] and
   ##1 ($stable(msg_start_o)) and
@@ -16160,6 +16463,45 @@ property ctrl_verify_sig_decode_h_to_verify_load_mu_SHA3_START_p;
 endproperty
 ctrl_verify_sig_decode_h_to_verify_load_mu_SHA3_START_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_sig_decode_h_to_verify_load_mu_SHA3_START_p);
 
+property ctrl_verify_sig_decode_h_to_verify_end_state_p;
+  verify_sig_decode_h &&
+  sig_decode_h_invalid
+|->
+  ##1 ($stable(enable_lfsr)) and
+  ##1 ($stable(msg_start_o)) and
+  ##1 ($stable(set_c_valid_out)) and
+  ##1 ($stable(set_w0_valid_out)) and
+  ##1 ($stable(set_y_valid_out)) and
+  ##1 ($stable(sha3_start_o)) and
+  ##1 (to_decompose_vld == 0) and
+  ##1 (to_keccak_vld == 0) and
+  ##1 (to_norm_check_vld == 0) and
+  ##1 (to_ntt_vld == 0) and
+  ##1 (to_pk_decode_vld == 0) and
+  ##1 (to_power_2_round_vld == 0) and
+  ##1 (to_sampler_vld == 0) and
+  ##1 (to_sig_decode_h_vld == 0) and
+  ##1 (to_sig_decode_z_vld == 0) and
+  ##1 (to_sk_encode_vld == 0) and
+  ##1 (to_use_hint_vld == 0) and
+  ##1
+  verify_end_state &&
+  $stable(keygen_ntt_s1_idx) &&
+  $stable(keygen_pwm_a_idx) &&
+  $stable(keygen_t_idx) &&
+  $stable(registers) &&
+  $stable(rejbounded_counter) &&
+  $stable(sign_compute_w0_idx) &&
+  $stable(sign_compute_w0_y_idx) &&
+  $stable(sign_expand_mask_idx) &&
+  $stable(sign_ntt_y_idx) &&
+  $stable(verify_compute_az_idx) &&
+  $stable(verify_compute_w0_idx) &&
+  $stable(verify_norm_check_idx) &&
+  $stable(verify_ntt_t_idx) &&
+  $stable(verify_ntt_z_idx);
+endproperty
+ctrl_verify_sig_decode_h_to_verify_end_state_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_sig_decode_h_to_verify_end_state_p);
 
 property ctrl_verify_sig_decode_h_to_verify_sig_decode_h_p;
   verify_sig_decode_h &&
@@ -17082,6 +17424,13 @@ property ctrl_sign_compute_mu_write_msg_prime_eventually_left_p;
 endproperty
 ctrl_sign_compute_mu_write_msg_prime_eventually_left_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_write_msg_prime_eventually_left_p);
 
+
+property ctrl_sign_compute_mu_write_msg_prime_streaming_eventually_left_p;
+  sign_compute_mu_write_msg_prime_streaming
+|->
+  s_eventually(!sign_compute_mu_write_msg_prime_streaming);
+endproperty
+ctrl_sign_compute_mu_write_msg_prime_streaming_eventually_left_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_sign_compute_mu_write_msg_prime_streaming_eventually_left_p);
 
 property ctrl_sign_compute_mu_write_msg_prime_msg_done_eventually_left_p;
   sign_compute_mu_write_msg_prime_msg_done
@@ -18138,11 +18487,17 @@ property ctrl_verify_end_state_eventually_left_p;
 endproperty
 ctrl_verify_end_state_eventually_left_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_end_state_eventually_left_p);
 
+property ctrl_verify_compute_mu_write_msg_prime_streaming_eventually_left_p;
+  verify_compute_mu_write_msg_prime_streaming
+|->
+  s_eventually(!verify_compute_mu_write_msg_prime_streaming);
+endproperty
+ctrl_verify_compute_mu_write_msg_prime_streaming_eventually_left_a: assert property (disable iff(!mldsa_ctrl.rst_b || mldsa_ctrl.zeroize || mldsa_ctrl.error_flag) ctrl_verify_compute_mu_write_msg_prime_streaming_eventually_left_p);
 
 parameter CONSISTENCY = 1;
 if (CONSISTENCY) begin
   // Check that no more than 1 state condition is met at the same time
-  ctrl_consistency_onehot0_state: assert property($onehot0({ Keygen_ntt_s1_idle, idle, keygen_compute_t, keygen_compute_t_start, keygen_compute_tr_sampling, keygen_compute_tr_sampling_start, keygen_compute_tr_write_pk, keygen_compute_tr_write_pk_SHA3_START, keygen_compute_tr_write_pk_msg_done, keygen_compute_tr_write_pk_start, keygen_end_state, keygen_expand_seed_SHA3_START, keygen_expand_seed_sampling, keygen_expand_seed_sampling_start, keygen_expand_seed_start, keygen_intt_a, keygen_intt_a_idle,sign_check_mode, keygen_intt_a_start, keygen_jump_sign, keygen_ntt_s1, keygen_ntt_s1_start, keygen_power_2_round, keygen_power_2_round_start, keygen_pwm_a, keygen_pwm_a_start, keygen_pwm_a_write_immediate, keygen_pwm_a_write_immediate_msg_done, keygen_pwm_a_write_rho, keygen_pwm_a_write_rho_SHA3_START, keygen_pwm_a_write_rho_start, keygen_rejbounded_s1, keygen_rejbounded_s1_start, keygen_rejbounded_s2, keygen_rejbounded_s2_start, keygen_rnd_seed_SHA3_START, keygen_rnd_seed_done, keygen_rnd_seed_lfsr, keygen_rnd_seed_start, keygen_rnd_seed_wait, keygen_sample_rnd_seed, keygen_sample_rnd_seed_start, keygen_sk_encode, keygen_sk_encode_start, keygen_write_counter, keygen_write_counter_msg_done, keygen_write_entropy, keygen_write_entropy_msg_done, keygen_write_rejbounded_immediate_s1, keygen_write_rejbounded_immediate_s1_msg_done, keygen_write_rejbounded_immediate_s2, keygen_write_rejbounded_immediate_s2_msg_done, keygen_write_rejbounded_input_s1, keygen_write_rejbounded_input_s1_SHA3_START, keygen_write_rejbounded_input_s1_start, keygen_write_rejbounded_input_s2, keygen_write_rejbounded_input_s2_SHA3_START, keygen_write_rejbounded_input_s2_start, keygen_write_seed, keygen_write_seed_immediate, keygen_write_seed_msg_done, sign_compute_c, sign_compute_c_start, sign_compute_lfsr_seed_SHA3_START, sign_compute_lfsr_seed_lfsr, sign_compute_lfsr_seed_sampling, sign_compute_lfsr_seed_sampling_start, sign_compute_lfsr_seed_start, sign_compute_lfsr_seed_wait, sign_compute_lfsr_seed_write_counter, sign_compute_lfsr_seed_write_counter_msg_done, sign_compute_lfsr_seed_write_entropy, sign_compute_lfsr_seed_write_entropy_msg_done, sign_compute_mu_SHA3_START, sign_compute_mu_idle, sign_compute_mu_sampling, sign_compute_mu_sampling_start, sign_compute_mu_start, sign_compute_mu_wait, sign_compute_mu_write_msg_prime, sign_compute_mu_write_msg_prime_msg_done, sign_compute_mu_write_tr, sign_compute_mu_write_tr_msg_done, sign_compute_rho_prime_SHA3_START, sign_compute_rho_prime_sampling, sign_compute_rho_prime_sampling_start, sign_compute_rho_prime_start, sign_compute_rho_prime_wait_0, sign_compute_rho_prime_wait_1, sign_compute_rho_prime_write_K, sign_compute_rho_prime_write_K_msg_done, sign_compute_rho_prime_write_mu, sign_compute_rho_prime_write_mu_msg_done, sign_compute_rho_prime_write_sign_rnd, sign_compute_rho_prime_write_sign_rnd_msg_done, sign_compute_w0_intt, sign_compute_w0_intt_idle, sign_compute_w0_intt_start, sign_compute_w0_pwm, sign_compute_w0_pwm_SHA3_START, sign_compute_w0_pwm_samp_ntt, sign_compute_w0_pwm_start, sign_compute_w0_pwm_write_immediate, sign_compute_w0_pwm_write_immediate_msg_done, sign_compute_w0_pwm_write_rho, sign_decompose_w, sign_decompose_w_start, sign_end_of_challenge, sign_end_state, sign_expand_mask_SHA3_START, sign_expand_mask_done, sign_expand_mask_sampling, sign_expand_mask_sampling_start, sign_expand_mask_start, sign_expand_mask_write_kappa_immediate, sign_expand_mask_write_kappa_immediate_msg_done, sign_expand_mask_write_rho_prime, sign_load_mu, sign_load_mu_SHA3_START, sign_load_mu_idle, sign_load_mu_msg_done, sign_load_mu_start, sign_load_mu_wait, sign_ntt_y, sign_ntt_y_idle, sign_ntt_y_start, sign_rnd_seed_SHA3_START, sign_rnd_seed_lfsr, sign_rnd_seed_start, sign_rnd_seed_wait, sign_sample_in_ball_SHA3_START, sign_sample_in_ball_sampling, sign_sample_in_ball_sampling_start, sign_sample_in_ball_start, sign_sample_in_ball_write_c, sign_sample_in_ball_write_c_msg_done, sign_sample_rnd_seed, sign_sample_rnd_seed_start, sign_set_c_valid, sign_set_w0_valid, sign_set_y_valid, sign_wait_for_c_clear, sign_wait_for_w0_clear, sign_wait_for_y_and_w0_clear, sign_write_counter, sign_write_counter_msg_done, sign_write_entropy, sign_write_entropy_msg_done, verify_check_mode, verify_compute_az_SHA3_START, verify_compute_az_pwm, verify_compute_az_pwm_start, verify_compute_az_start, verify_compute_az_write_immediate, verify_compute_az_write_immediate_msg_done, verify_compute_az_write_rho, verify_compute_mu_SHA3_START, verify_compute_mu_sampling, verify_compute_mu_sampling_start, verify_compute_mu_start, verify_compute_mu_wait, verify_compute_mu_write_msg_prime, verify_compute_mu_write_msg_prime_msg_done, verify_compute_mu_write_tr, verify_compute_mu_write_tr_msg_done, verify_compute_tr_SHA3_START, verify_compute_tr_sampling, verify_compute_tr_sampling_start, verify_compute_tr_start, verify_compute_tr_write_pk, verify_compute_tr_write_pk_msg_done, verify_compute_w0_intt, verify_compute_w0_intt_idle, verify_compute_w0_intt_start, verify_compute_w0_pwm, verify_compute_w0_pwm_start, verify_compute_w0_pws, verify_compute_w0_pws_start, verify_end_state, verify_load_mu, verify_load_mu_SHA3_START, verify_load_mu_msg_done, verify_load_mu_start, verify_load_mu_wait, verify_mu_sampling, verify_mu_sampling_start, verify_norm_check, verify_norm_check_start, verify_ntt_c, verify_ntt_c_start, verify_ntt_t, verify_ntt_t_start, verify_ntt_z, verify_ntt_z_start, verify_pk_decode, verify_pk_decode_start, verify_sample_in_ball_SHA3_START, verify_sample_in_ball_sampling, verify_sample_in_ball_sampling_start, verify_sample_in_ball_start, verify_sample_in_ball_write_c, verify_sample_in_ball_write_c_msg_done, verify_sig_decode_h, verify_sig_decode_h_start, verify_sig_decode_z, verify_sig_decode_z_start, verify_use_hint, verify_use_hint_start }));
+  ctrl_consistency_onehot0_state: assert property($onehot0({ Keygen_ntt_s1_idle, idle, keygen_compute_t, keygen_compute_t_start, keygen_compute_tr_sampling, keygen_compute_tr_sampling_start, keygen_compute_tr_write_pk, keygen_compute_tr_write_pk_SHA3_START, keygen_compute_tr_write_pk_msg_done, keygen_compute_tr_write_pk_start, keygen_end_state, keygen_expand_seed_SHA3_START, keygen_expand_seed_sampling, keygen_expand_seed_sampling_start, keygen_expand_seed_start, keygen_intt_a, keygen_intt_a_idle,sign_check_mode, keygen_intt_a_start, keygen_jump_sign, keygen_ntt_s1, keygen_ntt_s1_start, keygen_power_2_round, keygen_power_2_round_start, keygen_pwm_a, keygen_pwm_a_start, keygen_pwm_a_write_immediate, keygen_pwm_a_write_immediate_msg_done, keygen_pwm_a_write_rho, keygen_pwm_a_write_rho_SHA3_START, keygen_pwm_a_write_rho_start, keygen_rejbounded_s1, keygen_rejbounded_s1_start, keygen_rejbounded_s2, keygen_rejbounded_s2_start, keygen_rnd_seed_SHA3_START, keygen_rnd_seed_done, keygen_rnd_seed_lfsr, keygen_rnd_seed_start, keygen_rnd_seed_wait, keygen_sample_rnd_seed, keygen_sample_rnd_seed_start, keygen_sk_encode, keygen_sk_encode_start, keygen_write_counter, keygen_write_counter_msg_done, keygen_write_entropy, keygen_write_entropy_msg_done, keygen_write_rejbounded_immediate_s1, keygen_write_rejbounded_immediate_s1_msg_done, keygen_write_rejbounded_immediate_s2, keygen_write_rejbounded_immediate_s2_msg_done, keygen_write_rejbounded_input_s1, keygen_write_rejbounded_input_s1_SHA3_START, keygen_write_rejbounded_input_s1_start, keygen_write_rejbounded_input_s2, keygen_write_rejbounded_input_s2_SHA3_START, keygen_write_rejbounded_input_s2_start, keygen_write_seed, keygen_write_seed_immediate, keygen_write_seed_msg_done, sign_compute_c, sign_compute_c_start, sign_compute_lfsr_seed_SHA3_START, sign_compute_lfsr_seed_lfsr, sign_compute_lfsr_seed_sampling, sign_compute_lfsr_seed_sampling_start, sign_compute_lfsr_seed_start, sign_compute_lfsr_seed_wait, sign_compute_lfsr_seed_write_counter, sign_compute_lfsr_seed_write_counter_msg_done, sign_compute_lfsr_seed_write_entropy, sign_compute_lfsr_seed_write_entropy_msg_done, sign_compute_mu_SHA3_START, sign_compute_mu_idle, sign_compute_mu_write_msg_prime_streaming, sign_compute_mu_sampling, sign_compute_mu_sampling_start, sign_compute_mu_start, sign_compute_mu_wait, sign_compute_mu_write_msg_prime, sign_compute_mu_write_msg_prime_msg_done, sign_compute_mu_write_tr, sign_compute_mu_write_tr_msg_done, sign_compute_rho_prime_SHA3_START, sign_compute_rho_prime_sampling, sign_compute_rho_prime_sampling_start, sign_compute_rho_prime_start, sign_compute_rho_prime_wait_0, sign_compute_rho_prime_wait_1, sign_compute_rho_prime_write_K, sign_compute_rho_prime_write_K_msg_done, sign_compute_rho_prime_write_mu, sign_compute_rho_prime_write_mu_msg_done, sign_compute_rho_prime_write_sign_rnd, sign_compute_rho_prime_write_sign_rnd_msg_done, sign_compute_w0_intt, sign_compute_w0_intt_idle, sign_compute_w0_intt_start, sign_compute_w0_pwm, sign_compute_w0_pwm_SHA3_START, sign_compute_w0_pwm_samp_ntt, sign_compute_w0_pwm_start, sign_compute_w0_pwm_write_immediate, sign_compute_w0_pwm_write_immediate_msg_done, sign_compute_w0_pwm_write_rho, sign_decompose_w, sign_decompose_w_start, sign_end_of_challenge, sign_end_state, sign_expand_mask_SHA3_START, sign_expand_mask_done, sign_expand_mask_sampling, sign_expand_mask_sampling_start, sign_expand_mask_start, sign_expand_mask_write_kappa_immediate, sign_expand_mask_write_kappa_immediate_msg_done, sign_expand_mask_write_rho_prime, sign_load_mu, sign_load_mu_SHA3_START, sign_load_mu_idle, sign_load_mu_msg_done, sign_load_mu_start, sign_load_mu_wait, sign_ntt_y, sign_ntt_y_idle, sign_ntt_y_start, sign_rnd_seed_SHA3_START, sign_rnd_seed_lfsr, sign_rnd_seed_start, sign_rnd_seed_wait, sign_sample_in_ball_SHA3_START, sign_sample_in_ball_sampling, sign_sample_in_ball_sampling_start, sign_sample_in_ball_start, sign_sample_in_ball_write_c, sign_sample_in_ball_write_c_msg_done, sign_sample_rnd_seed, sign_sample_rnd_seed_start, sign_set_c_valid, sign_set_w0_valid, sign_set_y_valid, sign_wait_for_c_clear, sign_wait_for_w0_clear, sign_wait_for_y_and_w0_clear, sign_write_counter, sign_write_counter_msg_done, sign_write_entropy, sign_write_entropy_msg_done, verify_check_mode, verify_compute_az_SHA3_START, verify_compute_az_pwm, verify_compute_az_pwm_start, verify_compute_az_start, verify_compute_az_write_immediate, verify_compute_az_write_immediate_msg_done, verify_compute_az_write_rho, verify_compute_mu_SHA3_START, verify_compute_mu_sampling, verify_compute_mu_sampling_start, verify_compute_mu_start, verify_compute_mu_wait, verify_compute_mu_write_msg_prime, verify_compute_mu_write_msg_prime_msg_done, verify_compute_mu_write_tr, verify_compute_mu_write_tr_msg_done, verify_compute_tr_SHA3_START, verify_compute_tr_sampling, verify_compute_tr_sampling_start, verify_compute_tr_start, verify_compute_tr_write_pk, verify_compute_tr_write_pk_msg_done, verify_compute_w0_intt, verify_compute_w0_intt_idle, verify_compute_w0_intt_start, verify_compute_w0_pwm, verify_compute_w0_pwm_start, verify_compute_w0_pws, verify_compute_w0_pws_start, verify_end_state, verify_load_mu, verify_load_mu_SHA3_START, verify_load_mu_msg_done, verify_load_mu_start, verify_load_mu_wait, verify_mu_sampling, verify_mu_sampling_start, verify_norm_check, verify_norm_check_start, verify_ntt_c, verify_ntt_c_start, verify_ntt_t, verify_ntt_t_start, verify_ntt_z, verify_ntt_z_start, verify_pk_decode, verify_pk_decode_start, verify_sample_in_ball_SHA3_START, verify_sample_in_ball_sampling, verify_sample_in_ball_sampling_start, verify_sample_in_ball_start, verify_sample_in_ball_write_c, verify_sample_in_ball_write_c_msg_done, verify_sig_decode_h, verify_sig_decode_h_start, verify_sig_decode_z, verify_sig_decode_z_start, verify_use_hint, verify_use_hint_start,verify_compute_mu_write_msg_prime_streaming }));
 end
 
 

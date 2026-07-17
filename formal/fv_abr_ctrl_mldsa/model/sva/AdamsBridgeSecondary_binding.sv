@@ -14,11 +14,6 @@
 
 // +---------------------------------------------------+
 // | Copyright (c) LUBIS EDA GmbH, all rights reserved |
-<<<<<<< HEAD
-// | Created on 02.12.2024 at 13:17                    |
-=======
-// | Created on 13.01.2025 at 12:52                    |
->>>>>>> issue1/adamsbridge_ctrl_esl
 // | Contact: contact@lubis-eda.com                    |
 // | Author: Tobias Ludwig, Michael Schwarz            |
 // +---------------------------------------------------+
