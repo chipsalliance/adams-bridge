@@ -250,7 +250,6 @@ package abr_ctrl_pkg;
     // MLKEM ISA
     localparam abr_opcode_t ABR_UOP_SHA512                 = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA512,           masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_SHA256                 = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SHA256,           masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
-    localparam abr_opcode_t ABR_UOP_CBD                    = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_CBD_SAMPLER,      masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MASKED_CBD             = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_CBD_SAMPLER,      masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_REJS_PWM  = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_SMPL,       masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
     localparam abr_opcode_t ABR_UOP_MLKEM_MASKED_REJS_PWMA = '{keccak_en: 1'b1, sampler_en:1'b1, ntt_en:1'b1, aux_en: 1'b0, mode:MLKEM_PWM_ACCUM_SMPL, masking_en:1'b1, recombine_en:1'b0, shuffling_en:1'b0};
