@@ -40,6 +40,7 @@ find "$ADAMSBRIDGE_ROOT" -type f \( -name "*.sv" \
                            -o -name "*.sh" \
                            -o -name "*.py" \
                            -o -name "pr_timestamp" \) \
+                           ! -path "*/formal/*" \
                            ! -path "*.github/workflows/*" \
                            ! -path "*.git/*" | LC_COLLATE=C sort -o $ADAMSBRIDGE_ROOT/.github/workflow_metadata/file_list.txt
 sed -i "s,^$ADAMSBRIDGE_ROOT/,," $ADAMSBRIDGE_ROOT/.github/workflow_metadata/file_list.txt
