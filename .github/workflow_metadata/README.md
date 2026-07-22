@@ -24,4 +24,5 @@ The Pull Request run ignores updates to documentation files. That is, commits co
 * Images (.png, .jpg)
 * Github Workflows (.github/workflows/**)
 * Spreadsheets (.xlsx, .xls)
+* Formal verification collateral (formal/**)
 
