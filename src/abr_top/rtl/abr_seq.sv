@@ -53,14 +53,12 @@ module abr_seq
 
                 //KEYGEN
                 //rnd_seed=Keccak(entropy||counter)
-                MLDSA_KG_S       : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:ABR_ENTROPY_ID, operand2:ABR_NOP, operand3:ABR_NOP};                
+                MLDSA_KG_S      : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:ABR_ENTROPY_ID, operand2:ABR_NOP, operand3:ABR_NOP};                
                 MLDSA_KG_S+ 1   : data_o_rom <= '{opcode:ABR_UOP_SHAKE256,    imm:'h0000, length:'d08, operand1:ABR_CNT_ID,     operand2:ABR_NOP, operand3:ABR_DEST_LFSR_SEED_REG_ID};
                 MLDSA_KG_S+ 2   : data_o_rom <= '{opcode:ABR_UOP_LFSR,        imm:'h0000, length:'d00, operand1:ABR_NOP,        operand2:ABR_NOP, operand3:ABR_NOP};
                 //(p,p',K)=Keccak(seed)
-                //                                //SHAKE256 operation                              //SRC                 //SRC2            //DEST
-                MLDSA_KG_S+ 3   : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0708, length:'d34, operand1:MLDSA_SEED_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_K_RHO_REG_ID};
+                MLDSA_KG_S+ 3   : data_o_rom <= '{opcode:ABR_UOP_MASKED_SHAKE256, imm:'h0708, length:'d34, operand1:MLDSA_SEED_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_K_RHO_REG_ID};
                 //s1=expandS
-                //                                //Rej Bounded op      //SRC imm              //SRC1                 //SRC2            //DEST
                 MLDSA_KG_S+ 4   : data_o_rom <= '{opcode:ABR_UOP_MASKED_REJB, imm:'h0000, length:'d66, operand1:MLDSA_RHO_P_ID, operand2:ABR_NOP, operand3:MLDSA_S1_0_BASE};
                 MLDSA_KG_S+ 5   : data_o_rom <= '{opcode:ABR_UOP_MASKED_REJB, imm:'h0001, length:'d66, operand1:MLDSA_RHO_P_ID, operand2:ABR_NOP, operand3:MLDSA_S1_1_BASE};
                 MLDSA_KG_S+ 6   : data_o_rom <= '{opcode:ABR_UOP_MASKED_REJB, imm:'h0002, length:'d66, operand1:MLDSA_RHO_P_ID, operand2:ABR_NOP, operand3:MLDSA_S1_2_BASE};
@@ -200,9 +198,9 @@ module abr_seq
                 MLDSA_SIGN_H_MU         : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_TR_ID, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLDSA_SIGN_H_MU + 1     : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:'d66, operand1:MLDSA_MSG_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_MU_REG_ID};
                 //ρ′=Keccak(K||rnd|| μ)
-                MLDSA_SIGN_H_RHO_P      : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_K_ID, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_SIGN_H_RHO_P+ 1   : data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_SIGN_RND_ID, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLDSA_SIGN_H_RHO_P+ 2   : data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_RHO_P_REG_ID};
+                MLDSA_SIGN_H_RHO_P      : data_o_rom <= '{opcode:ABR_UOP_LD_MASKED_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_K_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_SIGN_H_RHO_P+ 1   : data_o_rom <= '{opcode:ABR_UOP_LD_MASKED_SHAKE256, imm:'h0000, length:'d32, operand1:MLDSA_SIGN_RND_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLDSA_SIGN_H_RHO_P+ 2   : data_o_rom <= '{opcode:ABR_UOP_MASKED_SHAKE256, imm:'h0000, length:'d64, operand1:MLDSA_MU_ID, operand2:ABR_NOP, operand3:MLDSA_DEST_RHO_P_REG_ID};
        
                 //Signing initial steps start
                 MLDSA_SIGN_INIT_S   : data_o_rom <= '{opcode:ABR_UOP_MASKED_SKDECODE, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:MLDSA_S1_0_BASE};
@@ -608,7 +606,7 @@ module abr_seq
                 MLKEM_KG_S   + 0: data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256, imm:'h0000, length:'d64, operand1:ABR_ENTROPY_ID, operand2:ABR_NOP, operand3:ABR_NOP};                
                 MLKEM_KG_S   + 1: data_o_rom <= '{opcode:ABR_UOP_SHAKE256, imm:'h0000, length:'d08, operand1:ABR_CNT_ID, operand2:ABR_NOP, operand3:ABR_DEST_LFSR_SEED_REG_ID};
                 MLKEM_KG_S   + 2: data_o_rom <= '{opcode:ABR_UOP_LFSR, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLKEM_KG_S   + 3: data_o_rom <= '{opcode:ABR_UOP_SHA512, imm:'h0004, length:'d33, operand1:MLKEM_SEED_D_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_RHO_SIGMA_REG_ID};
+                MLKEM_KG_S   + 3: data_o_rom <= '{opcode:ABR_UOP_MASKED_SHA512, imm:'h0004, length:'d33, operand1:MLKEM_SEED_D_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_RHO_SIGMA_REG_ID};
                 MLKEM_KG_S   + 4: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0000, length:'d33, operand1:MLKEM_SIGMA_ID, operand2:ABR_NOP, operand3:MLKEM_S0_BASE};
                 MLKEM_KG_S   + 5: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0001, length:'d33, operand1:MLKEM_SIGMA_ID, operand2:ABR_NOP, operand3:MLKEM_S1_BASE};
                 MLKEM_KG_S   + 6: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0002, length:'d33, operand1:MLKEM_SIGMA_ID, operand2:ABR_NOP, operand3:MLKEM_S2_BASE};
@@ -678,8 +676,8 @@ module abr_seq
                 MLKEM_ENCAPS_S   + 3: data_o_rom <= '{opcode:ABR_UOP_DECOMPRESS, imm:'h0403, length:'d00, operand1:MLKEM_SRC_EK_MEM_OFFSET, operand2:ABR_NOP, operand3:MLKEM_T0_BASE};
                 MLKEM_ENCAPS_S   + 4: data_o_rom <= '{opcode:ABR_UOP_COMPRESS, imm:'h0413, length:'d00, operand1:MLKEM_T0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_EK_MEM_OFFSET};
                 MLKEM_ENCAPS_S   + 5: data_o_rom <= '{opcode:ABR_UOP_SHA256, imm:'h0000, length:EK_NUM_BYTES, operand1:MLKEM_EK_REG_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_TR_REG_ID};
-                MLKEM_ENCAPS_S   + 6: data_o_rom <= '{opcode:ABR_UOP_LD_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_MSG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
-                MLKEM_ENCAPS_S   + 7: data_o_rom <= '{opcode:ABR_UOP_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_TR_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_K_R_REG_ID};
+                MLKEM_ENCAPS_S   + 6: data_o_rom <= '{opcode:ABR_UOP_LD_MASKED_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_MSG_ID, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLKEM_ENCAPS_S   + 7: data_o_rom <= '{opcode:ABR_UOP_MASKED_SHA512, imm:'h0000, length:'d32, operand1:MLKEM_TR_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_K_R_REG_ID};
                 MLKEM_ENCAPS_S   + 8: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0000, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y0_BASE};
                 MLKEM_ENCAPS_S   + 9: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0001, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y1_BASE};
                 MLKEM_ENCAPS_S  + 10: data_o_rom <= '{opcode:ABR_UOP_MASKED_CBD, imm:'h0002, length:'d33, operand1:MLKEM_R_ID, operand2:ABR_NOP, operand3:MLKEM_Y2_BASE};
@@ -728,10 +726,10 @@ module abr_seq
                 MLKEM_ENCAPS_S  + 52: data_o_rom <= '{opcode:ABR_UOP_MLKEM_PWA, imm:'h0000, length:'d00, operand1:MLKEM_V_BASE, operand2:MLKEM_MU_BASE, operand3:MLKEM_V_BASE};
                 MLKEM_ENCAPS_S  + 53: data_o_rom <= '{opcode:ABR_UOP_COMPRESS_R, imm:'h0422, length:'d00, operand1:MLKEM_UP0_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C1_MEM_OFFSET};
                 MLKEM_ENCAPS_S  + 54: data_o_rom <= '{opcode:ABR_UOP_COMPRESS_R, imm:'h0121, length:'d00, operand1:MLKEM_V_BASE, operand2:ABR_NOP, operand3:MLKEM_DEST_C2_MEM_OFFSET};
-                MLKEM_ENCAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLKEM_ENCAPS_E  + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLKEM_DECAPS_CHK + 0: data_o_rom <= '{opcode:ABR_UOP_LD_SHAKE256,  imm:'h0000, length:'d32, operand1:MLKEM_SEED_Z_ID, operand2:ABR_NOP, operand3:ABR_NOP};
                 MLKEM_DECAPS_CHK + 1: data_o_rom <= '{opcode:ABR_UOP_SHAKE256,  imm:'h0000, length:CT_NUM_BYTES, operand1:MLKEM_CIPHERTEXT_ID, operand2:ABR_NOP, operand3:MLKEM_DEST_K_REG_ID};
-                MLKEM_DECAPS_E + 0 : data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
+                MLKEM_DECAPS_E   + 0: data_o_rom <= '{opcode:ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
 
                 default :              data_o_rom <= '{opcode: ABR_UOP_NOP, imm:'h0000, length:'d00, operand1:ABR_NOP, operand2:ABR_NOP, operand3:ABR_NOP};
             endcase 

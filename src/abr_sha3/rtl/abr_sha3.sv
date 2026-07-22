@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-// SHA3 core is a fully functional SHA3/SHAKE/cSHAKE hashing module.
+// SHA3 core is a fully functional SHA3/SHAKE hashing module.
 //
 // It instantiates a keccak_round with 1600 bits of the state.
 
@@ -34,10 +34,8 @@ module abr_sha3
   input logic                    rand_early_i,
   input logic     [StateW/2-1:0] rand_data_i,
   input logic                    rand_aux_i,
+  output logic                   rand_update_o,
   output logic                   rand_consumed_o,
-
-  // N, S: Used in cSHAKE mode only
-  input logic [NSRegisterSize*8-1:0] ns_data_i, // See abr_sha3_pkg for details
 
   // configurations
   input sha3_mode_e       mode_i,     // see abr_sha3pad for details
@@ -45,6 +43,7 @@ module abr_sha3
 
   // controls
   input logic start_i,   // see abr_sha3pad for details
+  input logic masked_i,  // masking enable
   input logic process_i, // see abr_sha3pad for details
 
   // run_i is a pulse signal to trigger the keccak_round manually by SW.
@@ -383,9 +382,6 @@ module abr_sha3
     .msg_strb_i,
     .msg_ready_o,
 
-    // Encoded N, S
-    .ns_data_i,
-
     // output to keccak_round: message path
     .keccak_data_o  (keccak_data ), // [Share]
     .keccak_ready_i (keccak_ready & ~squeezing),
@@ -399,6 +395,7 @@ module abr_sha3
 
     // controls
     .start_i   (msg_start_i),
+    .masked_i  (masked_i),
     .process_i (keccak_process),
 
     // output
@@ -424,9 +421,11 @@ module abr_sha3
     .rand_early_i,
     .rand_data_i,
     .rand_aux_i,
+    .rand_update_o,
     .rand_consumed_o,
 
     .run_i      (keccak_run     ),
+    .masked_i   (masked_i       ),
     .squeezing_i(squeezing      ),
     .complete_o (keccak_complete),
 
