@@ -530,7 +530,7 @@ module abr_keccak_round
 
 
   generate
-    if (EnMasking) begin
+    if (EnMasking) begin : masked_keccak_gen
       abr_keccak_2share #(
         .Width     (Width),
         .EnMasking (1),
@@ -551,7 +551,7 @@ module abr_keccak_round
       );
     end
 
-    for (genvar inst_g = 0; inst_g < RoundsPerClock; inst_g++) begin : round_gen
+    for (genvar inst_g = 0; inst_g < RoundsPerClock; inst_g++) begin : unmasked_keccak_gen
       abr_keccak_2share #(
         .Width     (Width),
         .EnMasking (0),
