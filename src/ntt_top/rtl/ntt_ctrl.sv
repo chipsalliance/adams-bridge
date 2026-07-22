@@ -24,6 +24,8 @@
 // Note: Latency changes in BFU must be reflected in the latency params here and in bf2x2 for correct pipeline operation
 //======================================================================
 
+`include "abr_sva.svh"
+
 module ntt_ctrl
     import ntt_defines_pkg::*;
     import abr_params_pkg::*;
@@ -1066,5 +1068,31 @@ end
 
 //TODO: add assertions for:
 //1. buf_wren_ntt and buf_wren_intt should be mutex
+
+// -----------------------------------------------------------------------------
+// PWO base-address overflow guard
+// -----------------------------------------------------------------------------
+// pw_mem_rd_addr_{a,b}_nxt and shuffled_pw_mem_wr_addr_c_nxt add up to
+//   COEFF_PER_CLK * chunk_count_max + PWO_*_ADDR_STEP * offset_max = 4*15 + 1*3 = 63
+// to pw_base_addr_{a,b,c}. All three LHS signals are ABR_MEM_ADDR_WIDTH wide, so
+// if pw_base_addr_* > (2^ABR_MEM_ADDR_WIDTH - 64) the sum silently wraps and the
+// PWO engine addresses the wrong physical location. Microcode is expected to
+// place the PWO bases at 64-aligned polynomial regions well below the top of
+// the memory map; these assertions formalize that contract for FPV and sim.
+// -----------------------------------------------------------------------------
+localparam [ABR_MEM_ADDR_WIDTH-1:0] PWO_BASE_ADDR_MAX =
+    ABR_MEM_ADDR_WIDTH'((1 << ABR_MEM_ADDR_WIDTH) - 64);
+
+`ABR_ASSERT(ERR_PWO_BASE_ADDR_A_OVERFLOW,
+    pwo_mode |-> (pw_base_addr_a <= PWO_BASE_ADDR_MAX),
+    clk, !reset_n)
+
+`ABR_ASSERT(ERR_PWO_BASE_ADDR_B_OVERFLOW,
+    pwo_mode |-> (pw_base_addr_b <= PWO_BASE_ADDR_MAX),
+    clk, !reset_n)
+
+`ABR_ASSERT(ERR_PWO_BASE_ADDR_C_OVERFLOW,
+    pwo_mode |-> (pw_base_addr_c <= PWO_BASE_ADDR_MAX),
+    clk, !reset_n)
 
 endmodule
