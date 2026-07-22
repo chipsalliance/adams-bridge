@@ -455,6 +455,8 @@ end
   always_comb sha3_piso_dv = sha3_state_dv & (sampler_mode_i inside {MLKEM_REJ_SAMPLER, MLDSA_REJ_SAMPLER, ABR_EXP_MASK,
                                                                      ABR_REJ_BOUNDED, ABR_SAMPLE_IN_BALL, ABR_CBD_SAMPLER});
 
+generate
+  if (Sha3EnMasking) begin : gen_sha3_masking_recombine
   //simple recombine
   abr_prim_generic_xor2 #(
     .Width (abr_sha3_pkg::StateW)
@@ -463,6 +465,11 @@ end
     .in1_i (sha3_state_o[1]),
     .out_o (sha3_state)
   );
+  end else begin
+      assign sha3_state = sha3_state_o[0];
+  end
+endgenerate
+  
 
   //Multi-rate piso
   abr_piso_multi #(

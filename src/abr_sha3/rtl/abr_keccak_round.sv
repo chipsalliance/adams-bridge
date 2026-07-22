@@ -483,21 +483,29 @@ module abr_keccak_round
 
   // Storage register input
   // The incoming message is XORed with the existing storage registers.
-
-  always_comb begin
-    if (EnMasking) begin
+  // Split into masked/unmasked generate branches so the unmasked build never
+  // elaborates storage_d[1]/keccak_out[1] (out of range when Share == 1).
+  generate
+  if (EnMasking) begin : gen_masked_storage_d
+    always_comb begin
       storage_d[0] = masked_i ? keccak_out[0] : storage_datapath[RoundsPerClock][0];
       storage_d[1] = masked_i ? keccak_out[1] : '0;
-    end else begin
-      storage_d[0] = storage_datapath[RoundsPerClock][0];
+      if (xor_message) begin
+        for (int j = 0 ; j < Share ; j++) begin
+          storage_d[j] = storage[j] ^ data_i[j];
+        end // for j
+      end // if xor_message
     end
-    if (xor_message) begin
-      for (int j = 0 ; j < Share ; j++) begin
-        storage_d[j] = storage[j] ^ data_i[j];
-      end // for j
-    end // if xor_message
+  end else begin : gen_unmasked_storage_d
+    always_comb begin
+      storage_d[0] = storage_datapath[RoundsPerClock][0];
+      if (xor_message) begin
+        storage_d[0] = storage[0] ^ data_i[0];
+      end // if xor_message
+    end
   end
-
+  endgenerate
+  
   // Check the rst_storage integrity
   logic rst_storage_error;
 

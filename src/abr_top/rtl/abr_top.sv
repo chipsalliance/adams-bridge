@@ -450,7 +450,8 @@ abr_reg abr_reg_inst (
 
 abr_ctrl #(
   .SRAM_LATENCY(SRAM_LATENCY),
-  .MASKING_EN(MASKING_EN)
+  .MASKING_EN(MASKING_EN),
+  .SHA3_MASKING_EN(SHA3_MASKING_EN)
 )
 abr_ctrl_inst
 (

@@ -40,7 +40,8 @@ module abr_ctrl
   `endif
   #(
     parameter SRAM_LATENCY = 1,
-    parameter bit MASKING_EN = 0
+    parameter bit MASKING_EN = 0,
+    parameter bit SHA3_MASKING_EN = 0
   )
   (
   input logic clk,
@@ -1818,7 +1819,7 @@ end
     end
   end
 
-  always_comb sha3_masked_o = abr_instr.opcode.mask_keccak_en;
+  always_comb sha3_masked_o = SHA3_MASKING_EN && abr_instr.opcode.mask_keccak_en;
 
   always_comb sampler_src_offset = {4'b0, msg_cnt};
 

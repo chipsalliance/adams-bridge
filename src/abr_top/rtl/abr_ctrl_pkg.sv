@@ -251,6 +251,7 @@ package abr_ctrl_pkg;
         logic masking_en;
         logic recombine_en;
         logic shuffling_en;
+        logic mask_keccak_en;
     } abr_opcode_t;
 
     typedef struct packed {
