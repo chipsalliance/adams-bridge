@@ -10,6 +10,7 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop_en.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_buf.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_xor2.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_flop_en.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cdc_rand_delay.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_flop_2sync.sv
