@@ -296,9 +296,6 @@ module abr_top
   logic [abr_sha3_pkg::StateW/2-1:0]                       keccak_dom_rand;
   logic [MsgWidth-1:0]                                     keccak_msg_mask;
   logic                                                    keccak_aux_rand;
-  logic                                                    keccak_msg_lfsr_en;
-  logic                                                    keccak_rand_update;
-  logic                                                    keccak_rand_consumed;
 
   //gasket to assemble reg requests
   logic abr_reg_dv;
@@ -627,12 +624,21 @@ logic [MsgWidth-1:0] msg_data_i[Sha3Share];
 generate
   if (SHA3_MASKING_EN) begin : decomp_mask_tie_off
     // Message-share splitter: for masked operations the incoming single-share
-    // plaintext is split into two Boolean shares using a LFSR mask that is
-    // DISJOINT from the DOM randomness slice (share0 ^ share1 == plaintext).
+    // plaintext is split into two Boolean shares using an LFSR mask
     // Public (unmasked) operations pass through with share1 tied to zero.
     logic [MsgWidth-1:0] msg_plain;
+    logic [MsgWidth-1:0] msg_masked;
     assign msg_plain     = decomp_msg_valid ? decomp_msg_data : msg_data;
-    assign msg_data_i[0] = sha3_masked ? (msg_plain ^ keccak_msg_mask) : msg_plain;
+
+    abr_prim_generic_xor2 #(
+      .Width(MsgWidth)
+    ) msg_share_xor (
+      .in0_i(msg_plain),
+      .in1_i(keccak_msg_mask),
+      .out_o(msg_masked)
+    );
+
+    assign msg_data_i[0] = sha3_masked ? msg_masked : msg_plain;
     assign msg_data_i[1] = sha3_masked ? keccak_msg_mask : '0;
   end else begin : decomp_no_mask_gen
     assign msg_data_i[0] = decomp_msg_valid ? decomp_msg_data : msg_data;
@@ -684,8 +690,6 @@ sampler_top_inst
   .keccak_rand_early_i(1'b1),
   .keccak_rand_data_i(keccak_dom_rand),
   .keccak_rand_aux_i(keccak_aux_rand),
-  .keccak_rand_update_o(keccak_rand_update),
-  .keccak_rand_consumed_o(keccak_rand_consumed),
 
   .sampler_state_dv_o(sampler_state_dv),
   .sampler_state_data_o(sampler_state_data)
@@ -1229,11 +1233,6 @@ generate
     assign keccak_dom_rand_bits = keccak_dom_lfsr_state;
     assign keccak_dom_rand      = keccak_dom_rand_bits[abr_sha3_pkg::StateW/2-1:0];
     assign keccak_aux_rand      = keccak_dom_rand_bits[abr_sha3_pkg::StateW/2];
-
-    // Advance the message-mask LFSR only when the SHA3 message FIFO accepts a
-    // masked beat. Holding it otherwise keeps the two shares consistent across
-    // back-pressure and guarantees a fresh mask per absorbed word.
-    assign keccak_msg_lfsr_en = (msg_valid | decomp_msg_valid) & sha3_masked;
     abr_prim_lfsr
     #(
       .LfsrType("FIB_XNOR"),
@@ -1245,7 +1244,7 @@ generate
       .rst_b(rst_b),
       .seed_en_i(lfsr_enable),
       .seed_i(lfsr_seed.msg),
-      .lfsr_en_i(keccak_msg_lfsr_en),
+      .lfsr_en_i(1'b1),
       .entropy_i('0),
       .state_o(keccak_msg_rand_bits)
     );
@@ -1257,7 +1256,6 @@ generate
     assign keccak_dom_rand       = '0;
     assign keccak_msg_mask       = '0;
     assign keccak_aux_rand       = 1'b0;
-    assign keccak_msg_lfsr_en    = 1'b0;
   end
 endgenerate
 

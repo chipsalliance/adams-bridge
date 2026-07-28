@@ -69,8 +69,6 @@ module abr_sampler_top
   input  logic                                        keccak_rand_early_i,
   input  logic [abr_sha3_pkg::StateW/2-1:0]           keccak_rand_data_i,
   input  logic                                        keccak_rand_aux_i,
-  output logic                                        keccak_rand_update_o,
-  output logic                                        keccak_rand_consumed_o,
 
   output logic                                        sampler_state_dv_o,
   output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o
@@ -422,8 +420,8 @@ end
     .rand_early_i    (keccak_rand_early_i),
     .rand_data_i     (keccak_rand_data_i),
     .rand_aux_i      (keccak_rand_aux_i),
-    .rand_update_o   (keccak_rand_update_o),
-    .rand_consumed_o (keccak_rand_consumed_o),
+    .rand_update_o   (),
+    .rand_consumed_o (),
 
     // Configurations
     .mode_i     (mode), 

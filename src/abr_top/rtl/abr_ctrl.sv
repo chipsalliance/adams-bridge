@@ -1477,9 +1477,14 @@ always_comb kv_mlkem_msg_write_data = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
+      // Entropy pass 1: capture the 512-bit entropy feedback only.
+      if (abr_instr.operand3 == ABR_DEST_ENTROPY_REG_ID) begin
+          lfsr_entropy_reg <= sampler_state_data_i[ENTROPY_LSB +: ENTROPY_W];
+      end
+      // Entropy pass 2: capture the LFSR seeds from a fresh squeeze; these bits are
+      // disjoint from the pass-1 feedback, so no entropy output is ever reused.
       if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o.ntt  <= sampler_state_data_i[NTT_SEED_LSB +: NTT_SEED_W];
-          lfsr_entropy_reg <= sampler_state_data_i[ENTROPY_LSB  +: ENTROPY_W];
           lfsr_seed_o.dom  <= sampler_state_data_i[DOM_SEED_LSB +: KECCAK_DOM_LFSR_W];
           lfsr_seed_o.msg  <= sampler_state_data_i[MSG_SEED_LSB +: KECCAK_MSG_LFSR_W];
       end

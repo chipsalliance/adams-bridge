@@ -86,17 +86,26 @@ package abr_ctrl_pkg;
     localparam NTT_NUM_LFSR = 2;
     localparam NTT_LFSR_W = 102; // Each LFSR width: (2*96 + 12) / 2 — 12 shuffle bits (6 per NTT)
 
-    // Layout of the SHAKE squeeze (sampler_state_data_i) consumed on an
-    // ABR_DEST_LFSR_SEED_REG_ID beat. All regions are packed contiguously from
-    // the LSB and are mutually disjoint; the 15 top bits are currently unused.
-    //   [ ntt seeds | entropy | dom seed | msg seed | ...unused... ]
-    //   0          204       716        1521       1585          1600
+    // The entropy pool is refreshed and the LFSRs are seeded by TWO separate SHAKE256
+    // squeezes (see abr_seq), so the 512-bit entropy feedback and the LFSR seeds are
+    // never carved from the same squeeze — no output bit ever serves two purposes.
+    // Each pass reads only rate bits (<= 1088 for SHAKE256); capacity bits are never
+    // exposed.
+    //
+    // Pass 1 (ABR_DEST_ENTROPY_REG_ID beat): 512-bit entropy feedback from the LSB.
+    //   [ entropy ]
+    //   0        512
+    localparam int ENTROPY_LSB  = 0;
+    localparam int ENTROPY_W    = ENTROPY_NUM_DWORDS * 32;                  // 512
+    //
+    // Pass 2 (ABR_DEST_LFSR_SEED_REG_ID beat): LFSR seeds packed from the LSB, all
+    // mutually disjoint. Total 1073 bits, within the SHAKE256 rate; top 15 unused.
+    //   [ ntt seeds | dom seed | msg seed | ...unused... ]
+    //   0          204        1009       1073          1088
     localparam int NTT_SEED_LSB = 0;
     localparam int NTT_SEED_W   = NTT_NUM_LFSR * NTT_LFSR_W;                // 204
-    localparam int ENTROPY_LSB  = NTT_SEED_LSB + NTT_SEED_W;                // 204
-    localparam int ENTROPY_W    = ENTROPY_NUM_DWORDS * 32;                  // 512
-    localparam int DOM_SEED_LSB = ENTROPY_LSB + ENTROPY_W;                  // 716
-    localparam int MSG_SEED_LSB = DOM_SEED_LSB + KECCAK_DOM_LFSR_W;         // 1521
+    localparam int DOM_SEED_LSB = NTT_SEED_LSB + NTT_SEED_W;                // 204
+    localparam int MSG_SEED_LSB = DOM_SEED_LSB + KECCAK_DOM_LFSR_W;         // 1009
 
     // Aggregated LFSR seed delivered from the sequencer in a single struct. The
     // NTT shuffle/split seeds are always consumed; the Keccak DOM and message-mask
@@ -347,6 +356,7 @@ package abr_ctrl_pkg;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_TR_REG_ID    = 'd10;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_K_R_REG_ID   = 'd11;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_K_REG_ID   = 'd12;
+    localparam [ABR_OPR_WIDTH-1 : 0] ABR_DEST_ENTROPY_REG_ID   = 'd13;
     // DEST Mem overloaded into SK ram
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_DEST_DK_MEM_OFFSET = 'd0;
     localparam [ABR_OPR_WIDTH-1 : 0] MLKEM_SRC_DK_MEM_OFFSET = MLKEM_DEST_DK_MEM_OFFSET/2;
@@ -570,16 +580,16 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_RESET          = 'd0;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ZEROIZE        = ABR_RESET + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_S         = ABR_ZEROIZE + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 101;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_JUMP_SIGN = MLDSA_KG_S + 103;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_KG_E         = MLDSA_KG_JUMP_SIGN + 1;
     //Signing
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_S            = MLDSA_KG_E + 2;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_MODE   = MLDSA_SIGN_S + 3;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_CHECK_MODE   = MLDSA_SIGN_S + 5;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_MU         = MLDSA_SIGN_CHECK_MODE + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_H_RHO_P      = MLDSA_SIGN_H_MU + 2;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_INIT_S       = MLDSA_SIGN_H_RHO_P + 3;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_LFSR_S       = MLDSA_SIGN_INIT_S+24;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 3;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_Y_S     = MLDSA_SIGN_LFSR_S + 5;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W_S     = MLDSA_SIGN_MAKE_Y_S+ 14;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_W       = MLDSA_SIGN_MAKE_W_S+ 65;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLDSA_SIGN_MAKE_C       = MLDSA_SIGN_MAKE_W+ 1;
@@ -602,10 +612,10 @@ package abr_ctrl_pkg;
     localparam [ABR_PROG_ADDR_W-1 : 0] ABR_ERROR               = '1;
 
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_S = MLDSA_VERIFY_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 43;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_KG_E = MLKEM_KG_S + 45;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_S = MLKEM_KG_E + 1;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 18;
-    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 56;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_S = MLKEM_DECAPS_S + 20;
+    localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_ENCAPS_E = MLKEM_ENCAPS_S + 58;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_CHK = MLKEM_ENCAPS_E + 1;
     localparam [ABR_PROG_ADDR_W-1 : 0] MLKEM_DECAPS_E = MLKEM_DECAPS_CHK + 2;
 
