@@ -344,7 +344,8 @@ module abr_ctrl
 
     .error_code(kv_mldsa_seed_error),
     .kv_ready(kv_mldsa_seed_ready),
-    .read_done(kv_mldsa_seed_done)
+    .read_done(kv_mldsa_seed_done),
+    .expected_key_size(KV_ENTRY_SIZE_W'((SEED_NUM_DWORDS*32/32)-1))
   );
 
   //Read ML-KEM SEED
@@ -373,7 +374,8 @@ module abr_ctrl
 
     .error_code(kv_mlkem_seed_error),
     .kv_ready(kv_mlkem_seed_ready),
-    .read_done(kv_mlkem_seed_done)
+    .read_done(kv_mlkem_seed_done),
+    .expected_key_size(KV_ENTRY_SIZE_W'((2*SEED_NUM_DWORDS*32/32)-1))
   );
 
   //Read ML-KEM SEED
@@ -402,7 +404,8 @@ module abr_ctrl
 
     .error_code(kv_mlkem_msg_error),
     .kv_ready(kv_mlkem_msg_ready),
-    .read_done(kv_mlkem_msg_done)
+    .read_done(kv_mlkem_msg_done),
+    .expected_key_size(KV_ENTRY_SIZE_W'((MLKEM_MSG_MEM_NUM_DWORDS*32/32)-1))
   );
 
 kv_write_client #(
@@ -771,7 +774,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_mldsa_seed_write_en & (kv_mldsa_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
                                                       kv_mldsa_seed_write_data;
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | (kv_mldsa_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | (kv_mldsa_seed_error != KV_SUCCESS);
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = abr_ready & ~kv_mldsa_seed_data_present;
       `else
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
@@ -838,7 +841,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       `ifdef CALIPTRA
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.we = ((kv_mlkem_seed_write_en & (kv_mlkem_seed_write_offset == $clog2(2*SEED_NUM_DWORDS)'(SEED_NUM_DWORDS-1-dword)))) & ~zeroize;
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.next = kv_mlkem_seed_write_data;
-      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | (kv_mlkem_seed_error == KV_READ_FAIL);
+      abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.hwclr = zeroize | (kv_mlkem_seed_error != KV_SUCCESS);
       abr_reg_hwif_in.MLKEM_SEED_D[dword].SEED.swwe = abr_ready & ~kv_mlkem_seed_data_present;
       `else
       mlkem_seed_d_reg[dword] = abr_reg_hwif_out.MLKEM_SEED_D[dword].SEED.value;
