@@ -40,7 +40,8 @@ module abr_ctrl
   `endif
   #(
     parameter SRAM_LATENCY = 1,
-    parameter bit MASKING_EN = 0
+    parameter bit MASKING_EN = 0,
+    parameter bit SHA3_MASKING_EN = 0
   )
   (
   input logic clk,
@@ -60,16 +61,17 @@ module abr_ctrl
   //sampler interface
   output abr_sampler_mode_e          sampler_mode_o,
   output logic                       sha3_start_o,
+  output logic                       sha3_masked_o,
   output logic                       msg_start_o,
   output logic                       msg_valid_o,
   input  logic                       msg_rdy_i,
   output logic [MsgStrbW-1:0]        msg_strobe_o,
-  output logic [MsgWidth-1:0]        msg_data_o[Sha3Share],
+  output logic [MsgWidth-1:0]        msg_data_o,
   output logic                       sampler_start_o,
 
   input  logic                       sampler_busy_i,
   input logic                        sampler_state_dv_i,
-  input logic [abr_sha3_pkg::StateW-1:0] sampler_state_data_i [Sha3Share],
+  input logic [abr_sha3_pkg::StateW-1:0] sampler_state_data_i,
 
   output logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_o,
 
@@ -172,7 +174,10 @@ module abr_ctrl
   output logic decompress_api_rd_data_valid_o,
 
   output logic lfsr_enable_o,
-  output logic [1:0][LFSR_W-1:0] lfsr_seed_o,
+  // Aggregated LFSR seed: NTT seeds plus (when SHA3 masking is enabled) the
+  // masked-Keccak DOM and message-mask LFSR seeds. All fields are carved from
+  // currently-unused upper SHAKE-squeeze bits and are mutually disjoint.
+  output abr_lfsr_seed_t lfsr_seed_o,
 
   //Memory interface export
   abr_sram_if.req sk_bank0_mem_if,
@@ -809,7 +814,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   
     for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | (verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID));
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[0][dword*32 +: 32];
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[dword*32 +: 32];
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
     end
   
@@ -1156,7 +1161,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     end else begin
       //HW write c
       if (sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
-        signature_reg.enc.c <= sampler_state_data_i[0][511:0];
+        signature_reg.enc.c <= sampler_state_data_i[511:0];
       end else if (abr_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
         signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
       end
@@ -1381,8 +1386,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   end
 
   always_comb begin
-    msg_data_o[0] = sampler_pk_rd_en[SRAM_LATENCY] ? {pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b1}],pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b0}]} :
-                    sampler_sk_rd_en[SRAM_LATENCY] ? sk_ram_rdata : msg_data;
+    msg_data_o = sampler_pk_rd_en[SRAM_LATENCY] ? {pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b1}],pubkey_ram_rdata[{sampler_src_offset_stg[SRAM_LATENCY][2:0],1'b0}]} :
+                 sampler_sk_rd_en[SRAM_LATENCY] ? sk_ram_rdata : msg_data;
   end
 
   //If we're storing state directly into registers, do that here
@@ -1398,30 +1403,30 @@ always_comb kv_mlkem_msg_write_data = '0;
     else if (sampler_state_dv_i) begin
       unique case (abr_instr.operand3)
         MLDSA_DEST_K_RHO_REG_ID: begin
-          abr_scratch_reg.mldsa_enc.rho <= sampler_state_data_i[0][255:0];
-          abr_scratch_reg.mldsa_enc.rho_p <= sampler_state_data_i[0][767:256];
-          abr_scratch_reg.mldsa_enc.K <= sampler_state_data_i[0][1023:768];
+          abr_scratch_reg.mldsa_enc.rho <= sampler_state_data_i[255:0];
+          abr_scratch_reg.mldsa_enc.rho_p <= sampler_state_data_i[767:256];
+          abr_scratch_reg.mldsa_enc.K <= sampler_state_data_i[1023:768];
         end
         MLDSA_DEST_TR_REG_ID: begin
-          abr_scratch_reg.mldsa_enc.tr <= sampler_state_data_i[0][511:0];
+          abr_scratch_reg.mldsa_enc.tr <= sampler_state_data_i[511:0];
         end
         MLDSA_DEST_RHO_P_REG_ID: begin
-          abr_scratch_reg.mldsa_enc.rho_p <= sampler_state_data_i[0][511:0];
+          abr_scratch_reg.mldsa_enc.rho_p <= sampler_state_data_i[511:0];
         end
         MLKEM_DEST_RHO_SIGMA_REG_ID: begin
-          abr_scratch_reg.mlkem_enc.rho <= sampler_state_data_i[0][255:0];
-          abr_scratch_reg.mlkem_enc.sigma <= sampler_state_data_i[0][511:256];
+          abr_scratch_reg.mlkem_enc.rho <= sampler_state_data_i[255:0];
+          abr_scratch_reg.mlkem_enc.sigma <= sampler_state_data_i[511:256];
         end
         MLKEM_DEST_TR_REG_ID: begin
-          abr_scratch_reg.mlkem_enc.tr <= sampler_state_data_i[0][255:0];
+          abr_scratch_reg.mlkem_enc.tr <= sampler_state_data_i[255:0];
         end
         MLKEM_DEST_K_R_REG_ID: begin
-          abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[0][255:0];
-          abr_scratch_reg.mlkem_enc.sigma <= sampler_state_data_i[0][511:256];
+          abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[255:0];
+          abr_scratch_reg.mlkem_enc.sigma <= sampler_state_data_i[511:256];
         end
         MLKEM_DEST_K_REG_ID: begin
           if (~decaps_valid & mlkem_decaps_process) //implicit rejection for shared key
-            abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[0][255:0];
+            abr_scratch_reg.mlkem_enc.shared_key <= sampler_state_data_i[255:0];
         end
         default: begin
           //default case does nothing, just to avoid linter warnings
@@ -1458,7 +1463,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb begin
     internal_mu_we = sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_MU_REG_ID);
-    internal_mu_reg = sampler_state_data_i[0][511:0];
+    internal_mu_reg = sampler_state_data_i[511:0];
     mu_reg = external_mu_reg;
   end
 
@@ -1472,9 +1477,16 @@ always_comb kv_mlkem_msg_write_data = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
+      // Entropy pass 1: capture the 512-bit entropy feedback only.
+      if (abr_instr.operand3 == ABR_DEST_ENTROPY_REG_ID) begin
+          lfsr_entropy_reg <= sampler_state_data_i[ENTROPY_LSB +: ENTROPY_W];
+      end
+      // Entropy pass 2: capture the LFSR seeds from a fresh squeeze; these bits are
+      // disjoint from the pass-1 feedback, so no entropy output is ever reused.
       if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
-          lfsr_seed_o <= sampler_state_data_i[0][2*LFSR_W-1:0];
-          lfsr_entropy_reg <= sampler_state_data_i[0][2*LFSR_W+511:2*LFSR_W];
+          lfsr_seed_o.ntt  <= sampler_state_data_i[NTT_SEED_LSB +: NTT_SEED_W];
+          lfsr_seed_o.dom  <= sampler_state_data_i[DOM_SEED_LSB +: KECCAK_DOM_LFSR_W];
+          lfsr_seed_o.msg  <= sampler_state_data_i[MSG_SEED_LSB +: KECCAK_MSG_LFSR_W];
       end
     end
   end
@@ -1574,7 +1586,7 @@ always_comb kv_mlkem_msg_write_data = '0;
                                    compress_compare_mode_o & compress_compare_failed_i;
 
   always_comb encaps_input_check_failure = mlkem_encaps_process & abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) & compress_compare_mode_o & compress_compare_failed_i;
-  always_comb decaps_input_check_failure = mlkem_decaps_process & sampler_state_dv_i & (abr_instr.operand3 == MLKEM_DEST_TR_REG_ID) & (sampler_state_data_i[0][255:0] != abr_scratch_reg.mlkem_enc.tr);
+  always_comb decaps_input_check_failure = mlkem_decaps_process & sampler_state_dv_i & (abr_instr.operand3 == MLKEM_DEST_TR_REG_ID) & (sampler_state_data_i[255:0] != abr_scratch_reg.mlkem_enc.tr);
 
   //ML-DSA sequencer, instruction is busy
   always_comb subcomponent_busy = !(abr_ctrl_fsm_ns inside {ABR_CTRL_IDLE, ABR_CTRL_MSG_WAIT}) |
@@ -1811,6 +1823,8 @@ end
       end
     end
   end
+
+  always_comb sha3_masked_o = SHA3_MASKING_EN && abr_instr.opcode.mask_keccak_en;
 
   always_comb sampler_src_offset = {4'b0, msg_cnt};
 

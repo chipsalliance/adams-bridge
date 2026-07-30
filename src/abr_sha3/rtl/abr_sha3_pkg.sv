@@ -12,33 +12,6 @@ package abr_sha3_pkg;
   // specification. But sha3pad logic assumes the value as 1600.
   parameter int StateW = 1600;
 
-  // Function Name (N) and Customzation String (S) shall be
-  // smaller than 2**256 bits and integer divisiable by 8.
-  parameter int FnWidth = 32;  // up to 32bit Function Name
-  parameter int CsWidth = 256; // up to 256bit Customization Input
-
-  // Calculate left_encode(len( X )) bit size.
-  // Assume the enc_8(n) is always 1 (up to 255 byte of len(S) size)
-  // e.g) 248bit --> two bytes , 256bit --> three bytes
-  //  round8bit(clog2(X+1))/8
-
-  parameter int MaxFnEncodeSize = ($clog2(FnWidth+1) + 8 - 1) / 8 + 1;
-  parameter int MaxCsEncodeSize = ($clog2(CsWidth+1) + 8 - 1) / 8 + 1;
-
-  parameter int NSRegisterSizePre = FnWidth/8       + CsWidth/8
-                                  + MaxFnEncodeSize + MaxCsEncodeSize;
-  // Round up to 32bit word base
-  parameter int NSRegisterSize = ((NSRegisterSizePre + 4 - 1 ) / 4) * 4;
-
-  // Prefix represents bytepad(encode_string(N) || encode_string(S), 168 or 136)
-  // +2 represents left_encoding(168 or 136) which could be either:
-  // 10000000 || 00010101 // 168
-  // 10000000 || 00010001 // 136
-  parameter int PrefixSize = NSRegisterSize + 2;
-
-  // index width for `N` and `S`
-  parameter int PrefixIndexW = $clog2(PrefixSize/64);
-
   // Datapath width in KMAC, this also affects the output of MSG_FIFO
   // This is assumed as 64 in KMAC design. If this value is changed, some parts
   // of the KMAC design need to be changed.
@@ -52,28 +25,22 @@ package abr_sha3_pkg;
   parameter int MsgWidth = 64;
   parameter int MsgStrbW = MsgWidth / 8;
 
-  // Keccak module supports SHA3, SHAKE, cSHAKE function.
-  // This mode determines if the module uses encoded N and S or not.
-  // Also it chooses the padding value.
+  // Keccak module supports SHA3, SHAKE functions.
+  // Mode chooses the padding value.
   //
   //    mode   |  little-endian
   //    -------|----------------
   //    Sha3   |  2'b   10
   //    Shake  |  4'b 1111
-  //    CShake |  2'b   00
   //
-  // Please remind that if input strings N and S are empty, SW shall
-  // choose SHAKE even for cSHAKE operation.
   typedef enum logic[1:0] {
-    Sha3   = 2'b 00,
-    Shake  = 2'b 10,
-    CShake = 2'b 11
+    Sha3   = 2'b 01,
+    Shake  = 2'b 10
   } sha3_mode_e;
 
   // keccak_strength_e determines the security strength against collision attack
   // This value decides the _rate_ and _capacity_ of the keccak states.
   // It affects the sha3pad module too. the padding module implements
-  // `bytepad(X,168)` for L128, `bytepad(X,136)` for L256 in cSHAKE
   typedef enum logic [2:0] {
     L128 = 3'b 000, // rate: 1344 bit / capacity:  256 bit Keccak[ 256](, 128)
     L224 = 3'b 001, // rate: 1152 bit / capacity:  448 bit Keccak[ 448](, 224)
@@ -166,6 +133,65 @@ package abr_sha3_pkg;
     endcase
   endfunction : sparse2logic
 
+
+  //////////////////////
+  // Keccak Round FSM //
+  //////////////////////
+
+  // Encoding generated with:
+  // $ ./util/design/sparse-fsm-encode.py -d 3 -m 8 -n 6 \
+  //      -s 1363425333 --language=sv
+  //
+  // Hamming distance histogram:
+  //
+  //  0: --
+  //  1: --
+  //  2: --
+  //  3: |||||||||||||||||||| (57.14%)
+  //  4: ||||||||||||||| (42.86%)
+  //  5: --
+  //  6: --
+  //
+  // Minimum Hamming distance: 3
+  // Maximum Hamming distance: 4
+  // Minimum Hamming weight: 1
+  // Maximum Hamming weight: 5
+  //
+  localparam int KeccakFsmWidth = 6;
+  typedef enum logic [KeccakFsmWidth-1:0] {
+    KeccakStIdle = 6'b011111,
+
+    // Active state is used in Unmasked version only.
+    // It handles keccak round in a cycle
+    KeccakStActive = 6'b000100,
+
+    // Phase1 --> Phase2Cycle1 --> Phase2Cycle2 --> Phase2Cycle3
+    // Activated only in Masked version.
+    // Phase1 processes Theta, Rho, Pi steps in a cycle and stores the states
+    // into storage. It only moves to Phase2 once the randomness required for
+    // Phase2 is available.
+    KeccakStPhase1 = 6'b101101,
+
+    // Chi Stage 1 for first lane halves. Unconditionally move to Phase2Cycle2.
+    KeccakStPhase2Cycle1 = 6'b000011,
+
+    // Chi Stage 2 and Iota for first lane halves. Chi Stage 1 for second
+    // lane halves. Unconditionally move to Phase2Cycle3.
+    KeccakStPhase2Cycle2 = 6'b011000,
+
+    // Chi Stage 2 and Iota for second lane halves.
+    // When doing the last round (MaxRound -1) it completes the process and
+    // goes back to Idle. If not, it repeats the phases again.
+    KeccakStPhase2Cycle3 = 6'b101010,
+
+    // Error state. Not clearly defined yet.
+    // Intention is if any unexpected input in the process, state moves to
+    // here and report through the error fifo with debugging information.
+    KeccakStError = 6'b110001,
+
+    KeccakStTerminalError = 6'b110110
+  } keccak_st_e;
+
   //////////////////
   // Error Report //
   //////////////////
@@ -183,30 +209,5 @@ package abr_sha3_pkg;
     err_code_e   code; // Type of error
     logic [23:0] info; // Additional Debug info
   } err_t;
-
-
-  ///////////////
-  // Functions //
-  ///////////////
-
-  // Bytepading function
-  // `encode_bytepad_len` represents the first two bytes of bytepad()
-  // It depends on the block size. We can reuse KeccakRate
-  // 10000000 || 00010101 // 168
-  // 10000000 || 00010001 // 136
-  function automatic logic [15:0] encode_bytepad_len(keccak_strength_e kstrength);
-    logic [15:0] result;
-    unique case (kstrength)
-      L128: result = 16'h A801; // cSHAKE128
-      L224: result = 16'h 9001; // not used
-      L256: result = 16'h 8801; // cSHAKE256
-      L384: result = 16'h 6801; // not used
-      L512: result = 16'h 4801; // not used
-
-      default: result = 16'h 0000;
-    endcase
-    return result;
-  endfunction : encode_bytepad_len
-
 
 endpackage : abr_sha3_pkg
