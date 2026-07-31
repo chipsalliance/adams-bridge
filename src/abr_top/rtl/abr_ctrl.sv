@@ -351,7 +351,7 @@ module abr_ctrl
     .kv_ready(kv_mldsa_seed_ready),
     .read_done(kv_mldsa_seed_done),
     .check_key_size(1'b0),
-    .expected_key_size(KV_ENTRY_SIZE_W'((SEED_NUM_DWORDS*32/32)-1))
+    .expected_key_size(KV_ENTRY_SIZE_W'(SEED_NUM_DWORDS-1))
   );
 
   //Read ML-KEM SEED
@@ -382,7 +382,7 @@ module abr_ctrl
     .kv_ready(kv_mlkem_seed_ready),
     .read_done(kv_mlkem_seed_done),
     .check_key_size(1'b0),
-    .expected_key_size(KV_ENTRY_SIZE_W'((2*SEED_NUM_DWORDS*32/32)-1))
+    .expected_key_size(KV_ENTRY_SIZE_W'(2*SEED_NUM_DWORDS-1))
   );
 
   //Read ML-KEM SEED
@@ -413,7 +413,7 @@ module abr_ctrl
     .kv_ready(kv_mlkem_msg_ready),
     .read_done(kv_mlkem_msg_done),
     .check_key_size(1'b0),
-    .expected_key_size(KV_ENTRY_SIZE_W'((MLKEM_MSG_MEM_NUM_DWORDS*32/32)-1))
+    .expected_key_size(KV_ENTRY_SIZE_W'(MLKEM_MSG_MEM_NUM_DWORDS-1))
   );
 
 kv_write_client #(
