@@ -19,6 +19,7 @@ requires:
   - abr_sampler_pkg
   - abr_defines
   - abr_libs
+  - abr_prim
   - rej_bounded
   - rej_sampler
   - exp_mask

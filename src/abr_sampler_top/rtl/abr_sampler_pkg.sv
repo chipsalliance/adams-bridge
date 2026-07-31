@@ -31,9 +31,6 @@ package abr_sampler_pkg;
 //SHA3 Configuration
 // Keccak Rounds per clock
   parameter RoundsPerClock = 2;
-// Do not enable masking
-  parameter Sha3EnMasking = 0;
-  parameter Sha3Share = (Sha3EnMasking) ? 2 : 1;
 
 //Sampler Configurations
 //MLDSA Rej Sampler

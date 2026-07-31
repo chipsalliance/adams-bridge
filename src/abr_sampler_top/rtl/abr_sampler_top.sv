@@ -19,7 +19,11 @@ module abr_sampler_top
   import abr_prim_alert_pkg::*;
   #(
     parameter SRAM_LATENCY = 1,
-    parameter int ABR_NUM_NTT = 1
+    parameter int ABR_NUM_NTT = 1,
+    // Masking of the SHA3/Keccak core. Threaded from the top-level
+    // SHA3_MASKING_EN parameter (no longer a package parameter).
+    parameter bit Sha3EnMasking = 1,
+    localparam int Sha3Share = (Sha3EnMasking) ? 2 : 1
   )
   (
   input logic clk,
@@ -30,6 +34,7 @@ module abr_sampler_top
   input abr_sampler_mode_e sampler_mode_i,
 
   input logic                    sha3_start_i,
+  input logic                    sha3_masked_i,
 
   input logic                    msg_start_i,
   input logic                    msg_valid_i,
@@ -59,8 +64,14 @@ module abr_sampler_top
   input  logic                                        split_en_i,
   input  logic [ABR_MEM_DATA_WIDTH-1:0]               rand_i,
 
+  // Dedicated masked-Keccak randomness (DOM multipliers)
+  input  logic                                        keccak_rand_valid_i,
+  input  logic                                        keccak_rand_early_i,
+  input  logic [abr_sha3_pkg::StateW/2-1:0]           keccak_rand_data_i,
+  input  logic                                        keccak_rand_aux_i,
+
   output logic                                        sampler_state_dv_o,
-  output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o [Sha3Share]
+  output logic [abr_sha3_pkg::StateW-1:0]             sampler_state_data_o
 
   );
 
@@ -82,7 +93,8 @@ module abr_sampler_top
 
   logic sha3_state_dv;
   logic sha3_state_hold;
-  logic [abr_sha3_pkg::StateW-1:0] sha3_state[Sha3Share];
+  logic [abr_sha3_pkg::StateW-1:0] sha3_state_o[Sha3Share];
+  logic [abr_sha3_pkg::StateW-1:0] sha3_state;
 
   logic sha3_state_error;
   logic sha3_count_error;
@@ -179,7 +191,7 @@ module abr_sampler_top
     sampler_mem_data_pre = 0;
     sampler_mem_addr_pre = 0;
     sampler_state_dv_o = 0;
-    sampler_state_data_o[0] = 0;
+    sampler_state_data_o = 0;
     zeroize_rejb = zeroize;
     zeroize_mldsa_rejs = zeroize;
     zeroize_mlkem_rejs = zeroize;
@@ -196,7 +208,7 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L256;
         sampler_state_dv_o = sha3_state_dv;
-        sampler_state_data_o[0] = sha3_state[0];
+        sampler_state_data_o = sha3_state;
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
@@ -204,7 +216,7 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Shake;
         strength = abr_sha3_pkg::L128;
         sampler_state_dv_o = sha3_state_dv;
-        sampler_state_data_o [0]= sha3_state[0];
+        sampler_state_data_o = sha3_state;
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
@@ -212,7 +224,7 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Sha3;
         strength = abr_sha3_pkg::L512;
         sampler_state_dv_o = sha3_state_dv;
-        sampler_state_data_o[0] = sha3_state[0];
+        sampler_state_data_o = sha3_state;
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
@@ -220,7 +232,7 @@ module abr_sampler_top
         mode = abr_sha3_pkg::Sha3;
         strength = abr_sha3_pkg::L256;
         sampler_state_dv_o = sha3_state_dv;
-        sampler_state_data_o [0]= sha3_state[0];
+        sampler_state_data_o = sha3_state;
         sampler_done = sha3_state_dv;
         zeroize_sha3 |= sha3_state_dv;
       end
@@ -403,15 +415,13 @@ end
     .msg_strb_i  (msg_strobe_i),
     .msg_ready_o (msg_rdy_o),
 
-    // Entropy interface - not using
-    .rand_valid_i    (1'b0),
-    .rand_early_i    (1'b0),
-    .rand_data_i     ('0),
-    .rand_aux_i      ('0),
+    // Entropy interface - masked Keccak DOM randomness
+    .rand_valid_i    (keccak_rand_valid_i),
+    .rand_early_i    (keccak_rand_early_i),
+    .rand_data_i     (keccak_rand_data_i),
+    .rand_aux_i      (keccak_rand_aux_i),
+    .rand_update_o   (),
     .rand_consumed_o (),
-
-    // N, S: Used in cSHAKE mode
-    .ns_data_i       ('0),
 
     // Configurations
     .mode_i     (mode), 
@@ -419,6 +429,7 @@ end
 
     // Controls (CMD register)
     .start_i    (sha3_start_i),
+    .masked_i   (sha3_masked_i),
     .process_i  (sha3_process),
     .run_i      (sha3_run), // For squeeze
 
@@ -431,7 +442,7 @@ end
 
     .state_valid_o      (sha3_state_dv),
     .state_valid_hold_i (sha3_state_hold),
-    .state_o            (sha3_state),
+    .state_o            (sha3_state_o),
 
     .error_o            (sha3_err),
     .sparse_fsm_error_o (sha3_state_error),
@@ -441,6 +452,22 @@ end
 
   always_comb sha3_piso_dv = sha3_state_dv & (sampler_mode_i inside {MLKEM_REJ_SAMPLER, MLDSA_REJ_SAMPLER, ABR_EXP_MASK,
                                                                      ABR_REJ_BOUNDED, ABR_SAMPLE_IN_BALL, ABR_CBD_SAMPLER});
+
+generate
+  if (Sha3EnMasking) begin : gen_sha3_masking_recombine
+  //simple recombine
+  abr_prim_generic_xor2 #(
+    .Width (abr_sha3_pkg::StateW)
+  ) u_abr_prim_xor_sha3_state (
+    .in0_i (sha3_state_o[0]),
+    .in1_i (sha3_state_o[1]),
+    .out_o (sha3_state)
+  );
+  end else begin
+      assign sha3_state = sha3_state_o[0];
+  end
+endgenerate
+  
 
   //Multi-rate piso
   abr_piso_multi #(
@@ -457,7 +484,7 @@ end
     .mode(piso_mode),
     .valid_i(sha3_piso_dv),
     .hold_o(sha3_state_hold),
-    .data_i(sha3_state[0][REJS_PISO_INPUT_RATE-1:0]),
+    .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
     .valid_o(piso_dv),
     .hold_i(piso_hold),
     .data_o(piso_data)
@@ -734,6 +761,6 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MODE_X, sampler_mode_i, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_NTT_DATA_X, sampler_ntt_data_o, clk, !rst_b, sampler_ntt_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o[0], clk, !rst_b, sampler_mem_dv_o)
-  `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o[0], clk, !rst_b, sampler_state_dv_o)
+  `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o, clk, !rst_b, sampler_state_dv_o)
 
 endmodule

@@ -33,6 +33,7 @@ module abr_top
   #(
   //top level params
     parameter bit MASKING_EN = 1,
+    parameter bit SHA3_MASKING_EN = 1,
     parameter SRAM_LATENCY = 1, //SRAM read latency in cycles
     parameter AHB_ADDR_WIDTH = 32,
     parameter AHB_DATA_WIDTH = 64,
@@ -94,17 +95,18 @@ module abr_top
 
   abr_sampler_mode_e         sampler_mode;
   logic                      sha3_start;
+  logic                      sha3_masked;
   logic                      msg_start;
   logic                      msg_valid;
   logic                      msg_rdy;
   logic [MsgStrbW-1:0]       msg_strobe;
-  logic [MsgWidth-1:0]       msg_data[Sha3Share];
+  logic [MsgWidth-1:0]       msg_data;
   logic                      sampler_start;
   logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr;
 
   logic                        sampler_busy;
   logic                        sampler_state_dv;
-  logic [abr_sha3_pkg::StateW-1:0] sampler_state_data[Sha3Share];
+  logic [abr_sha3_pkg::StateW-1:0] sampler_state_data;
 
   logic sampler_mem_dv;
   logic [ABR_MEM_DATA_WIDTH-1:0] sampler_mem_data [ABR_NUM_NTT];
@@ -164,7 +166,7 @@ module abr_top
   logic [ABR_MEM_W1_DATA_W-1:0] w1_mem_rd_data;
 
   logic decomp_msg_valid;
-  logic [MsgWidth-1:0] decomp_msg_data[Sha3Share];
+  logic [MsgWidth-1:0] decomp_msg_data;
 
   logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src0_base_addr;
   logic [ABR_MEM_ADDR_WIDTH-1:0] aux_src1_base_addr;
@@ -280,8 +282,20 @@ module abr_top
   logic sib_mem_rd_data_valid;
 
   logic lfsr_enable;
-  logic [1:0][LFSR_W-1:0] lfsr_seed;
-  logic [1:0][LFSR_W-1:0] rand_bits;
+  abr_lfsr_seed_t lfsr_seed;
+  logic [NTT_NUM_LFSR-1:0][NTT_LFSR_W-1:0] rand_bits;
+
+  // Dedicated masked-Keccak LFSRs (independent of the NTT masking LFSRs above).
+  //  - DOM bank: free-running, full-width, zero-stall (5*161 = 805 >= 801).
+  //  - Msg LFSR: single 64b, advanced only on an accepted masked message beat.
+  // Seeds arrive inside lfsr_seed (.dom/.msg); the sequencer always seeds before
+  // any masked SHA3 op, so no separate "seeded" gate is tracked here.
+  logic [KECCAK_DOM_NUM_LFSR-1:0][KECCAK_DOM_LFSR_DW-1:0]  keccak_dom_lfsr_state;
+  logic [KECCAK_DOM_LFSR_W-1:0]                            keccak_dom_rand_bits;
+  logic [KECCAK_MSG_LFSR_W-1:0]                            keccak_msg_rand_bits;
+  logic [abr_sha3_pkg::StateW/2-1:0]                       keccak_dom_rand;
+  logic [MsgWidth-1:0]                                     keccak_msg_mask;
+  logic                                                    keccak_aux_rand;
 
   //gasket to assemble reg requests
   logic abr_reg_dv;
@@ -433,7 +447,8 @@ abr_reg abr_reg_inst (
 
 abr_ctrl #(
   .SRAM_LATENCY(SRAM_LATENCY),
-  .MASKING_EN(MASKING_EN)
+  .MASKING_EN(MASKING_EN),
+  .SHA3_MASKING_EN(SHA3_MASKING_EN)
 )
 abr_ctrl_inst
 (
@@ -469,6 +484,7 @@ abr_ctrl_inst
   //sampler interface
   .sampler_mode_o(sampler_mode),
   .sha3_start_o(sha3_start), //start the sha3 engine
+  .sha3_masked_o(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_o(msg_start), //start a new message
   .msg_valid_o(msg_valid), //msg interface valid
   .msg_rdy_i(msg_rdy),  //msg interface rdy (~hold)
@@ -601,12 +617,38 @@ always_comb zeroize_mem_we_w1_inst = zeroize_mem_we && (zeroize_mem.addr < ABR_M
 always_comb zeroize_mem_re = (zeroize_mem_we) && (zeroize_mem.addr == 'd1);
 always_comb zeroize_mem_addr = zeroize_mem.addr;
 
+// Number of SHA3 message shares, derived from the top-level masking parameter
+// (previously a package parameter).
+localparam int Sha3Share = (SHA3_MASKING_EN) ? 2 : 1;
 logic [MsgWidth-1:0] msg_data_i[Sha3Share];
-assign msg_data_i = decomp_msg_valid ? decomp_msg_data : msg_data;
+generate
+  if (SHA3_MASKING_EN) begin : decomp_mask_tie_off
+    // Message-share splitter: for masked operations the incoming single-share
+    // plaintext is split into two Boolean shares using an LFSR mask
+    // Public (unmasked) operations pass through with share1 tied to zero.
+    logic [MsgWidth-1:0] msg_plain;
+    logic [MsgWidth-1:0] msg_masked;
+    assign msg_plain     = decomp_msg_valid ? decomp_msg_data : msg_data;
+
+    abr_prim_generic_xor2 #(
+      .Width(MsgWidth)
+    ) msg_share_xor (
+      .in0_i(msg_plain),
+      .in1_i(keccak_msg_mask),
+      .out_o(msg_masked)
+    );
+
+    assign msg_data_i[0] = sha3_masked ? msg_masked : msg_plain;
+    assign msg_data_i[1] = sha3_masked ? keccak_msg_mask : '0;
+  end else begin : decomp_no_mask_gen
+    assign msg_data_i[0] = decomp_msg_valid ? decomp_msg_data : msg_data;
+  end
+endgenerate
 
 abr_sampler_top #(
   .SRAM_LATENCY(SRAM_LATENCY),
-  .ABR_NUM_NTT(ABR_NUM_NTT)
+  .ABR_NUM_NTT(ABR_NUM_NTT),
+  .Sha3EnMasking(SHA3_MASKING_EN)
 )
 sampler_top_inst
 (
@@ -616,6 +658,7 @@ sampler_top_inst
 
   .sampler_mode_i(sampler_mode),
   .sha3_start_i(sha3_start), //start the sha3 engine
+  .sha3_masked_i(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_i(msg_start), //start a new message
   .msg_valid_i(msg_valid | decomp_msg_valid),
   .msg_rdy_o(msg_rdy), 
@@ -639,6 +682,14 @@ sampler_top_inst
 
   .split_en_i(split_en),
   .rand_i(splitter_rand[0]),
+
+  // Dedicated masked-Keccak randomness (DOM multipliers). The sequencer always
+  // seeds the LFSR bank before issuing a masked SHA3 op, and the full-width bank
+  // refreshes every cycle, so randomness is always valid.
+  .keccak_rand_valid_i(1'b1),
+  .keccak_rand_early_i(1'b1),
+  .keccak_rand_data_i(keccak_dom_rand),
+  .keccak_rand_aux_i(keccak_aux_rand),
 
   .sampler_state_dv_o(sampler_state_dv),
   .sampler_state_data_o(sampler_state_data)
@@ -869,7 +920,7 @@ decompose_inst (
   .z_neq_z(w1_mem_wr_data),
 
   //Output of w1_encode - r1
-  .w1_o(decomp_msg_data[0]),
+  .w1_o(decomp_msg_data),
   .buffer_en(decomp_msg_valid),
 
   .decompose_done(decompose_done)
@@ -1138,19 +1189,75 @@ for (genvar gi = 0; gi < 2; gi++) begin : gen_lfsr
   abr_prim_lfsr
   #(
     .LfsrType("FIB_XNOR"),
-    .LfsrDw(LFSR_W),
-    .StateOutDw(LFSR_W)
+    .LfsrDw(NTT_LFSR_W),
+    .StateOutDw(NTT_LFSR_W)
   ) abr_prim_lfsr_inst
   (
     .clk_i(clk),
     .rst_b(rst_b),
     .seed_en_i(lfsr_enable),
-    .seed_i(lfsr_seed[gi]),
+    .seed_i(lfsr_seed.ntt[gi]),
     .lfsr_en_i(1'b1),
     .entropy_i('0),
     .state_o(rand_bits[gi])
   );
 end
+
+// Dedicated masked-Keccak LFSRs. Only instantiated when the masked Keccak core
+// exists (SHA3_MASKING_EN). Two independent, independently-seeded generators:
+//   * DOM bank  : free-running FIB_XNOR LFSRs (5*161=805), cross-coupled through
+//                 entropy_i for inter-instance diffusion. Supplies the full 800b
+//                 DOM randomness plus 1 aux bit every cycle => no permutation
+//                 stalls. Slices: [StateW/2-1:0] -> rand_data_i, [StateW/2] -> aux.
+//   * Msg LFSR  : single 64b FIB_XNOR LFSR advanced ONLY on an accepted masked
+//                 beat, so each message word is split with a distinct mask
+generate
+  if (SHA3_MASKING_EN) begin : gen_keccak_lfsr
+    for (genvar gi = 0; gi < KECCAK_DOM_NUM_LFSR; gi++) begin : gen_keccak_dom_lfsr
+      abr_prim_lfsr
+      #(
+        .LfsrType("FIB_XNOR"),
+        .LfsrDw(KECCAK_DOM_LFSR_DW),
+        .StateOutDw(KECCAK_DOM_LFSR_DW)
+      ) abr_keccak_dom_lfsr_inst
+      (
+        .clk_i(clk),
+        .rst_b(rst_b),
+        .seed_en_i(lfsr_enable),
+        .seed_i(lfsr_seed.dom[gi]),
+        .lfsr_en_i(1'b1),
+        .entropy_i(keccak_dom_lfsr_state[(gi+1) % KECCAK_DOM_NUM_LFSR][7:0]),
+        .state_o(keccak_dom_lfsr_state[gi])
+      );
+    end
+    assign keccak_dom_rand_bits = keccak_dom_lfsr_state;
+    assign keccak_dom_rand      = keccak_dom_rand_bits[abr_sha3_pkg::StateW/2-1:0];
+    assign keccak_aux_rand      = keccak_dom_rand_bits[abr_sha3_pkg::StateW/2];
+    abr_prim_lfsr
+    #(
+      .LfsrType("FIB_XNOR"),
+      .LfsrDw(KECCAK_MSG_LFSR_W),
+      .StateOutDw(KECCAK_MSG_LFSR_W)
+    ) abr_keccak_msg_lfsr_inst
+    (
+      .clk_i(clk),
+      .rst_b(rst_b),
+      .seed_en_i(lfsr_enable),
+      .seed_i(lfsr_seed.msg),
+      .lfsr_en_i(1'b1),
+      .entropy_i('0),
+      .state_o(keccak_msg_rand_bits)
+    );
+    assign keccak_msg_mask = keccak_msg_rand_bits[MsgWidth-1:0];
+  end else begin : gen_no_keccak_lfsr
+    assign keccak_dom_lfsr_state = '0;
+    assign keccak_dom_rand_bits  = '0;
+    assign keccak_msg_rand_bits  = '0;
+    assign keccak_dom_rand       = '0;
+    assign keccak_msg_mask       = '0;
+    assign keccak_aux_rand       = 1'b0;
+  end
+endgenerate
 
 always_comb begin
   abr_memory_export.w1_mem_we_i = (w1_mem_wr_req.rd_wr_en == RW_WRITE) | zeroize_mem_we_w1_inst;
