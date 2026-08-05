@@ -56,7 +56,7 @@ module decompose_mod_2gamma2
         .RADIX(MLDSA_2GAMMA2_SIZE)
         ) 
         adder_inst_0(
-        .a_i({6'h0,opa0}),
+        .a_i(MLDSA_2GAMMA2_SIZE'(opa0)),
         .b_i(opb0),
         .cin_i(1'b0),
         .s_o(r0),

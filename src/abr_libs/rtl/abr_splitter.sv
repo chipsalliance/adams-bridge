@@ -28,7 +28,7 @@
 //
 //======================================================================
 
-`include "abr_sva.svh"
+`include "abr_prim_assert.sv"
 
 module abr_splitter
     import abr_params_pkg::*;

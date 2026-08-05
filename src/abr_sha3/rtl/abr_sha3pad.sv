@@ -4,7 +4,6 @@
 //
 // ABR_SHA3 padding logic
 
-`include "abr_sva.svh"
 `include "abr_prim_assert.sv"
 
 module abr_sha3pad
@@ -746,8 +745,10 @@ module abr_sha3pad
 `endif // SYNTHESIS
 
   // If `process_i` is asserted, eventually sha3pad trigger run signal
+  // (unless the operation is aborted by zeroize, which forces the pad FSM to
+  //  StPadIdle without ever asserting keccak_run_o).
   `ABR_ASSERT(ProcessToRun_A, process_i |-> strong(##[2:$] keccak_run_o),
-    clk_i, !rst_b)
+    clk_i, (!rst_b || zeroize))
 
   // If process_i asserted, completion shall be asserted shall be asserted
   //`ABR_ASSERT(ProcessToAbsorbed_A, process_i |=> strong(##[24*Share:$] absorbed_o))
@@ -763,10 +764,12 @@ module abr_sha3pad
     clk_i, !rst_b)
 
   // Keccak control interface
-  // Keccak run triggered -> completion should come
+  // Keccak run triggered -> completion should come, unless the in-flight
+  // operation is aborted by zeroize (line ~423 forces the pad FSM to
+  // StPadIdle, so keccak_complete_i is never returned for that run).
   `ABR_ASSERT(RunThenComplete_M,
     keccak_run_o |-> strong(##[12*Share:$] keccak_complete_i),
-    clk_i, !rst_b)
+    clk_i, (!rst_b || zeroize))
 
   // No partial write is allowed for Message FIFO interface
   `ABR_ASSERT(NoPartialMsgFifo_M,

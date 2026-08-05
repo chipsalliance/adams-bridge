@@ -15,7 +15,7 @@
 `ifndef ABR_CFG_SV
 `define ABR_CFG_SV
 
-   `include "abr_sva.svh"
+   `include "abr_prim_assert.sv"
    // `define RV_FPGA_OPTIMIZE
    // `define RV_FPGA_SCA
 

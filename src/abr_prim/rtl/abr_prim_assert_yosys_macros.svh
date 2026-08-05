@@ -5,6 +5,11 @@
 // Macro bodies included by abr_prim_assert.sv for formal verification with Yosys. See abr_prim_assert.sv
 // for documentation for each of the macros.
 
+// Explicitly include the file defining the macros referenced below
+// (ABR_ASSERT_DEFAULT_CLK/RST, etc.). Guarded, so it is a no-op when this
+// fragment is pulled in via abr_prim_assert.sv.
+`include "abr_prim_assert.sv"
+
 `define ABR_ASSERT_I(__name, __prop)    \
   always_comb begin : __name        \
     assert (__prop);                \

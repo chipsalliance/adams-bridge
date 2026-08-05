@@ -7,6 +7,11 @@
 `ifndef ABR_PRIM_ASSERT_SEC_CM_SVH
 `define ABR_PRIM_ASSERT_SEC_CM_SVH
 
+// Explicitly include the file defining the macros referenced below
+// (ABR_ASSERT, ABR_ASSUME_FPV, etc.). Guarded, so it is a no-op when this
+// fragment is pulled in via abr_prim_assert.sv.
+`include "abr_prim_assert.sv"
+
 `define _ABR_SEC_CM_ALERT_MAX_CYC 30
 
 // Helper macros

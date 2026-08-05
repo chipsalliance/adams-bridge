@@ -5,6 +5,11 @@
 // Macro bodies included by abr_prim_assert.sv for tools that support full SystemVerilog and SVA syntax.
 // See abr_prim_assert.sv for documentation for each of the macros.
 
+// Explicitly include the file defining the macros referenced below
+// (ABR_ASSERT_DEFAULT_CLK/RST, ABR_ASSERT_ERROR, etc.). Guarded, so it is a
+// no-op when this fragment is pulled in via abr_prim_assert.sv.
+`include "abr_prim_assert.sv"
+
 `define ABR_ASSERT_I(__name, __prop) \
   __name: assert (__prop)        \
     else begin                   \

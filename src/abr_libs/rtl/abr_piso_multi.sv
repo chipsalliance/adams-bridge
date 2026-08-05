@@ -14,6 +14,8 @@
 
 // PISO supports multiple modes of operation, each with unique input and output rates
 
+`include "abr_prim_assert.sv"
+
 module abr_piso_multi #(
   parameter int NUM_MODES = 5,
   parameter int PISO_BUFFER_W = 1344,
@@ -34,8 +36,6 @@ module abr_piso_multi #(
   input  logic                          hold_i,
   output logic [PISO_ACT_OUTPUT_RATE-1:0] data_o
 );
-
-  `include "abr_prim_assert.sv"
 
   localparam BUFFER_W_DELTA = PISO_BUFFER_W - PISO_ACT_INPUT_RATE;
 
