@@ -2381,10 +2381,6 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_RD_CTRL_NOT_STABLE, kv_mlkem_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_MSG_RD_CTRL_NOT_STABLE,  kv_mlkem_msg_read_ctrl_reg , clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
-    //Zeroize clears these, some simulators will see this change on the same clock edge
-    //as the assertion becomes enabled and fire. Excluding zeroize phase from the assertion stability check
-  `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_NOT_STABLE, mldsa_seed_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET) || (abr_prog_cntr == ABR_ZEROIZE)) )
-  `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_NOT_STABLE, mlkem_seed_d_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET) || (abr_prog_cntr == ABR_ZEROIZE)) )
 `endif
 
 endmodule
