@@ -24,7 +24,7 @@
 // Note: Latency changes in BFU must be reflected in the latency params here and in bf2x2 for correct pipeline operation
 //======================================================================
 
-`include "abr_sva.svh"
+`include "abr_prim_assert.sv"
 
 module ntt_ctrl
     import ntt_defines_pkg::*;

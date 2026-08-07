@@ -7,7 +7,6 @@
 // This module can be instantiated once per interrupt field, or
 // "bussified" with all fields of the interrupt vector.
 
-`include "abr_sva.svh"
 `include "abr_prim_assert.sv"
 
 module abr_prim_intr_hw # (

@@ -33,7 +33,6 @@
 // data of the DOM multipliers when also providing fresh randomness and vice
 // versa. Updating one without the other could lead to undesired SCA leakage.
 
-`include "abr_sva.svh"
 `include "abr_prim_assert.sv"
 
 module abr_keccak_round

@@ -134,6 +134,9 @@ module compress_ctrl
                 read_fsm_state_ns = arc_CMP_RD_MEM_CMD_RD_IDLE ? CMP_RD_IDLE : CMP_RD_MEM;
                 inc_rd_addr = mem_rd_pace[0];
             end
+            default: begin
+                read_fsm_state_ns = CMP_RD_IDLE;
+            end
         endcase
     end
 

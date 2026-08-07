@@ -16,7 +16,6 @@
 // Valid samples are assumed contiguous and shifted onto a buffer
 // Outputs are presented valid once NUM_RD entries are valid in the buffer
 
-`include "abr_sva.svh"
 `include "abr_prim_assert.sv"
 
 module abr_msg_buffer

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-`include "abr_sva.svh"
+`include "abr_prim_assert.sv"
 
 module abr_1r1w_be_ram #(
      parameter DEPTH      = 64

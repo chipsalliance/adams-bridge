@@ -5,6 +5,11 @@
 `ifndef ABR_PRIM_FLOP_MACROS_SV
 `define ABR_PRIM_FLOP_MACROS_SV
 
+// Explicitly include the file defining the macros referenced below
+// (ABR_PRIM_STRINGIFY, ABR_ASSERT, etc.). Guarded, so it is a no-op when this
+// fragment is pulled in via abr_prim_assert.sv.
+`include "abr_prim_assert.sv"
+
 /////////////////////////////////////
 // Default Values for Macros below //
 /////////////////////////////////////
