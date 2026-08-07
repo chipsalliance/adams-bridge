@@ -58,6 +58,8 @@ package abr_sampler_pkg;
   parameter REJB_PISO_BUFFER_W    = 1334;
   parameter REJB_PISO_INPUT_RATE  = 1088;
   parameter REJB_PISO_OUTPUT_RATE = REJB_NUM_SAMPLERS*REJB_SAMPLE_W;
+  // Hold rej_bounded on the FIRST Keccak state under masked SHAKE to make it constant-time.
+  parameter REJB_MASKED_KECCAK_HOLD_MASKED = 59;
 
 //Exp Mask
   parameter EXP_NUM_SAMPLERS     = 4;
