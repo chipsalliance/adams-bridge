@@ -1951,4 +1951,12 @@ always_comb pk_mem_if.rdata_o = abr_memory_export.pk_mem_rdata_o;
   `ABR_ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(RoundCountCheck_A,
   sampler_top_inst.sha3_inst.u_keccak.u_round_count, alert_tx_o[1])
 
+  // NTT[0] and NTT[1] modes must be identical whenever masking is enabled
+  // (bug 2 invariant). Only meaningful when a second NTT instance exists.
+  if (ABR_NUM_NTT > 1) begin : gen_ntt_modes_match_a
+    `ABR_ASSERT(NttModesMatchWhenMasked_A,
+                ntt_masking_en_ctrl |-> (ntt_mode[0] == ntt_mode[1]),
+                clk, !rst_b)
+  end
+
 endmodule
