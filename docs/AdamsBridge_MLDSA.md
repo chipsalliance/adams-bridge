@@ -2343,7 +2343,7 @@ once per 8 k keygens); HOLD = 59 gives per-op Pr ≈ 2⁻⁹²
 (negligible). Values above 75 shrink the PISO_1 drain window below 34
 cycles, so safety decreases. HOLD = 59 saves 16 cycles per polynomial
 versus 75 while sitting comfortably in the negligible-probability
-constant-time regime, and is empirically confirmed to yield exactly 
+constant-time regime, and is empirically confirmed to yield exactly
 237-cycle RejBounded loops (spread = 0) across all seeds.
 
 ## SampleInBall architecture

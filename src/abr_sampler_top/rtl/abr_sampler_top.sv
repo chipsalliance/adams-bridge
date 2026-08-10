@@ -520,7 +520,7 @@ endgenerate
         end else if ((sampler_mode_i == ABR_REJ_BOUNDED)
                      && sha3_state_dv_rise
                      && !rejb_hold_done) begin
-          rejb_hold_cnt  <= REJB_MASKED_KECCAK_HOLD_MASKED[$bits(rejb_hold_cnt)-1:0];
+          rejb_hold_cnt  <= $bits(rejb_hold_cnt)'(REJB_MASKED_KECCAK_HOLD_MASKED);
           rejb_hold_done <= 1'b1;
         end else if (rejb_hold_cnt != 0) begin
           rejb_hold_cnt  <= rejb_hold_cnt - 1'b1;
@@ -805,10 +805,9 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o[0], clk, !rst_b, sampler_mem_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o, clk, !rst_b, sampler_state_dv_o)
 
-  // every ABR_REJ_BOUNDED request must run masked. 
-  `ABR_ASSERT(ERR_REJB_UNMASKED_ON_MASKED_BUILD,
-      (sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED) && Sha3EnMasking)
-          |-> sha3_masked_i,
+  // Every ABR_REJ_BOUNDED request must run masked (same-cycle check).
+  `ABR_ASSERT_NEVER(ERR_REJB_UNMASKED_ON_MASKED_BUILD,
+      sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED) && Sha3EnMasking && !sha3_masked_i,
       clk, !rst_b)
 
 endmodule
