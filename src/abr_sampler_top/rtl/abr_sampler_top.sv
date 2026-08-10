@@ -497,9 +497,9 @@ endgenerate
   logic rejb_hold_active;
 
   always_ff @(posedge clk or negedge rst_b) begin
-    if (!rst_b)                       sha3_state_dv_q <= 1'b0;
-    else if (zeroize)                 sha3_state_dv_q <= 1'b0;
-    else                              sha3_state_dv_q <= sha3_state_dv;
+    if (!rst_b)                         sha3_state_dv_q <= 1'b0;
+    else if (zeroize | sampler_start_i) sha3_state_dv_q <= 1'b0;
+    else                                sha3_state_dv_q <= sha3_state_dv;
   end
   always_comb sha3_state_dv_rise = sha3_state_dv & ~sha3_state_dv_q;
 
@@ -804,5 +804,11 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_NTT_DATA_X, sampler_ntt_data_o, clk, !rst_b, sampler_ntt_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o[0], clk, !rst_b, sampler_mem_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o, clk, !rst_b, sampler_state_dv_o)
+
+  // every ABR_REJ_BOUNDED request must run masked. 
+  `ABR_ASSERT(ERR_REJB_UNMASKED_ON_MASKED_BUILD,
+      (sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED) && Sha3EnMasking)
+          |-> sha3_masked_i,
+      clk, !rst_b)
 
 endmodule

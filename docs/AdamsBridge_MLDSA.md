@@ -2309,9 +2309,9 @@ To prevent this, `abr_sampler_top` stalls PISO reads to RejBounded for
 `REJB_MASKED_KECCAK_HOLD_MASKED` sampler cycles on the FIRST
 `sha3_state_dv` rising edge of each RejBounded activation. Keccak_2
 gets a head start against the sampler drain, and by the time PISO_1
-is empty PISO_2 is (very likely) ready. The stall applies only once
-per activation — subsequent Keccak states do not need it because the
-FIFO is already primed.
+is empty PISO_2 is ready with overwhelming probability (see sizing
+below). The stall applies only once per activation — subsequent
+Keccak states do not need it because the FIFO is already primed.
 
 **Sizing.** Failure = FIFO underruns during the parallel window
 `[HOLD, K_masked − 1]`. In that window, 8-sampler accepts per cycle
@@ -2342,9 +2342,9 @@ Evaluated exactly (verified by 200 k-seed Monte-Carlo, agreement to
 once per 8 k keygens); HOLD = 59 gives per-op Pr ≈ 2⁻⁹²
 (negligible). Values above 75 shrink the PISO_1 drain window below 34
 cycles, so safety decreases. HOLD = 59 saves 16 cycles per polynomial
-versus 75 while sitting comfortably in the constant-time regime, and
-is empirically confirmed by the KATs to yield exactly 237-cycle
-RejBounded loops (spread = 0) across all seeds.
+versus 75 while sitting comfortably in the negligible-probability
+constant-time regime, and is empirically confirmed to yield exactly 
+237-cycle RejBounded loops (spread = 0) across all seeds.
 
 ## SampleInBall architecture
 
