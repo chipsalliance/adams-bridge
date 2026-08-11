@@ -490,16 +490,58 @@ endgenerate
     .data_o(piso_data)
   );
 
+  logic sha3_state_dv_q;
+  logic sha3_state_dv_rise;
+  logic rejb_hold_done;         // sticky: cleared on start, set after first hold
+  logic [$clog2(REJB_MASKED_KECCAK_HOLD_MASKED+2)-1:0] rejb_hold_cnt;
+  logic rejb_hold_active;
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b)                         sha3_state_dv_q <= 1'b0;
+    else if (zeroize | sampler_start_i) sha3_state_dv_q <= 1'b0;
+    else                                sha3_state_dv_q <= sha3_state_dv;
+  end
+  always_comb sha3_state_dv_rise = sha3_state_dv & ~sha3_state_dv_q;
+
+  generate
+    if (!Sha3EnMasking || (REJB_MASKED_KECCAK_HOLD_MASKED == 0)) begin : g_no_rejb_hold
+      always_comb rejb_hold_cnt    = '0;
+      always_comb rejb_hold_active = 1'b0;
+      always_comb rejb_hold_done   = 1'b1;
+    end else begin : g_rejb_hold
+      // Load counter only on the FIRST sha3_state_dv rise per rejb activation.
+      always_ff @(posedge clk or negedge rst_b) begin
+        if (!rst_b) begin
+          rejb_hold_cnt  <= '0;
+          rejb_hold_done <= 1'b0;
+        end else if (zeroize | sampler_start_i) begin
+          rejb_hold_cnt  <= '0;
+          rejb_hold_done <= 1'b0;
+        end else if ((sampler_mode_i == ABR_REJ_BOUNDED)
+                     && sha3_state_dv_rise
+                     && !rejb_hold_done) begin
+          rejb_hold_cnt  <= $bits(rejb_hold_cnt)'(REJB_MASKED_KECCAK_HOLD_MASKED);
+          rejb_hold_done <= 1'b1;
+        end else if (rejb_hold_cnt != 0) begin
+          rejb_hold_cnt  <= rejb_hold_cnt - 1'b1;
+        end
+      end
+      always_comb rejb_hold_active = (rejb_hold_cnt != 0);
+    end
+  endgenerate
+
   always_comb mldsa_rejs_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
   always_comb mlkem_rejs_piso_dv = piso_dv & (sampler_mode_i == MLKEM_REJ_SAMPLER); 
-  always_comb rejb_piso_dv = piso_dv & (sampler_mode_i == ABR_REJ_BOUNDED);
+  // Constant-time pause: hide piso_dv from rej_bounded for HOLD cycles
+  // after the FIRST Keccak state completes (sha3_state_dv rising edge).
+  always_comb rejb_piso_dv = piso_dv & (sampler_mode_i == ABR_REJ_BOUNDED) & ~rejb_hold_active;
   always_comb exp_piso_dv = piso_dv & (sampler_mode_i == ABR_EXP_MASK);
   always_comb sib_piso_dv = piso_dv & (sampler_mode_i == ABR_SAMPLE_IN_BALL);
   always_comb cbd_piso_dv = piso_dv & (sampler_mode_i == ABR_CBD_SAMPLER);
 
   always_comb piso_hold = ((sampler_mode_i == MLDSA_REJ_SAMPLER)    & mldsa_rejs_piso_hold) |
                           ((sampler_mode_i == MLKEM_REJ_SAMPLER)    & mlkem_rejs_piso_hold) |
-                          ((sampler_mode_i == ABR_REJ_BOUNDED)    & rejb_piso_hold) |
+                          ((sampler_mode_i == ABR_REJ_BOUNDED)    & (rejb_piso_hold | rejb_hold_active)) |
                           ((sampler_mode_i == ABR_EXP_MASK)       & exp_piso_hold)  |
                           ((sampler_mode_i == ABR_SAMPLE_IN_BALL) & sib_piso_hold)  |
                           ((sampler_mode_i == ABR_CBD_SAMPLER)    & cbd_piso_hold);
@@ -762,5 +804,10 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_NTT_DATA_X, sampler_ntt_data_o, clk, !rst_b, sampler_ntt_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_MEM_DATA_X, sampler_mem_data_o[0], clk, !rst_b, sampler_mem_dv_o)
   `ABR_ASSERT_KNOWN(ERR_SAMPLER_STATE_DATA_X, sampler_state_data_o, clk, !rst_b, sampler_state_dv_o)
+
+  // Every ABR_REJ_BOUNDED request must run masked (same-cycle check).
+  `ABR_ASSERT_NEVER(ERR_REJB_UNMASKED_ON_MASKED_BUILD,
+      sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED) && Sha3EnMasking && !sha3_masked_i,
+      clk, !rst_b)
 
 endmodule

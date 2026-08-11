@@ -2296,6 +2296,56 @@ There are 8 rejection sampler circuits corresponding to each 4-bit input. The co
 
 ![A diagram of a computer componentDescription automatically generated](./images/MLDSA/image24.png)
 
+### Masked-Keccak PISO stall (constant-time)
+
+When `Sha3EnMasking = 1`, one masked SHAKE squeeze permutation takes
+`K_masked ≈ 109` sampler cycles instead of ~12 unmasked. If RejBounded
+consumed PISO at full rate the moment the first squeeze completes, the
+downstream `data_valid_o` could de-assert mid-stream while waiting for
+Keccak_2 — a seed-correlated stall that leaks the acceptance pattern
+of the current polynomial.
+
+To prevent this, `abr_sampler_top` stalls PISO reads to RejBounded for
+`REJB_MASKED_KECCAK_HOLD_MASKED` sampler cycles on the FIRST
+`sha3_state_dv` rising edge of each RejBounded activation. Keccak_2
+gets a head start against the sampler drain, and by the time PISO_1
+is empty PISO_2 is ready with overwhelming probability (see sizing
+below). The stall applies only once per activation — subsequent
+Keccak states do not need it because the FIFO is already primed.
+
+**Sizing.** Failure = FIFO underruns during the parallel window
+`[HOLD, K_masked − 1]`. In that window, 8-sampler accepts per cycle
+follow `Bin(8, 15/16)` while downstream demand is `4/cycle`.
+Equivalent condition:
+
+$$
+\Pr[\text{underrun}] \;=\;
+\Pr\!\bigl[\mathrm{Bin}\bigl(8 \cdot \min(K_\mathrm{masked}-\mathrm{HOLD}, 34),\, 15/16\bigr)
+\;<\; 4(K_\mathrm{masked}-\mathrm{HOLD})\bigr]
+$$
+
+Evaluated exactly (verified by 200 k-seed Monte-Carlo, agreement to
+3 significant figures):
+
+| HOLD | Pr[underrun] | log₂ Pr | verdict |
+|-----:|:------------:|:-------:|---------|
+|  45  | 1.9 × 10⁻¹  |  −2.4   | unsafe (18% failure) |
+|  47  | 3.7 × 10⁻³  |  −8.1   | weak |
+|  49  | 8.2 × 10⁻⁶  | −16.9   | marginal — ~2⁻¹³ per keygen (15 rejb polys), real leak |
+|  55  | 2.4 × 10⁻¹⁸ | −58.5   | 2⁻⁵⁹ |
+| **59** | **1.0 × 10⁻²⁹** | **−96** | **chosen — 2⁻⁹² per keygen** |
+|  65  | 1.8 × 10⁻⁵⁰ | −165    | 2⁻¹⁶⁵ |
+|  75  | 2.3 × 10⁻⁸⁶ | −284    | mathematical optimum |
+
+**Why 59.** Each cycle of HOLD adds ≈ 7 bits of safety headroom until
+75. HOLD = 49 gives per-op Pr ≈ 2⁻¹³ (an exploitable stall roughly
+once per 8 k keygens); HOLD = 59 gives per-op Pr ≈ 2⁻⁹²
+(negligible). Values above 75 shrink the PISO_1 drain window below 34
+cycles, so safety decreases. HOLD = 59 saves 16 cycles per polynomial
+versus 75 while sitting comfortably in the negligible-probability
+constant-time regime, and is empirically confirmed to yield exactly
+237-cycle RejBounded loops (spread = 0) across all seeds.
+
 ## SampleInBall architecture
 
 SampleInBall is a procedure that uses the SHAKE256 of a seed ρ to produce a random element of Bτ. The procedure uses the Fisher-Yates shuffle method. The signs of the nonzero entries of c are determined by the first 8 bytes of H(ρ), and the following bytes of H(ρ) are used to determine the locations of those nonzero entries.
