@@ -5,6 +5,7 @@ package abr_reg_pkg;
 
     localparam ABR_REG_DATA_WIDTH = 32;
     localparam ABR_REG_MIN_ADDR_WIDTH = 16;
+    localparam ABR_REG_SIZE = 'hc018;
 
     typedef struct packed{
         logic [31:0] next;
@@ -296,9 +297,13 @@ package abr_reg_pkg;
         logic wr_ack;
     } abr_reg__MLKEM_SEED_Z__external__in_t;
 
+    typedef struct packed {
+        logic [31:0] KEY;
+    } abr_reg__MLKEM_SHARED_KEY__external__fields__in_t;
+
     typedef struct packed{
         logic rd_ack;
-        logic [31:0] rd_data;
+        abr_reg__MLKEM_SHARED_KEY__external__fields__in_t rd_data;
     } abr_reg__MLKEM_SHARED_KEY__external__in_t;
 
     typedef struct packed{
@@ -658,11 +663,15 @@ package abr_reg_pkg;
         abr_reg__MLKEM_SEED_D__SEED__out_t SEED;
     } abr_reg__MLKEM_SEED_D__out_t;
 
+    typedef struct packed {
+        logic [31:0] SEED;
+    } abr_reg__MLKEM_SEED_Z__external__fields__out_t;
+
     typedef struct packed{
         logic req;
         logic req_is_wr;
-        logic [31:0] wr_data;
-        logic [31:0] wr_biten;
+        abr_reg__MLKEM_SEED_Z__external__fields__out_t wr_data;
+        abr_reg__MLKEM_SEED_Z__external__fields__out_t wr_biten;
     } abr_reg__MLKEM_SEED_Z__external__out_t;
 
     typedef struct packed{
@@ -797,7 +806,7 @@ package abr_reg_pkg;
         kv_write_ctrl_reg__out_t kv_mlkem_sharedkey_wr_ctrl;
     } abr_reg__out_t;
 
-    typedef enum logic [31:0] {
+    typedef enum logic [1:0] {
         kv_status_reg__ERROR__kv_error_e__SUCCESS = 'h0,
         kv_status_reg__ERROR__kv_error_e__KV_READ_FAIL = 'h1,
         kv_status_reg__ERROR__kv_error_e__KV_WRITE_FAIL = 'h2

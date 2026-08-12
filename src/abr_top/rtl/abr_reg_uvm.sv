@@ -4,7 +4,7 @@ package abr_reg_uvm;
     `include "uvm_macros.svh"
     import uvm_pkg::*;
     
-    // Reg - abr_reg::MLDSA_NAME
+    // reg - abr_reg::MLDSA_NAME
     class abr_reg__MLDSA_NAME extends uvm_reg;
         rand uvm_reg_field NAME;
 
@@ -18,7 +18,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_NAME
 
-    // Reg - abr_reg::MLDSA_VERSION
+    // reg - abr_reg::MLDSA_VERSION
     class abr_reg__MLDSA_VERSION extends uvm_reg;
         rand uvm_reg_field VERSION;
 
@@ -32,7 +32,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_VERSION
 
-    // Reg - abr_reg::MLDSA_CTRL
+    // reg - abr_reg::MLDSA_CTRL
     class abr_reg__MLDSA_CTRL extends uvm_reg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
@@ -48,7 +48,7 @@ package abr_reg_uvm;
             this.CTRL = new("CTRL");
             this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
-            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+            this.ZEROIZE.configure(this, 1, 3, "WO", 1, 'h0, 1, 1, 0);
             this.PCR_SIGN = new("PCR_SIGN");
             this.PCR_SIGN.configure(this, 1, 4, "WO", 1, 'h0, 1, 1, 0);
             this.EXTERNAL_MU = new("EXTERNAL_MU");
@@ -58,7 +58,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_CTRL
 
-    // Reg - abr_reg::MLDSA_STATUS
+    // reg - abr_reg::MLDSA_STATUS
     class abr_reg__MLDSA_STATUS extends uvm_reg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
@@ -81,7 +81,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_STATUS
 
-    // Reg - abr_reg::ABR_ENTROPY
+    // reg - abr_reg::ABR_ENTROPY
     class abr_reg__ABR_ENTROPY extends uvm_reg;
         rand uvm_reg_field ENTROPY;
 
@@ -95,7 +95,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__ABR_ENTROPY
 
-    // Reg - abr_reg::MLDSA_SEED
+    // reg - abr_reg::MLDSA_SEED
     class abr_reg__MLDSA_SEED extends uvm_reg;
         rand uvm_reg_field SEED;
 
@@ -109,7 +109,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_SEED
 
-    // Reg - abr_reg::MLDSA_SIGN_RND
+    // reg - abr_reg::MLDSA_SIGN_RND
     class abr_reg__MLDSA_SIGN_RND extends uvm_reg;
         rand uvm_reg_field SIGN_RND;
 
@@ -123,7 +123,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_SIGN_RND
 
-    // Reg - abr_reg::MLDSA_MSG
+    // reg - abr_reg::MLDSA_MSG
     class abr_reg__MLDSA_MSG extends uvm_reg;
         rand uvm_reg_field MSG;
 
@@ -137,7 +137,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_MSG
 
-    // Reg - abr_reg::MLDSA_VERIFY_RES
+    // reg - abr_reg::MLDSA_VERIFY_RES
     class abr_reg__MLDSA_VERIFY_RES extends uvm_reg;
         rand uvm_reg_field VERIFY_RES;
 
@@ -151,7 +151,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_VERIFY_RES
 
-    // Reg - abr_reg::MLDSA_EXTERNAL_MU
+    // reg - abr_reg::MLDSA_EXTERNAL_MU
     class abr_reg__MLDSA_EXTERNAL_MU extends uvm_reg;
         rand uvm_reg_field EXTERNAL_MU;
 
@@ -165,7 +165,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_EXTERNAL_MU
 
-    // Reg - abr_reg::MLDSA_MSG_STROBE
+    // reg - abr_reg::MLDSA_MSG_STROBE
     class abr_reg__MLDSA_MSG_STROBE extends uvm_reg;
         rand uvm_reg_field STROBE;
 
@@ -179,7 +179,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_MSG_STROBE
 
-    // Reg - abr_reg::MLDSA_CTX_CONFIG
+    // reg - abr_reg::MLDSA_CTX_CONFIG
     class abr_reg__MLDSA_CTX_CONFIG extends uvm_reg;
         rand uvm_reg_field CTX_SIZE;
 
@@ -193,7 +193,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_CTX_CONFIG
 
-    // Reg - abr_reg::MLDSA_CTX
+    // reg - abr_reg::MLDSA_CTX
     class abr_reg__MLDSA_CTX extends uvm_reg;
         rand uvm_reg_field CTX;
 
@@ -207,7 +207,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_CTX
 
-    // Mem - abr_reg::MLDSA_PUBKEY
+    // mem - abr_reg::MLDSA_PUBKEY
     class abr_reg__MLDSA_PUBKEY extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -223,7 +223,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_PUBKEY
 
-    // Mem - abr_reg::MLDSA_SIGNATURE
+    // mem - abr_reg::MLDSA_SIGNATURE
     class abr_reg__MLDSA_SIGNATURE extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -239,7 +239,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_SIGNATURE
 
-    // Mem - abr_reg::MLDSA_PRIVKEY_OUT
+    // mem - abr_reg::MLDSA_PRIVKEY_OUT
     class abr_reg__MLDSA_PRIVKEY_OUT extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -255,7 +255,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_PRIVKEY_OUT
 
-    // Mem - abr_reg::MLDSA_PRIVKEY_IN
+    // mem - abr_reg::MLDSA_PRIVKEY_IN
     class abr_reg__MLDSA_PRIVKEY_IN extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -271,7 +271,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLDSA_PRIVKEY_IN
 
-    // Reg - kv_read_ctrl_reg
+    // reg - kv_read_ctrl_reg
     class kv_read_ctrl_reg extends uvm_reg;
         rand uvm_reg_field read_en;
         rand uvm_reg_field read_entry;
@@ -294,7 +294,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : kv_read_ctrl_reg
 
-    // Reg - kv_status_reg
+    // reg - kv_status_reg
     class kv_status_reg extends uvm_reg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
@@ -314,7 +314,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : kv_status_reg
 
-    // Reg - abr_reg::intr_block_t::global_intr_en_t
+    // reg - abr_reg::intr_block_t::global_intr_en_t
     class abr_reg__intr_block_t__global_intr_en_t extends uvm_reg;
         rand uvm_reg_field error_en;
         rand uvm_reg_field notif_en;
@@ -331,7 +331,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__global_intr_en_t
 
-    // Reg - abr_reg::intr_block_t::error_intr_en_t
+    // reg - abr_reg::intr_block_t::error_intr_en_t
     class abr_reg__intr_block_t__error_intr_en_t extends uvm_reg;
         rand uvm_reg_field error_internal_en;
 
@@ -345,7 +345,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__error_intr_en_t
 
-    // Reg - abr_reg::intr_block_t::notif_intr_en_t
+    // reg - abr_reg::intr_block_t::notif_intr_en_t
     class abr_reg__intr_block_t__notif_intr_en_t extends uvm_reg;
         rand uvm_reg_field notif_cmd_done_en;
 
@@ -359,7 +359,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__notif_intr_en_t
 
-    // Reg - abr_reg::intr_block_t::global_intr_t_agg_sts_dd3dcf0a
+    // reg - abr_reg::intr_block_t::global_intr_t_agg_sts_dd3dcf0a
     class abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a extends uvm_reg;
         rand uvm_reg_field agg_sts;
 
@@ -373,7 +373,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__global_intr_t_agg_sts_dd3dcf0a
 
-    // Reg - abr_reg::intr_block_t::global_intr_t_agg_sts_e6399b4a
+    // reg - abr_reg::intr_block_t::global_intr_t_agg_sts_e6399b4a
     class abr_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a extends uvm_reg;
         rand uvm_reg_field agg_sts;
 
@@ -387,7 +387,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__global_intr_t_agg_sts_e6399b4a
 
-    // Reg - abr_reg::intr_block_t::error_intr_t_error_internal_sts_83adab02
+    // reg - abr_reg::intr_block_t::error_intr_t_error_internal_sts_83adab02
     class abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02 extends uvm_reg;
         rand uvm_reg_field error_internal_sts;
 
@@ -401,7 +401,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__error_intr_t_error_internal_sts_83adab02
 
-    // Reg - abr_reg::intr_block_t::notif_intr_t_notif_cmd_done_sts_1c68637e
+    // reg - abr_reg::intr_block_t::notif_intr_t_notif_cmd_done_sts_1c68637e
     class abr_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e extends uvm_reg;
         rand uvm_reg_field notif_cmd_done_sts;
 
@@ -415,7 +415,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__notif_intr_t_notif_cmd_done_sts_1c68637e
 
-    // Reg - abr_reg::intr_block_t::error_intr_trig_t
+    // reg - abr_reg::intr_block_t::error_intr_trig_t
     class abr_reg__intr_block_t__error_intr_trig_t extends uvm_reg;
         rand uvm_reg_field error_internal_trig;
 
@@ -425,11 +425,11 @@ package abr_reg_uvm;
 
         virtual function void build();
             this.error_internal_trig = new("error_internal_trig");
-            this.error_internal_trig.configure(this, 1, 0, "W1S", 0, 'h0, 1, 1, 0);
+            this.error_internal_trig.configure(this, 1, 0, "W1S", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__intr_block_t__error_intr_trig_t
 
-    // Reg - abr_reg::intr_block_t::notif_intr_trig_t
+    // reg - abr_reg::intr_block_t::notif_intr_trig_t
     class abr_reg__intr_block_t__notif_intr_trig_t extends uvm_reg;
         rand uvm_reg_field notif_cmd_done_trig;
 
@@ -439,11 +439,11 @@ package abr_reg_uvm;
 
         virtual function void build();
             this.notif_cmd_done_trig = new("notif_cmd_done_trig");
-            this.notif_cmd_done_trig.configure(this, 1, 0, "W1S", 0, 'h0, 1, 1, 0);
+            this.notif_cmd_done_trig.configure(this, 1, 0, "W1S", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__intr_block_t__notif_intr_trig_t
 
-    // Reg - abr_reg::intr_block_t::intr_count_t_cnt_60ddff93
+    // reg - abr_reg::intr_block_t::intr_count_t_cnt_60ddff93
     class abr_reg__intr_block_t__intr_count_t_cnt_60ddff93 extends uvm_reg;
         rand uvm_reg_field cnt;
 
@@ -457,7 +457,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__intr_count_t_cnt_60ddff93
 
-    // Reg - abr_reg::intr_block_t::intr_count_t_cnt_be67d6d5
+    // reg - abr_reg::intr_block_t::intr_count_t_cnt_be67d6d5
     class abr_reg__intr_block_t__intr_count_t_cnt_be67d6d5 extends uvm_reg;
         rand uvm_reg_field cnt;
 
@@ -471,7 +471,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__intr_count_t_cnt_be67d6d5
 
-    // Reg - abr_reg::intr_block_t::intr_count_incr_t_pulse_15e6ed7e
+    // reg - abr_reg::intr_block_t::intr_count_incr_t_pulse_15e6ed7e
     class abr_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e extends uvm_reg;
         rand uvm_reg_field pulse;
 
@@ -485,7 +485,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__intr_count_incr_t_pulse_15e6ed7e
 
-    // Reg - abr_reg::intr_block_t::intr_count_incr_t_pulse_6173128e
+    // reg - abr_reg::intr_block_t::intr_count_incr_t_pulse_6173128e
     class abr_reg__intr_block_t__intr_count_incr_t_pulse_6173128e extends uvm_reg;
         rand uvm_reg_field pulse;
 
@@ -499,7 +499,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t__intr_count_incr_t_pulse_6173128e
 
-    // Regfile - abr_reg::intr_block_t
+    // regfile - abr_reg::intr_block_t
     class abr_reg__intr_block_t extends uvm_reg_block;
         rand abr_reg__intr_block_t__global_intr_en_t global_intr_en_r;
         rand abr_reg__intr_block_t__error_intr_en_t error_intr_en_r;
@@ -589,7 +589,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__intr_block_t
 
-    // Reg - abr_reg::MLKEM_NAME
+    // reg - abr_reg::MLKEM_NAME
     class abr_reg__MLKEM_NAME extends uvm_reg;
         rand uvm_reg_field NAME;
 
@@ -603,7 +603,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_NAME
 
-    // Reg - abr_reg::MLKEM_VERSION
+    // reg - abr_reg::MLKEM_VERSION
     class abr_reg__MLKEM_VERSION extends uvm_reg;
         rand uvm_reg_field VERSION;
 
@@ -617,7 +617,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_VERSION
 
-    // Reg - abr_reg::MLKEM_CTRL
+    // reg - abr_reg::MLKEM_CTRL
     class abr_reg__MLKEM_CTRL extends uvm_reg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
@@ -630,11 +630,11 @@ package abr_reg_uvm;
             this.CTRL = new("CTRL");
             this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
-            this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+            this.ZEROIZE.configure(this, 1, 3, "WO", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__MLKEM_CTRL
 
-    // Reg - abr_reg::MLKEM_STATUS
+    // reg - abr_reg::MLKEM_STATUS
     class abr_reg__MLKEM_STATUS extends uvm_reg;
         rand uvm_reg_field READY;
         rand uvm_reg_field VALID;
@@ -654,7 +654,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_STATUS
 
-    // Reg - abr_reg::MLKEM_SEED_D
+    // reg - abr_reg::MLKEM_SEED_D
     class abr_reg__MLKEM_SEED_D extends uvm_reg;
         rand uvm_reg_field SEED;
 
@@ -668,7 +668,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_SEED_D
 
-    // Reg - abr_reg::MLKEM_SEED_Z
+    // reg - abr_reg::MLKEM_SEED_Z
     class abr_reg__MLKEM_SEED_Z extends uvm_reg;
         rand uvm_reg_field SEED;
 
@@ -682,7 +682,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_SEED_Z
 
-    // Reg - abr_reg::MLKEM_SHARED_KEY
+    // reg - abr_reg::MLKEM_SHARED_KEY
     class abr_reg__MLKEM_SHARED_KEY extends uvm_reg;
         rand uvm_reg_field KEY;
 
@@ -696,7 +696,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_SHARED_KEY
 
-    // Mem - abr_reg::MLKEM_MSG
+    // mem - abr_reg::MLKEM_MSG
     class abr_reg__MLKEM_MSG extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -712,7 +712,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_MSG
 
-    // Mem - abr_reg::MLKEM_DECAPS_KEY
+    // mem - abr_reg::MLKEM_DECAPS_KEY
     class abr_reg__MLKEM_DECAPS_KEY extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -728,7 +728,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_DECAPS_KEY
 
-    // Mem - abr_reg::MLKEM_ENCAPS_KEY
+    // mem - abr_reg::MLKEM_ENCAPS_KEY
     class abr_reg__MLKEM_ENCAPS_KEY extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -744,7 +744,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_ENCAPS_KEY
 
-    // Mem - abr_reg::MLKEM_CIPHERTEXT
+    // mem - abr_reg::MLKEM_CIPHERTEXT
     class abr_reg__MLKEM_CIPHERTEXT extends uvm_reg_block;
         rand uvm_mem m_mem;
         
@@ -760,7 +760,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : abr_reg__MLKEM_CIPHERTEXT
 
-    // Reg - kv_write_ctrl_reg
+    // reg - kv_write_ctrl_reg
     class kv_write_ctrl_reg extends uvm_reg;
         rand uvm_reg_field write_en;
         rand uvm_reg_field write_entry;
@@ -807,7 +807,7 @@ package abr_reg_uvm;
         endfunction : build
     endclass : kv_write_ctrl_reg
 
-    // Addrmap - abr_reg
+    // addrmap - abr_reg
     class abr_reg extends uvm_reg_block;
         rand abr_reg__MLDSA_NAME MLDSA_NAME[2];
         rand abr_reg__MLDSA_VERSION MLDSA_VERSION[2];
