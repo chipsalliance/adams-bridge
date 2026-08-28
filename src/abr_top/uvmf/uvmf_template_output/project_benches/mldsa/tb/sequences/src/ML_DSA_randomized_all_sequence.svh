@@ -223,6 +223,9 @@ class ML_DSA_randomized_all_sequence extends mldsa_bench_sequence_base;
         end
       end
 
+      // Validate the explicit hardware verification result
+      check_verify_pass(1);
+
       data = 'h0000_0008; // Perform zeorization operation
       reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin

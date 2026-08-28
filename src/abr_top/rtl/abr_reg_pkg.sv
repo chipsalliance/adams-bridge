@@ -62,10 +62,15 @@ package abr_reg_pkg;
     } abr_reg__MLDSA_STATUS__ERROR__in_t;
 
     typedef struct packed{
+        logic next;
+    } abr_reg__MLDSA_STATUS__VERIFY_PASS__in_t;
+
+    typedef struct packed{
         abr_reg__MLDSA_STATUS__READY__in_t READY;
         abr_reg__MLDSA_STATUS__VALID__in_t VALID;
         abr_reg__MLDSA_STATUS__MSG_STREAM_READY__in_t MSG_STREAM_READY;
         abr_reg__MLDSA_STATUS__ERROR__in_t ERROR;
+        abr_reg__MLDSA_STATUS__VERIFY_PASS__in_t VERIFY_PASS;
     } abr_reg__MLDSA_STATUS__in_t;
 
     typedef struct packed{

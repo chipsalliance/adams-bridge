@@ -64,6 +64,7 @@ package abr_reg_uvm;
         rand uvm_reg_field VALID;
         rand uvm_reg_field MSG_STREAM_READY;
         rand uvm_reg_field ERROR;
+        rand uvm_reg_field VERIFY_PASS;
 
         function new(string name = "abr_reg__MLDSA_STATUS");
             super.new(name, 32, UVM_NO_COVERAGE);
@@ -78,6 +79,8 @@ package abr_reg_uvm;
             this.MSG_STREAM_READY.configure(this, 1, 2, "RO", 1, 'h0, 1, 1, 0);
             this.ERROR = new("ERROR");
             this.ERROR.configure(this, 1, 3, "RO", 1, 'h0, 1, 1, 0);
+            this.VERIFY_PASS = new("VERIFY_PASS");
+            this.VERIFY_PASS.configure(this, 1, 4, "RO", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__MLDSA_STATUS
 

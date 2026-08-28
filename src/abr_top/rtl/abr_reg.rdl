@@ -95,6 +95,13 @@ addrmap abr_reg {
                 [br]bit #2: MSG_STREAM_READY: Indicates if the core is ready 
                 [br]                          to recieve the message in streaming mode.
                 [br]bit #3: ERROR: Indicates the process ended with an error
+                [br]bit #4: VERIFY_PASS: Indicates that the last completed MLDSA
+                [br]                     VERIFY operation passed. Hardware performs
+                [br]                     the full c~ comparison internally, so this
+                [br]                     bit alone is the authoritative signature
+                [br]                     verification result. Firmware may additionally 
+                [br]                     compare MLDSA_VERIFY_RES against its own copy
+                [br]                     of c to detect fault attacks on this bit.
                 ";
 
         default sw = r;
@@ -104,6 +111,7 @@ addrmap abr_reg {
         field {hw = rw; desc = "Status valid bit";} VALID = 1'b0;
         field {desc = "The core is ready to recieve the message in streaming mode";} MSG_STREAM_READY = 1'b0;
         field {hw = rw; desc = "Status error bit";} ERROR = 1'b0;
+        field {desc = "Signature verification result.  ";} VERIFY_PASS = 1'b0;
     
     } MLDSA_STATUS;
 
@@ -170,8 +178,12 @@ addrmap abr_reg {
     reg {
         name = "MLDSA component verify result register type definition";
         desc = "16 32-bit registers storing the result of verifying operation.
-                If this register is equal to the first part of the given signature, i.e. c~,
-                the signature is verified.";
+                Hardware compares this value against the first part of the given
+                signature, i.e. c~, and reports the result in
+                MLDSA_STATUS.VERIFY_PASS. Firmware may independently compare this
+                register against its own copy of c~ as a fault-attack check on
+                MLDSA_STATUS.VERIFY_PASS. The comparison reference must be a
+                firmware-held copy of c~ for that check to be independent.";
 
         default sw = r;
         default hw = rw;

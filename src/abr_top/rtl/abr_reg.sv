@@ -2453,7 +2453,8 @@ module abr_reg (
     assign readback_array[4][1:1] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? field_storage.MLDSA_STATUS.VALID.value : '0;
     assign readback_array[4][2:2] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next : '0;
     assign readback_array[4][3:3] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? field_storage.MLDSA_STATUS.ERROR.value : '0;
-    assign readback_array[4][31:4] = '0;
+    assign readback_array[4][4:4] = (decoded_reg_strb.MLDSA_STATUS && !decoded_req_is_wr) ? hwif_in.MLDSA_STATUS.VERIFY_PASS.next : '0;
+    assign readback_array[4][31:5] = '0;
     for(genvar i0=0; i0<16; i0++) begin
         assign readback_array[i0*1 + 5][31:0] = (decoded_reg_strb.MLDSA_VERIFY_RES[i0] && !decoded_req_is_wr) ? field_storage.MLDSA_VERIFY_RES[i0].VERIFY_RES.value : '0;
     end

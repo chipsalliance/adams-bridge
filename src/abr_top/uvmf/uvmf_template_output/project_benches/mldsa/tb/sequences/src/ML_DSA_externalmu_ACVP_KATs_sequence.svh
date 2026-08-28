@@ -266,6 +266,9 @@ class ML_DSA_externalmu_ACVP_KATs_sequence extends mldsa_bench_sequence_base;
         end
       end
 
+      // Validate the explicit hardware verification result (signature is valid)
+      check_verify_pass_ref(1, hw_sig_arr);
+
       // Zeroize after verify
       data = 'h0000_0008;
       reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);

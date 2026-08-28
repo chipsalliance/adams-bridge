@@ -162,6 +162,9 @@ class ML_DSA_verif_KATs_sequence extends mldsa_bench_sequence_base;
         end
       end
 
+      // Validate the explicit hardware verification result (KAT signatures are valid)
+      check_verify_pass_ref(1, kat_SIG);
+
       
       data = 'h0000_0008; // Perform zeorization operation
       reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);

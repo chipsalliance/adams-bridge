@@ -297,6 +297,9 @@ class ML_DSA_randomized_verif_sequence extends mldsa_bench_sequence_base;
         `uvm_info("REG_READ", $sformatf("MLDSA_VERIFY_RES[%0d]: %0h", i, data), UVM_LOW);
       end
     end
+
+    // Validate the explicit hardware verification result
+    check_verify_pass(1);
     // ---------------------------------------------------------
     //              VERIFIACTION TEST IS DONE
     // ---------------------------------------------------------
