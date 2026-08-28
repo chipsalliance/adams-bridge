@@ -1598,7 +1598,13 @@ always_comb kv_mlkem_msg_write_data = '0;
   //
   // The recomputed c~ is compared against the c field of the supplied
   // signature by hardware, at the exact same cycle (and with the exact
-  // same data) that populates MLDSA_VERIFY_RES. 
+  // same data) that populates MLDSA_VERIFY_RES.
+  //
+  // The result flop is cleared when a verify is started (set_verify_valid)
+  // and when a verify is aborted early on a rejected signature
+  // (clear_verify_valid). Early-abort paths jump straight to MLDSA_VERIFY_E
+  // and never assert mldsa_verify_res_we, so the explicit clear guarantees
+  // the flag can never report the verdict of a previous verify.
   //--------------------------------------------------------------------
   always_comb mldsa_verify_res_we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);
   always_comb mldsa_verify_res_match = (sampler_state_data_i[(VERIFY_RES_NUM_DWORDS*32)-1:0] == signature_reg.enc.c);
@@ -1607,6 +1613,8 @@ always_comb kv_mlkem_msg_write_data = '0;
     if (!rst_b)
       mldsa_verify_pass_reg <= 1'b0;
     else if (zeroize)
+      mldsa_verify_pass_reg <= 1'b0;
+    else if (set_verify_valid | clear_verify_valid)
       mldsa_verify_pass_reg <= 1'b0;
     else if (mldsa_verify_res_we)
       mldsa_verify_pass_reg <= mldsa_verify_res_match;

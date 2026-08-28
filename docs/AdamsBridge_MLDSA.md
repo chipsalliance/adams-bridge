@@ -77,7 +77,7 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 
 ### ​CTRL 
 
-CTRL command field contains two bits indicating:
+CTRL command field contains three bits indicating:
 
 * ​Ctrl \= 0b000 
 
@@ -125,6 +125,7 @@ The flow must be terminated by writing to the message register after setting the
 No partial dwords are allowed before the last dword indication.
 MSG_STROBE only needs to be programmed before the stream of full dwords, and before the final dword.
 Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b0000.
+Note that MSG_STROBE resets to 4'b1111 but is cleared to 4'b0000 by ZEROIZE, so it must always be reprogrammed to 4'b1111 before streaming a message following a zeroize.
 
 ## status 
 
@@ -163,6 +164,9 @@ In Caliptra it could also indicate that pcr signing mode was enabled with a comm
 
 Explicit hardware signature verification result. Set only when a verify operation
 completed and the recomputed c\~ matched the c\~ segment of the supplied signature.
+The bit is cleared by hardware when a verify operation is started and when a verify
+is aborted early because the signature was rejected, so it reads 0 while a verify is
+in flight and never carries the verdict of a previous verify forward.
 
 ## entropy
 
@@ -196,6 +200,11 @@ Adams Bridge reports the outcome of a verify operation in two independent ways.
 compares the recomputed c\~ against the c\~ segment of the supplied signature and
 reports the Boolean outcome, so the hardware constitutes the complete signature
 verification implementation. 
+
+The bit fails safe. Hardware clears it when a verify operation starts and when a
+verify terminates early because the signature was rejected. Those early-termination
+paths never produce a c\~ comparison, so the explicit clear guarantees the bit
+cannot carry the verdict of a previous verify forward.
 
 ### MLDSA_VERIFY_RES
 

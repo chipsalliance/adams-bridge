@@ -155,7 +155,10 @@ mldsa_env_seq.start(top_configuration.vsqr);
     uvm_status_e   st;
     uvm_reg_data_t rdata;
     bit            data_match;
-    bit            hw_pass;
+    // 4-state on purpose: a 2-state 'bit' would silently coerce an X/Z read of
+    // VERIFY_PASS to 0, so every negative check (expected_pass == 0) would
+    // pass on an unknown hardware result. 'logic' lets the !== below catch it.
+    logic          hw_pass;
 
     data_match = 1;
     foreach (reg_model.MLDSA_VERIFY_RES[i]) begin
@@ -196,7 +199,8 @@ mldsa_env_seq.start(top_configuration.vsqr);
   virtual task check_verify_pass_bit(int expected_pass);
     uvm_status_e   st;
     uvm_reg_data_t rdata;
-    bit            hw_pass;
+    // 4-state on purpose - see check_verify_pass_ref() above.
+    logic          hw_pass;
 
     reg_model.MLDSA_STATUS.read(st, rdata, UVM_FRONTDOOR, reg_model.default_map, this);
     if (st != UVM_IS_OK) begin

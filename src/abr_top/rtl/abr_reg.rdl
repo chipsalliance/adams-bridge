@@ -99,7 +99,11 @@ addrmap abr_reg {
                 [br]                     VERIFY operation passed. Hardware performs
                 [br]                     the full c~ comparison internally, so this
                 [br]                     bit alone is the authoritative signature
-                [br]                     verification result. Firmware may additionally 
+                [br]                     verification result. Hardware clears it when
+                [br]                     a VERIFY starts and when a VERIFY aborts
+                [br]                     early on a rejected signature, so it never
+                [br]                     carries a previous verdict forward.
+                [br]                     Firmware may additionally
                 [br]                     compare MLDSA_VERIFY_RES against its own copy
                 [br]                     of c to detect fault attacks on this bit.
                 ";
@@ -203,7 +207,7 @@ addrmap abr_reg {
         default hw = rw;
         default we = true;
         default resetsignal = reset_b;
-        field {desc = "Input message field"; swwe = abr_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
+        field {desc = "Input externally computed mu field"; swwe = abr_ready; hwclr;} EXTERNAL_MU[32] = 32'b0;
     
     } MLDSA_EXTERNAL_MU[16];
     
