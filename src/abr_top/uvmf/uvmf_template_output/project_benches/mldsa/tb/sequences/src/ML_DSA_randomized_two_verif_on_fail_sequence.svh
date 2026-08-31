@@ -280,6 +280,9 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
         `uvm_info("REG_READ", $sformatf("MLDSA_VERIFY_RES[%0d]: %0h", i, data), UVM_LOW);
       end
     end
+
+    // Validate the explicit hardware verification result
+    check_verify_pass_bit(0);
     // ---------------------------------------------------------
     //         VERIFIACTION  FAILURE TEST IS DONE
     // ---------------------------------------------------------
@@ -361,6 +364,10 @@ class ML_DSA_randomized_two_verif_on_fail_sequence extends mldsa_bench_sequence_
         `uvm_info("REG_READ", $sformatf("MLDSA_VERIFY_RES[%0d]: %0h", i, data), UVM_LOW);
       end
     end
+
+    // Validate the explicit hardware verification result
+    // Second verification re-runs on clean stimulus and must pass
+    check_verify_pass_bit(1);
 
 
   endtask

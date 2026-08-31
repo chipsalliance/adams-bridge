@@ -580,6 +580,11 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic encaps_input_check_failure;
   logic decaps_input_check_failure;
 
+  //Explicit hardware signature verification result
+  logic mldsa_verify_res_we;
+  logic mldsa_verify_res_match;
+  logic mldsa_verify_pass_reg;
+
   //per controller enable/busy for ntt
   logic ntt_en;
   logic ntt_busy;
@@ -766,6 +771,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_STATUS.VALID.next = mldsa_valid_reg;
     abr_reg_hwif_in.MLDSA_STATUS.ERROR.next = error_flag_reg;
     abr_reg_hwif_in.MLDSA_STATUS.MSG_STREAM_READY.next = stream_msg_rdy;
+    abr_reg_hwif_in.MLDSA_STATUS.VERIFY_PASS.next = mldsa_verify_pass_reg & ~error_flag_reg;
 
     stream_msg_mode = abr_reg_hwif_out.MLDSA_CTRL.STREAM_MSG.value;
     abr_reg_hwif_in.MLDSA_CTRL.STREAM_MSG.hwclr = zeroize;
@@ -819,7 +825,7 @@ always_comb kv_mlkem_msg_write_data = '0;
     end
   
     for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | (verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID));
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | mldsa_verify_res_we;
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[dword*32 +: 32];
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
     end
@@ -1586,6 +1592,33 @@ always_comb kv_mlkem_msg_write_data = '0;
   //Jump to done if this happens, could cause x reads (or fix sigdecode to not stop early)
   always_comb clear_verify_valid = mldsa_verifying_process & ((normcheck_done_i & normcheck_invalid_i) | 
                                    (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_SIGDEC_H) & sigdecode_h_invalid_i));
+
+  //--------------------------------------------------------------------
+  // Explicit hardware signature verification result
+  //
+  // The recomputed c~ is compared against the c field of the supplied
+  // signature by hardware, at the exact same cycle (and with the exact
+  // same data) that populates MLDSA_VERIFY_RES.
+  //
+  // The result flop is cleared when a verify is started (set_verify_valid)
+  // and when a verify is aborted early on a rejected signature
+  // (clear_verify_valid). Early-abort paths jump straight to MLDSA_VERIFY_E
+  // and never assert mldsa_verify_res_we, so the explicit clear guarantees
+  // the flag can never report the verdict of a previous verify.
+  //--------------------------------------------------------------------
+  always_comb mldsa_verify_res_we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);
+  always_comb mldsa_verify_res_match = (sampler_state_data_i[(VERIFY_RES_NUM_DWORDS*32)-1:0] == signature_reg.enc.c);
+
+  always_ff @(posedge clk or negedge rst_b) begin : mldsa_verify_result
+    if (!rst_b)
+      mldsa_verify_pass_reg <= 1'b0;
+    else if (zeroize)
+      mldsa_verify_pass_reg <= 1'b0;
+    else if (set_verify_valid | clear_verify_valid)
+      mldsa_verify_pass_reg <= 1'b0;
+    else if (mldsa_verify_res_we)
+      mldsa_verify_pass_reg <= mldsa_verify_res_match;
+  end
 
   //Clear decaps valid if the compare of c fails
   always_comb clear_decaps_valid = mlkem_decaps_process & abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) &

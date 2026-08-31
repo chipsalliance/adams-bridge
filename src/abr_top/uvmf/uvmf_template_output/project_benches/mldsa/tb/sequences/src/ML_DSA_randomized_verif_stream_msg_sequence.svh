@@ -357,6 +357,9 @@ class ML_DSA_randomized_verif_stream_msg_sequence extends mldsa_bench_sequence_b
       end
     end
 
+    // Validate the explicit hardware verification result
+    check_verify_pass(1);
+
    
 
     // ---------------------------------------------------------

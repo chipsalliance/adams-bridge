@@ -127,6 +127,96 @@ mldsa_env_seq.start(top_configuration.vsqr);
   endtask
 
 
+  // ****************************************************************************
+  // Validates MLDSA_STATUS.VERIFY_PASS (bit 4), the explicit hardware
+  // signature-verification result.
+  //
+  // Two independent checks are performed:
+  //   1. HW-vs-data consistency: the pass bit must agree with a firmware-style
+  //      comparison of the returned MLDSA_VERIFY_RES data against the c portion
+  //      of the signature that was submitted (SIG[0..15]). A disagreement means
+  //      the pass bit and the returned data are out of sync, which is exactly
+  //      the fault-attack condition this feature is meant to expose.
+  //   2. Expected outcome: the pass bit must match the outcome the stimulus was
+  //      built to produce (1 for a valid signature, 0 otherwise).
+  //
+  // Pass expected_pass = 1 for a known-good signature, 0 for a corrupted one or
+  // for any non-verify operation. Leave it defaulted (-1) when the stimulus can
+  // produce either outcome; only the consistency check (1) is then performed.
+  // ****************************************************************************
+  virtual task check_verify_pass(int expected_pass = -1);
+    check_verify_pass_ref(expected_pass, SIG);
+  endtask
+
+  // Same as check_verify_pass(), but compares against a caller-supplied
+  // signature array (used by the KAT sequences, which keep the signature in
+  // their own kat_SIG* arrays rather than in SIG[]).
+  virtual task check_verify_pass_ref(int expected_pass, ref bit [31:0] sig_ref []);
+    uvm_status_e   st;
+    uvm_reg_data_t rdata;
+    bit            data_match;
+    // 4-state on purpose: a 2-state 'bit' would silently coerce an X/Z read of
+    // VERIFY_PASS to 0, so every negative check (expected_pass == 0) would
+    // pass on an unknown hardware result. 'logic' lets the !== below catch it.
+    logic          hw_pass;
+
+    data_match = 1;
+    foreach (reg_model.MLDSA_VERIFY_RES[i]) begin
+      reg_model.MLDSA_VERIFY_RES[i].read(st, rdata, UVM_FRONTDOOR, reg_model.default_map, this);
+      if (st != UVM_IS_OK) begin
+        `uvm_error("VERIFY_PASS", $sformatf("Failed to read MLDSA_VERIFY_RES[%0d]", i));
+      end
+      if (rdata[31:0] !== sig_ref[i]) begin
+        data_match = 0;
+      end
+    end
+
+    reg_model.MLDSA_STATUS.read(st, rdata, UVM_FRONTDOOR, reg_model.default_map, this);
+    if (st != UVM_IS_OK) begin
+      `uvm_error("VERIFY_PASS", "Failed to read MLDSA_STATUS");
+    end
+    hw_pass = rdata[4];
+
+    if (hw_pass !== data_match) begin
+      `uvm_error("VERIFY_PASS", $sformatf(
+        "MLDSA_STATUS.VERIFY_PASS (%0b) disagrees with MLDSA_VERIFY_RES data comparison (%0b)",
+        hw_pass, data_match));
+    end
+    if ((expected_pass >= 0) && (hw_pass !== expected_pass[0])) begin
+      `uvm_error("VERIFY_PASS", $sformatf(
+        "MLDSA_STATUS.VERIFY_PASS is %0b, expected %0b", hw_pass, expected_pass[0]));
+    end
+    else begin
+      `uvm_info("VERIFY_PASS", $sformatf("MLDSA_STATUS.VERIFY_PASS = %0b as expected", hw_pass), UVM_LOW);
+    end
+  endtask
+
+  // STATUS-only variant: checks MLDSA_STATUS.VERIFY_PASS against the expected
+  // outcome without re-reading MLDSA_VERIFY_RES. Use this in sequences whose
+  // scoreboard counts MLDSA_VERIFY_RES read transactions (for example the
+  // two-verify-on-fail flow), where extra data reads would corrupt the
+  // scoreboard's transaction bookkeeping.
+  virtual task check_verify_pass_bit(int expected_pass);
+    uvm_status_e   st;
+    uvm_reg_data_t rdata;
+    // 4-state on purpose - see check_verify_pass_ref() above.
+    logic          hw_pass;
+
+    reg_model.MLDSA_STATUS.read(st, rdata, UVM_FRONTDOOR, reg_model.default_map, this);
+    if (st != UVM_IS_OK) begin
+      `uvm_error("VERIFY_PASS", "Failed to read MLDSA_STATUS");
+    end
+    hw_pass = rdata[4];
+
+    if (hw_pass !== expected_pass[0]) begin
+      `uvm_error("VERIFY_PASS", $sformatf(
+        "MLDSA_STATUS.VERIFY_PASS is %0b, expected %0b", hw_pass, expected_pass[0]));
+    end
+    else begin
+      `uvm_info("VERIFY_PASS", $sformatf("MLDSA_STATUS.VERIFY_PASS = %0b as expected", hw_pass), UVM_LOW);
+    end
+  endtask
+
   function void read_line(int fd, int bit_length_words, ref bit [31:0] array []);
     string line;
     int words_read;

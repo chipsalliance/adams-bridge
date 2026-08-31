@@ -77,7 +77,7 @@ The ML-DSA-87 architecture inputs and outputs are described in the fol
 
 ### ​CTRL 
 
-CTRL command field contains two bits indicating:
+CTRL command field contains three bits indicating:
 
 * ​Ctrl \= 0b000 
 
@@ -125,6 +125,7 @@ The flow must be terminated by writing to the message register after setting the
 No partial dwords are allowed before the last dword indication.
 MSG_STROBE only needs to be programmed before the stream of full dwords, and before the final dword.
 Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b0000.
+Note that MSG_STROBE resets to 4'b1111 but is cleared to 4'b0000 by ZEROIZE, so it must always be reprogrammed to 4'b1111 before streaming a message following a zeroize.
 
 ## status 
 
@@ -132,7 +133,8 @@ Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b00
 
 | Bits     | Identifier | Access | Reset | Decoded | Name |
 | :------- | :--------- | :----- | :---- | :------ | :--- |
-| \[31:4\] | \-                | \-     | \-    |         | \-   |
+| \[31:5\] | \-                | \-     | \-    |         | \-   |
+| \[4\]    | VERIFY_PASS       | r      | 0x0   |         | \-   |
 | \[3\]    | ERROR             | r      | 0x0   |         | \-   |
 | \[2\]    | MSG_STREAM_READY  | r      | 0x0   |         | \-   |
 | \[1\]    | VALID             | r      | 0x0   |         | \-   |
@@ -158,6 +160,14 @@ After a completed operation, READY remains de-asserted (with VALID asserted) unt
 For ML-DSA this status bit indicates an error while decoding the secret key.
 In Caliptra it could also indicate that pcr signing mode was enabled with a command other than Keygen+Signing.
 
+### VERIFY_PASS
+
+Explicit hardware signature verification result. Set only when a verify operation
+completed and the recomputed c\~ matched the c\~ segment of the supplied signature.
+The bit is cleared by hardware when a verify operation is started and when a verify
+is aborted early because the signature was rejected, so it reads 0 while a verify is
+in flight and never carries the verdict of a previous verify forward.
+
 ## entropy
 
 Entropy is required for SCA countermeasures to randomize the inputs with no change in the outputs. The entropy can be any 512-bit value in \[0 : 2^512-1\]. 
@@ -182,9 +192,27 @@ When streaming message mode is enabled, this field is ignored except for dword 0
 
 ## verification result
 
-To mitigate a possible fault attack on Boolean flag verification result, a 64-byte register is considered. Firmware is responsible for comparing the computed result with a certain segment of signature (segment c\~), and if they are equal the signature is valid.
+Adams Bridge reports the outcome of a verify operation in two independent ways.
 
-A verification result of all 0s indicates a failed verification attempt. Firmware should reject any signature with an all 0 value for it's c segment.
+### MLDSA_STATUS.VERIFY_PASS
+
+`MLDSA_STATUS.VERIFY_PASS` is an explicit hardware pass/fail bit. Hardware itself
+compares the recomputed c\~ against the c\~ segment of the supplied signature and
+reports the Boolean outcome, so the hardware constitutes the complete signature
+verification implementation. 
+
+The bit fails safe. Hardware clears it when a verify operation starts and when a
+verify terminates early because the signature was rejected. Those early-termination
+paths never produce a c\~ comparison, so the explicit clear guarantees the bit
+cannot carry the verdict of a previous verify forward.
+
+### MLDSA_VERIFY_RES
+
+To mitigate a possible fault attack on the Boolean flag, a 64-byte
+`MLDSA_VERIFY_RES` register is also provided, holding the recomputed c\~. Firmware
+may compare this value against its own copy of the c\~ segment of the signature as
+an independent check on `VERIFY_PASS`. A disagreement between the two indicates a
+fault attack and the signature must be rejected.
 
 ## msg strobe
 
@@ -328,6 +356,7 @@ Input:
     signature          
 
 Output:
+    verify_pass
     verification_result   
 
 // Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
@@ -351,7 +380,15 @@ while (read_data == 0) {
 }
 
 // Reading the outputs
+// VERIFY_PASS is the hardware pass/fail result. It is final by the time VALID is set.
+verify_pass         = read(ADDR_STATUS).VERIFY_PASS;
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Optional fault-attack check: confirm hardware agrees with an independent
+// comparison of the recomputed c~ against the c~ segment of the signature.
+if (verify_pass != (verification_result == signature.c)) {
+    // fault detected - reject the signature
+}
 
 // Zeroize (mandatory after every completed operation)
 write(ADDR_CTRL, ZEROIZE_CMD);
@@ -361,8 +398,8 @@ while (read_data == 0) {
     read_data = read(ADDR_STATUS);
 }
 
-// Return the output (verification_result)
-return verification_result;
+// Return the outputs
+return verify_pass;
 ```
 
 ## Keygen \+ Signing 
@@ -477,6 +514,7 @@ Input:
     signature
 
 Output:
+    verify_pass
     verification_result
 
 // Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
@@ -501,7 +539,15 @@ while (read_data == 0) {
 }
 
 // Reading the outputs
+// VERIFY_PASS is the hardware pass/fail result. It is final by the time VALID is set.
+verify_pass         = read(ADDR_STATUS).VERIFY_PASS;
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Optional fault-attack check: confirm hardware agrees with an independent
+// comparison of the recomputed c~ against the c~ segment of the signature.
+if (verify_pass != (verification_result == signature.c)) {
+    // fault detected - reject the signature
+}
 
 // Zeroize (mandatory after every completed operation)
 write(ADDR_CTRL, ZEROIZE_CMD);
@@ -511,8 +557,8 @@ while (read_data == 0) {
     read_data = read(ADDR_STATUS);
 }
 
-// Return the output (verification_result)
-return verification_result;
+// Return the outputs
+return verify_pass;
 ```
 
 ## Keygen + Signing with External Mu
@@ -657,6 +703,7 @@ Input:
     msg[]           // arbitrary-length message, streamed one dword at a time
 
 Output:
+    verify_pass
     verification_result
 
 // Wait for the core to be ready (STATUS flag should be 2'b01, i.e., READY=1, VALID=0)
@@ -700,7 +747,15 @@ while (read_data == 0) {
 }
 
 // Reading the outputs
+// VERIFY_PASS is the hardware pass/fail result. It is final by the time VALID is set.
+verify_pass         = read(ADDR_STATUS).VERIFY_PASS;
 verification_result = read(ADDR_VERIFICATION_RESULT);
+
+// Optional fault-attack check: confirm hardware agrees with an independent
+// comparison of the recomputed c~ against the c~ segment of the signature.
+if (verify_pass != (verification_result == signature.c)) {
+    // fault detected - reject the signature
+}
 
 // Zeroize (mandatory after every completed operation)
 write(ADDR_CTRL, ZEROIZE_CMD);
@@ -710,8 +765,8 @@ while (read_data == 0) {
     read_data = read(ADDR_STATUS);
 }
 
-// Return the output (verification_result)
-return verification_result;
+// Return the outputs
+return verify_pass;
 ```
 
 ## Keygen + Signing with Streaming Message
