@@ -35,4 +35,6 @@ targets:
       - $COMPILE_ROOT/rtl/abr_prim_dom_and_2share.sv
       - $COMPILE_ROOT/rtl/abr_prim_buf.sv
       - $COMPILE_ROOT/rtl/abr_prim_flop.sv
+      - $COMPILE_ROOT/rtl/abr_prim_flop_en.sv
+      - $COMPILE_ROOT/rtl/abr_prim_xor2.sv
     tops: [abr_prim]

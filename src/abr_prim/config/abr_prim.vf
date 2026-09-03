@@ -16,3 +16,5 @@ ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_sparse_fsm_flop.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_dom_and_2share.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_buf.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_flop.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_flop_en.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_xor2.sv
