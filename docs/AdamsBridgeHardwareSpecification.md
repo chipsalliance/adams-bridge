@@ -89,6 +89,55 @@ Hardware behavior:
 
 For per-algorithm performance breakdowns, see the Performance and Area Results sections in [AdamsBridge\_MLDSA.md](AdamsBridge_MLDSA.md) and [AdamsBridge\_MLKEM.md](AdamsBridge_MLKEM.md).
 
+# Technology-Specific Primitive Instantiation
+
+Adams Bridge uses redundant logic to counteract Fault Injection (FI) and Side Channel Analysis (SCA). In particular, the Domain-Oriented Masking (DOM) datapath relies on primitive cells (buffers, enabled flops, XOR gates) whose logic must **not** be optimized, merged, or reordered by synthesis, otherwise the masking guarantees are broken. This logic is built from generic primitive modules that act as placeholders. Integrators must replace these generic primitives with corresponding technology-specific cells from their standard cell library so that the required constraints can be applied directly to the technology cells.
+
+The generic primitives are instantiated only through abstract prim wrappers (`abr_prim_buf`, `abr_prim_flop`, `abr_prim_flop_en`, `abr_prim_xor2`). Each wrapper selects its implementation through the [`abr_prim_module_name_macros.svh`](../src/abr_prim/rtl/abr_prim_module_name_macros.svh) mechanism, so no design or wrapper RTL needs to be edited to retarget a technology.
+
+The following generic primitives require replacement with technology-specific cells. Ensure the instance names for these replacement cells include the `u__size_only__` tag, as shown in the example below.
+
+*   `abr_prim_generic_buf`
+*   `abr_prim_generic_flop`
+*   `abr_prim_generic_flop_en`
+*   `abr_prim_generic_xor2`
+
+To integrate technology-specific replacements, define the `ABR_PRIM_MODULE_PREFIX` macro (for example on the compile command line, `+define+ABR_PRIM_MODULE_PREFIX=<tech>_prim`) and compile the technology-specific RTL in place of the generic implementation under [`src/abr_prim_generic/rtl`](../src/abr_prim_generic/rtl). When `ABR_PRIM_MODULE_PREFIX` is not defined it defaults to `abr_prim_generic`, so the default build resolves to the generic modules and is functionally unchanged. The replacement library must provide `<prefix>_buf`, `<prefix>_flop`, `<prefix>_flop_en`, and `<prefix>_xor2` with the same port lists as the generic modules. For details on how `ABR_PRIM_MODULE_PREFIX` selects between generic and technology-specific modules, see the implementation in [`abr_prim_module_name_macros.svh`](../src/abr_prim/rtl/abr_prim_module_name_macros.svh).
+
+Integrators shall follow this process to ensure that process-specific library cells are used and appropriately named, shall apply `size_only` constraints on the resulting cells tagged with the `u__size_only__` string, and shall review results from synthesis and place-and-route to ensure that these cells are not optimized away.
+
+**Example: Technology-Specific Buffer**
+
+The following example shows how to create a technology-specific wrapper for the `abr_prim_generic_buf` primitive.
+
+```sv
+// In this example:
+// - `ABR_PRIM_MODULE_PREFIX` is assumed to be `abr_prim_tech_name`.
+// - `TECH_DEPENDENT_BUF` is the name of the technology-specific buffer cell.
+// - `PORT_NAME_IN` and `PORT_NAME_OUT` are its input and output ports.
+
+module abr_prim_tech_name_buf #(
+  parameter int Width = 1
+) (
+  input  logic [Width-1:0] in_i,
+  output logic [Width-1:0] out_o
+);
+
+  for (genvar k = 0; k < Width; k++) begin : gen_bufs
+    // The instance name "u__size_only__buf" contains the required tag.
+    // Synthesis tools must be configured to apply "size_only"
+    // constraints to any instance whose name includes "u__size_only__".
+    // This naming convention should be used for all replaced primitives.
+
+    TECH_DEPENDENT_BUF u__size_only__buf (
+      .<PORT_NAME_IN>(in_i[k]),
+      .<PORT_NAME_OUT>(out_o[k])
+    );
+  end
+
+endmodule : abr_prim_tech_name_buf
+```
+
 # References:
 
 [1] The White House, "National Security Memorandum on Promoting United States Leadership in Quantum Computing While Mitigating Risks to Vulnerable Cryptographic Systems," 2022. [Online]. Available: [White House](https://www.whitehouse.gov/briefing-room/statements-releases/2022/05/04/national-security-memorandum-on-promoting-united-states-leadership-in-quantum-computing-while-mitigating-risks-to-vulnerable-cryptographic-systems/).

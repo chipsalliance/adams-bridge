@@ -630,7 +630,7 @@ generate
     logic [MsgWidth-1:0] msg_masked;
     assign msg_plain     = decomp_msg_valid ? decomp_msg_data : msg_data;
 
-    abr_prim_generic_xor2 #(
+    abr_prim_xor2 #(
       .Width(MsgWidth)
     ) msg_share_xor (
       .in0_i(msg_plain),
