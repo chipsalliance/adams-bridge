@@ -2,17 +2,19 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// This file is auto-generated.
-// Used parser: Fallback (regex)
+// Abstract prim wrapper for an enabled flop. Selects between the generic
+// implementation (default) and a technology-specific one. The generic module
+// name is resolved through the abr_prim module-name macro so it can be swapped
+// via ABR_PRIM_MODULE_PREFIX without editing this wrapper.
+
+`include "abr_prim_module_name_macros.svh"
 
 `ifndef ABR_PRIM_DEFAULT_IMPL
   `define ABR_PRIM_DEFAULT_IMPL abr_prim_pkg::ImplGeneric
 `endif
 
-// This is to prevent AscentLint warnings in the generated
-// abstract prim wrapper. These warnings occur due to the .*
-// use. TODO: we may want to move these inline waivers
-// into a separate, generated waiver file for consistency.
+// This is to prevent AscentLint warnings in the abstract prim wrapper. These
+// warnings occur due to the .* use.
 //ri lint_check_off OUTPUT_NOT_DRIVEN INPUT_NOT_READ HIER_BRANCH_NOT_READ
 module abr_prim_flop_en
 
@@ -40,7 +42,7 @@ if (Impl == abr_prim_pkg::ImplXilinx) begin : gen_xilinx
       .*
     );
 end else begin : gen_generic
-    abr_prim_generic_flop_en #(
+    `ABR_PRIM_MODULE_NAME(flop_en) #(
       .EnSecBuf(EnSecBuf),
       .ResetValue(ResetValue),
       .Width(Width)

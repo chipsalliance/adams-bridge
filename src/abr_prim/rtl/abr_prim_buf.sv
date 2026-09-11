@@ -5,6 +5,8 @@
 // This file is auto-generated.
 // Used parser: Verible
 
+`include "abr_prim_module_name_macros.svh"
+
 `ifndef ABR_PRIM_DEFAULT_IMPL
   `define ABR_PRIM_DEFAULT_IMPL abr_prim_pkg::ImplGeneric
 `endif
@@ -31,7 +33,7 @@ if (Impl == abr_prim_pkg::ImplXilinx) begin : gen_xilinx
       .*
     );
 end else begin : gen_generic
-    abr_prim_generic_buf #(
+    `ABR_PRIM_MODULE_NAME(buf) #(
       .Width(Width)
     ) u_impl_generic (
       .*

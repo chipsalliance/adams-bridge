@@ -1,7 +1,5 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
-${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_util_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_alert_pkg.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_subreg_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_mubi_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
 ${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_pkg.sv
