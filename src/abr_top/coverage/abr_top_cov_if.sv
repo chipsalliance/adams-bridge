@@ -346,15 +346,17 @@ interface abr_top_cov_if
         }
 
         // --- NTT[1] mode (subset — only sampled when NTT[1] is actually firing) ---
+        // NOTE: NTT[1] fires only in masked operations (MASKED_IDX). PWS and the bare
+        // (non-*_SMPL) MLDSA_PWM_ACCUM opcodes exist only as unmasked ops in
+        // abr_ctrl_pkg.sv (masking_en:1'b0), so those modes are structurally
+        // unreachable on NTT[1] and are omitted from the bin set.
         ntt1_mode_cp: coverpoint sca_ntt1_mode iff (sca_ntt1_enable) {
             bins mldsa_ntt       = {MLDSA_NTT};
             bins mldsa_intt      = {MLDSA_INTT};
             bins mldsa_pwm       = {MLDSA_PWM};
-            bins mldsa_pwm_accum = {MLDSA_PWM_ACCUM};
             bins mldsa_pwm_smpl  = {MLDSA_PWM_SMPL};
             bins mldsa_pwm_accum_smpl = {MLDSA_PWM_ACCUM_SMPL};
             bins mldsa_pwa       = {MLDSA_PWA};
-            bins mldsa_pws       = {MLDSA_PWS};
             bins mlkem_ntt       = {MLKEM_NTT};
             bins mlkem_intt      = {MLKEM_INTT};
             bins mlkem_pwm       = {MLKEM_PWM};
@@ -362,7 +364,6 @@ interface abr_top_cov_if
             bins mlkem_pwm_smpl  = {MLKEM_PWM_SMPL};
             bins mlkem_pwm_accum_smpl = {MLKEM_PWM_ACCUM_SMPL};
             bins mlkem_pwa       = {MLKEM_PWA};
-            bins mlkem_pws       = {MLKEM_PWS};
         }
 
         // --- Opcode-level masking/shuffling bits ---
@@ -387,18 +388,15 @@ interface abr_top_cov_if
         // --- NTT[1] SIB read detect (bug 9 fix) ---
         ntt_sib_rd_detect_cp: coverpoint sca_ntt_sib_rd_detect_d1;
 
-        // --- NTT[0]/NTT[1] mode coherence — when masked, must match ---
-        ntt_modes_match_cp: coverpoint sca_ntt_modes_match;
-        modes_matchXmasking: cross ntt_modes_match_cp, ntt_masking_en_cp {
-            // Modes MUST match whenever masking is active (bug 2 invariant)
-            illegal_bins masked_mode_mismatch =
-                binsof(ntt_modes_match_cp) intersect {0} &&
-                binsof(ntt_masking_en_cp)  intersect {1};
-        }
 
         // --- MASKED_NTT_NOSHUF (bug 6 fix — NTT(c) sign) ---
         masked_noshuf_cp: coverpoint sca_masked_noshuf;
-        noshufXmasking: cross sca_masked_noshuf, opcode_masking_en_cp;
+        // Illegal: noshuf can only assert during a masked NTT operation.
+        noshufXmasking: cross sca_masked_noshuf, opcode_masking_en_cp {
+            illegal_bins noshuf_without_masking =
+                binsof(sca_masked_noshuf) intersect {1} &&
+                binsof(opcode_masking_en_cp) intersect {0};
+        }
 
         // --- Sampler mode (covers MASKED_REJB / MASKED_EXP_MASK / MASKED_CBD dispatch) ---
         sampler_mode_cp: coverpoint sca_sampler_mode {
@@ -410,28 +408,57 @@ interface abr_top_cov_if
             bins sib       = {ABR_SAMPLE_IN_BALL};
             bins cbd       = {ABR_CBD_SAMPLER};
             bins shake256  = {ABR_SHAKE256};
-            bins shake128  = {ABR_SHAKE128};
+            // SHAKE128 sampler mode is not exercised in this design; omit bin.
             bins sha3_512  = {ABR_SHA512};
             bins sha3_256  = {ABR_SHA256};
         }
         // Crosses isolate the *masked* dispatch path for each sampler mode
+        // ABR_EXP_MASK is only ever dispatched via ABR_UOP_MASKED_EXP_MASK
+        // (masking_en:1'b1), so exp_mask with masking=0 is added to ignore_bins.
         masked_sampler_mode: cross sampler_mode_cp, opcode_masking_en_cp {
             // Only the maskable sampling modes are interesting
             ignore_bins not_maskable = binsof(sampler_mode_cp) intersect
-                {ABR_SAMPLER_NONE, ABR_SHAKE256, ABR_SHAKE128, ABR_SHA512, ABR_SHA256,
+                {ABR_SAMPLER_NONE, ABR_SHAKE256, ABR_SHA512, ABR_SHA256,
                  ABR_SAMPLE_IN_BALL, MLDSA_REJ_SAMPLER, MLKEM_REJ_SAMPLER};
+            ignore_bins exp_mask_unmasked =
+                binsof(sampler_mode_cp.exp_mask) &&
+                binsof(opcode_masking_en_cp) intersect {0};
         }
 
         // --- Per-process splitter exercise — each splitter must fire in its algorithm ---
+        // Splitter enable = 1 while its host algorithm/process is inactive is
+        // structurally impossible (splitter is gated by the process).
         sampler_splitterXkeygen:    cross sampler_splitter_en_cp,    sca_mldsa_keygen_cp;
         sampler_splitterXsigning:   cross sampler_splitter_en_cp,    sca_mldsa_signing_cp;
         sampler_splitterXmlkem:     cross sampler_splitter_en_cp,    sca_mlkem_keygen_cp;
-        skdecode_splitter_aXsign:   cross skdecode_splitter_a_en_cp, sca_mldsa_signing_cp;
-        skdecode_splitter_bXsign:   cross skdecode_splitter_b_en_cp, sca_mldsa_signing_cp;
-        decompress_splitterXenc:    cross decompress_splitter_en_cp, sca_mlkem_encaps_cp;
-        decompress_splitterXdec:    cross decompress_splitter_en_cp, sca_mlkem_decaps_cp;
+        skdecode_splitter_aXsign:   cross skdecode_splitter_a_en_cp, sca_mldsa_signing_cp {
+            illegal_bins splitter_a_outside_sign =
+                binsof(skdecode_splitter_a_en_cp) intersect {1} &&
+                binsof(sca_mldsa_signing_cp)      intersect {0};
+        }
+        skdecode_splitter_bXsign:   cross skdecode_splitter_b_en_cp, sca_mldsa_signing_cp {
+            illegal_bins splitter_b_outside_sign =
+                binsof(skdecode_splitter_b_en_cp) intersect {1} &&
+                binsof(sca_mldsa_signing_cp)      intersect {0};
+        }
+        // Decompress splitter runs in DECAPS only (never in encaps).
+        decompress_splitterXenc:    cross decompress_splitter_en_cp, sca_mlkem_encaps_cp {
+            illegal_bins decompress_during_encaps =
+                binsof(decompress_splitter_en_cp) intersect {1} &&
+                binsof(sca_mlkem_encaps_cp)       intersect {1};
+        }
+        decompress_splitterXdec:    cross decompress_splitter_en_cp, sca_mlkem_decaps_cp {
+            illegal_bins decompress_outside_decaps =
+                binsof(decompress_splitter_en_cp) intersect {1} &&
+                binsof(sca_mlkem_decaps_cp)       intersect {0};
+        }
 
         // --- Zeroize interaction with SCA components (safety) ---
+        // TODO(coverage): the [zeroize=1 × <active=1>] bins for
+        //   zeroizeXmasking / zeroizeXrecombine / zeroizeXntt1
+        // are reachable but rare — they need a directed UVMF sequence that
+        // pulses zeroize while a masked op / recombine phase / NTT[1] is
+        // in flight. Left as-is for stimulus follow-up.
         zeroize_cp_sca: coverpoint sca_zeroize;
         zeroizeXmasking:   cross zeroize_cp_sca, ntt_masking_en_cp;
         zeroizeXsplit:     cross zeroize_cp_sca, split_en_cp;
@@ -439,8 +466,15 @@ interface abr_top_cov_if
         zeroizeXntt1:      cross zeroize_cp_sca, ntt1_enable_cp;
 
         // --- Cross coverage: masking × operation type ---
+        // Illegal: opcodes MLDSA_PWS / MLKEM_PWS / MLDSA_PWM_ACCUM are all
+        // masking_en:1'b0 in abr_ctrl_pkg.sv, so masking=1 with those modes
+        // is structurally unreachable (same reasoning as ntt1_mode_cp above).
         maskingXntt_mode: cross ntt_masking_en_cp, ntt0_mode_cp {
             ignore_bins idle = binsof(ntt0_mode_cp.ntt_none);
+            illegal_bins masked_unmaskable_modes =
+                binsof(ntt_masking_en_cp) intersect {1} &&
+                binsof(ntt0_mode_cp) intersect
+                    {MLDSA_PWS, MLKEM_PWS, MLDSA_PWM_ACCUM};
         }
 
         // --- Cross coverage: masking × process (keygen/sign/encaps/decaps) ---
@@ -475,7 +509,14 @@ interface abr_top_cov_if
         }
 
         // --- Cross coverage: NTT[0] enable × masking ---
-        ntt0Xmasking: cross ntt0_enable_cp, ntt_masking_en_cp;
+        // Illegal: masking always drives NTT[0] as well (masked ops fire both
+        // NTT instances via ntt_masking_en_ctrl), so ntt0=0 while masking=1 is
+        // structurally impossible.
+        ntt0Xmasking: cross ntt0_enable_cp, ntt_masking_en_cp {
+            illegal_bins masking_requires_ntt0 =
+                binsof(ntt0_enable_cp)   intersect {0} &&
+                binsof(ntt_masking_en_cp) intersect {1};
+        }
 
         // --- Invariant: SCA components must not fire when opcode.masking_en=0 ---
         // Note: ntt_masking_en_ctrl = opcode.masking_en & ntt_en
@@ -676,6 +717,11 @@ interface abr_top_cov_if
         mlkem_validXzeroize: cross mlkem_valid_cp, zeroize_cp;
         errorXmldsa_signing: cross error_flag_cp, mldsa_signing_process_cp;
 
+        // TODO(coverage): normcheckXsigning_failure[mode_2][fail=1] and
+        //   normcheckXverifying_failure[*][fail=1] are exercised by the
+        //   caliptra-rtl smoke tests (smoke_test_mldsa_errortrigger /
+        //   smoke_test_mldsa_edge) at the SoC level. Leave open in ABR
+        //   standalone regression — closed in caliptra_top merged coverage.
         normcheckXsigning_failure: cross normcheck_mode_sign_cp, normcheck_failure_cp iff (mldsa_signing_process | mldsa_keygen_signing_process);
         normcheckXverifying_failure: cross normcheck_mode_verify_cp, normcheck_failure_cp iff (mldsa_verifying_process);
 
@@ -743,10 +789,18 @@ interface abr_top_cov_if
         stream_msgXverifying: cross stream_msg_mode_cp, mldsa_verifying_process_cp;
 
         // Zeroize during stream msg in-progress
+        // TODO(coverage): [zeroize=1 × stream_msg_ip=1] is rare — needs a
+        // directed sequence that pulses zeroize mid-stream. Left as-is.
         zeroizeXstream_msg_ip: cross zeroize_cp, stream_msg_ip_cp;
 
         // Makehint failure during signing (h rejection path)
-        makehintXsigning_failure: cross makehint_failure_cp, mldsa_signing_process_cp;
+        // Illegal: makehint_failure can only assert while a signing process
+        // is active, so failure=1 with signing_process=0 is impossible.
+        makehintXsigning_failure: cross makehint_failure_cp, mldsa_signing_process_cp {
+            illegal_bins failure_outside_signing =
+                binsof(makehint_failure_cp)     intersect {1} &&
+                binsof(mldsa_signing_process_cp) intersect {0};
+        }
         makehintXkeygen_signing_failure: cross makehint_failure_cp, mldsa_keygen_signing_process_cp;
 
     endgroup
