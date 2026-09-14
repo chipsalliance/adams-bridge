@@ -46,7 +46,11 @@ module sigdecode_h
         output logic sigdecode_h_error
     );
 
-    localparam SIG_H_NUM_DWORDS = ((MLDSA_OMEGA + MLDSA_K + 1)*8)/32;
+    // The encoded h field is (omega + k) bytes; the API exposes it as dwords, so
+    // this must be a true ceiling. The old form ((omega+k+1)*8)/32 truncates and
+    // is only coincidentally right for ML-DSA-87 (21) and ML-DSA-44 (21) - it
+    // yields 15 instead of 16 for ML-DSA-65.
+    localparam SIG_H_NUM_DWORDS = (MLDSA_OMEGA + MLDSA_K + 3)/4;
 
     // logic [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h;
     // logic [SIG_H_NUM_DWORDS-1:0][31:0] encoded_h_reg;
