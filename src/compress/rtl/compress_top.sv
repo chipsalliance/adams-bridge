@@ -125,6 +125,14 @@ module compress_top
                 d = 12;
                 compress_data = compress_data_o;
             end
+            compress4: begin
+                d = 4;
+                compress_data = {32'b0, compress_data_o[3][3:0], compress_data_o[2][3:0], compress_data_o[1][3:0],compress_data_o[0][3:0]};
+            end
+            compress10: begin
+                d = 10;
+                compress_data = {8'b0, compress_data_o[3][9:0], compress_data_o[2][9:0], compress_data_o[1][9:0],compress_data_o[0][9:0]};
+            end
             default: begin
                 d = 0;
                 compress_data = compress_data_o; // Default case
@@ -137,16 +145,16 @@ module compress_top
     //Output rate is always 32 bits (API width)
     //Depth is tune to worst case pace for 44 bit input rate
     abr_piso_multi #(
-        .NUM_MODES(4),
+        .NUM_MODES(6),
         .PISO_BUFFER_W(72),
         .PISO_ACT_INPUT_RATE(48),
         .PISO_ACT_OUTPUT_RATE(32),
         `ifdef VERILATOR
-        .INPUT_RATES('{4, 20, 44, 48, 0}),
-        .OUTPUT_RATES('{32, 32, 32, 32, 0})
+        .INPUT_RATES('{4, 20, 44, 48, 16, 40, 0}),
+        .OUTPUT_RATES('{32, 32, 32, 32, 32, 32, 0})
         `else
-        .INPUT_RATES('{4, 20, 44, 48}),
-        .OUTPUT_RATES('{32, 32, 32, 32})
+        .INPUT_RATES('{4, 20, 44, 48, 16, 40}),
+        .OUTPUT_RATES('{32, 32, 32, 32, 32, 32})
         `endif
     ) abr_piso_inst (
         .clk(clk),

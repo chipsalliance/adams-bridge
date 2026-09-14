@@ -37,9 +37,11 @@ module compress
     
     always_comb begin
         unique case(mode)
-            0: d = 1;
-            1: d = 5;
-            2: d = 11;
+            compress1:  d = 1;
+            compress5:  d = 5;
+            compress11: d = 11;
+            compress4:  d = 4;
+            compress10: d = 10;
             default: d = 1;
         endcase
     end
@@ -47,7 +49,7 @@ module compress
     always_comb data_lsh_d = (2*MLKEM_Q_WIDTH)'(op_i << d);
     always_comb lsh_plus_halfq = data_lsh_d + HALF_Q;
 
-    always_comb op_o = (mode == 3) ? op_i : red_o; // No compression, just pass through if mode == 3
+    always_comb op_o = (mode == compress12) ? op_i : red_o; // No compression, just pass through
 
     barrett_reduction #(
         .prime(MLKEM_Q)

@@ -35,13 +35,15 @@ module decompress
             DECOMPRESS1:  d = 1;
             DECOMPRESS5:  d = 5;
             DECOMPRESS11: d = 11;
+            DECOMPRESS4:  d = 4;
+            DECOMPRESS10: d = 10;
             default: d = 1;
         endcase
     end
     
     always_comb op = (op_i < MLKEM_Q) ? op_i : '0; // Sanitize input to be in range [0, q-1]
     always_comb op_mult_add = (MLKEM_Q * op_i) + 2**(d - 1);
-    always_comb op_o = (mode == 3) ? op :  MLKEM_Q_WIDTH'(op_mult_add >> d);
+    always_comb op_o = (mode == DECOMPRESS12) ? op :  MLKEM_Q_WIDTH'(op_mult_add >> d);
 
 
 endmodule

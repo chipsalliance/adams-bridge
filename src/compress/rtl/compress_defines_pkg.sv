@@ -26,12 +26,16 @@ package compress_defines_pkg;
     typedef enum logic {CMP_RD_IDLE, CMP_RD_MEM} cmp_read_state_e;
     typedef enum logic {CMP_WR_IDLE, CMP_WR_MEM} cmp_write_state_e;
 
+    // Encodings 0..3 are the ML-KEM-1024 set and MUST keep their values.
+    // Encodings 4..5 add the d_v=4 / d_u=10 rates used by ML-KEM-512 and -768.
     localparam compress1 = 'h0,
                compress5 = 'h1,
                compress11 = 'h2,
-               compress12 = 'h3;
+               compress12 = 'h3,
+               compress4 = 'h4,
+               compress10 = 'h5;
 
-    typedef logic [1:0] compress_mode_t;
+    typedef logic [2:0] compress_mode_t;
 endpackage
 
 `endif

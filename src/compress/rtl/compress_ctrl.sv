@@ -62,6 +62,14 @@ module compress_ctrl
             compress12: begin
                 mem_rd_pace_init = 12'b011011011011;
             end
+            compress4: begin
+                // 16 bit input rate < 32 bit output rate, no throttling needed
+                mem_rd_pace_init = '1;
+            end
+            compress10: begin
+                // 8 of every 10 reads (32/40), evenly spread
+                mem_rd_pace_init = 12'b000111101111;
+            end
             default: begin
                 mem_rd_pace_init = '0;
             end
@@ -79,6 +87,8 @@ module compress_ctrl
             mem_rd_pace <= {mem_rd_pace[0], mem_rd_pace[11:1]};
         else if ((read_fsm_state_ps == CMP_RD_MEM) && (mode == compress11))
             mem_rd_pace <= {1'b0, mem_rd_pace[0], mem_rd_pace[10:1]};
+        else if ((read_fsm_state_ps == CMP_RD_MEM) && (mode == compress10))
+            mem_rd_pace <= {2'b0, mem_rd_pace[0], mem_rd_pace[9:1]};
     end
 
     //Read addr counter

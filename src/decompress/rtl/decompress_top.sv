@@ -89,16 +89,16 @@ module decompress_top
     //Worst case is 3 writes and 2 reads at 44 bit read pace
     //Buffer size needs to be 104 bits to accomodate that
     abr_piso_multi #(
-        .NUM_MODES(4),
+        .NUM_MODES(6),
         .PISO_BUFFER_W(104),
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
         `ifdef VERILATOR
-        .INPUT_RATES('{64, 64, 64, 64, 0}),
-        .OUTPUT_RATES('{4, 20, 44, 48, 0})
+        .INPUT_RATES('{64, 64, 64, 64, 64, 64, 0}),
+        .OUTPUT_RATES('{4, 20, 44, 48, 16, 40, 0})
         `else
-        .INPUT_RATES('{64, 64, 64, 64}),
-        .OUTPUT_RATES('{4, 20, 44, 48})
+        .INPUT_RATES('{64, 64, 64, 64, 64, 64}),
+        .OUTPUT_RATES('{4, 20, 44, 48, 16, 40})
         `endif
     ) abr_piso_inst (
         .clk(clk),
@@ -129,6 +129,12 @@ module decompress_top
                 DECOMPRESS12: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*12 +: 12]);
                 end
+                DECOMPRESS4: begin
+                    decompress_data_i[i] = 12'(piso_data_o[i*4 +: 4]);
+                end
+                DECOMPRESS10: begin
+                    decompress_data_i[i] = 12'(piso_data_o[i*10 +: 10]);
+                end
                 default: begin
                     decompress_data_i[i] = 12'(piso_data_o[i*12 +: 12]); // Default case
                 end
@@ -152,6 +158,14 @@ module decompress_top
             end
             DECOMPRESS12: begin
                 mem_rd_pace_init = 16'b0111011101110111;
+            end
+            DECOMPRESS4: begin
+                // 4 of every 16 (16/64), evenly spread
+                mem_rd_pace_init = 16'b0001000100010001;
+            end
+            DECOMPRESS10: begin
+                // 10 of every 16 (40/64), evenly spread
+                mem_rd_pace_init = 16'b0101101101011011;
             end
             default: begin
                 mem_rd_pace_init = '0;
@@ -215,6 +229,8 @@ module decompress_top
             DECOMPRESS5: d = 5;
             DECOMPRESS11: d = 11;
             DECOMPRESS12: d = 12;
+            DECOMPRESS4:  d = 4;
+            DECOMPRESS10: d = 10;
             default: d = 12; // Default case
         endcase
     end

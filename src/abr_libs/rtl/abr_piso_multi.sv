@@ -53,10 +53,17 @@ module abr_piso_multi #(
   logic buffer_wr, buffer_rd;
   logic update_buffer;
 
+  // When NUM_MODES is not a power of two the mode port spans more encodings
+  // than there are modes (e.g. NUM_MODES=6 -> 3 bits -> codes 6,7 unused).
+  // Clamp before indexing so an out-of-range code cannot index past the rate
+  // arrays. Folds away entirely when NUM_MODES is a power of two.
+  logic [$clog2(NUM_MODES)-1:0] mode_safe;
+  always_comb mode_safe = (32'(mode) < NUM_MODES) ? mode : '0;
+
   // Select input/output rates based on mode
   always_comb begin
-    current_input_rate  = INPUT_RATES[mode][PISO_PTR_W-1:0];
-    current_output_rate = OUTPUT_RATES[mode][PISO_PTR_W-1:0];
+    current_input_rate  = INPUT_RATES[mode_safe][PISO_PTR_W-1:0];
+    current_output_rate = OUTPUT_RATES[mode_safe][PISO_PTR_W-1:0];
   end
 
   // Flow control
