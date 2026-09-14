@@ -17,7 +17,8 @@
 module cbd_sampler
   import abr_params_pkg::*;
   #(
-   localparam CBD_SAMPLE_W = 2*MLKEM_ETA
+   parameter  CBD_ETA      = MLKEM_ETA
+  ,localparam CBD_SAMPLE_W = 2*CBD_ETA
   )
   (
   //input data
@@ -29,8 +30,8 @@ module cbd_sampler
   );
 
   logic [CBD_SAMPLE_W-1:0] a;
-  logic [MLKEM_ETA-1:0] b;
-  logic [MLKEM_ETA-1:0] c;
+  logic [CBD_ETA-1:0] b;
+  logic [CBD_ETA-1:0] c;
 
   assign a = data_i;
 
@@ -39,9 +40,9 @@ module cbd_sampler
     //Perform x - y
     b = 0;
     c = 0;
-    for (int i = 0; i < MLKEM_ETA; i++) begin
+    for (int i = 0; i < CBD_ETA; i++) begin
       b += a[i];
-      c += a[i+MLKEM_ETA];
+      c += a[i+CBD_ETA];
     end
     data_o  = b - c; 
   end

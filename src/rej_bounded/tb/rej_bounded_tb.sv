@@ -143,6 +143,7 @@ module rej_bounded_tb
   .clk(clk_i),
   .rst_b(rst_ni),
   .zeroize(zeroize), 
+  .eta4_i(1'b0),
   //input data
   .data_valid_i(piso_valid),
   .data_hold_o(piso_hold),

@@ -54,13 +54,19 @@ module cbd_sampler_ctrl
  
   //No rejection, so data is valid when we have valid input data
   always_comb data_valid_o = data_valid_i & ~zeroize;
-  //CBD buffer value selects between 5 possible outputs (x - y mod q)
+  //CBD sample is (x - y) in 3-bit two's complement, mapped to a coefficient mod q.
+  //  eta2 = 2 (all sets):      x - y in [-2,2] -> encodings {0,1,2,6,7}
+  //  eta1 = 3 (ML-KEM-512):    x - y in [-3,3] -> additionally {3,5}
+  //The eta1=3 arms are unreachable when eta=2, so this is behaviourally
+  //identical for the existing parameter sets.
   always_comb begin
     for (int sample = 0; sample < CBD_VLD_SAMPLES; sample++) begin
       unique case (sample_data[sample])
         3'd0 : data_o[sample] = 0;
         3'd1 : data_o[sample] = 1;
         3'd2 : data_o[sample] = 2;
+        3'd3 : data_o[sample] = ABR_NEED_CBD3 ? 3            : '0;
+        3'd5 : data_o[sample] = ABR_NEED_CBD3 ? MLKEM_Q-3    : '0;
         3'd7 : data_o[sample] = MLKEM_Q-1;
         3'd6 : data_o[sample] = MLKEM_Q-2;
         default : data_o[sample] = '0;

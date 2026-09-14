@@ -10,6 +10,7 @@ targets:
     files:
       - $COMPILE_ROOT/rtl/rej_bounded_ctrl.sv
       - $COMPILE_ROOT/rtl/rej_bounded2.sv
+      - $COMPILE_ROOT/rtl/rej_bounded4.sv
     tops: [rej_bounded_ctrl]
 ---
 provides: [rej_bounded_tb]

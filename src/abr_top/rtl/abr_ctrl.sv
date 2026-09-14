@@ -60,6 +60,8 @@ module abr_ctrl
 
   //sampler interface
   output abr_sampler_mode_e          sampler_mode_o,
+  //Active ML-DSA parameter set uses eta=4 (ML-DSA-65 only). Public signal.
+  output logic                       mldsa_eta4_o,
   output logic                       sha3_start_o,
   output logic                       sha3_masked_o,
   output logic                       msg_start_o,
@@ -551,6 +553,8 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   logic abr_seq_en;
   logic [ABR_PROG_ADDR_W-1 : 0] abr_prog_cntr, abr_prog_cntr_nxt;
+  mldsa_param_set_e mldsa_param_set;
+  logic [3:0] mldsa_l;
   abr_seq_instr_t abr_instr_o, abr_instr;
 
   logic msg_done;
@@ -1511,7 +1515,8 @@ always_comb kv_mlkem_msg_write_data = '0;
       kappa_reg <= '0;
     end
     else if (update_kappa) begin
-      kappa_reg <= kappa_reg + 7;
+      //kappa advances by l masks per signing attempt (7 for ML-DSA-87)
+      kappa_reg <= kappa_reg + 16'(mldsa_l);
     end
   end
   
@@ -1844,6 +1849,12 @@ end
   end
 
 //Controller abr_instr decode - drives sampler and primary ntt
+  //Active ML-DSA parameter set. Latched at command start in Phase 5; fixed at
+  //the category-5 set today so the existing datapath is bit-identical.
+  always_comb mldsa_param_set = MLDSA_PARAM_87;
+  always_comb mldsa_l         = 4'(mldsa_l_of(mldsa_param_set));
+  always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
+
   always_comb begin
     sampler_mode_o = ABR_SAMPLER_NONE;
     if (abr_instr.opcode.sampler_en) begin
@@ -1874,11 +1885,11 @@ end
 
   always_comb normcheck_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? abr_instr.imm[1:0] : '0;
   always_comb decompose_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_USEHINT);
-  always_comb compress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[1:0] : '0;
+  always_comb compress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[2:0] : '0;
   always_comb compress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[10:8] : '0;
   always_comb compress_compare_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) & 
                                         ((abr_instr.imm[4] & mlkem_encaps_process) | (abr_instr.imm[5] & mlkem_decaps_process)); 
-  always_comb decompress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[1:0] : '0;
+  always_comb decompress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[2:0] : '0;
   always_comb decompress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[10:8] : '0;
   
 //Message streaming mode

@@ -32,6 +32,8 @@ module abr_sampler_top
 
   //input
   input abr_sampler_mode_e sampler_mode_i,
+  //eta=4 select for ML-DSA-65 rejection bounded sampling. Public.
+  input logic              mldsa_eta4_i,
 
   input logic                    sha3_start_i,
   input logic                    sha3_masked_i,
@@ -632,6 +634,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .clk(clk),
     .rst_b(rst_b),
     .zeroize(zeroize_rejb), 
+    .eta4_i(mldsa_eta4_i),
     //input data
     .data_valid_i(rejb_piso_dv),
     .data_hold_o(rejb_piso_hold),
