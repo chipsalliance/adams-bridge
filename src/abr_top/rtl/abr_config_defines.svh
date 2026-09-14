@@ -19,6 +19,25 @@
    // `define RV_FPGA_OPTIMIZE
    // `define RV_FPGA_SCA
 
+  //-------------------------------------------------------------------------
+  // Supported parameter sets
+  //
+  // Comment out any parameter set the integration does not require. The
+  // arithmetic that is unique to that set is then not elaborated and costs
+  // no area. At least one set per family must remain enabled.
+  //
+  // Caliptra requires MLDSA_87 and MLKEM_1024. Commenting out the other four
+  // leaves the category-5 datapath logically identical to the unmodified
+  // design (see abr_params_pkg for the derived maxima and class-C guards).
+  //-------------------------------------------------------------------------
+  `define ABR_MLDSA_44_ENABLED
+  `define ABR_MLDSA_65_ENABLED
+  `define ABR_MLDSA_87_ENABLED
+
+  `define ABR_MLKEM_512_ENABLED
+  `define ABR_MLKEM_768_ENABLED
+  `define ABR_MLKEM_1024_ENABLED
+
   `define ABR_ICG           abr_clk_gate
 
   `define ABR_MEM(_depth, _width, _mem_name, _latency) \

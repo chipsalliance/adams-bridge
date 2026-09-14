@@ -23,7 +23,141 @@
 `ifndef ABR_PARAMS_PKG
 `define ABR_PARAMS_PKG
 
+`include "abr_config_defines.svh"
+
 package abr_params_pkg;
+
+  //----------------------------------------------------------------
+  // Supported parameter sets
+  //
+  // Driven by the `define switches in abr_config_defines.svh. These
+  // decide what is *built*; the active set within the enabled ones is
+  // selected at runtime via the PARAM_SET register field.
+  //----------------------------------------------------------------
+  `ifdef ABR_MLDSA_44_ENABLED
+  parameter bit MLDSA_44_EN   = 1'b1;
+  `else
+  parameter bit MLDSA_44_EN   = 1'b0;
+  `endif
+  `ifdef ABR_MLDSA_65_ENABLED
+  parameter bit MLDSA_65_EN   = 1'b1;
+  `else
+  parameter bit MLDSA_65_EN   = 1'b0;
+  `endif
+  `ifdef ABR_MLDSA_87_ENABLED
+  parameter bit MLDSA_87_EN   = 1'b1;
+  `else
+  parameter bit MLDSA_87_EN   = 1'b0;
+  `endif
+
+  `ifdef ABR_MLKEM_512_ENABLED
+  parameter bit MLKEM_512_EN  = 1'b1;
+  `else
+  parameter bit MLKEM_512_EN  = 1'b0;
+  `endif
+  `ifdef ABR_MLKEM_768_ENABLED
+  parameter bit MLKEM_768_EN  = 1'b1;
+  `else
+  parameter bit MLKEM_768_EN  = 1'b0;
+  `endif
+  `ifdef ABR_MLKEM_1024_ENABLED
+  parameter bit MLKEM_1024_EN = 1'b1;
+  `else
+  parameter bit MLKEM_1024_EN = 1'b0;
+  `endif
+
+  //Runtime parameter set encodings. RSVD must be rejected by abr_ctrl.
+  typedef enum logic [1:0] {
+    MLDSA_PARAM_44   = 2'b00,
+    MLDSA_PARAM_65   = 2'b01,
+    MLDSA_PARAM_87   = 2'b10,
+    MLDSA_PARAM_RSVD = 2'b11
+  } mldsa_param_set_e;
+
+  typedef enum logic [1:0] {
+    MLKEM_PARAM_512  = 2'b00,
+    MLKEM_PARAM_768  = 2'b01,
+    MLKEM_PARAM_1024 = 2'b10,
+    MLKEM_PARAM_RSVD = 2'b11
+  } mlkem_param_set_e;
+
+  //Per-set dimensions (FIPS 204 Table 1 / FIPS 203 Table 2)
+  function automatic int mldsa_k_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_k_of = 4;
+      MLDSA_PARAM_65: mldsa_k_of = 6;
+      default       : mldsa_k_of = 8;
+    endcase
+  endfunction
+
+  function automatic int mldsa_l_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_l_of = 4;
+      MLDSA_PARAM_65: mldsa_l_of = 5;
+      default       : mldsa_l_of = 7;
+    endcase
+  endfunction
+
+  function automatic int mldsa_eta_of(mldsa_param_set_e s);
+    //ML-DSA-65 is the only set with eta = 4
+    mldsa_eta_of = (s == MLDSA_PARAM_65) ? 4 : 2;
+  endfunction
+
+  function automatic int mldsa_tau_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_tau_of = 39;
+      MLDSA_PARAM_65: mldsa_tau_of = 49;
+      default       : mldsa_tau_of = 60;
+    endcase
+  endfunction
+
+  function automatic int mldsa_omega_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_omega_of = 80;
+      MLDSA_PARAM_65: mldsa_omega_of = 55;
+      default       : mldsa_omega_of = 75;
+    endcase
+  endfunction
+
+  //lambda in bits; c~ occupies 2*lambda bits = lambda/4 bytes
+  function automatic int mldsa_lambda_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_lambda_of = 128;
+      MLDSA_PARAM_65: mldsa_lambda_of = 192;
+      default       : mldsa_lambda_of = 256;
+    endcase
+  endfunction
+
+  //log2(gamma1): 17 for ML-DSA-44, 19 otherwise
+  function automatic int mldsa_gamma1_w_of(mldsa_param_set_e s);
+    mldsa_gamma1_w_of = (s == MLDSA_PARAM_44) ? 17 : 19;
+  endfunction
+
+  //gamma2 divisor: (q-1)/88 for ML-DSA-44, (q-1)/32 otherwise
+  function automatic int mldsa_gamma2_div_of(mldsa_param_set_e s);
+    mldsa_gamma2_div_of = (s == MLDSA_PARAM_44) ? 88 : 32;
+  endfunction
+
+  function automatic int mlkem_k_of(mlkem_param_set_e s);
+    case (s)
+      MLKEM_PARAM_512 : mlkem_k_of = 2;
+      MLKEM_PARAM_768 : mlkem_k_of = 3;
+      default         : mlkem_k_of = 4;
+    endcase
+  endfunction
+
+  //eta1: 3 for ML-KEM-512, 2 otherwise. eta2 is always 2.
+  function automatic int mlkem_eta1_of(mlkem_param_set_e s);
+    mlkem_eta1_of = (s == MLKEM_PARAM_512) ? 3 : 2;
+  endfunction
+
+  function automatic int mlkem_du_of(mlkem_param_set_e s);
+    mlkem_du_of = (s == MLKEM_PARAM_1024) ? 11 : 10;
+  endfunction
+
+  function automatic int mlkem_dv_of(mlkem_param_set_e s);
+    mlkem_dv_of = (s == MLKEM_PARAM_1024) ? 5 : 4;
+  endfunction
 
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
@@ -33,10 +167,18 @@ package abr_params_pkg;
   parameter REG_SIZE = 24;
   parameter MLDSA_N = 256;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
-  parameter MLDSA_K = 8;
+  //Largest k/l over the ENABLED parameter sets. All storage is sized by these,
+  //so a lower set is a strict prefix and costs no extra memory.
+  parameter MLDSA_K = MLDSA_87_EN ? 8 : MLDSA_65_EN ? 6 : 4;
+  //Named _MAX to avoid colliding with the module-local MLDSA_L parameters in
+  //sig{en,de}code_z_defines_pkg, which are wildcard-imported alongside this pkg.
+  parameter MLDSA_L_MAX = MLDSA_87_EN ? 7 : MLDSA_65_EN ? 5 : 4;
   parameter MLDSA_D = 13;
   parameter MLDSA_ETA = 2;
   parameter MLDSA_ETA_W = 3;
+  //Widest eta over the enabled sets: bitlen(2*eta) = 3 for eta=2, 4 for eta=4
+  parameter MLDSA_ETA_MAX = MLDSA_65_EN ? 4 : 2;
+  parameter MLDSA_ETA_W_MAX = MLDSA_65_EN ? 4 : 3;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
 
   parameter MLKEM_NTT_N = 128;
@@ -45,8 +187,20 @@ package abr_params_pkg;
   parameter MLKEM_Q = 12'd3329;
   parameter MLKEM_Q_WIDTH = $clog2(MLKEM_Q); //12
   parameter MLKEM_N = 256;
-  parameter MLKEM_K = 4;
+  parameter MLKEM_K = MLKEM_1024_EN ? 4 : MLKEM_768_EN ? 3 : 2;
   parameter MLKEM_ETA = 2;
+  //eta1 = 3 only for ML-KEM-512; eta2 is always 2
+  parameter MLKEM_ETA1_MAX = MLKEM_512_EN ? 3 : 2;
+
+  //----------------------------------------------------------------
+  // Class-C guards: arithmetic that exists ONLY for a given set.
+  // Each maps to exactly one enable flag, so area is attributable.
+  //----------------------------------------------------------------
+  parameter bit ABR_NEED_ETA4      = MLDSA_65_EN;                 //rej_bounded4
+  parameter bit ABR_NEED_GAMMA2_88 = MLDSA_44_EN;                 //decompose 88-way
+  parameter bit ABR_NEED_GAMMA1_17 = MLDSA_44_EN;                 //exp_mask 2^17
+  parameter bit ABR_NEED_CBD3      = MLKEM_512_EN;                //cbd_sampler eta1=3
+  parameter bit ABR_NEED_DUDV_10_4 = MLKEM_512_EN | MLKEM_768_EN; //compress {16,40}
 
   parameter COEFF_PER_CLK = 4;
 
@@ -70,7 +224,15 @@ package abr_params_pkg;
   parameter ABR_MEM_INST2_DATA_W = ABR_MEM_DATA_WIDTH;
   parameter ABR_MEM_W1_DEPTH = 512;
   parameter ABR_MEM_W1_ADDR_W = $clog2(ABR_MEM_W1_DEPTH);
+  // w1 memory holds the MakeHint boolean (z != z') for 4 coefficients per word,
+  // one bit each. It is independent of gamma2 and must stay 4 for every set.
   parameter ABR_MEM_W1_DATA_W = 4;
+  // Bit width of a single encoded w1 coefficient. m = (q-1)/(2*gamma2) is 16 for
+  // ML-DSA-65/87 (4 bits) and 44 for ML-DSA-44 (6 bits).
+  parameter MLDSA_W1_COEFF_W   = ABR_NEED_GAMMA2_88 ? 6 : 4;
+  // omega is NOT monotonic in the security level (44:80, 65:55, 87:75), so the
+  // hint-array widths must be sized to the max over the ENABLED sets.
+  parameter int MLDSA_OMEGA_MAX = MLDSA_44_EN ? 80 : (MLDSA_87_EN ? 75 : 55);
   
   parameter ABR_MEM_MAX_DEPTH = ABR_MEM_INST2_DEPTH;
   parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
