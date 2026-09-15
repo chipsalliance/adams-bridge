@@ -26,6 +26,8 @@ module exp_mask_ctrl
   input logic rst_b,
   input logic zeroize,
   //input data
+  //Selects gamma1 = 2^17 (ML-DSA-44). Public control, never secret.
+  input  logic                                          gamma1_17_i,
   input  logic                                          data_valid_i,
   output logic                                          data_hold_o,
   input  logic [EXP_NUM_SAMPLERS-1:0][EXP_SAMPLE_W-1:0] data_i,
@@ -45,6 +47,7 @@ module exp_mask_ctrl
         .EXP_SAMPLE_W(EXP_SAMPLE_W),
         .EXP_VLD_SAMPLE_W(EXP_VLD_SAMPLE_W)
       ) exp_mask_i (
+        .gamma1_17_i(gamma1_17_i),
         .data_i(data_i[inst_g]),
         .data_o(data_o[inst_g])
       );

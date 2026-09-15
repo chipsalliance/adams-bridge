@@ -34,6 +34,7 @@ module abr_sampler_top
   input abr_sampler_mode_e sampler_mode_i,
   //eta=4 select for ML-DSA-65 rejection bounded sampling. Public.
   input logic              mldsa_eta4_i,
+  input logic              gamma1_17_i,
 
   input logic                    sha3_start_i,
   input logic                    sha3_masked_i,
@@ -269,7 +270,7 @@ module abr_sampler_top
         zeroize_exp_mask |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = ABR_EXP_MODE;
+        piso_mode = gamma1_17_i ? ABR_EXP17_MODE : ABR_EXP_MODE;
       end
       ABR_REJ_BOUNDED: begin
         mode = abr_sha3_pkg::Shake;
@@ -473,12 +474,12 @@ endgenerate
 
   //Multi-rate piso
   abr_piso_multi #(
-    .NUM_MODES(5),
+    .NUM_MODES(6),
     .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
     .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
     .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
-    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
-    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE})
+    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE}),
+    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17})
   ) abr_piso_inst (
     .clk(clk),
     .rst_b(rst_b),
@@ -550,7 +551,18 @@ endgenerate
 
   always_comb rejs_piso_data = piso_data[REJS_PISO_OUTPUT_RATE-1:0];
   always_comb rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
-  always_comb exp_piso_data = piso_data[EXP_PISO_OUTPUT_RATE-1:0];
+  //ML-DSA-44 delivers 18-bit samples; zero-extend into the 20-bit lanes so the
+  //downstream exp_mask instances keep a single width.
+  always_comb begin
+    if (ABR_NEED_GAMMA1_17 & gamma1_17_i) begin
+      for (int i = 0; i < EXP_NUM_SAMPLERS; i++)
+        exp_piso_data[i] = EXP_SAMPLE_W'(piso_data[(i*EXP_SAMPLE_W_17) +: EXP_SAMPLE_W_17]);
+    end
+    else begin
+      for (int i = 0; i < EXP_NUM_SAMPLERS; i++)
+        exp_piso_data[i] = piso_data[(i*EXP_SAMPLE_W) +: EXP_SAMPLE_W];
+    end
+  end
   always_comb sib_piso_data = piso_data[SIB_PISO_OUTPUT_RATE-1:0];
   always_comb cbd_piso_data = piso_data[CBD_PISO_OUTPUT_RATE-1:0];
 
@@ -654,7 +666,8 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   ) exp_mask_inst (
     .clk(clk),
     .rst_b(rst_b),
-    .zeroize(zeroize_exp_mask), 
+    .zeroize(zeroize_exp_mask),
+    .gamma1_17_i(gamma1_17_i), 
     //input data
     .data_valid_i(exp_piso_dv),
     .data_hold_o(exp_piso_hold),

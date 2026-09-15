@@ -69,6 +69,10 @@ package abr_sampler_pkg;
   parameter EXP_PISO_BUFFER_W    = 1152;
   parameter EXP_PISO_INPUT_RATE  = 1088;
   parameter EXP_PISO_OUTPUT_RATE = EXP_NUM_SAMPLERS*EXP_SAMPLE_W;
+  //ML-DSA-44 uses gamma1 = 2^17, so ExpandMask consumes 18 bits per coefficient
+  //instead of 20 (FIPS 204 Alg. 34, bitlen(2*gamma1-1)).
+  parameter EXP_SAMPLE_W_17         = 18;
+  parameter EXP_PISO_OUTPUT_RATE_17 = EXP_NUM_SAMPLERS*EXP_SAMPLE_W_17;
 
 //Sample In Ball
   parameter SIB_NUM_SAMPLERS     = 4;
@@ -101,7 +105,8 @@ package abr_sampler_pkg;
     ABR_REJB_MODE,
     ABR_EXP_MODE,
     ABR_SIB_MODE,
-    ABR_CBD_MODE
+    ABR_CBD_MODE,
+    ABR_EXP17_MODE
   } abr_piso_mode_e;
 
   //common structures

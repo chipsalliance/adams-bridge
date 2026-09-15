@@ -22,6 +22,9 @@ module exp_mask
    ,parameter EXP_VLD_SAMPLE_W = 23
   )
   (
+  //Selects gamma1 = 2^17 (ML-DSA-44) instead of 2^19. Public control, never secret.
+  input  logic gamma1_17_i,
+
   //input data
   input  logic [EXP_SAMPLE_W-1:0] data_i,
 
@@ -33,8 +36,11 @@ module exp_mask
   logic [22:0] r0, r1;
   logic c0, c1;
 
-  //compute 2^19 - a
-  always_comb {c0,r0} = (24'd1 << 19) - data_i;
+  //compute gamma1 - a. gamma1 is 2^19 for ML-DSA-65/87 and 2^17 for ML-DSA-44
+  //(FIPS 204 Alg. 34, ExpandMask).
+  logic [23:0] gamma1;
+  always_comb gamma1 = (ABR_NEED_GAMMA1_17 & gamma1_17_i) ? (24'd1 << 17) : (24'd1 << 19);
+  always_comb {c0,r0} = gamma1 - data_i;
   //compute potential % q value
   always_comb {c1,r1} = r0 + MLDSA_Q;
   //determine if we can take 2^19-a or need to take + q value

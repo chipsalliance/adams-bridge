@@ -137,6 +137,7 @@ module exp_mask_tb
   //input data
   .data_valid_i(piso_valid),
   .data_hold_o(piso_hold),
+  .gamma1_17_i(1'b0),
   .data_i(piso_data),
 
   //output data

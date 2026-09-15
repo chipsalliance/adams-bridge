@@ -96,6 +96,7 @@ module abr_top
   abr_sampler_mode_e         sampler_mode;
   logic                      mldsa_eta4;
   logic                      mldsa_gamma2_88;
+  logic                      mldsa_gamma1_17;
   logic                      sha3_start;
   logic                      sha3_masked;
   logic                      msg_start;
@@ -487,6 +488,7 @@ abr_ctrl_inst
   .sampler_mode_o(sampler_mode),
   .mldsa_eta4_o(mldsa_eta4),
   .mldsa_gamma2_88_o(mldsa_gamma2_88),
+  .mldsa_gamma1_17_o(mldsa_gamma1_17),
   .sha3_start_o(sha3_start), //start the sha3 engine
   .sha3_masked_o(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_o(msg_start), //start a new message
@@ -662,6 +664,7 @@ sampler_top_inst
 
   .sampler_mode_i(sampler_mode),
   .mldsa_eta4_i(mldsa_eta4),
+  .gamma1_17_i(mldsa_gamma1_17),
   .sha3_start_i(sha3_start), //start the sha3 engine
   .sha3_masked_i(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_i(msg_start), //start a new message
