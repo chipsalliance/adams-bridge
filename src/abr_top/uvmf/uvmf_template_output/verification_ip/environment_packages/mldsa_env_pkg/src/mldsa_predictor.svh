@@ -120,6 +120,20 @@ class mldsa_predictor #(
     end
     `uvm_info("PREDICTOR", $sformatf("DILITHIUM_COMMAND to be used: %s", dilithium_command), UVM_LOW)
 
+    // The reference binary name encodes the ML-DSA parameter set, so the key and
+    // signature buffer sizes are derived from it rather than a separate knob.
+    // Sizes are FIPS 204 Table 2, rounded up to whole dwords.
+    if (dilithium_command.len() > 14 && dilithium_command.substr(0,13) == "test_dilithium") begin
+      case (dilithium_command.substr(14,14))
+        "2": begin SK = new[640];  PK = new[328]; SIG = new[605];  end //ML-DSA-44: 2560/1312/2420 B
+        "3": begin SK = new[1008]; PK = new[488]; SIG = new[828];  end //ML-DSA-65: 4032/1952/3309 B
+        "5": begin SK = new[1224]; PK = new[648]; SIG = new[1157]; end //ML-DSA-87: 4896/2592/4627 B
+        default: `uvm_fatal("PREDICTOR", $sformatf("Cannot derive ML-DSA parameter set from '%s'", dilithium_command))
+      endcase
+      `uvm_info("PREDICTOR", $sformatf("ML-DSA buffers sized for %s: SK=%0d PK=%0d SIG=%0d dwords",
+                dilithium_command, SK.size(), PK.size(), SIG.size()), UVM_LOW)
+    end
+
     if (!uvm_config_db#(bit)::get(this, "", "expect_predictor_verif_failure", expect_predictor_verif_failure)) begin
       expect_predictor_verif_failure = 0; // default value
     end

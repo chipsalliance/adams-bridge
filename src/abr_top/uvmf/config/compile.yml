@@ -32,6 +32,8 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium2 .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium3 .
                 && mkdir -p ml-kem/tv
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
@@ -98,6 +100,8 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium2 .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium3 .
                 && mkdir -p ml-kem/tv
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
@@ -165,6 +169,8 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium2 .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium3 .
                 && mkdir -p ml-kem/tv
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
@@ -231,6 +237,8 @@ targets:
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5 .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg .
                 && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium2 .
+                && cp $COMPILE_ROOT/Dilithium_ref/dilithium/ref/test/test_dilithium3 .
                 && mkdir -p ml-kem/tv
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/
