@@ -27,35 +27,59 @@ module decompose_r1_lut
     )
     (
         input wire [REG_SIZE-1:0] r,
-        output logic [3:0] r1,
+        //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+        input wire gamma2_88_i,
+        output logic [MLDSA_W1_COEFF_W-1:0] r1,
         output logic r_corner, //Indicates if coeff r is in the corner case range
         output logic z_nez
     );
 
+    //The bucket chain is r1 = i for the lowest i with r <= (2i+1)*gamma2, and the
+    //corner case otherwise. Descending iteration gives the same priority as the
+    //original if/else-if chain: the lowest matching i assigns last and wins.
+    logic [MLDSA_W1_COEFF_W-1:0] r1_m32;
+    logic                        r_corner_m32;
+
     always_comb begin
-        r_corner = 'b0;
-        if      (r <=   MLDSA_GAMMA2)  r1 = 'd0;
-        else if (r <= 3*MLDSA_GAMMA2)  r1 = 'd1;
-        else if (r <= 5*MLDSA_GAMMA2)  r1 = 'd2;
-        else if (r <= 7*MLDSA_GAMMA2)  r1 = 'd3;
-        else if (r <= 9*MLDSA_GAMMA2)  r1 = 'd4;
-        else if (r <= 11*MLDSA_GAMMA2) r1 = 'd5;
-        else if (r <= 13*MLDSA_GAMMA2) r1 = 'd6;
-        else if (r <= 15*MLDSA_GAMMA2) r1 = 'd7;
-        else if (r <= 17*MLDSA_GAMMA2) r1 = 'd8;
-        else if (r <= 19*MLDSA_GAMMA2) r1 = 'd9;
-        else if (r <= 21*MLDSA_GAMMA2) r1 = 'd10;
-        else if (r <= 23*MLDSA_GAMMA2) r1 = 'd11;
-        else if (r <= 25*MLDSA_GAMMA2) r1 = 'd12;
-        else if (r <= 27*MLDSA_GAMMA2) r1 = 'd13;
-        else if (r <= 29*MLDSA_GAMMA2) r1 = 'd14;
-        else if (r <= 31*MLDSA_GAMMA2) r1 = 'd15;
-        else 
-            begin                     
-                r1 = 'd0;
-                r_corner = 'b1;
+        r1_m32       = '0;
+        r_corner_m32 = 1'b1;
+        for (int i = MLDSA_M_32-1; i >= 0; i--) begin
+            if (r <= ((2*i)+1)*MLDSA_GAMMA2_32) begin
+                r1_m32       = MLDSA_W1_COEFF_W'(i);
+                r_corner_m32 = 1'b0;
             end
+        end
     end
+
+    generate
+        if (ABR_NEED_GAMMA2_88) begin : gen_m88
+            //44-bucket chain, only elaborated when ML-DSA-44 is enabled.
+            logic [MLDSA_W1_COEFF_W-1:0] r1_m88;
+            logic                        r_corner_m88;
+
+            always_comb begin
+                r1_m88       = '0;
+                r_corner_m88 = 1'b1;
+                for (int i = MLDSA_M_88-1; i >= 0; i--) begin
+                    if (r <= ((2*i)+1)*MLDSA_GAMMA2_88) begin
+                        r1_m88       = MLDSA_W1_COEFF_W'(i);
+                        r_corner_m88 = 1'b0;
+                    end
+                end
+            end
+
+            always_comb begin
+                r1       = gamma2_88_i ? r1_m88       : r1_m32;
+                r_corner = gamma2_88_i ? r_corner_m88 : r_corner_m32;
+            end
+        end
+        else begin : gen_m32_only
+            always_comb begin
+                r1       = r1_m32;
+                r_corner = r_corner_m32;
+            end
+        end
+    endgenerate
 
     always_comb z_nez = (r1 != 'h0);
 

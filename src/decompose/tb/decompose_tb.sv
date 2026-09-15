@@ -66,6 +66,7 @@ decompose dut(
     .mem_hint_rd_req(),
     .mem_hint_rd_data(hint_tb),
     .dcmp_mode(mode_tb),
+    .gamma2_88_i(1'b0),
     .mem_rd_data(coeff_tb),
     .mem_wr_data(mem_wr_data_o),
     .z_mem_wr_req(),

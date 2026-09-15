@@ -95,6 +95,7 @@ module abr_top
 
   abr_sampler_mode_e         sampler_mode;
   logic                      mldsa_eta4;
+  logic                      mldsa_gamma2_88;
   logic                      sha3_start;
   logic                      sha3_masked;
   logic                      msg_start;
@@ -485,6 +486,7 @@ abr_ctrl_inst
   //sampler interface
   .sampler_mode_o(sampler_mode),
   .mldsa_eta4_o(mldsa_eta4),
+  .mldsa_gamma2_88_o(mldsa_gamma2_88),
   .sha3_start_o(sha3_start), //start the sha3 engine
   .sha3_masked_o(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_o(msg_start), //start a new message
@@ -903,6 +905,7 @@ decompose_inst (
 
   .decompose_enable(decompose_enable),
   .dcmp_mode(decompose_mode),
+  .gamma2_88_i(mldsa_gamma2_88),
   .src_base_addr(aux_src0_base_addr),
   .dest_base_addr(aux_dest_base_addr),
   .hint_src_base_addr(aux_src1_base_addr),

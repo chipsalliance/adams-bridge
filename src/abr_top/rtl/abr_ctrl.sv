@@ -62,6 +62,7 @@ module abr_ctrl
   output abr_sampler_mode_e          sampler_mode_o,
   //Active ML-DSA parameter set uses eta=4 (ML-DSA-65 only). Public signal.
   output logic                       mldsa_eta4_o,
+  output logic                       mldsa_gamma2_88_o,
   output logic                       sha3_start_o,
   output logic                       sha3_masked_o,
   output logic                       msg_start_o,
@@ -1854,6 +1855,7 @@ end
   always_comb mldsa_param_set = MLDSA_PARAM_87;
   always_comb mldsa_l         = 4'(mldsa_l_of(mldsa_param_set));
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
+  always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);
 
   always_comb begin
     sampler_mode_o = ABR_SAMPLER_NONE;

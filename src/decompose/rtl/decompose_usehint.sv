@@ -34,21 +34,33 @@ module decompose_usehint
 
         input wire usehint_enable,
         input wire [REG_SIZE-1:0] w0_i, 
-        input wire [3:0] w1_i, 
+        input wire [MLDSA_W1_COEFF_W-1:0] w1_i, 
         input wire hint_i,
+        //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+        input wire gamma2_88_i,
 
         //output to w1 encode
-        output logic [3:0] w1_o,
+        output logic [MLDSA_W1_COEFF_W-1:0] w1_o,
         output logic ready_o
     );
 
-    logic [4:0] w1_plus_one_ext, w1_minus_one_ext;
-    logic [3:0] w1_plus_one, w1_minus_one;
-    logic [3:0] w1_mux;
+    //The modulus is m = (q-1)/(2*gamma2): 16 for ML-DSA-65/87, 44 for ML-DSA-44.
+    //Operands carry one spare bit so the modulus itself is representable (see
+    //issue #210) - otherwise prime_i truncates to 0 and no reduction happens.
+    localparam UH_W = MLDSA_W1_COEFF_W + 1;
+
+    logic [UH_W-1:0] w1_plus_one_ext, w1_minus_one_ext;
+    logic [MLDSA_W1_COEFF_W-1:0] w1_plus_one, w1_minus_one;
+    logic [MLDSA_W1_COEFF_W-1:0] w1_mux;
+    logic [UH_W-1:0] usehint_modulus;
+    logic [REG_SIZE-1:0] gamma2_active;
     logic ready;
     logic [REG_SIZE-1:0] w0_reg;
-    logic [3:0] w1_reg;
+    logic [MLDSA_W1_COEFF_W-1:0] w1_reg;
     logic hint_reg;
+
+    always_comb usehint_modulus = UH_W'(gamma2_88_i ? MLDSA_M_88      : MLDSA_M_32);
+    always_comb gamma2_active   = REG_SIZE'(gamma2_88_i ? MLDSA_GAMMA2_88 : MLDSA_GAMMA2_32);
 
     //Delay flops
     always_ff @(posedge clk or negedge reset_n) begin
@@ -72,7 +84,7 @@ module decompose_usehint
     // Fix for issue #210: widen operands to 5 bits so the modulus (16) is
     // representable; otherwise prime_i truncates to 0 and no mod occurs.
     abr_add_sub_mod #(
-        .REG_SIZE(5)
+        .REG_SIZE(UH_W)
     ) 
     usehint_add_inst (
         .clk(clk),
@@ -80,15 +92,15 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b0),
-        .opa_i(5'(w1_i)),
-        .opb_i(5'(1)),
-        .prime_i(5'(16)),
+        .opa_i(UH_W'(w1_i)),
+        .opb_i(UH_W'(1)),
+        .prime_i(usehint_modulus),
         .res_o(w1_plus_one_ext),
         .ready_o()
     );
 
     abr_add_sub_mod #(
-        .REG_SIZE(5)
+        .REG_SIZE(UH_W)
     ) 
     usehint_sub_inst (
         .clk(clk),
@@ -96,15 +108,15 @@ module decompose_usehint
         .zeroize(zeroize),
         .add_en_i(usehint_enable),
         .sub_i(1'b1),
-        .opa_i(5'(w1_i)),
-        .opb_i(5'(1)),
-        .prime_i(5'(16)),
+        .opa_i(UH_W'(w1_i)),
+        .opb_i(UH_W'(1)),
+        .prime_i(usehint_modulus),
         .res_o(w1_minus_one_ext),
         .ready_o()
     );
 
-    assign w1_plus_one  = w1_plus_one_ext[3:0];
-    assign w1_minus_one = w1_minus_one_ext[3:0];
+    assign w1_plus_one  = w1_plus_one_ext[MLDSA_W1_COEFF_W-1:0];
+    assign w1_minus_one = w1_minus_one_ext[MLDSA_W1_COEFF_W-1:0];
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
@@ -117,7 +129,7 @@ module decompose_usehint
 
     always_comb begin
         if (ready) begin
-            w1_mux = ((w0_reg == 'h0) | (w0_reg > MLDSA_GAMMA2)) ? w1_minus_one : w1_plus_one;
+            w1_mux = ((w0_reg == 'h0) | (w0_reg > gamma2_active)) ? w1_minus_one : w1_plus_one;
             w1_o   = hint_reg ? w1_mux : w1_reg;
         end
         else begin

@@ -33,9 +33,13 @@ module decompose_mod_2gamma2
     // DATA PORT
     input  wire                 add_en_i,
     input  wire  [REG_SIZE-1:0] opa_i,
+    //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+    input  wire                 gamma2_88_i,
     output logic [MLDSA_2GAMMA2_SIZE-1:0]         res_o,
     output logic                ready_o
 );
+
+    logic [MLDSA_2GAMMA2_SIZE-1:0] res_32;
   
     logic [12:0] opa0;
     logic [MLDSA_2GAMMA2_SIZE-1:0] opb0;
@@ -100,7 +104,50 @@ module decompose_mod_2gamma2
         else ready_o <= add_en_i;
     end
 
-    assign res_o = (carry0_reg ^ carry1) ? r1 : r0_reg;
-    
+    assign res_32 = (carry0_reg ^ carry1) ? r1 : r0_reg;
+
+    //--------------------------------------------------------------------------
+    // ML-DSA-44 path: 2*gamma2 = 190464, which is NOT of the form 2^a - 2^b, so
+    // the fast folding reduction above does not generalise. Reduce instead with a
+    // 6-step restoring shift-subtract: opa_i < 2^23 and 64*190464 > 2^23, so the
+    // quotient is below 64 and six trial subtractions are sufficient. The steps
+    // are split 3/3 across the existing pipeline stage so the latency and the
+    // ready_o timing are unchanged.
+    //--------------------------------------------------------------------------
+    generate
+        if (ABR_NEED_GAMMA2_88) begin : gen_mod_88
+            localparam int W88   = REG_SIZE + 1;
+            localparam int M88   = 2*MLDSA_GAMMA2_88;
+
+            logic [W88-1:0] rem_s1, rem_s1_reg, rem_s2;
+
+            always_comb begin
+                rem_s1 = W88'(opa_i);
+                for (int b = 5; b >= 3; b--) begin
+                    if (rem_s1 >= (W88'(M88) << b))
+                        rem_s1 = rem_s1 - (W88'(M88) << b);
+                end
+            end
+
+            always_ff @(posedge clk or negedge reset_n) begin
+                if (!reset_n)         rem_s1_reg <= '0;
+                else if (zeroize)     rem_s1_reg <= '0;
+                else if (add_en_i)    rem_s1_reg <= rem_s1;
+            end
+
+            always_comb begin
+                rem_s2 = rem_s1_reg;
+                for (int b = 2; b >= 0; b--) begin
+                    if (rem_s2 >= (W88'(M88) << b))
+                        rem_s2 = rem_s2 - (W88'(M88) << b);
+                end
+            end
+
+            assign res_o = gamma2_88_i ? MLDSA_2GAMMA2_SIZE'(rem_s2) : res_32;
+        end
+        else begin : gen_mod_32_only
+            assign res_o = res_32;
+        end
+    endgenerate
 
 endmodule

@@ -47,6 +47,8 @@ module decompose
 
         input wire decompose_enable,
         input dcmp_mode_t dcmp_mode,
+        //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+        input wire gamma2_88_i,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] hint_src_base_addr,
@@ -76,7 +78,7 @@ module decompose
     );
 
     //Coefficient wires
-    logic [3:0][3:0] r1, r1_reg, r1_usehint, r1_mux;
+    logic [3:0][MLDSA_W1_COEFF_W-1:0] r1, r1_reg, r1_usehint, r1_mux;
     logic [3:0] r_corner, r_corner_reg;
     logic [3:0][18:0] r0_mod_2gamma2;
     logic [3:0][REG_SIZE-2:0] r0_mod_q, r0, r0_reg; //23-bit value
@@ -128,6 +130,7 @@ module decompose
             ) 
             r1_lut_inst (
                 .r(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
+                .gamma2_88_i(gamma2_88_i),
                 .r1(r1[i]),
                 .r_corner(r_corner[i]),
                 .z_nez(z_neq_z_int[i])
@@ -146,6 +149,7 @@ module decompose
                 .zeroize(zeroize),
                 .add_en_i(mem_rd_data_valid),
                 .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
+                .gamma2_88_i(gamma2_88_i),
                 .res_o(r0_mod_2gamma2[i]),
                 .ready_o(mod_ready[i])
             );
@@ -210,6 +214,7 @@ module decompose
                 .w0_i(r0[i]),
                 .w1_i(r1_reg[i]),
                 .hint_i(mem_hint_rd_data_reg[i*REG_SIZE]), //LSB is the hint, rest are 0s
+                .gamma2_88_i(gamma2_88_i),
                 .w1_o(r1_usehint[i]),
                 .ready_o(usehint_ready[i])
                 
@@ -259,6 +264,7 @@ module decompose
         .reset_n(reset_n),
         .zeroize(zeroize),
         .w1_encode_enable(verify ? &usehint_ready : &mod_ready),
+        .gamma2_88_i(gamma2_88_i),
         .r1_i(r1_mux),
         .w1_o(w1_o),
         .buffer_en(buffer_en)

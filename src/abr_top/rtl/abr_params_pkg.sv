@@ -167,6 +167,13 @@ package abr_params_pkg;
   parameter REG_SIZE = 24;
   parameter MLDSA_N = 256;
   parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
+  // gamma2 takes two values across the parameter sets. m = (q-1)/(2*gamma2) is
+  // the number of high-bit buckets and therefore the range of a w1 coefficient.
+  // ML-DSA-65/87: gamma2 = (q-1)/32, m = 16.  ML-DSA-44: gamma2 = (q-1)/88, m = 44.
+  parameter MLDSA_GAMMA2_32 = (MLDSA_Q-1)/32;
+  parameter MLDSA_GAMMA2_88 = (MLDSA_Q-1)/88;
+  parameter int MLDSA_M_32  = 16;
+  parameter int MLDSA_M_88  = 44;
   //Largest k/l over the ENABLED parameter sets. All storage is sized by these,
   //so a lower set is a strict prefix and costs no extra memory.
   parameter MLDSA_K = MLDSA_87_EN ? 8 : MLDSA_65_EN ? 6 : 4;
