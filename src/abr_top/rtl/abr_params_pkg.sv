@@ -181,6 +181,15 @@ package abr_params_pkg;
     mldsa_gamma2_div_of = (s == MLDSA_PARAM_44) ? 88 : 32;
   endfunction
 
+  //beta = tau * eta (FIPS 204 Table 1)
+  function automatic int mldsa_beta_of(mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44 : mldsa_beta_of = 78;
+      MLDSA_PARAM_65 : mldsa_beta_of = 196;
+      default        : mldsa_beta_of = 120;
+    endcase
+  endfunction
+
   function automatic int mlkem_k_of(mlkem_param_set_e s);
     case (s)
       MLKEM_PARAM_512 : mlkem_k_of = 2;
@@ -215,6 +224,15 @@ package abr_params_pkg;
   // ML-DSA-65/87: gamma2 = (q-1)/32, m = 16.  ML-DSA-44: gamma2 = (q-1)/88, m = 44.
   parameter MLDSA_GAMMA2_32 = (MLDSA_Q-1)/32;
   parameter MLDSA_GAMMA2_88 = (MLDSA_Q-1)/88;
+
+  function automatic int mldsa_gamma1_of(mldsa_param_set_e s);
+    mldsa_gamma1_of = 1 << mldsa_gamma1_w_of(s);
+  endfunction
+
+  function automatic int mldsa_gamma2_of(mldsa_param_set_e s);
+    mldsa_gamma2_of = (MLDSA_Q-1)/mldsa_gamma2_div_of(s);
+  endfunction
+
   parameter int MLDSA_M_32  = 16;
   parameter int MLDSA_M_88  = 44;
   //Largest k/l over the ENABLED parameter sets. All storage is sized by these,

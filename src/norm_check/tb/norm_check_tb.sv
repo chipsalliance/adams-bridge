@@ -59,6 +59,16 @@ reg [MLDSA_MEM_ADDR_WIDTH-1:0] src_base_tb;
 wire invalid_tb;
 wire norm_check_done_tb;
 chk_norm_mode_t mode_tb;
+logic [REG_SIZE-2:0] bound_tb;
+//Mirror the controller-side bound selection for ML-DSA-87.
+always_comb begin
+  case (mode_tb)
+    z_bound  : bound_tb = (REG_SIZE-1)'((2**19) - 120);
+    r0_bound : bound_tb = (REG_SIZE-1)'(MLDSA_GAMMA2 - 120);
+    ct0_bound: bound_tb = (REG_SIZE-1)'(MLDSA_GAMMA2);
+    default  : bound_tb = '0;
+  endcase
+end
 
 parameter NUM_OF_COEFF = 256 * 7; // Adjust as per your design
 parameter NUM_OF_MEM_WORDS = NUM_OF_COEFF / 4;
@@ -97,7 +107,7 @@ norm_check_top dut(
     .zeroize(zeroize_tb),
     .norm_check_enable(en_tb),
     .randomness(randomness_tb),
-    .mode(mode_tb),
+    .bound_i(bound_tb),
     .mem_base_addr(src_base_tb),
     .mem_rd_req(mem_rd_req_tb),
     .mem_rd_data(mem_rd_data_tb),

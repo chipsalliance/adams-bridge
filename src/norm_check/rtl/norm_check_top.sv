@@ -40,7 +40,7 @@ module norm_check_top
         input wire zeroize,
 
         input wire norm_check_enable,
-        input chk_norm_mode_t mode,
+        input wire [REG_SIZE-2:0] bound_i,
 
         input wire [5:0] randomness,
 
@@ -60,7 +60,7 @@ module norm_check_top
         for (genvar i = 0; i < 4; i++) begin : gen_check_a_invalid
             norm_check check_inst (
                 .enable(mem_rd_data_valid),
-                .mode(mode),
+                .bound_i(bound_i),
                 .opa_i(mem_rd_data[(REG_SIZE-2)+(i*REG_SIZE):i*REG_SIZE]),
                 .invalid(check_a_invalid[i])
             );

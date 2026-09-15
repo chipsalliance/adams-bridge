@@ -223,7 +223,6 @@ module abr_top
 
   logic normcheck_enable;
   logic normcheck_done;
-  logic [1:0] normcheck_mode;
   logic normcheck_invalid;
   mem_if_t normcheck_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] normcheck_mem_rd_data;
@@ -261,6 +260,7 @@ module abr_top
   logic sigencode_mem_rd_data_valid;
   mem_if_t sigencode_mem_wr_req;
   logic [1:0][3:0][19:0] sigencode_mem_wr_data;
+  logic [REG_SIZE-2:0] normcheck_bound;
 
   logic pkdecode_enable, pkdecode_done;
   mem_if_t [1:0] pkdecode_mem_wr_req;
@@ -552,6 +552,7 @@ abr_ctrl_inst
 
   .mldsa_k_o(mldsa_k),
   .mldsa_omega_o(mldsa_omega),
+  .normcheck_bound_o(normcheck_bound),
   .makehint_enable_o(makehint_enable),
   .makehint_invalid_i(makehint_invalid),
   .makehint_done_i(makehint_done),
@@ -560,7 +561,6 @@ abr_ctrl_inst
   .makehint_reg_wrdata_i(makehint_reg_wrdata),
 
   .normcheck_enable_o(normcheck_enable),
-  .normcheck_mode_o(normcheck_mode),
   .normcheck_invalid_i(normcheck_invalid),
   .normcheck_done_i(normcheck_done),
 
@@ -1040,7 +1040,7 @@ norm_check_inst
   .reset_n(rst_b),
   .zeroize(zeroize_reg),
 
-  .mode(normcheck_mode),
+  .bound_i(normcheck_bound),
   .norm_check_enable(normcheck_enable),
 
   .randomness(shuffling_rand[0]),

@@ -21,33 +21,20 @@ module norm_check
     import norm_check_defines_pkg::*;
     import abr_params_pkg::*;
     #(
-        parameter MLDSA_Q = 8380417,
-        parameter GAMMA1 = 2**19,
-        // parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32,
-        parameter BETA = 120,
-        parameter GAMMA1_MINUS_BETA = GAMMA1 - BETA,
-        parameter GAMMA2_MINUS_BETA = MLDSA_GAMMA2 - BETA
+        parameter MLDSA_Q = 8380417
     )
     (
         input wire enable,
-        input chk_norm_mode_t mode,
+        //The bound is selected by the controller from the active parameter set,
+        //so the same comparator serves every ML-DSA parameter set.
+        input wire [REG_SIZE-2:0] bound_i,
         input wire [REG_SIZE-2:0] opa_i,
         output logic invalid
     );
 
-    logic [REG_SIZE-2:0] bound;
     logic [REG_SIZE-2:0] q_minus_bound;
 
-    always_comb begin
-        case(mode)
-            z_bound:    bound = GAMMA1_MINUS_BETA;
-            r0_bound:   bound = GAMMA2_MINUS_BETA;
-            ct0_bound:  bound = MLDSA_GAMMA2;
-            default:    bound = 'h0;
-        endcase
+    always_comb q_minus_bound = MLDSA_Q - bound_i;
 
-        q_minus_bound = MLDSA_Q - bound;
-    end
-
-    always_comb invalid = enable & (opa_i >= bound) & (opa_i <= q_minus_bound);
+    always_comb invalid = enable & (opa_i >= bound_i) & (opa_i <= q_minus_bound);
 endmodule

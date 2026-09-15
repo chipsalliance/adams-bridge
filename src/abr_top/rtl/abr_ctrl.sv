@@ -35,6 +35,7 @@ module abr_ctrl
   import ntt_defines_pkg::*;
   import compress_defines_pkg::*;
   import decompress_defines_pkg::*;
+  import norm_check_defines_pkg::*;
   `ifdef CALIPTRA
   import kv_defines_pkg::*; 
   `endif
@@ -70,6 +71,7 @@ module abr_ctrl
   //consumers take it as a value rather than a parameter.
   output logic [3:0]                 mldsa_k_o,
   output logic [7:0]                 mldsa_omega_o,
+  output logic [REG_SIZE-2:0]        normcheck_bound_o,
   output logic                       sha3_start_o,
   output logic                       sha3_masked_o,
   output logic                       msg_start_o,
@@ -135,7 +137,6 @@ module abr_ctrl
   input logic [ABR_MEM_ADDR_WIDTH-1:0] makehint_reg_wr_addr_i,
 
   output logic normcheck_enable_o,
-  output logic [1:0] normcheck_mode_o,
   input logic normcheck_invalid_i,
   input logic normcheck_done_i,
 
@@ -568,6 +569,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic             param_set_unsupported;
   logic [63:0]      mldsa_core_name_sel, mlkem_core_name_sel;
   logic [3:0] mldsa_l;
+  logic [REG_SIZE-2:0] mldsa_gamma1_minus_beta, mldsa_gamma2_minus_beta, mldsa_gamma2;
+  chk_norm_mode_t normcheck_mode;
   abr_seq_instr_t abr_instr_o, abr_instr;
   abr_vec_ctrl_t  abr_vec_o, abr_vec;
   abr_seq_instr_t abr_instr_ds;
@@ -1906,6 +1909,19 @@ end
   always_comb mldsa_core_name_sel = mldsa_core_name_of(mldsa_param_set);
   always_comb mlkem_core_name_sel = mlkem_core_name_of(mlkem_param_set);
   always_comb mldsa_l         = 4'(mldsa_l_of(mldsa_param_set));
+  //Norm check bounds (FIPS 204 Algorithm 2, steps 21 and 24). The controller
+  //selects the bound so a single comparator array covers every parameter set.
+  always_comb mldsa_gamma1_minus_beta = (REG_SIZE-1)'(mldsa_gamma1_of(mldsa_param_set) - mldsa_beta_of(mldsa_param_set));
+  always_comb mldsa_gamma2            = (REG_SIZE-1)'(mldsa_gamma2_of(mldsa_param_set));
+  always_comb mldsa_gamma2_minus_beta = (REG_SIZE-1)'(mldsa_gamma2_of(mldsa_param_set) - mldsa_beta_of(mldsa_param_set));
+  always_comb begin
+    unique case (normcheck_mode)
+      z_bound   : normcheck_bound_o = mldsa_gamma1_minus_beta;
+      r0_bound  : normcheck_bound_o = mldsa_gamma2_minus_beta;
+      ct0_bound : normcheck_bound_o = mldsa_gamma2;
+      default   : normcheck_bound_o = '0;
+    endcase
+  end
   always_comb mldsa_k_o       = 4'(mldsa_k_of(mldsa_param_set));
   always_comb mldsa_omega_o   = 8'(mldsa_omega_of(mldsa_param_set));
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
@@ -1941,14 +1957,32 @@ end
   always_comb aux_src1_base_addr_o = abr_instr.operand2[ABR_MEM_ADDR_WIDTH-1:0];
   always_comb aux_dest_base_addr_o = abr_instr.operand3[ABR_MEM_ADDR_WIDTH-1:0];
 
-  always_comb normcheck_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? abr_instr.imm[1:0] : '0;
+  always_comb normcheck_mode = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_NORMCHK)) ? chk_norm_mode_t'(abr_instr.imm[1:0]) : '0;
   always_comb decompose_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLDSA_USEHINT);
-  always_comb compress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[2:0] : '0;
-  always_comb compress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? abr_instr.imm[10:8] : '0;
+  //The instruction ROM encodes the ML-KEM-1024 rates (d_u = 11, d_v = 5) and a
+  //k of 4. For the smaller parameter sets d_u drops to 10, d_v drops to 4 and k
+  //shrinks, so the controller remaps the ROM immediate onto the active set.
+  //ML-KEM-1024 is the identity mapping, so the ROM stays untouched.
+  function automatic compress_mode_t mlkem_cmp_mode(input logic [2:0] rom_mode);
+    case (rom_mode)
+      compress11 : mlkem_cmp_mode = ABR_NEED_DUDV_10_4 & (mlkem_param_set != MLKEM_PARAM_1024) ? compress10 : compress11;
+      compress5  : mlkem_cmp_mode = ABR_NEED_DUDV_10_4 & (mlkem_param_set != MLKEM_PARAM_1024) ? compress4  : compress5;
+      default    : mlkem_cmp_mode = rom_mode;
+    endcase
+  endfunction
+
+  //A num_poly of 4 in the ROM denotes a full k-length vector; anything else
+  //(a single polynomial) is parameter set independent.
+  function automatic logic [2:0] mlkem_cmp_num_poly(input logic [2:0] rom_num_poly);
+    mlkem_cmp_num_poly = (rom_num_poly == 3'd4) ? 3'(mlkem_k_of(mlkem_param_set)) : rom_num_poly;
+  endfunction
+
+  always_comb compress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? mlkem_cmp_mode(abr_instr.imm[2:0]) : '0;
+  always_comb compress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS)) ? mlkem_cmp_num_poly(abr_instr.imm[10:8]) : '0;
   always_comb compress_compare_mode_o = abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS) & 
                                         ((abr_instr.imm[4] & mlkem_encaps_process) | (abr_instr.imm[5] & mlkem_decaps_process)); 
-  always_comb decompress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[2:0] : '0;
-  always_comb decompress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? abr_instr.imm[10:8] : '0;
+  always_comb decompress_mode_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? mlkem_cmp_mode(abr_instr.imm[2:0]) : '0;
+  always_comb decompress_num_poly_o = (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_DECOMPRESS)) ? mlkem_cmp_num_poly(abr_instr.imm[10:8]) : '0;
   
 //Message streaming mode
 //new input data available
