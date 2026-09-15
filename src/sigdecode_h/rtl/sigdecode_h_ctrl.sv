@@ -32,6 +32,10 @@ module sigdecode_h_ctrl
 
         input wire sigdecode_h_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
+        //Number of polynomials in the active ML-DSA parameter set. MLDSA_K above
+        //only sizes storage now.
+        input wire [3:0] mldsa_k_i,
+
         input wire [7:0] hintsum_i, //points to hintsum of i_th poly shown by poly_count
         input wire sigdecode_h_error,
 
@@ -110,7 +114,7 @@ module sigdecode_h_ctrl
             poly_count <= 'h0;
         end
         else if (incr_poly)
-            poly_count <= (poly_count == MLDSA_K) ? 'h0 : poly_count + 'h1;
+            poly_count <= (poly_count == mldsa_k_i) ? 'h0 : poly_count + 'h1;
     end
 
     //bitmap ptr counter
@@ -127,8 +131,8 @@ module sigdecode_h_ctrl
 
     //Flags
     always_comb begin
-        last_poly_last_addr_wr  = (mem_wr_addr == dest_base_addr + (MLDSA_K * (MLDSA_N/4))-1);
-        last_poly               = (poly_count == MLDSA_K-1);
+        last_poly_last_addr_wr  = (mem_wr_addr == dest_base_addr + ABR_MEM_ADDR_WIDTH'(mldsa_k_i * (MLDSA_N/4))-1);
+        last_poly               = (poly_count == 4'(mldsa_k_i-4'h1));
         sigdecode_h_busy        = (write_fsm_state_ps != SDH_WR_IDLE); //writes follow reads, so using that for busy
         sigdecode_h_done        = (read_fsm_state_ps == SDH_RD_IDLE) & (write_fsm_state_ps == SDH_WR_IDLE);
     end

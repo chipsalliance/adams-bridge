@@ -97,6 +97,7 @@ module abr_top
   logic                      mldsa_eta4;
   logic                      mldsa_gamma2_88;
   logic                      mldsa_gamma1_17;
+  logic                      mlkem_eta3;
   logic                      sha3_start;
   logic                      sha3_masked;
   logic                      msg_start;
@@ -210,6 +211,8 @@ module abr_top
   logic skdecode_error;
 
   logic makehint_enable, makehint_done;
+  logic [3:0] mldsa_k;
+  logic [7:0] mldsa_omega;
   logic makehint_invalid;
   mem_if_t makehint_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] makehint_mem_rd_data;
@@ -489,6 +492,7 @@ abr_ctrl_inst
   .mldsa_eta4_o(mldsa_eta4),
   .mldsa_gamma2_88_o(mldsa_gamma2_88),
   .mldsa_gamma1_17_o(mldsa_gamma1_17),
+  .mlkem_eta3_o(mlkem_eta3),
   .sha3_start_o(sha3_start), //start the sha3 engine
   .sha3_masked_o(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_o(msg_start), //start a new message
@@ -546,6 +550,8 @@ abr_ctrl_inst
   .skencode_wr_data_i(skencode_wr_data),
   .skencode_done_i(skencode_done),
 
+  .mldsa_k_o(mldsa_k),
+  .mldsa_omega_o(mldsa_omega),
   .makehint_enable_o(makehint_enable),
   .makehint_invalid_i(makehint_invalid),
   .makehint_done_i(makehint_done),
@@ -665,6 +671,7 @@ sampler_top_inst
   .sampler_mode_i(sampler_mode),
   .mldsa_eta4_i(mldsa_eta4),
   .gamma1_17_i(mldsa_gamma1_17),
+  .eta3_i(mlkem_eta3),
   .sha3_start_i(sha3_start), //start the sha3 engine
   .sha3_masked_i(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_i(msg_start), //start a new message
@@ -995,7 +1002,9 @@ skdecode_inst
   .skdecode_error(skdecode_error)
 );
 
-makehint
+makehint #(
+  .OMEGA(MLDSA_OMEGA_MAX)
+)
 makehint_inst
 (
   .clk(clk),
@@ -1004,6 +1013,9 @@ makehint_inst
 
   .makehint_enable(makehint_enable),
   .makehint_done(makehint_done),
+
+  .omega_i(mldsa_omega),
+  .mldsa_k_i(mldsa_k),
 
   .mem_base_addr(aux_src0_base_addr),
 
@@ -1116,11 +1128,17 @@ sigdecode_z_inst (
   .sigmem_rd_data_valid(sigdecode_z_mem_rd_data_valid)
 );
 
-sigdecode_h
+sigdecode_h #(
+  .MLDSA_OMEGA(MLDSA_OMEGA_MAX),
+  .ENCODED_H_BYTES(SIGNATURE_H_VALID_NUM_BYTES)
+)
 sigdecode_h_inst (
   .clk(clk),
   .reset_n(rst_b),
   .zeroize(zeroize_reg),
+
+  .omega_i(mldsa_omega),
+  .mldsa_k_i(mldsa_k),
 
   .sigdecode_h_enable(sigdecode_h_enable),
   .sigdecode_h_done(sigdecode_h_done),

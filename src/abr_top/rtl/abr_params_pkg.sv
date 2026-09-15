@@ -81,6 +81,49 @@ package abr_params_pkg;
     MLKEM_PARAM_RSVD = 2'b11
   } mlkem_param_set_e;
 
+  //Decode of the ABR_CTRL.PARAM_SET register field. The register encoding is
+  //deliberately NOT the internal enum encoding: register 2'b00 must select the
+  //category 5 set so that software unaware of the field, and the reset value,
+  //both keep the pre-existing behaviour.
+  function automatic mldsa_param_set_e mldsa_param_set_decode(input logic [1:0] reg_val);
+    case (reg_val)
+      2'b00  : mldsa_param_set_decode = MLDSA_PARAM_87;   //reset default
+      2'b01  : mldsa_param_set_decode = MLDSA_PARAM_44;
+      2'b10  : mldsa_param_set_decode = MLDSA_PARAM_65;
+      default: mldsa_param_set_decode = MLDSA_PARAM_RSVD;
+    endcase
+  endfunction
+
+  function automatic mlkem_param_set_e mlkem_param_set_decode(input logic [1:0] reg_val);
+    case (reg_val)
+      2'b00  : mlkem_param_set_decode = MLKEM_PARAM_1024; //reset default
+      2'b01  : mlkem_param_set_decode = MLKEM_PARAM_512;
+      2'b10  : mlkem_param_set_decode = MLKEM_PARAM_768;
+      default: mlkem_param_set_decode = MLKEM_PARAM_RSVD;
+    endcase
+  endfunction
+
+  //A parameter set is usable only if it was enabled at elaboration time. An
+  //integrator who comments a set out must get a clean error, not silent
+  //execution on the wrong datapath.
+  function automatic bit mldsa_param_set_supported(input mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_param_set_supported = MLDSA_44_EN;
+      MLDSA_PARAM_65: mldsa_param_set_supported = MLDSA_65_EN;
+      MLDSA_PARAM_87: mldsa_param_set_supported = MLDSA_87_EN;
+      default       : mldsa_param_set_supported = 1'b0;
+    endcase
+  endfunction
+
+  function automatic bit mlkem_param_set_supported(input mlkem_param_set_e s);
+    case (s)
+      MLKEM_PARAM_512 : mlkem_param_set_supported = MLKEM_512_EN;
+      MLKEM_PARAM_768 : mlkem_param_set_supported = MLKEM_768_EN;
+      MLKEM_PARAM_1024: mlkem_param_set_supported = MLKEM_1024_EN;
+      default         : mlkem_param_set_supported = 1'b0;
+    endcase
+  endfunction
+
   //Per-set dimensions (FIPS 204 Table 1 / FIPS 203 Table 2)
   function automatic int mldsa_k_of(mldsa_param_set_e s);
     case (s)
@@ -240,6 +283,11 @@ package abr_params_pkg;
   // omega is NOT monotonic in the security level (44:80, 65:55, 87:75), so the
   // hint-array widths must be sized to the max over the ENABLED sets.
   parameter int MLDSA_OMEGA_MAX = MLDSA_44_EN ? 80 : (MLDSA_87_EN ? 75 : 55);
+
+  //Size of the encoded h field of the signature, (omega + k) bytes. This is not
+  //MLDSA_OMEGA_MAX + k_max: the largest omega (80, ML-DSA-44) and the largest k
+  //(8, ML-DSA-87) never occur together. Per set: 44 -> 84, 65 -> 61, 87 -> 83.
+  parameter int MLDSA_SIG_H_BYTES_MAX = MLDSA_44_EN ? 84 : (MLDSA_87_EN ? 83 : 61);
   
   parameter ABR_MEM_MAX_DEPTH = ABR_MEM_INST2_DEPTH;
   parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
@@ -264,6 +312,34 @@ package abr_params_pkg;
   parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
   parameter [63  : 0] MLKEM_CORE_NAME        = 64'h32343130_4D2D4B45; // "KEM-1024"
   parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
+
+  //Per-set core names. MLDSA_CORE_NAME/MLKEM_CORE_NAME above stay as the
+  //category 5 names so the reset value of the NAME registers is unchanged.
+  parameter [63  : 0] MLDSA_CORE_NAME_44     = 64'h3434412D_44534D4C; // "MLDSA-44"
+  parameter [63  : 0] MLDSA_CORE_NAME_65     = 64'h3635412D_44534D4C; // "MLDSA-65"
+  parameter [63  : 0] MLDSA_CORE_NAME_87     = MLDSA_CORE_NAME;       // "MLDSA-87"
+  parameter [63  : 0] MLKEM_CORE_NAME_512    = 64'h32203531_4D2D4B45; // "KEM-512 "
+  parameter [63  : 0] MLKEM_CORE_NAME_768    = 64'h38203736_4D2D4B45; // "KEM-768 "
+  parameter [63  : 0] MLKEM_CORE_NAME_1024   = MLKEM_CORE_NAME;       // "KEM-1024"
+
+  //The NAME registers must describe the parameter set the core is actually
+  //configured for. Reporting "MLDSA-87" while running ML-DSA-44 would make the
+  //identity registers actively misleading.
+  function automatic logic [63:0] mldsa_core_name_of(input mldsa_param_set_e s);
+    case (s)
+      MLDSA_PARAM_44: mldsa_core_name_of = MLDSA_CORE_NAME_44;
+      MLDSA_PARAM_65: mldsa_core_name_of = MLDSA_CORE_NAME_65;
+      default       : mldsa_core_name_of = MLDSA_CORE_NAME_87;
+    endcase
+  endfunction
+
+  function automatic logic [63:0] mlkem_core_name_of(input mlkem_param_set_e s);
+    case (s)
+      MLKEM_PARAM_512: mlkem_core_name_of = MLKEM_CORE_NAME_512;
+      MLKEM_PARAM_768: mlkem_core_name_of = MLKEM_CORE_NAME_768;
+      default        : mlkem_core_name_of = MLKEM_CORE_NAME_1024;
+    endcase
+  endfunction
 
   // Implementation parameters
   parameter ABR_REG_WIDTH = 32;

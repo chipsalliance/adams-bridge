@@ -28,14 +28,23 @@ module sigdecode_h
         parameter REG_SIZE = 24,
         parameter MLDSA_OMEGA = 75,
         parameter MLDSA_K = 8,
-        parameter MLDSA_N = 256
+        parameter MLDSA_N = 256,
+        //Byte size of the encoded h field. Sized for the largest enabled set;
+        //(omega + k) for a single set. Kept separate from MLDSA_OMEGA+MLDSA_K
+        //because the largest omega and the largest k are in different sets.
+        parameter ENCODED_H_BYTES = MLDSA_OMEGA + MLDSA_K
     )
     (
         input wire clk,
         input wire reset_n,
         input wire zeroize,
 
-        input wire [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h_i,
+        input wire [ENCODED_H_BYTES-1:0][7:0] encoded_h_i,
+
+        //Runtime dimensions of the active parameter set. omega locates the
+        //hintsum bytes inside encoded_h_i and bounds a valid hint index.
+        input wire [7:0] omega_i,
+        input wire [3:0] mldsa_k_i,
 
         input wire sigdecode_h_enable,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
@@ -50,11 +59,10 @@ module sigdecode_h
     // this must be a true ceiling. The old form ((omega+k+1)*8)/32 truncates and
     // is only coincidentally right for ML-DSA-87 (21) and ML-DSA-44 (21) - it
     // yields 15 instead of 16 for ML-DSA-65.
-    localparam SIG_H_NUM_DWORDS = (MLDSA_OMEGA + MLDSA_K + 3)/4;
+    localparam SIG_H_NUM_DWORDS = (ENCODED_H_BYTES + 3)/4;
 
     // logic [(MLDSA_OMEGA+MLDSA_K)-1:0][7:0] encoded_h;
     // logic [SIG_H_NUM_DWORDS-1:0][31:0] encoded_h_reg;
-    logic [MLDSA_OMEGA-1:0] hint_array;
     logic [7:0] hintsum, hintsum_prev_poly, hintsum_curr_poly;
     logic [3:0] poly_count;
     logic [6:0] rd_ptr;
@@ -106,7 +114,7 @@ module sigdecode_h
             first_hint          <= 'h0;
         end
         else begin
-            hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[MLDSA_OMEGA+poly_count];
+            hintsum             <= sigdecode_h_done ? 'h0 : encoded_h_i[8'(omega_i)+8'(poly_count)];
             hintsum_prev_poly   <= hintsum;
             mem_wr_data         <= {REG_SIZE'(bitmap[8'(bitmap_ptr+3)]), REG_SIZE'(bitmap[8'(bitmap_ptr+2)]), REG_SIZE'(bitmap[8'(bitmap_ptr+1)]), REG_SIZE'(bitmap[8'(bitmap_ptr)])};
             hint                <= hint_rd_en ? {encoded_h_i[7'(rd_ptr+3)], encoded_h_i[7'(rd_ptr+2)], encoded_h_i[7'(rd_ptr+1)], encoded_h_i[7'(rd_ptr)]} : 'h0;
@@ -134,19 +142,25 @@ module sigdecode_h
 
     always_comb begin
         OR_remaining_encoded_h_i = 0;
-        for(int i=0; i<MLDSA_OMEGA; i++) begin
-            if (i >= encoded_h_i[(MLDSA_OMEGA+MLDSA_K)-1])
-                OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
-            else
-                OR_remaining_encoded_h_i=0;
+        //Bytes of the hint index region beyond the final cumulative hintsum must
+        //be zero. Both the region length (omega) and the position of the final
+        //hintsum byte (omega + k - 1) are runtime values now.
+        for(int i=0; i<ENCODED_H_BYTES; i++) begin
+            if (8'(i) < omega_i) begin
+                if (i >= encoded_h_i[8'(omega_i)+8'(mldsa_k_i)-8'd1])
+                    OR_remaining_encoded_h_i = OR_remaining_encoded_h_i | (|encoded_h_i[i]);
+                else
+                    OR_remaining_encoded_h_i=0;
+            end
         end
     end
 
     always_comb begin
         hintsum_max_error_i = 0;
         for(int i=0; i< MLDSA_K; i++) begin
-            if (encoded_h_i[MLDSA_OMEGA+i] > MLDSA_OMEGA)
-                hintsum_max_error_i = 1'b1;
+            if (4'(i) < mldsa_k_i)
+                if (encoded_h_i[8'(omega_i)+8'(i)] > omega_i)
+                    hintsum_max_error_i = 1'b1;
         end
     end
     
@@ -190,7 +204,8 @@ module sigdecode_h
         .rst_bitmap(rst_bitmap),
         .curr_poly_map(curr_poly_map),
         .bitmap_ptr(bitmap_ptr),
-        .hint_rd_en(hint_rd_en)
+        .hint_rd_en(hint_rd_en),
+        .mldsa_k_i(mldsa_k_i)
     );
 
 endmodule

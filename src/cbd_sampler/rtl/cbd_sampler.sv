@@ -17,12 +17,14 @@
 module cbd_sampler
   import abr_params_pkg::*;
   #(
-   parameter  CBD_ETA      = MLKEM_ETA
+   parameter  CBD_ETA      = MLKEM_ETA1_MAX
   ,localparam CBD_SAMPLE_W = 2*CBD_ETA
   )
   (
   //input data
   input  logic [CBD_SAMPLE_W-1:0] data_i,
+  //eta1 = 3 (ML-KEM-512). CBD_ETA above only sizes the lane.
+  input  logic                    eta3_i,
 
   //output data
   output logic [2:0] data_o
@@ -30,10 +32,16 @@ module cbd_sampler
   );
 
   logic [CBD_SAMPLE_W-1:0] a;
-  logic [CBD_ETA-1:0] b;
-  logic [CBD_ETA-1:0] c;
+  logic [2:0] b;
+  logic [2:0] c;
+  logic [2:0] eta_active;
 
   assign a = data_i;
+
+  //FIPS 203 Alg. 8 (SamplePolyCBD): b = sum of the first eta bits, c = sum of
+  //the next eta bits, sample = b - c. eta moves the split point, so when more
+  //than one ML-KEM parameter set is enabled it has to be a runtime value.
+  always_comb eta_active = (ABR_NEED_CBD3 & eta3_i) ? 3'd3 : 3'd2;
 
   //Check sample validity
   always_comb begin
@@ -41,10 +49,12 @@ module cbd_sampler
     b = 0;
     c = 0;
     for (int i = 0; i < CBD_ETA; i++) begin
-      b += a[i];
-      c += a[i+CBD_ETA];
+      if (3'(i) < eta_active) begin
+        b += a[i];
+        c += a[3'(i) + eta_active];
+      end
     end
-    data_o  = b - c; 
+    data_o  = b - c;
   end
 
 endmodule

@@ -89,6 +89,11 @@ package abr_sampler_pkg;
   parameter CBD_PISO_BUFFER_W    = 1344;
   parameter CBD_PISO_INPUT_RATE  = 1088;
   parameter CBD_PISO_OUTPUT_RATE = CBD_NUM_SAMPLERS*CBD_SAMPLE_W;
+  //ML-KEM-512 uses eta1 = 3, so PRF output is consumed 6 bits per coefficient
+  //instead of 4. Only the PISO output rate changes; the buffer is shared.
+  parameter CBD_SAMPLE_W_MAX       = 2*MLKEM_ETA1_MAX;
+  parameter CBD_SAMPLE_W_3         = 6;
+  parameter CBD_PISO_OUTPUT_RATE_3 = CBD_NUM_SAMPLERS*CBD_SAMPLE_W_3;
 
 
   //declare fsm state variables
@@ -106,7 +111,8 @@ package abr_sampler_pkg;
     ABR_EXP_MODE,
     ABR_SIB_MODE,
     ABR_CBD_MODE,
-    ABR_EXP17_MODE
+    ABR_EXP17_MODE,
+    ABR_CBD3_MODE
   } abr_piso_mode_e;
 
   //common structures

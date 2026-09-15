@@ -17,7 +17,7 @@ module cbd_sampler_ctrl
   import abr_params_pkg::*;
   #(
    localparam CBD_NUM_SAMPLERS = COEFF_PER_CLK
-  ,localparam CBD_SAMPLE_W     = 2*MLKEM_ETA
+  ,localparam CBD_SAMPLE_W     = 2*MLKEM_ETA1_MAX
   ,localparam CBD_VLD_SAMPLES  = CBD_NUM_SAMPLERS
   ,localparam CBD_VLD_SAMPLES_W = MLKEM_Q_WIDTH
   )
@@ -29,6 +29,8 @@ module cbd_sampler_ctrl
   input  logic                                          data_valid_i,
   output logic                                          data_hold_o,
   input  logic [CBD_NUM_SAMPLERS-1:0][CBD_SAMPLE_W-1:0] data_i,
+  //Active ML-KEM parameter set uses eta1 = 3 (ML-KEM-512 only).
+  input  logic                                          eta3_i,
 
   //output data
   output logic                                              data_valid_o,
@@ -46,6 +48,7 @@ module cbd_sampler_ctrl
       cbd_sampler
       cbd_sampler_i (
         .data_i(data_i[inst_g]),
+        .eta3_i(eta3_i),
         .data_o(sample_data[inst_g])
       );
     end

@@ -35,6 +35,8 @@ module abr_sampler_top
   //eta=4 select for ML-DSA-65 rejection bounded sampling. Public.
   input logic              mldsa_eta4_i,
   input logic              gamma1_17_i,
+  //Active ML-KEM parameter set uses eta1 = 3 (ML-KEM-512 only). Public.
+  input logic              eta3_i,
 
   input logic                    sha3_start_i,
   input logic                    sha3_masked_i,
@@ -152,7 +154,7 @@ module abr_sampler_top
   //cbd
   logic                                               cbd_piso_dv;
   logic                                               cbd_piso_hold;
-  logic [CBD_NUM_SAMPLERS-1:0][CBD_SAMPLE_W-1:0]      cbd_piso_data;
+  logic [CBD_NUM_SAMPLERS-1:0][CBD_SAMPLE_W_MAX-1:0]  cbd_piso_data;
 
   logic                                               cbd_dv;
   logic [CBD_VLD_SAMPLES-1:0][MLKEM_Q_WIDTH-1:0]      cbd_data;
@@ -308,7 +310,7 @@ module abr_sampler_top
         zeroize_cbd |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = ABR_CBD_MODE;
+        piso_mode = eta3_i ? ABR_CBD3_MODE : ABR_CBD_MODE;
       end
       ABR_SAMPLER_NONE: begin
         //do nothing
@@ -474,12 +476,12 @@ endgenerate
 
   //Multi-rate piso
   abr_piso_multi #(
-    .NUM_MODES(6),
+    .NUM_MODES(7),
     .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
     .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
     .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
-    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE}),
-    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17})
+    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
+    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3})
   ) abr_piso_inst (
     .clk(clk),
     .rst_b(rst_b),
@@ -564,7 +566,17 @@ endgenerate
     end
   end
   always_comb sib_piso_data = piso_data[SIB_PISO_OUTPUT_RATE-1:0];
-  always_comb cbd_piso_data = piso_data[CBD_PISO_OUTPUT_RATE-1:0];
+  //Unpack CBD samples into fixed width lanes. At eta1 = 3 the samples are 6 bits
+  //wide; at eta = 2 they are 4 bits and are zero extended into the same lanes,
+  //which is arithmetically inert because the sampler only reads 2*eta bits.
+  always_comb begin
+    for (int unsigned i = 0; i < CBD_NUM_SAMPLERS; i++) begin
+      if (ABR_NEED_CBD3 & eta3_i)
+        cbd_piso_data[i] = piso_data[i*CBD_SAMPLE_W_3 +: CBD_SAMPLE_W_3];
+      else
+        cbd_piso_data[i] = CBD_SAMPLE_W_MAX'(piso_data[i*CBD_SAMPLE_W +: CBD_SAMPLE_W]);
+    end
+  end
 
   rej_sampler_ctrl#(
     .REJ_NUM_SAMPLERS(MLDSA_REJS_NUM_SAMPLERS),
@@ -748,6 +760,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   .data_valid_i(cbd_piso_dv),
   .data_hold_o(cbd_piso_hold),
   .data_i(cbd_piso_data),
+  .eta3_i(eta3_i),
 
   //output data
   .data_valid_o(cbd_dv),

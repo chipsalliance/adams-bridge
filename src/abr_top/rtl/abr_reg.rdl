@@ -81,6 +81,18 @@ addrmap abr_reg {
         field {desc = "Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs."; swwe = abr_ready; hwclr;} PCR_SIGN = 1'b0;
         field {desc = "ExternalMu Mode"; swwe = abr_ready; hwclr;} EXTERNAL_MU = 1'b0;
         field {desc = "Enable streaming mode to get message for signing/verifying operation"; swwe = abr_ready; hwclr;} STREAM_MSG = 1'b0;
+        field {desc = "ML-DSA parameter set selection (FIPS 204 Table 1). This can be:
+                [br]            00 for ML-DSA-87 (category 5, the reset default)
+                [br]            01 for ML-DSA-44 (category 2)
+                [br]            10 for ML-DSA-65 (category 3)
+                [br]            11 reserved
+                [br] The reset value selects ML-DSA-87, so software that is unaware of
+                [br] this field keeps the category 5 behaviour.
+                [br] Hardware latches this field when a command starts and holds it for
+                [br] the whole operation, so it cannot be changed mid-operation.
+                [br] Selecting a reserved encoding, or a parameter set that was not
+                [br] enabled at elaboration time, sets MLDSA_STATUS.ERROR and the
+                [br] command does not run."; swwe = abr_ready; hwclr;} PARAM_SET[2] = 2'b0;
     
     } MLDSA_CTRL;
 
@@ -346,6 +358,20 @@ addrmap abr_reg {
         field {desc = "Zeroize all internal registers: Zeroize all internal registers and memories to avoid SCA leakage.
                        [br] Software write generates only a single-cycle pulse on the 
                        [br] hardware interface and then will be erased"; singlepulse;} ZEROIZE = 1'b0;
+        field {desc = "ML-KEM parameter set selection (FIPS 203 Table 2). This can be:
+                [br]            00 for ML-KEM-1024 (category 5, the reset default)
+                [br]            01 for ML-KEM-512 (category 1)
+                [br]            10 for ML-KEM-768 (category 3)
+                [br]            11 reserved
+                [br] The reset value selects ML-KEM-1024, so software that is unaware of
+                [br] this field keeps the category 5 behaviour.
+                [br] There is no ML-KEM parameter set at category 2, which is why this
+                [br] field is per algorithm rather than a shared security level.
+                [br] Hardware latches this field when a command starts and holds it for
+                [br] the whole operation, so it cannot be changed mid-operation.
+                [br] Selecting a reserved encoding, or a parameter set that was not
+                [br] enabled at elaboration time, sets MLKEM_STATUS.ERROR and the
+                [br] command does not run."; swwe = abr_ready; hwclr;} PARAM_SET[2] = 2'b0;
     
     } MLKEM_CTRL;
 

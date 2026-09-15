@@ -272,6 +272,10 @@ module abr_reg (
                 logic next;
                 logic load_next;
             } STREAM_MSG;
+            struct packed{
+                logic [1:0] next;
+                logic load_next;
+            } PARAM_SET;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -462,6 +466,10 @@ module abr_reg (
                 logic next;
                 logic load_next;
             } ZEROIZE;
+            struct packed{
+                logic [1:0] next;
+                logic load_next;
+            } PARAM_SET;
         } MLKEM_CTRL;
         struct packed{
             struct packed{
@@ -603,6 +611,9 @@ module abr_reg (
             struct packed{
                 logic value;
             } STREAM_MSG;
+            struct packed{
+                logic [1:0] value;
+            } PARAM_SET;
         } MLDSA_CTRL;
         struct packed{
             struct packed{
@@ -753,6 +764,9 @@ module abr_reg (
             struct packed{
                 logic value;
             } ZEROIZE;
+            struct packed{
+                logic [1:0] value;
+            } PARAM_SET;
         } MLKEM_CTRL;
         struct packed{
             struct packed{
@@ -971,6 +985,30 @@ module abr_reg (
         end
     end
     assign hwif_out.MLDSA_CTRL.STREAM_MSG.value = field_storage.MLDSA_CTRL.STREAM_MSG.value;
+    // Field: abr_reg.MLDSA_CTRL.PARAM_SET
+    always_comb begin
+        automatic logic [1:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLDSA_CTRL.PARAM_SET.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLDSA_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
+            next_c = (field_storage.MLDSA_CTRL.PARAM_SET.value & ~decoded_wr_biten[8:7]) | (decoded_wr_data[8:7] & decoded_wr_biten[8:7]);
+            load_next_c = '1;
+        end else if(hwif_in.MLDSA_CTRL.PARAM_SET.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLDSA_CTRL.PARAM_SET.next = next_c;
+        field_combo.MLDSA_CTRL.PARAM_SET.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLDSA_CTRL.PARAM_SET.value <= 2'h0;
+        end else if(field_combo.MLDSA_CTRL.PARAM_SET.load_next) begin
+            field_storage.MLDSA_CTRL.PARAM_SET.value <= field_combo.MLDSA_CTRL.PARAM_SET.next;
+        end
+    end
+    assign hwif_out.MLDSA_CTRL.PARAM_SET.value = field_storage.MLDSA_CTRL.PARAM_SET.value;
     // Field: abr_reg.MLDSA_STATUS.VALID
     always_comb begin
         automatic logic [0:0] next_c;
@@ -1787,6 +1825,30 @@ module abr_reg (
         end
     end
     assign hwif_out.MLKEM_CTRL.ZEROIZE.value = field_storage.MLKEM_CTRL.ZEROIZE.value;
+    // Field: abr_reg.MLKEM_CTRL.PARAM_SET
+    always_comb begin
+        automatic logic [1:0] next_c;
+        automatic logic load_next_c;
+        next_c = field_storage.MLKEM_CTRL.PARAM_SET.value;
+        load_next_c = '0;
+        if(decoded_reg_strb.MLKEM_CTRL && decoded_req_is_wr && hwif_in.abr_ready) begin // SW write
+            next_c = (field_storage.MLKEM_CTRL.PARAM_SET.value & ~decoded_wr_biten[5:4]) | (decoded_wr_data[5:4] & decoded_wr_biten[5:4]);
+            load_next_c = '1;
+        end else if(hwif_in.MLKEM_CTRL.PARAM_SET.hwclr) begin // HW Clear
+            next_c = '0;
+            load_next_c = '1;
+        end
+        field_combo.MLKEM_CTRL.PARAM_SET.next = next_c;
+        field_combo.MLKEM_CTRL.PARAM_SET.load_next = load_next_c;
+    end
+    always_ff @(posedge clk or negedge hwif_in.reset_b) begin
+        if(~hwif_in.reset_b) begin
+            field_storage.MLKEM_CTRL.PARAM_SET.value <= 2'h0;
+        end else if(field_combo.MLKEM_CTRL.PARAM_SET.load_next) begin
+            field_storage.MLKEM_CTRL.PARAM_SET.value <= field_combo.MLKEM_CTRL.PARAM_SET.next;
+        end
+    end
+    assign hwif_out.MLKEM_CTRL.PARAM_SET.value = field_storage.MLKEM_CTRL.PARAM_SET.value;
     // Field: abr_reg.MLKEM_STATUS.VALID
     always_comb begin
         automatic logic [0:0] next_c;

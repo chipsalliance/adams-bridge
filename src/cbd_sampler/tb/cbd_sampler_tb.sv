@@ -141,6 +141,7 @@ module cbd_sampler_tb
   .data_valid_i(piso_valid),
   .data_hold_o(piso_hold),
   .data_i(piso_data),
+  .eta3_i(1'b0),
 
   //output data
   .data_valid_o(data_valid_o),

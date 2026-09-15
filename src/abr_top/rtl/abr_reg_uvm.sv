@@ -39,6 +39,7 @@ package abr_reg_uvm;
         rand uvm_reg_field PCR_SIGN;
         rand uvm_reg_field EXTERNAL_MU;
         rand uvm_reg_field STREAM_MSG;
+        rand uvm_reg_field PARAM_SET;
 
         function new(string name = "abr_reg__MLDSA_CTRL");
             super.new(name, 32, UVM_NO_COVERAGE);
@@ -55,6 +56,8 @@ package abr_reg_uvm;
             this.EXTERNAL_MU.configure(this, 1, 5, "WO", 1, 'h0, 1, 1, 0);
             this.STREAM_MSG = new("STREAM_MSG");
             this.STREAM_MSG.configure(this, 1, 6, "WO", 1, 'h0, 1, 1, 0);
+            this.PARAM_SET = new("PARAM_SET");
+            this.PARAM_SET.configure(this, 2, 7, "WO", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__MLDSA_CTRL
 
@@ -624,6 +627,7 @@ package abr_reg_uvm;
     class abr_reg__MLKEM_CTRL extends uvm_reg;
         rand uvm_reg_field CTRL;
         rand uvm_reg_field ZEROIZE;
+        rand uvm_reg_field PARAM_SET;
 
         function new(string name = "abr_reg__MLKEM_CTRL");
             super.new(name, 32, UVM_NO_COVERAGE);
@@ -634,6 +638,8 @@ package abr_reg_uvm;
             this.CTRL.configure(this, 3, 0, "WO", 1, 'h0, 1, 1, 0);
             this.ZEROIZE = new("ZEROIZE");
             this.ZEROIZE.configure(this, 1, 3, "WO", 0, 'h0, 1, 1, 0);
+            this.PARAM_SET = new("PARAM_SET");
+            this.PARAM_SET.configure(this, 2, 4, "WO", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : abr_reg__MLKEM_CTRL
 

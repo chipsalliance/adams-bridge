@@ -58,6 +58,8 @@ sigdecode_h #(
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
     .encoded_h_i(y_tb),
+    .omega_i(8'd75),
+    .mldsa_k_i(4'd8),
     .sigdecode_h_enable(en_tb),
     .dest_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),
     .mem_wr_req(),

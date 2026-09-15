@@ -48,6 +48,12 @@ module makehint
         input wire zeroize,
 
         input wire makehint_enable,
+        //Runtime parameter set controls. omega is non-monotonic across the ML-DSA
+        //sets (44 -> 80, 65 -> 55, 87 -> 75), so it cannot be a compile-time
+        //parameter once more than one set is enabled. MLDSA_K/OMEGA below stay as
+        //the maximum values and only size the storage.
+        input wire [7:0] omega_i,
+        input wire [3:0] mldsa_k_i,
         input logic mem_rd_data_valid,
         input wire [(4*REG_SIZE)-1:0] r,
         input wire [3:0] z,
@@ -65,6 +71,10 @@ module makehint
     logic [3:0] hint;
     logic [MLDSA_K-1:0][7:0] max_index_buffer;
     logic [31:0] max_index_buffer_data;
+    //Worst case is omega mod 4 == 3 with k == 8, i.e. 11 bytes -> 3 dwords.
+    logic [11:0][7:0] hintsum_stream;
+    logic [1:0] hintsum_byte_offset;
+    logic [2:0] hintsum_num_dwords;
     logic max_index_buffer_rd_lo, max_index_buffer_rd_mid, max_index_buffer_rd_hi;  
     logic max_index_buffer_rd;
 
@@ -150,7 +160,7 @@ module makehint
 
     always_comb begin
         poly_done = incr_poly; //last_addr_read;
-        poly_last = (poly_count == MLDSA_K-1);
+        poly_last = (poly_count == ($clog2(MLDSA_K))'(mldsa_k_i-4'h1));
         flush_buffer = (read_fsm_state_ps == MH_FLUSH_SBUF); //poly_last & poly_done; //TODO: check to make sure all indexes have been processed before this flag goes high
     end
 
@@ -195,11 +205,28 @@ module makehint
         else if (zeroize | makehint_done)
             max_index_buffer <= '0;
         else if (poly_done)
-            max_index_buffer <= {hintsum, max_index_buffer[MLDSA_K-1:1]};
+            //Indexed write rather than a fixed-length shift: the number of
+            //hintsum bytes is k, which is now a runtime value.
+            max_index_buffer[poly_count] <= hintsum;
     end
-    assign max_index_buffer_data = max_index_buffer_rd_lo ? {max_index_buffer[0], 24'h0} : 
-                                   max_index_buffer_rd_mid ? max_index_buffer[4:1] :
-                                   max_index_buffer_rd_hi ? {8'h0, max_index_buffer[7:5]} : '0;
+    //The k hintsum bytes start at byte (omega mod 4) of the first hintsum dword,
+    //so build the byte stream explicitly and slice dwords out of it. At omega=75,
+    //k=8 this reproduces the previous {mib[0],24'h0} / mib[4:1] / {8'h0,mib[7:5]}
+    //sequence exactly.
+    always_comb hintsum_byte_offset = omega_i[1:0];
+    always_comb hintsum_num_dwords  = 3'((4'(hintsum_byte_offset) + mldsa_k_i + 4'd3) >> 2);
+
+    always_comb begin
+        hintsum_stream = '0;
+        for (int i = 0; i < MLDSA_K; i++) begin
+            if (4'(i) < mldsa_k_i)
+                hintsum_stream[4'(hintsum_byte_offset) + 4'(i)] = max_index_buffer[i];
+        end
+    end
+
+    assign max_index_buffer_data = max_index_buffer_rd_lo  ? hintsum_stream[3:0]  :
+                                   max_index_buffer_rd_mid ? hintsum_stream[7:4]  :
+                                   max_index_buffer_rd_hi  ? hintsum_stream[11:8] : '0;
 
     //Reg API
     //Write from sample buffer for each dword captured per polynomial.
@@ -208,7 +235,7 @@ module makehint
     assign reg_wren = sample_valid | flush_buffer | max_index_buffer_rd;
     assign reg_wrdata = max_index_buffer_rd ? max_index_buffer_data : (sample_valid | flush_buffer) ? sample_data : '0;
 
-    always_comb reg_wr_addr_nxt = latch_hintsum_addr ? (OMEGA/4) : reg_wr_addr + 'h1; //Latch hintsum dword addr at the end of hint processing
+    always_comb reg_wr_addr_nxt = latch_hintsum_addr ? ABR_MEM_ADDR_WIDTH'(omega_i >> 2) : reg_wr_addr + 'h1; //Latch hintsum dword addr at the end of hint processing
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
@@ -222,7 +249,7 @@ module makehint
         end
     end
 
-    assign invalid_h = (hintsum > OMEGA);
+    assign invalid_h = (hintsum > omega_i);
 
     //----------------------------
     //Read addr counter
@@ -305,16 +332,16 @@ module makehint
             MH_RD_IBUF_LOW: begin
                 //last poly, write lower dword of max idx buf to reg API
                 read_fsm_state_ns   = MH_RD_IBUF_MID;
-                max_index_buffer_rd_lo = 1'b1;
+                max_index_buffer_rd_lo  = (hintsum_num_dwords >= 3'd1);
             end
             MH_RD_IBUF_MID: begin
                 read_fsm_state_ns   = MH_RD_IBUF_HIGH;
-                max_index_buffer_rd_mid = 1'b1;
+                max_index_buffer_rd_mid = (hintsum_num_dwords >= 3'd2);
             end
             MH_RD_IBUF_HIGH: begin
                 //last poly, write higher dword of max idx buf to reg API
                 read_fsm_state_ns   = MH_IDLE;
-                max_index_buffer_rd_hi = 1'b1;
+                max_index_buffer_rd_hi  = (hintsum_num_dwords >= 3'd3);
             end
             default: begin
                 read_fsm_state_ns   = MH_IDLE;

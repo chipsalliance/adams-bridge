@@ -64,6 +64,12 @@ module abr_ctrl
   output logic                       mldsa_eta4_o,
   output logic                       mldsa_gamma2_88_o,
   output logic                       mldsa_gamma1_17_o,
+  //Active ML-KEM parameter set uses eta1 = 3 (ML-KEM-512 only). Public signal.
+  output logic                       mlkem_eta3_o,
+  //Active ML-DSA dimensions. omega is non-monotonic across the sets, so the
+  //consumers take it as a value rather than a parameter.
+  output logic [3:0]                 mldsa_k_o,
+  output logic [7:0]                 mldsa_omega_o,
   output logic                       sha3_start_o,
   output logic                       sha3_masked_o,
   output logic                       msg_start_o,
@@ -556,8 +562,18 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic abr_seq_en;
   logic [ABR_PROG_ADDR_W-1 : 0] abr_prog_cntr, abr_prog_cntr_nxt;
   mldsa_param_set_e mldsa_param_set;
+  mlkem_param_set_e mlkem_param_set;
+  mldsa_param_set_e mldsa_param_set_req, mldsa_param_set_reg;
+  mlkem_param_set_e mlkem_param_set_req, mlkem_param_set_reg;
+  logic             param_set_unsupported;
+  logic [63:0]      mldsa_core_name_sel, mlkem_core_name_sel;
   logic [3:0] mldsa_l;
   abr_seq_instr_t abr_instr_o, abr_instr;
+  abr_vec_ctrl_t  abr_vec_o, abr_vec;
+  abr_seq_instr_t abr_instr_ds;
+  logic           abr_row_skip;
+  logic [3:0]     vec_k_active, vec_l_active;
+  logic           abr_pc_is_mlkem;
 
   logic msg_done;
   logic msg_last;
@@ -751,6 +767,10 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb abr_reg_hwif_in.abr_ready = abr_ready;
   always_comb abr_reg_hwif_in.MLDSA_CTRL.CTRL.hwclr = |mldsa_cmd_reg;
   always_comb abr_reg_hwif_in.MLKEM_CTRL.CTRL.hwclr = |mlkem_cmd_reg;
+  //PARAM_SET is cleared alongside its command field, so it follows the same
+  //write-once-per-command model as CTRL and cannot linger into the next command.
+  always_comb abr_reg_hwif_in.MLDSA_CTRL.PARAM_SET.hwclr = |mldsa_cmd_reg;
+  always_comb abr_reg_hwif_in.MLKEM_CTRL.PARAM_SET.hwclr = |mlkem_cmd_reg;
   `ifdef CALIPTRA
     always_comb abr_reg_hwif_in.MLDSA_CTRL.PCR_SIGN.hwclr = abr_reg_hwif_out.MLDSA_CTRL.PCR_SIGN.value;
     always_comb mldsa_cmd_reg = mldsa_cmd_e'(abr_reg_hwif_out.MLDSA_CTRL.CTRL.value & {$bits(mldsa_cmd_reg){kv_mldsa_seed_ready}});
@@ -768,8 +788,8 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb begin : ABR_REG_HWIF_IN_ASSIGN
     //MLDSA
-    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = MLDSA_CORE_NAME[31:0];
-    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = MLDSA_CORE_NAME[63:32];
+    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = mldsa_core_name_sel[31:0];
+    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = mldsa_core_name_sel[63:32];
     abr_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = MLDSA_CORE_VERSION[31:0];
     abr_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = MLDSA_CORE_VERSION[63:32];
 
@@ -847,8 +867,8 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr = zeroize;
 
     //MLKEM
-    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = MLKEM_CORE_NAME[31:0];
-    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = MLKEM_CORE_NAME[63:32];
+    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = mlkem_core_name_sel[31:0];
+    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = mlkem_core_name_sel[63:32];
     abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = MLKEM_CORE_VERSION[31:0];
     abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = MLKEM_CORE_VERSION[63:32];
 
@@ -1639,7 +1659,12 @@ always_comb kv_mlkem_msg_write_data = '0;
                                   sampler_busy_i | ntt_busy;
 
 always_comb begin
-  error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
+  //A reserved encoding, or a parameter set that was not enabled at elaboration
+  //time, must abort the command rather than run it on the wrong datapath.
+  param_set_unsupported = ((|mldsa_cmd_reg) & ~mldsa_param_set_supported(mldsa_param_set_req)) |
+                          ((|mlkem_cmd_reg) & ~mlkem_param_set_supported(mlkem_param_set_req));
+  error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure |
+               param_set_unsupported;
   `ifdef CALIPTRA
   //extra error condition for caliptra
   pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
@@ -1853,11 +1878,40 @@ end
 //Controller abr_instr decode - drives sampler and primary ntt
   //Active ML-DSA parameter set. Latched at command start in Phase 5; fixed at
   //the category-5 set today so the existing datapath is bit-identical.
-  always_comb mldsa_param_set = MLDSA_PARAM_87;
+  //The parameter set is latched when a command is issued and held for the whole
+  //operation, so software cannot change it mid-flight. Reset and zeroize both
+  //return to the category 5 sets, which is also what register encoding 2'b00
+  //decodes to, so software unaware of the field sees no change in behaviour.
+  always_comb mldsa_param_set_req = mldsa_param_set_decode(abr_reg_hwif_out.MLDSA_CTRL.PARAM_SET.value);
+  always_comb mlkem_param_set_req = mlkem_param_set_decode(abr_reg_hwif_out.MLKEM_CTRL.PARAM_SET.value);
+
+  always_ff @(posedge clk or negedge rst_b) begin : param_set_latch
+    if (!rst_b) begin
+      mldsa_param_set_reg <= MLDSA_PARAM_87;
+      mlkem_param_set_reg <= MLKEM_PARAM_1024;
+    end
+    else if (zeroize) begin
+      mldsa_param_set_reg <= MLDSA_PARAM_87;
+      mlkem_param_set_reg <= MLKEM_PARAM_1024;
+    end
+    else begin
+      if (|mldsa_cmd_reg) mldsa_param_set_reg <= mldsa_param_set_req;
+      if (|mlkem_cmd_reg) mlkem_param_set_reg <= mlkem_param_set_req;
+    end
+  end
+
+  always_comb mldsa_param_set = mldsa_param_set_reg;
+  always_comb mlkem_param_set = mlkem_param_set_reg;
+
+  always_comb mldsa_core_name_sel = mldsa_core_name_of(mldsa_param_set);
+  always_comb mlkem_core_name_sel = mlkem_core_name_of(mlkem_param_set);
   always_comb mldsa_l         = 4'(mldsa_l_of(mldsa_param_set));
+  always_comb mldsa_k_o       = 4'(mldsa_k_of(mldsa_param_set));
+  always_comb mldsa_omega_o   = 8'(mldsa_omega_of(mldsa_param_set));
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
   always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);
   always_comb mldsa_gamma1_17_o = ABR_NEED_GAMMA1_17 & (mldsa_param_set == MLDSA_PARAM_44);
+  always_comb mlkem_eta3_o      = ABR_NEED_CBD3 & (mlkem_param_set == MLKEM_PARAM_512);
 
   always_comb begin
     sampler_mode_o = ABR_SAMPLER_NONE;
@@ -2236,6 +2290,47 @@ abr_seq abr_seq_inst
   .data_o(abr_instr_o)
 );
 
+//Row annotation, addressed in lockstep with the instruction ROM.
+abr_seq_vec abr_seq_vec_inst
+(
+  .clk(clk),
+
+  .en_i(abr_seq_en),
+  .addr_i(abr_prog_cntr_nxt),
+  .data_o(abr_vec_o)
+);
+
+//The ML-KEM program occupies the tail of the sequencer ROM, so the active row
+//counts can be selected from the program counter alone.
+always_comb abr_pc_is_mlkem = (abr_prog_cntr >= ABR_PROG_ADDR_W'(MLKEM_KG_S));
+always_comb vec_k_active    = abr_pc_is_mlkem ? 4'(mlkem_k_of(mlkem_param_set)) : mldsa_k_o;
+always_comb vec_l_active    = abr_pc_is_mlkem ? 4'(mlkem_k_of(mlkem_param_set)) : mldsa_l;
+
+//Recompute the ExpandS domain separators. For category 5 this reproduces the
+//ROM values exactly (s1 -> 0..6, s2 -> 7..14), so the override is inert there.
+always_comb begin
+  abr_instr_ds = abr_instr_o;
+  unique case (abr_vec.ds)
+    ABR_DS_ROW   : abr_instr_ds.imm = ABR_IMM_WIDTH'(abr_vec.row);
+    ABR_DS_L_ROW : abr_instr_ds.imm = ABR_IMM_WIDTH'(vec_l_active) + ABR_IMM_WIDTH'(abr_vec.row);
+    ABR_DS_K_ROW : abr_instr_ds.imm = ABR_IMM_WIDTH'(vec_k_active) + ABR_IMM_WIDTH'(abr_vec.row);
+    ABR_DS_2K_ROW: abr_instr_ds.imm = ABR_IMM_WIDTH'({vec_k_active,1'b0}) + ABR_IMM_WIDTH'(abr_vec.row);
+    default      : abr_instr_ds.imm = abr_instr_o.imm;
+  endcase
+end
+
+//A row outside the active (k, l) is issued as a NOP. It still costs a cycle,
+//which keeps the program counter arithmetic and every branch target unchanged.
+always_comb begin
+  unique case (abr_vec.bound)
+    ABR_ROW_LT_L  : abr_row_skip = (abr_vec.row >= vec_l_active);
+    ABR_ROW_LT_K  : abr_row_skip = (abr_vec.row >= vec_k_active);
+    ABR_ROW_MAT_A : abr_row_skip = (abr_instr_o.imm[15:8] >= 8'(vec_k_active)) |
+                                   (abr_instr_o.imm[7:0]  >= 8'(vec_l_active));
+    default       : abr_row_skip = 1'b0;
+  endcase
+end
+
 //NTT gasket — single command output
 //Check if ntt is being enabled in this clock also
 always_comb begin
@@ -2264,7 +2359,8 @@ always_comb recombine_mode_o =
     (abr_instr.opcode.ntt_en & (abr_instr.opcode.mode.ntt_mode == MLKEM_PWS)) |
     (abr_instr.opcode.aux_en & (abr_instr.opcode.mode.aux_mode == MLKEM_COMPRESS));
 
-always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? '0 : abr_instr_o;
+always_comb abr_vec = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET)) ? ABR_VEC_NONE : abr_vec_o;
+always_comb abr_instr = ((abr_prog_cntr == ABR_ZEROIZE) | (abr_prog_cntr == ABR_RESET) | abr_row_skip) ? '0 : abr_instr_ds;
 
 always_ff @(posedge clk or negedge rst_b) begin
   if (!rst_b) begin

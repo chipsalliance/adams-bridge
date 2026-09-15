@@ -61,6 +61,8 @@ makehint #(
     .reset_n(reset_n_tb),
     .zeroize(zeroize_tb),
     .makehint_enable(en_tb),
+    .omega_i(8'd75),
+    .mldsa_k_i(4'd8),
     .r(coeff_tb),
     .z(z_tb),
     .mem_base_addr(MLDSA_MEM_ADDR_WIDTH'(0)),

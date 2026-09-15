@@ -67,6 +67,7 @@ targets:
       - $COMPILE_ROOT/rtl/abr_mem_if.sv
       - $COMPILE_ROOT/rtl/abr_mem_top.sv
       - $COMPILE_ROOT/rtl/abr_seq.sv
+      - $COMPILE_ROOT/rtl/abr_seq_vec.sv
       - $COMPILE_ROOT/rtl/abr_ctrl.sv
       - $COMPILE_ROOT/rtl/abr_top.sv
       - $COMPILE_ROOT/rtl/abr_reg.sv

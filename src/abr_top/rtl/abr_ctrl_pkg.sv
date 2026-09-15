@@ -44,7 +44,7 @@ package abr_ctrl_pkg;
     localparam PUBKEY_NUM_DWORDS = 648;
     localparam PUBKEY_NUM_BYTES = PUBKEY_NUM_DWORDS * 4;
     localparam SIGNATURE_H_NUM_DWORDS = 21;
-    localparam SIGNATURE_H_VALID_NUM_BYTES = 83;
+    localparam SIGNATURE_H_VALID_NUM_BYTES = MLDSA_SIG_H_BYTES_MAX;
     localparam SIGNATURE_Z_NUM_DWORDS = 1120;
     localparam SIGNATURE_C_NUM_DWORDS = 16;
     localparam SIGNATURE_NUM_DWORDS = SIGNATURE_H_NUM_DWORDS + SIGNATURE_Z_NUM_DWORDS + SIGNATURE_C_NUM_DWORDS;
@@ -271,6 +271,56 @@ package abr_ctrl_pkg;
         logic [ABR_OPR_WIDTH-1 : 0]    operand2;
         logic [ABR_OPR_WIDTH-1 : 0]    operand3;
     } abr_seq_instr_t;
+
+    //Vector-row annotation.
+    //One ROM image has to serve every ML-DSA parameter set, so rows that only
+    //exist for the larger (k, l) are annotated here rather than duplicated. The
+    //controller turns an out-of-range row into a NOP, and where the domain
+    //separator is a flattened row counter it recomputes it at issue time. A
+    //separator can not simply be skipped: for ExpandS the s2 separators follow
+    //the s1 separators contiguously, so dropping an s1 row shifts every s2 row.
+    typedef enum logic [1:0] {
+        ABR_ROW_ALWAYS = 2'd0, //present in every parameter set
+        ABR_ROW_LT_L   = 2'd1, //execute iff row < l
+        ABR_ROW_LT_K   = 2'd2, //execute iff row < k
+        ABR_ROW_MAT_A  = 2'd3  //ExpandA: execute iff imm[15:8] < k && imm[7:0] < l
+    } abr_row_bound_e;
+
+    typedef enum logic [2:0] {
+        ABR_DS_ROM    = 3'd0, //imm is taken from the ROM verbatim
+        ABR_DS_ROW    = 3'd1, //imm = row       (ExpandS s1, ML-KEM CBD s/y)
+        ABR_DS_L_ROW  = 3'd2, //imm = l + row   (ExpandS s2)
+        ABR_DS_K_ROW  = 3'd3, //imm = k + row   (ML-KEM CBD e vector)
+        ABR_DS_2K_ROW = 3'd4  //imm = 2k + row  (ML-KEM CBD e2 scalar)
+    } abr_ds_mode_e;
+
+    typedef struct packed {
+        abr_row_bound_e bound;
+        abr_ds_mode_e   ds;
+        logic [3:0]     row;
+    } abr_vec_ctrl_t;
+
+    localparam abr_vec_ctrl_t ABR_VEC_NONE = '{bound:ABR_ROW_ALWAYS, ds:ABR_DS_ROM, row:4'd0};
+
+    function automatic abr_vec_ctrl_t abr_vec_s1(input logic [3:0] r);
+        return '{bound:ABR_ROW_LT_L, ds:ABR_DS_ROW,   row:r};
+    endfunction
+    function automatic abr_vec_ctrl_t abr_vec_s2(input logic [3:0] r);
+        return '{bound:ABR_ROW_LT_K, ds:ABR_DS_L_ROW, row:r};
+    endfunction
+    function automatic abr_vec_ctrl_t abr_vec_e(input logic [3:0] r);
+        return '{bound:ABR_ROW_LT_K, ds:ABR_DS_K_ROW, row:r};
+    endfunction
+    function automatic abr_vec_ctrl_t abr_vec_e2();
+        return '{bound:ABR_ROW_ALWAYS, ds:ABR_DS_2K_ROW, row:4'd0};
+    endfunction
+    function automatic abr_vec_ctrl_t abr_vec_l(input logic [3:0] r);
+        return '{bound:ABR_ROW_LT_L, ds:ABR_DS_ROM,   row:r};
+    endfunction
+    function automatic abr_vec_ctrl_t abr_vec_k(input logic [3:0] r);
+        return '{bound:ABR_ROW_LT_K, ds:ABR_DS_ROM,   row:r};
+    endfunction
+    localparam abr_vec_ctrl_t ABR_VEC_MAT_A = '{bound:ABR_ROW_MAT_A, ds:ABR_DS_ROM, row:4'd0};
 
     // MLDSA ISA
     localparam abr_opcode_t ABR_UOP_NOP               = '{keccak_en: 1'b0, sampler_en:1'b0, ntt_en:1'b0, aux_en: 1'b0, mode:ABR_SAMPLER_NONE,     masking_en:1'b0, recombine_en:1'b0, shuffling_en:1'b0, mask_keccak_en:1'b0};

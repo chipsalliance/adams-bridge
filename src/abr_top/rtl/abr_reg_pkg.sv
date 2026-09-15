@@ -39,10 +39,15 @@ package abr_reg_pkg;
     } abr_reg__MLDSA_CTRL__STREAM_MSG__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } abr_reg__MLDSA_CTRL__PARAM_SET__in_t;
+
+    typedef struct packed{
         abr_reg__MLDSA_CTRL__CTRL__in_t CTRL;
         abr_reg__MLDSA_CTRL__PCR_SIGN__in_t PCR_SIGN;
         abr_reg__MLDSA_CTRL__EXTERNAL_MU__in_t EXTERNAL_MU;
         abr_reg__MLDSA_CTRL__STREAM_MSG__in_t STREAM_MSG;
+        abr_reg__MLDSA_CTRL__PARAM_SET__in_t PARAM_SET;
     } abr_reg__MLDSA_CTRL__in_t;
 
     typedef struct packed{
@@ -265,7 +270,12 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_CTRL__CTRL__in_t;
 
     typedef struct packed{
+        logic hwclr;
+    } abr_reg__MLKEM_CTRL__PARAM_SET__in_t;
+
+    typedef struct packed{
         abr_reg__MLKEM_CTRL__CTRL__in_t CTRL;
+        abr_reg__MLKEM_CTRL__PARAM_SET__in_t PARAM_SET;
     } abr_reg__MLKEM_CTRL__in_t;
 
     typedef struct packed{
@@ -458,11 +468,16 @@ package abr_reg_pkg;
     } abr_reg__MLDSA_CTRL__STREAM_MSG__out_t;
 
     typedef struct packed{
+        logic [1:0] value;
+    } abr_reg__MLDSA_CTRL__PARAM_SET__out_t;
+
+    typedef struct packed{
         abr_reg__MLDSA_CTRL__CTRL__out_t CTRL;
         abr_reg__MLDSA_CTRL__ZEROIZE__out_t ZEROIZE;
         abr_reg__MLDSA_CTRL__PCR_SIGN__out_t PCR_SIGN;
         abr_reg__MLDSA_CTRL__EXTERNAL_MU__out_t EXTERNAL_MU;
         abr_reg__MLDSA_CTRL__STREAM_MSG__out_t STREAM_MSG;
+        abr_reg__MLDSA_CTRL__PARAM_SET__out_t PARAM_SET;
     } abr_reg__MLDSA_CTRL__out_t;
 
     typedef struct packed{
@@ -638,8 +653,13 @@ package abr_reg_pkg;
     } abr_reg__MLKEM_CTRL__ZEROIZE__out_t;
 
     typedef struct packed{
+        logic [1:0] value;
+    } abr_reg__MLKEM_CTRL__PARAM_SET__out_t;
+
+    typedef struct packed{
         abr_reg__MLKEM_CTRL__CTRL__out_t CTRL;
         abr_reg__MLKEM_CTRL__ZEROIZE__out_t ZEROIZE;
+        abr_reg__MLKEM_CTRL__PARAM_SET__out_t PARAM_SET;
     } abr_reg__MLKEM_CTRL__out_t;
 
     typedef struct packed{
