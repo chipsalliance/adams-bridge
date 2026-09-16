@@ -46,6 +46,8 @@ module decompose
         input wire zeroize,
 
         input wire decompose_enable,
+        //Number of polynomials to process. Public parameter, never secret.
+        input wire [3:0] mldsa_k_i,
         input dcmp_mode_t dcmp_mode,
         //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
         input wire gamma2_88_i,
@@ -115,6 +117,7 @@ module decompose
         .reset_n(reset_n),
         .zeroize(zeroize),
         .decompose_enable(decompose_enable),
+        .mldsa_k_i(mldsa_k_i),
         .src_base_addr(src_base_addr),
         .dest_base_addr(dest_base_addr),
         .r0_ready(&mod_ready), //all redux units must be ready at the same time

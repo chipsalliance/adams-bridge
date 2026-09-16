@@ -30,6 +30,11 @@ module skdecode_ctrl
         input wire reset_n,
         input wire zeroize,
 
+        //Active parameter set shape. All public, never secret.
+        input wire [3:0] mldsa_k_i,
+        input wire [3:0] mldsa_l_i,
+        input wire       eta4_i,
+
         input wire skdecode_enable, //One enable for all of s0, s1, t0 unpack
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
@@ -58,6 +63,12 @@ module skdecode_ctrl
     logic last_poly_last_addr;
     logic skdecode_busy;
     logic [3:0] num_poly, num_inst;
+    //Internal polynomial slots are always allocated at the category-5 shape, so the
+    //s2 and t0 segments start at fixed offsets regardless of the active parameter set.
+    localparam int POLY_DEPTH  = MLDSA_N/4;
+    localparam int S2_SEG_BASE = MLDSA_L * POLY_DEPTH;
+    localparam int T0_SEG_BASE = (MLDSA_L + MLDSA_K) * POLY_DEPTH;
+    logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_reg;
     mem_rw_mode_e mem_rw_mode, kmem_a_rw_mode;
     mem_rw_mode_e kmem_b_rw_mode;
     logic [8:0] skdecode_count;
@@ -108,7 +119,9 @@ module skdecode_ctrl
             mem_rd_pace <= '0;
         //S1S2 pace
         else if (arc_SKDEC_RD_IDLE_SKDEC_RD_S1 | arc_SKDEC_RD_S1_SKDEC_RD_S2) begin
-            mem_rd_pace <= 16'b0111011101110111;
+            //At eta = 2 eight coefficients are 24 bits, so only 3 of every 4 beats
+            //need a read. At eta = 4 they are a full 32-bit word every beat.
+            mem_rd_pace <= eta4_i ? 16'hFFFF : 16'b0111011101110111;
         end
         else if (arc_SKDEC_RD_S2_SKDEC_RD_T0) begin
             mem_rd_pace <= 16'b0111101111011111;
@@ -127,10 +140,21 @@ module skdecode_ctrl
             mem_wr_addr <= '0;
         else if (skdecode_enable)
             mem_wr_addr <= dest_base_addr;
+        else if (arc_SKDEC_WR_STAGE_SKDEC_WR_S2)
+            mem_wr_addr <= dest_base_addr_reg + ABR_MEM_ADDR_WIDTH'(S2_SEG_BASE);
         else if (arc_SKDEC_WR_STAGE_SKDEC_WR_T0)
-            mem_wr_addr <= mem_a_wr_req.addr; //Latch the last addr written, so we can continue from there for T0 poly //TODO revisit
+            mem_wr_addr <= dest_base_addr_reg + ABR_MEM_ADDR_WIDTH'(T0_SEG_BASE);
         else if (incr_wr_addr)
             mem_wr_addr <= mem_wr_addr_nxt;
+    end
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            dest_base_addr_reg <= '0;
+        else if (zeroize)
+            dest_base_addr_reg <= '0;
+        else if (skdecode_enable)
+            dest_base_addr_reg <= dest_base_addr;
     end
 
     //Read addr counter
@@ -229,7 +253,7 @@ module skdecode_ctrl
         rst_skdec_count     = 1'b0;
         s1s2_enable_fsm     = 1'b0;
         t0_enable_fsm       = 1'b0;
-        num_poly            = MLDSA_L;
+        num_poly            = mldsa_l_i;
         num_inst            = 4'd8;
 
         unique case(read_fsm_state_ps)
@@ -245,7 +269,7 @@ module skdecode_ctrl
                 kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
-                num_poly            = MLDSA_L;
+                num_poly            = mldsa_l_i;
                 num_inst            = 4'd8;
                 rst_skdec_count     = arc_SKDEC_RD_S1_SKDEC_RD_S2;
             end
@@ -256,7 +280,7 @@ module skdecode_ctrl
                 kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
-                num_poly            = MLDSA_K;
+                num_poly            = mldsa_k_i;
                 num_inst            = 4'd8;
                 rst_skdec_count     = arc_SKDEC_RD_S2_SKDEC_RD_T0;
             end
@@ -267,7 +291,7 @@ module skdecode_ctrl
                 kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = ~last_poly_last_addr;
                 t0_enable_fsm       = 1'b1;
-                num_poly            = MLDSA_K;
+                num_poly            = mldsa_k_i;
                 num_inst            = 4'd4;
                 rst_skdec_count     = arc_SKDEC_RD_T0_SKDEC_RD_IDLE;
             end

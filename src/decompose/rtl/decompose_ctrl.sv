@@ -25,6 +25,9 @@ module decompose_ctrl
         input wire reset_n,
         input wire zeroize,
 
+        //Number of polynomials to process. Public parameter, never secret.
+        input wire [3:0] mldsa_k_i,
+
         input wire decompose_enable, //Assumes polynomials are stored in contiguous locations and 1 enable will trig all 8 at once
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr, 
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
@@ -97,8 +100,8 @@ module decompose_ctrl
     end
 
     //Flags
-    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr_reg  + (MLDSA_K * (MLDSA_N/4))-1);
-    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr_reg + (MLDSA_K * (MLDSA_N/4))-1);
+    assign last_poly_last_addr_rd = (mem_rd_addr == src_base_addr_reg  + (mldsa_k_i * (MLDSA_N/4))-1);
+    assign last_poly_last_addr_wr = (mem_wr_addr == dest_base_addr_reg + (mldsa_k_i * (MLDSA_N/4))-1);
     assign decompose_busy = (read_fsm_state_ps != DCMP_RD_IDLE);
     assign decompose_done = (read_fsm_state_ps == DCMP_RD_IDLE) & (write_fsm_state_ps == DCMP_WR_IDLE);
 

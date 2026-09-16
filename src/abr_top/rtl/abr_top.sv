@@ -919,6 +919,7 @@ decompose_inst (
   .zeroize(zeroize_reg),
 
   .decompose_enable(decompose_enable),
+  .mldsa_k_i(mldsa_k),
   .dcmp_mode(decompose_mode),
   .gamma2_88_i(mldsa_gamma2_88),
   .src_base_addr(aux_src0_base_addr),
@@ -987,6 +988,10 @@ skdecode_inst
 
   .skdecode_enable(skdecode_enable),
   .skdecode_done(skdecode_done),
+
+  .mldsa_k_i(mldsa_k),
+  .mldsa_l_i(mldsa_l),
+  .mldsa_eta_i(mldsa_eta),
 
   .keymem_src_base_addr(aux_src0_base_addr), 
   .dest_base_addr(aux_dest_base_addr),
@@ -1103,6 +1108,8 @@ pkdecode_inst (
 
   .pkdecode_enable(pkdecode_enable),
   .pkdecode_done(pkdecode_done),
+
+  .mldsa_k_i(mldsa_k),
 
   .dest_base_addr(aux_dest_base_addr),
 

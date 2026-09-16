@@ -41,6 +41,10 @@ module skdecode_top
         input logic zeroize,
         
         input logic skdecode_enable,
+        //Active parameter set shape. All public, never secret.
+        input logic [3:0] mldsa_k_i,
+        input logic [3:0] mldsa_l_i,
+        input logic [3:0] mldsa_eta_i,
         input logic [ABR_MEM_ADDR_WIDTH-1:0] keymem_src_base_addr,
         input logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data,
@@ -75,6 +79,9 @@ module skdecode_top
     //IO flops
     mem_if_t mem_a_wr_req_int, mem_b_wr_req_int, mem_a_wr_req_reg, mem_b_wr_req_reg;
     logic [7:0][MLDSA_ETA_W-1:0] s1s2_buf_data;
+    logic [7:0][3:0] s1s2_field_data;
+    logic s1s2_data_valid_eta2;
+    logic eta4;
     logic [3:0][MLDSA_D-1:0] t0_buf_data;
     logic [3:0][REG_SIZE-1:0] mem_a_wr_data_int, mem_b_wr_data_int, mem_a_wr_data_reg, mem_b_wr_data_reg;
     logic [1:0][ABR_REG_WIDTH-1:0] keymem_rd_data_reg;
@@ -269,7 +276,8 @@ module skdecode_top
         for (genvar i = 0; i < 8; i++) begin : gen_s1s2_unpack
             skdecode_s1s2_unpack
             s1s2_unpack_inst (
-                .data_i(s1s2_buf_data[i]),
+                .data_i(s1s2_field_data[i]),
+                .eta4_i(eta4),
                 .enable(s1s2_data_valid), //from buffer
                 .data_o(s1s2_data[i]),
                 .valid_o(s1s2_valid[i]),
@@ -310,6 +318,8 @@ module skdecode_top
         .data_valid_o(t0_data_valid)
     );
 
+    always_comb eta4 = (mldsa_eta_i == 4'd4);
+
     abr_rd_lat_buffer #(
         .WR_WIDTH(32), //rate of sk reads
         .RD_WIDTH(24), //rate of sk mem writes
@@ -319,10 +329,50 @@ module skdecode_top
         .rst_b(reset_n),
         .zeroize(zeroize),
         .data_i(keymem_rd_data_reg[0]),
-        .data_valid_i(keymem_rd_data_valid_f & s1s2_enable),
+        .data_valid_i(keymem_rd_data_valid_f & s1s2_enable & ~eta4),
         .data_o(s1s2_buf_data),
-        .data_valid_o(s1s2_data_valid)
+        .data_valid_o(s1s2_data_valid_eta2)
     );
+
+    //At eta = 4 the eight packed fields are 4 bits each, so one 32-bit key memory
+    //word is consumed per beat and no repacking is needed. Elaborated only when a
+    //parameter set with eta = 4 is enabled, so category 5 pays nothing for it.
+    generate
+        if (ABR_NEED_ETA4) begin : gen_s1s2_eta4_buffer
+            logic [7:0][3:0] s1s2_buf_data_eta4;
+            logic s1s2_data_valid_eta4;
+
+            abr_rd_lat_buffer #(
+                .WR_WIDTH(32),
+                .RD_WIDTH(32),
+                .BUFFER_DEPTH(64)
+            ) skdec_s1s2_eta4_rd_lat_buffer_inst (
+                .clk(clk),
+                .rst_b(reset_n),
+                .zeroize(zeroize),
+                .data_i(keymem_rd_data_reg[0]),
+                .data_valid_i(keymem_rd_data_valid_f & s1s2_enable & eta4),
+                .data_o(s1s2_buf_data_eta4),
+                .data_valid_o(s1s2_data_valid_eta4)
+            );
+
+            always_comb begin
+                s1s2_data_valid = eta4 ? s1s2_data_valid_eta4 : s1s2_data_valid_eta2;
+                for (int i = 0; i < 8; i++) begin
+                    s1s2_field_data[i] = eta4 ? s1s2_buf_data_eta4[i]
+                                              : {1'b0, s1s2_buf_data[i]};
+                end
+            end
+        end
+        else begin : gen_s1s2_eta2_only
+            always_comb begin
+                s1s2_data_valid = s1s2_data_valid_eta2;
+                for (int i = 0; i < 8; i++) begin
+                    s1s2_field_data[i] = {1'b0, s1s2_buf_data[i]};
+                end
+            end
+        end
+    endgenerate
 
     skdecode_ctrl
     skdecode_ctrl_inst (
@@ -330,6 +380,9 @@ module skdecode_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .skdecode_enable(skdecode_enable),
+        .mldsa_k_i(mldsa_k_i),
+        .mldsa_l_i(mldsa_l_i),
+        .eta4_i(eta4),
         .src_base_addr(keymem_src_base_addr),
         .dest_base_addr(dest_base_addr),
         .s1s2_valid(|s1s2_valid),

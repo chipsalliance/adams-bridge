@@ -36,6 +36,8 @@ module pkdecode
         input wire zeroize,
 
         input wire pkdecode_enable,
+        //Number of polynomials to decode. Public parameter, never secret.
+        input wire [3:0] mldsa_k_i,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [8*INPUT_COEFF_SIZE-1:0] API_rd_data,
         input wire API_rd_data_valid,
@@ -53,7 +55,9 @@ module pkdecode
     localparam COEFF_WIDTH = 10;
     localparam SHIFT_LEFT = 13;
     localparam NUM_COEFFS_PER_CYCLE = 8;
-    localparam THE_LAST_ADDR = (MLDSA_K * MLDSA_N)/8;
+    //Runtime end address. Cat-5 substitutes the original constant exactly.
+    logic [31:0] the_last_addr;
+    always_comb the_last_addr = (32'(mldsa_k_i) * MLDSA_N)/8;
     // State Machine States
     localparam  PKDECODE_IDLE  = 2'b00,
                 PKDECODE_READ  = 2'b01,
@@ -91,7 +95,7 @@ module pkdecode
                     next_state = PKDECODE_IDLE;
             end
             PKDECODE_READ: begin
-                if (num_api_operands == THE_LAST_ADDR-1) begin
+                if (num_api_operands == the_last_addr-1) begin
                     next_state = PKDECODE_WRITE;
                 end
             end

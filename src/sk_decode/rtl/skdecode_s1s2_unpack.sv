@@ -28,7 +28,10 @@
 module skdecode_s1s2_unpack
     import abr_params_pkg::*;
     (
-        input logic [MLDSA_ETA_W-1:0] data_i,
+        //Packed field is 3 bits at eta = 2 and 4 bits at eta = 4. The field is
+        //always presented right justified in 4 bits. Public parameter, never secret.
+        input logic [3:0] data_i,
+        input logic eta4_i,
         input logic enable,
         output logic [REG_SIZE-1:0] data_o,
         output logic valid_o,
@@ -36,6 +39,12 @@ module skdecode_s1s2_unpack
     );
 
     logic [REG_SIZE-1:0] eta_minus_data;
+    logic [3:0] eta, two_eta;
+
+    always_comb begin
+        eta     = eta4_i ? 4'd4 : 4'd2;
+        two_eta = eta4_i ? 4'd8 : 4'd4;
+    end
 
     always_comb begin
         data_o  = '0;
@@ -44,20 +53,24 @@ module skdecode_s1s2_unpack
         eta_minus_data = '0;
         
         if (enable) begin
-            error_o = 1'b0;
-            eta_minus_data = REG_SIZE'(MLDSA_ETA - data_i);
+            //FIPS 204 5.6: the packed value v encodes the coefficient eta - v,
+            //so v in [0, eta] maps to [eta, 0] and v in (eta, 2*eta] maps to the
+            //negative range q - (v - eta). Anything above 2*eta is invalid.
+            //At eta = 2 this reproduces the original literal table exactly.
+            eta_minus_data = REG_SIZE'(eta - data_i);
 
-            unique case(data_i)
-                3'h0: data_o = 2;
-                3'h1: data_o = 1;
-                3'h2: data_o = 0; 
-                3'h3: data_o = MLDSA_Q-1;
-                3'h4: data_o = MLDSA_Q-2;
-                default: begin
-                    data_o   = 0;
-                    error_o  = 1;
-                end
-            endcase
+            if (data_i <= eta) begin
+                data_o  = eta_minus_data;
+                error_o = 1'b0;
+            end
+            else if (data_i <= two_eta) begin
+                data_o  = REG_SIZE'(MLDSA_Q - (data_i - eta));
+                error_o = 1'b0;
+            end
+            else begin
+                data_o  = '0;
+                error_o = 1'b1;
+            end
 
             valid_o = 1;
         end
