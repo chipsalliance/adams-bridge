@@ -25,6 +25,8 @@ module power2round_top
         input wire zeroize,
 
         input wire enable,
+        //Number of polynomials in the active ML-DSA parameter set.
+        input wire [3:0] mldsa_k_i,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr, //skmem API base addr
 
@@ -142,6 +144,7 @@ module power2round_top
         .reset_n(reset_n),
         .zeroize(zeroize),
         .enable(enable),
+        .mldsa_k_i(mldsa_k_i),
         .src_base_addr(src_base_addr),
         .skmem_dest_base_addr(skmem_dest_base_addr),
         .r_valid(r_valid),

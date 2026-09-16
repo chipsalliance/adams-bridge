@@ -44,6 +44,10 @@ module skencode
         input wire zeroize,
         
         input wire skencode_enable,
+        //Number of polynomials in the active ML-DSA parameter set. MLDSA_K and
+        //MLDSA_L above stay at the maximum and only size the storage.
+        input wire [3:0] mldsa_k_i,
+        input wire [3:0] mldsa_l_i,
         input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire  [3:0][REG_SIZE-1:0] mem_a_rd_data,
@@ -60,8 +64,15 @@ module skencode
 
     `include "abr_prim_assert.sv"
 
-    localparam THE_LAST_ADDR = ((MLDSA_K * MLDSA_N)/4)+((MLDSA_L * MLDSA_N)/4)-1;
-    localparam THE_LAST_API = ((MLDSA_K +MLDSA_L)*MLDSA_N*3)/32;
+    localparam COEFF_DEPTH = MLDSA_N/4; //dwords occupied by one polynomial
+
+    //s1 and s2 are stored back to back at their category-5 offsets, so a
+    //narrower set leaves a gap of (MLDSA_L - l) polynomials between the last
+    //active s1 row and s2 row 0. The read stream skips that gap.
+    logic [31:0] s1_dwords, s1_pad_dwords;
+    logic [31:0] the_last_addr, the_last_api;
+    logic [31:0] mem_rd_offset;
+
 
     // State Machine States
     localparam  SKENC_IDLE                    = 3'b000,
@@ -82,6 +93,13 @@ module skencode
     logic [1:0] producer_selector, consumer_selector;
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr, locked_src_addr; // this ensures that addresses are captured when the block is enabled
+
+    always_comb s1_dwords     = 32'(mldsa_l_i) * COEFF_DEPTH;
+    always_comb s1_pad_dwords = (32'(MLDSA_L) - 32'(mldsa_l_i)) * COEFF_DEPTH;
+    always_comb the_last_addr = ((32'(mldsa_k_i) + 32'(mldsa_l_i)) * COEFF_DEPTH) - 32'd1;
+    always_comb the_last_api  = ((32'(mldsa_k_i) + 32'(mldsa_l_i)) * MLDSA_N * 3) / 32;
+    always_comb mem_rd_offset = (num_mem_operands < s1_dwords) ? num_mem_operands
+                                                               : num_mem_operands + s1_pad_dwords;
 
     assign one_encoding_string = {encoded_coeffs[7],encoded_coeffs[6],encoded_coeffs[5],encoded_coeffs[4],
                                     encoded_coeffs[3],encoded_coeffs[2],encoded_coeffs[1],encoded_coeffs[0]};
@@ -120,7 +138,7 @@ module skencode
                     next_main_state = SKENC_IDLE;
             end
             SKENC_READ: begin
-                if (num_mem_operands == THE_LAST_ADDR-1) begin
+                if (num_mem_operands == the_last_addr-32'd1) begin
                     next_main_state = SKENC_DONE;
                 end
             end
@@ -150,7 +168,7 @@ module skencode
                     next_write_state    = SKENC_STALL;
             end
             SKENC_STALL: begin
-                if (num_api_operands == THE_LAST_API) begin
+                if (num_api_operands == the_last_api) begin
                     next_write_state = SKENC_GET_LAST;
                 end
                 else begin
@@ -240,8 +258,8 @@ module skencode
                 producer_selector   <= '0;
 
             if (main_state == SKENC_READ) begin
-                mem_a_rd_req        <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_mem_operands};
-                mem_b_rd_req        <= '{rd_wr_en: RW_READ, addr: locked_src_addr + num_mem_operands + 1};
+                mem_a_rd_req        <= '{rd_wr_en: RW_READ, addr: locked_src_addr + MEM_ADDR_WIDTH'(mem_rd_offset)};
+                mem_b_rd_req        <= '{rd_wr_en: RW_READ, addr: locked_src_addr + MEM_ADDR_WIDTH'(mem_rd_offset) + 1};
                 num_mem_operands    <= num_mem_operands +2'h2;
             end else begin
                 mem_a_rd_req        <= '{rd_wr_en: RW_IDLE, addr: '0};

@@ -890,6 +890,7 @@ power2round_inst (
 
   .enable(power2round_enable),
   .done(power2round_done),
+  .mldsa_k_i(mldsa_k),
 
   .src_base_addr(aux_src0_base_addr),
   .mem_a_rd_req(pwr2rnd_mem_rd_req[0]),
@@ -959,6 +960,8 @@ skencode_inst
 
   .skencode_enable(skencode_enable),
   .skencode_done(skencode_done),
+  .mldsa_k_i(mldsa_k),
+  .mldsa_l_i(mldsa_l),
 
   .keymem_a_wr_req(skencode_keymem_if),
   .keymem_a_wr_data(skencode_wr_data),

@@ -656,6 +656,17 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [SRAM_LATENCY:0][1:0] skdecode_re_bank;
   logic [1:0][SK_MEM_BANK_ADDR_W:0] skdecode_rdaddr;
 
+  //Active ML-KEM key sizes. ek = ByteEncode12(t_hat) || rho and
+  //dk = dkPKE || ek || H(ek) || z, so every boundary moves with k. For
+  //ML-KEM-1024 these evaluate to the previous compile-time constants
+  //(384/392 and 768/792) and the decode below is unchanged.
+  logic [3:0] mlkem_k_active;
+  logic [8:0] mlkem_ek_sampler_words;
+  logic [ABR_OPR_WIDTH-1:0] mldsa_pk_bytes, mlkem_ek_bytes, mlkem_ct_bytes;
+  logic [ABR_OPR_WIDTH-1:0] mldsa_s1s2_dwords;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_ek_mem_dwords, mlkem_ek_tot_dwords;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_dk_pke_dwords, mlkem_dk_mem_dwords, mlkem_dk_tot_dwords;
+
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_addr;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_dk_mem_addr;
   logic [5:0] mlkem_api_dk_reg_addr;
@@ -713,6 +724,12 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [PK_MEM_WSTROBE_W-1:0] pubkey_ram_wstrobe;
   logic api_pubkey_dec, api_pubkey_rho_dec;
   logic [SRAM_LATENCY:0] api_pubkey_re;
+  logic [SRAM_LATENCY:0] api_pubkey_reg_re;
+  //Active ML-DSA key sizes in dwords. pk = rho || ByteEncode10(t1) -> 8 + 80*k.
+  //sk = rho || K || tr || s1 || s2 || t0 -> 32 + 8*(l+k)*bitlen(2*eta) + 104*k.
+  //Category 5 evaluates to the previous constants (648 and 1224).
+  logic [PK_ADDR_W:0] mldsa_pk_dwords;
+  logic [12:0] mldsa_sk_dwords;
   logic api_pubkey_we;
   logic [PK_ADDR_W-1:0] api_pubkey_addr;
   mldsa_pubkey_mem_addr_t api_pubkey_mem_addr[SRAM_LATENCY:0];
@@ -924,7 +941,8 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re[SRAM_LATENCY] ? sig_z_ram_rdata[api_sig_z_addr[SRAM_LATENCY].offset] : api_reg_rdata;
     abr_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack = abr_reg_hwif_out.MLDSA_PUBKEY.req &  abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
-    abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re[SRAM_LATENCY] ? pubkey_ram_rdata[api_pubkey_mem_addr[SRAM_LATENCY].offset] : api_reg_rdata;
+    abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re[SRAM_LATENCY]     ? pubkey_ram_rdata[api_pubkey_mem_addr[SRAM_LATENCY].offset] :
+                                           api_pubkey_reg_re[SRAM_LATENCY] ? api_reg_rdata : '0;
     //MLKEM
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.rd_ack = ciphertext_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLKEM_CIPHERTEXT.wr_ack = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & abr_reg_hwif_out.MLKEM_CIPHERTEXT.req_is_wr;
@@ -977,11 +995,14 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sk_waddr = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.addr[12:2];
   always_comb api_sk_raddr = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.addr[12:2];
 
+  always_comb mldsa_sk_dwords = 13'((32'd8 * (32'(mldsa_l) + 32'(mldsa_k_o)) * 32'(mldsa_eta_of(mldsa_param_set) == 4 ? 4 : 3)) +
+                                   (32'(mldsa_k_o) * 32'd104) + 32'd32);
+
   always_comb api_sk_reg_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[0:31]};
-  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & api_sk_waddr inside {[32:PRIVKEY_NUM_DWORDS-1]} & ~kv_mlkem_msg_data_present;
+  always_comb api_keymem_wr_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_IN.req & (api_sk_waddr >= 'd32) & (13'(api_sk_waddr) < mldsa_sk_dwords) & ~kv_mlkem_msg_data_present;
 
   always_comb api_sk_reg_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[0:31]};
-  always_comb api_keymem_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & api_sk_raddr inside {[32:PRIVKEY_NUM_DWORDS-1]};
+  always_comb api_keymem_rd_dec = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & (api_sk_raddr >= 'd32) & (13'(api_sk_raddr) < mldsa_sk_dwords);
 
   assign api_sk_reg_waddr = {1'b0,api_sk_waddr[4:0]};
   assign api_sk_reg_raddr = {1'b0,api_sk_raddr[4:0]};
@@ -989,24 +1010,36 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign api_sk_mem_waddr = api_sk_waddr - 'd32;
   assign api_sk_mem_raddr = api_sk_raddr - 'd32;
 
+  always_comb mlkem_k_active       = 4'(mlkem_k_of(mlkem_param_set));
+  //96 dwords per polynomial of ByteEncode12 output (384 bytes).
+  always_comb mlkem_ek_mem_dwords  = (SK_MEM_BANK_ADDR_W+1)'(32'(mlkem_k_active) * 32'd96);
+  always_comb mlkem_ek_tot_dwords  = mlkem_ek_mem_dwords + (SK_MEM_BANK_ADDR_W+1)'(32'd8);
+  always_comb mlkem_dk_pke_dwords  = mlkem_ek_mem_dwords;
+  always_comb mlkem_dk_mem_dwords  = (SK_MEM_BANK_ADDR_W+1)'(32'(mlkem_k_active) * 32'd192);
+  always_comb mlkem_dk_tot_dwords  = mlkem_dk_mem_dwords + (SK_MEM_BANK_ADDR_W+1)'(32'd24);
+
   always_comb mlkem_api_dk_rd_vld = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_DECAPS_KEY.req_is_wr & 
                                     mlkem_valid_reg & ~mlkem_dk_lock;
 
   always_comb mlkem_api_dk_addr = {1'b0,abr_reg_hwif_out.MLKEM_DECAPS_KEY.addr[11:2]};
 
-  always_comb mlkem_api_dk_reg_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_addr inside {[MLKEM_DK_MEM_NUM_DWORDS:DK_NUM_DWORDS-1]};
-  always_comb mlkem_api_dk_mem_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & mlkem_api_dk_addr inside {[0:MLKEM_DK_MEM_NUM_DWORDS-1]};
+  always_comb mlkem_api_dk_reg_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & (mlkem_api_dk_addr >= mlkem_dk_mem_dwords) & (mlkem_api_dk_addr < mlkem_dk_tot_dwords);
+  always_comb mlkem_api_dk_mem_dec = abr_reg_hwif_out.MLKEM_DECAPS_KEY.req & (mlkem_api_dk_addr < mlkem_dk_mem_dwords);
 
   assign mlkem_api_dk_reg_addr = {1'b0,mlkem_api_dk_addr[4:0]};
 
-  assign mlkem_api_dk_mem_addr = mlkem_api_dk_addr;
+  //dkPKE sits at the base of the key SRAM; the ek copy that follows it in the
+  //byte stream lives at the fixed category-5 ek offset, so the second segment
+  //of the decaps key skips the padding between them.
+  always_comb mlkem_api_dk_mem_addr = (mlkem_api_dk_addr < mlkem_dk_pke_dwords) ? mlkem_api_dk_addr :
+                                      mlkem_api_dk_addr + MLKEM_DEST_EK_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0] - mlkem_dk_pke_dwords;
 
   always_comb mlkem_api_ek_rd_vld = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & ~abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req_is_wr & mlkem_valid_reg;
 
   always_comb mlkem_api_ek_addr = {2'b0,abr_reg_hwif_out.MLKEM_ENCAPS_KEY.addr[10:2]};
 
-  always_comb mlkem_api_ek_reg_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_addr inside {[MLKEM_EK_MEM_NUM_DWORDS:EK_NUM_DWORDS-1]};
-  always_comb mlkem_api_ek_mem_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & mlkem_api_ek_addr inside {[0:MLKEM_EK_MEM_NUM_DWORDS-1]};
+  always_comb mlkem_api_ek_reg_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & (mlkem_api_ek_addr >= mlkem_ek_mem_dwords) & (mlkem_api_ek_addr < mlkem_ek_tot_dwords);
+  always_comb mlkem_api_ek_mem_dec = abr_reg_hwif_out.MLKEM_ENCAPS_KEY.req & (mlkem_api_ek_addr < mlkem_ek_mem_dwords);
 
   assign mlkem_api_ek_reg_addr = {3'b0,mlkem_api_ek_addr[2:0]};
 
@@ -1027,7 +1060,11 @@ always_comb kv_mlkem_msg_write_data = '0;
   assign mlkem_api_msg_mem_waddr = mlkem_api_msg_waddr + MLKEM_DEST_MSG_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
   always_comb mlkem_msg_wdata = kv_mlkem_msg_write_en ? kv_mlkem_msg_write_data : abr_reg_hwif_out.MLKEM_MSG.wr_data;
   
-  always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset inside {[0:191]}) |
+  //ByteEncode12(t_hat) is 96*k dwords, streamed to the sampler as 48*k 64-bit
+  //words before the rho tail is supplied from flops. k=4 gives the previous 192.
+  always_comb mlkem_ek_sampler_words = 9'(32'(mlkem_k_active) * 32'd48);
+
+  always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset < mlkem_ek_sampler_words) |
                                     (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:3]}) |
                                     (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]});
 
@@ -1237,8 +1274,10 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb api_pubkey_addr = abr_reg_hwif_out.MLDSA_PUBKEY.addr[PK_ADDR_W+1:2];
 
+  always_comb mldsa_pk_dwords = (PK_ADDR_W+1)'((32'(mldsa_k_o) * 32'd80) + 32'd8);
+
   always_comb api_pubkey_rho_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[0:7]};
-  always_comb api_pubkey_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & api_pubkey_addr inside {[8:PUBKEY_NUM_DWORDS-1]};
+  always_comb api_pubkey_dec = abr_reg_hwif_out.MLDSA_PUBKEY.req & (api_pubkey_addr >= 8) & (api_pubkey_addr < mldsa_pk_dwords);
 
   always_comb api_pubkey_mem_addr[0].addr   = PK_MEM_ADDR_W'( (api_pubkey_addr - 8)/PK_MEM_NUM_DWORDS );
   always_comb api_pubkey_mem_addr[0].offset = (api_pubkey_addr - 8)%PK_MEM_NUM_DWORDS;
@@ -1249,6 +1288,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_pubkey_we = abr_ready & api_pubkey_dec & abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack;
 
   always_comb api_pubkey_re[0] = mldsa_valid_reg & api_pubkey_dec & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
+  always_comb api_pubkey_reg_re[0] = api_pubkey_rho_dec & ~abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
 
   always_comb pk_mem_if.we_i = (pubkey_ram_we);
   always_comb pk_mem_if.waddr_i = (pubkey_ram_waddr);
@@ -1315,6 +1355,7 @@ always_comb kv_mlkem_msg_write_data = '0;
       always_ff @(posedge clk or negedge rst_b) begin
         if (!rst_b) begin
           api_pubkey_re[g_stage] <= '0;
+          api_pubkey_reg_re[g_stage] <= '0;
           api_pubkey_mem_addr[g_stage] <= '0;
           pkdecode_rd_en[g_stage] <= '0;
           pkdecode_rd_offset[g_stage] <= '0;
@@ -1337,6 +1378,7 @@ always_comb kv_mlkem_msg_write_data = '0;
           decompress_keymem_re[g_stage] <= '0;
         end else if (zeroize) begin
           api_pubkey_re[g_stage] <= '0;
+          api_pubkey_reg_re[g_stage] <= '0;
           api_pubkey_mem_addr[g_stage] <= '0;
           pkdecode_rd_en[g_stage] <= '0;
           pkdecode_rd_offset[g_stage] <= '0;
@@ -1359,6 +1401,7 @@ always_comb kv_mlkem_msg_write_data = '0;
           decompress_keymem_re[g_stage] <= '0;
         end else begin
           api_pubkey_re[g_stage] <= api_pubkey_re[g_stage-1];
+          api_pubkey_reg_re[g_stage] <= api_pubkey_reg_re[g_stage-1];
           api_pubkey_mem_addr[g_stage] <= api_pubkey_mem_addr[g_stage-1];
           pkdecode_rd_en[g_stage] <= pkdecode_rd_en[g_stage-1];
           pkdecode_rd_offset[g_stage] <= pkdecode_rd_offset[g_stage-1];
@@ -2137,7 +2180,7 @@ always_comb begin
   end
   else if (abr_ctrl_fsm_ps == ABR_CTRL_MSG_LOAD) begin
     if (sampler_src inside {MLKEM_EK_REG_ID}) begin
-      if (sampler_src_offset inside {[0:191]}) begin //Delay the part from SRAM reads
+      if (sampler_src_offset < mlkem_ek_sampler_words) begin //Delay the part from SRAM reads
         msg_cnt_inc = 1;
         msg_valid_stg = sampler_sk_rd_en[SRAM_LATENCY-1];
       end else if (sampler_sk_rd_en[SRAM_LATENCY-1]) begin //Dont increment msg cnt until SRAM reads have drained
@@ -2353,7 +2396,37 @@ always_comb begin
     ABR_DS_2K_ROW: abr_instr_ds.imm = ABR_IMM_WIDTH'({vec_k_active,1'b0}) + ABR_IMM_WIDTH'(abr_vec.row);
     default      : abr_instr_ds.imm = abr_instr_o.imm;
   endcase
+  //The three whole-key hashes (tr = H(pk), H(ek), and the decaps re-hash of the
+  //ciphertext) stream a key-sized byte count, so their length has to follow the
+  //parameter set. Each of the three ROM constants is unique, which makes the
+  //ROM value itself a safe tag. Category 5 substitutes the identical value.
+  unique case (abr_instr_o.length)
+    ABR_OPR_WIDTH'(PUBKEY_NUM_BYTES): abr_instr_ds.length = mldsa_pk_bytes;
+    ABR_OPR_WIDTH'(EK_NUM_BYTES)    : abr_instr_ds.length = mlkem_ek_bytes;
+    ABR_OPR_WIDTH'(CT_NUM_BYTES)    : abr_instr_ds.length = mlkem_ct_bytes;
+    default                         : abr_instr_ds.length = abr_instr_o.length;
+  endcase
+  //power2round appends t0 to the private key immediately after s1 || s2, whose
+  //length depends on l, k and eta. Category 5 reproduces MLDSA_SK_T0_OFFSET.
+  if (abr_instr_o.operand3 == MLDSA_SK_T0_OFFSET)
+    abr_instr_ds.operand3 = mldsa_s1s2_dwords;
+  //ByteEncode/Decode of a k-length vector carries its length in imm[10:8]. The
+  //scalar (v) forms encode 1 there and must not move. Category 5 encodes 4,
+  //which is already k, so the override is inert.
+  if (abr_pc_is_mlkem & (abr_vec.ds == ABR_DS_ROM) & (abr_instr_o.imm[10:8] == 3'd4))
+    abr_instr_ds.imm[10:8] = 3'(mlkem_k_active);
 end
+
+always_comb mldsa_s1s2_dwords = ABR_OPR_WIDTH'(32'd8 * (32'(mldsa_l) + 32'(mldsa_k_o)) *
+                                              32'(mldsa_eta_of(mldsa_param_set) == 4 ? 4 : 3));
+
+//pk = rho || ByteEncode10(t1)   -> 32 + 320*k bytes
+//ek = ByteEncode12(t_hat) || rho -> 384*k + 32 bytes
+//c  = ByteEncode_du(u) || ByteEncode_dv(v) -> 32*(du*k + dv) bytes
+always_comb mldsa_pk_bytes = ABR_OPR_WIDTH'((32'(mldsa_k_o) * 32'd320) + 32'd32);
+always_comb mlkem_ek_bytes = ABR_OPR_WIDTH'((32'(mlkem_k_active) * 32'd384) + 32'd32);
+always_comb mlkem_ct_bytes = ABR_OPR_WIDTH'(32'd32 * ((mlkem_du_of(mlkem_param_set) * 32'(mlkem_k_active)) +
+                                                      mlkem_dv_of(mlkem_param_set)));
 
 //A row outside the active (k, l) is issued as a NOP. It still costs a cycle,
 //which keeps the program counter arithmetic and every branch target unchanged.
@@ -2562,5 +2635,7 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_SEED_RD_CTRL_NOT_STABLE, kv_mlkem_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
   `ABR_ASSERT_STABLE(ERR_ABR_MLKEM_MSG_RD_CTRL_NOT_STABLE,  kv_mlkem_msg_read_ctrl_reg , clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
 `endif
+
+
 
 endmodule

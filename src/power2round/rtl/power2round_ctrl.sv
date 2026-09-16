@@ -25,6 +25,9 @@ module power2round_ctrl
         input wire zeroize,
 
         input wire enable,
+        //Number of polynomials in the active ML-DSA parameter set. MLDSA_K below
+        //stays at the maximum and only sizes the storage.
+        input wire [3:0] mldsa_k_i,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire [ABR_MEM_ADDR_WIDTH-1:0] skmem_dest_base_addr,
         input wire r_valid,
@@ -39,9 +42,15 @@ module power2round_ctrl
         output logic done
     );
 
-    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_MEM_ADDR = (MLDSA_K * (MLDSA_N/4))-2;
-    localparam [ABR_MEM_ADDR_WIDTH-1 : 0] MAX_SKMEM_ADDR = (MLDSA_K * (MLDSA_N/32) * 13)-2;
-    localparam [7 : 0] MAX_PK_ADDR = ((MLDSA_K * (MLDSA_N/8))-1);
+    //Loop bounds follow the active parameter set. For category 5 mldsa_k_i is 8
+    //and these reproduce the previous compile-time values exactly.
+    logic [ABR_MEM_ADDR_WIDTH-1 : 0] max_mem_addr;
+    logic [ABR_MEM_ADDR_WIDTH-1 : 0] max_skmem_addr;
+    logic [7 : 0] max_pk_addr;
+
+    always_comb max_mem_addr   = ABR_MEM_ADDR_WIDTH'((32'(mldsa_k_i) * (MLDSA_N/4)) - 32'd2);
+    always_comb max_skmem_addr = ABR_MEM_ADDR_WIDTH'((32'(mldsa_k_i) * (MLDSA_N/32) * 13) - 32'd2);
+    always_comb max_pk_addr    = 8'((32'(mldsa_k_i) * (MLDSA_N/8)) - 32'd1);
 
     power2round_read_state_type read_fsm_state_ps, read_fsm_state_ns;
     power2round_sk_write_state_type sk_write_fsm_state_ps, sk_write_fsm_state_ns;
@@ -97,9 +106,9 @@ module power2round_ctrl
         end
     end
 
-    assign last_mem_rd_addr = (mem_rd_addr == src_base_addr + MAX_MEM_ADDR);
-    assign last_skmem_wr_addr = (skmem_wr_addr == skmem_dest_base_addr + MAX_SKMEM_ADDR);
-    assign last_pk_wr_addr = (pk_wr_addr == MAX_PK_ADDR);
+    assign last_mem_rd_addr = (mem_rd_addr == src_base_addr + max_mem_addr);
+    assign last_skmem_wr_addr = (skmem_wr_addr == skmem_dest_base_addr + max_skmem_addr);
+    assign last_pk_wr_addr = (pk_wr_addr == max_pk_addr);
 
     // READ FSM
     always_ff @(posedge clk or negedge reset_n) begin
