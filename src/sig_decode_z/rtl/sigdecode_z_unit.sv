@@ -30,11 +30,16 @@ module sigdecode_z_unit
     input wire reset_n,
     input wire zeroize,
 
+    //Selects gamma1 = 2^17 (ML-DSA-44) instead of 2^GAMMA1. The input width is
+    //unchanged; the narrower encoded value arrives zero padded in the same slot.
+    input wire gamma1_17_i,
+
     input wire [GAMMA1:0] data_i,
     output logic [REG_SIZE-1:0] data_o //TODO: clean up. At top level, data_o is 24-bits, so add 1 more bit here and assign 0
 );
 
     localparam MLDSA_GAMMA1_RANGE = 2**GAMMA1;
+    localparam MLDSA_GAMMA1_17_RANGE = 2**17;
 
     logic [REG_SIZE-1:0] opa0;
     logic [REG_SIZE-1:0] opb0;
@@ -50,7 +55,7 @@ module sigdecode_z_unit
     logic sub_i;
 
     assign sub_i = 1'b1;
-    assign opa0 = MLDSA_GAMMA1_RANGE;
+    assign opa0 = gamma1_17_i ? REG_SIZE'(MLDSA_GAMMA1_17_RANGE) : REG_SIZE'(MLDSA_GAMMA1_RANGE);
     assign opb0 = sub_i ? REG_SIZE'(~data_i) : REG_SIZE'(data_i);
 
     abr_adder #(

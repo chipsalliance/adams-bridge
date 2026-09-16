@@ -39,6 +39,9 @@ module sigencode_z_top
         input wire reset_n,
         input wire zeroize,
 
+        //Active ML-DSA parameter set uses gamma1 = 2^17 (ML-DSA-44). Public signal.
+        input wire gamma1_17_i,
+
         // Input memory ports
         input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
         output mem_if_t mem_a_rd_req,
@@ -70,6 +73,10 @@ module sigencode_z_top
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr, locked_src_addr; // this ensures that addresses are captured when the block is enabled
     logic [1:0] state, next_state;
+    logic gamma1_17_gated;
+
+    //Constant folds to 0 when ML-DSA-44 is not built in.
+    always_comb gamma1_17_gated = ABR_NEED_GAMMA1_17 & gamma1_17_i;
 
 
     // State Machine
@@ -208,6 +215,7 @@ module sigencode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
+                .gamma1_17_i(gamma1_17_gated),
                 .data_i(mem_a_rd_data[i]),
                 .data_o(sigmem_a_wr_data[i])
             );
@@ -219,6 +227,7 @@ module sigencode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
+                .gamma1_17_i(gamma1_17_gated),
                 .data_i(mem_b_rd_data[i]),
                 .data_o(sigmem_b_wr_data[i])
             );

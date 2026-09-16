@@ -212,6 +212,7 @@ module abr_top
 
   logic makehint_enable, makehint_done;
   logic [3:0] mldsa_k;
+  logic [3:0] mldsa_l;
   logic [7:0] mldsa_omega;
   logic makehint_invalid;
   mem_if_t makehint_mem_rd_req;
@@ -551,6 +552,7 @@ abr_ctrl_inst
   .skencode_done_i(skencode_done),
 
   .mldsa_k_o(mldsa_k),
+  .mldsa_l_o(mldsa_l),
   .mldsa_omega_o(mldsa_omega),
   .normcheck_bound_o(normcheck_bound),
   .makehint_enable_o(makehint_enable),
@@ -1067,6 +1069,8 @@ sigencode_z_inst
   .sigencode_z_enable(sigencode_enable),
   .sigencode_z_done(sigencode_done),
 
+  .gamma1_17_i(mldsa_gamma1_17),
+
   .src_base_addr(aux_src0_base_addr),
   .sigmem_dest_base_addr(aux_dest_base_addr),
 
@@ -1115,6 +1119,9 @@ sigdecode_z_inst (
 
   .sigdecode_z_enable(sigdecode_z_enable),
   .sigdecode_z_done(sigdecode_z_done),
+
+  .gamma1_17_i(mldsa_gamma1_17),
+  .mldsa_l_i(mldsa_l),
 
   .dest_base_addr(aux_dest_base_addr),
 

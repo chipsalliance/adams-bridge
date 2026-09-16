@@ -39,6 +39,10 @@ module sigdecode_z_top
         input logic reset_n,
         input logic zeroize,
 
+        //Active ML-DSA parameter set. Both are public.
+        input logic gamma1_17_i,
+        input logic [3:0] mldsa_l_i,
+
         // Output memory ports
         input logic [MEM_ADDR_WIDTH-1:0] dest_base_addr,
         output mem_if_t mem_a_wr_req,
@@ -56,7 +60,7 @@ module sigdecode_z_top
         output logic sigdecode_z_done
     );
 
-    localparam THE_LAST_ADDR = ((MLDSA_L * MLDSA_N)/4)-1;
+    localparam COEFF_ADDR_PER_POLY = MLDSA_N/4;
     // State Machine States
     localparam  SIGDECODE_IDLE  = 2'b00,
                 SIGDECODE_READ  = 2'b01,
@@ -67,6 +71,15 @@ module sigdecode_z_top
     logic [31:0] num_mem_operands, num_api_operands;   // encoded each four coeff will increment these by one
     logic [MEM_ADDR_WIDTH-1:0] locked_dest_addr; // this ensures that addresses are captured when the block is enabled
     logic [1:0] state, next_state;
+    logic [31:0] the_last_addr;
+    logic gamma1_17_gated;
+
+    //Constant folds to 0 when ML-DSA-44 is not built in.
+    always_comb gamma1_17_gated = ABR_NEED_GAMMA1_17 & gamma1_17_i;
+
+    //Only the active l polynomials of z are decoded; the remaining cat-5 sized
+    //slots are left untouched. l is public, so this bound is not secret dependent.
+    always_comb the_last_addr = (32'(mldsa_l_i) * COEFF_ADDR_PER_POLY) - 32'd1;
 
 
     // State Machine
@@ -92,7 +105,7 @@ module sigdecode_z_top
                     next_state = SIGDECODE_IDLE;
             end
             SIGDECODE_READ: begin
-                if (num_api_operands == THE_LAST_ADDR-1) begin
+                if (num_api_operands == the_last_addr-1) begin
                     next_state = SIGDECODE_WRITE;
                 end
             end
@@ -199,6 +212,7 @@ module sigdecode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
+                .gamma1_17_i(gamma1_17_gated),
                 .data_i(sigmem_rd_data[0][i]),
                 .data_o(mem_a_wr_data[i])
             );
@@ -210,6 +224,7 @@ module sigdecode_z_top
                 .clk(clk),
                 .reset_n(reset_n),
                 .zeroize(zeroize),
+                .gamma1_17_i(gamma1_17_gated),
                 .data_i(sigmem_rd_data[1][i]),
                 .data_o(mem_b_wr_data[i])
             );
