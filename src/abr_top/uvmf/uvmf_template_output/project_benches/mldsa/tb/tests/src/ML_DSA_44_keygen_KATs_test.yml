@@ -1,0 +1,9 @@
+---
+# Random seed desired...
+#seed: 1
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_44_keygen_KATs_test'
+  - '+DILITHIUM_COMMAND=test_dilithium2'
+testname: ML_DSA_44_keygen_KATs_test
+parameters:
+  dilithium_command: "test_dilithium5"
