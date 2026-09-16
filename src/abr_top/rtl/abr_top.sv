@@ -213,6 +213,7 @@ module abr_top
   logic makehint_enable, makehint_done;
   logic [3:0] mldsa_k;
   logic [3:0] mldsa_l;
+  logic [3:0] mldsa_eta;
   logic [7:0] mldsa_omega;
   logic makehint_invalid;
   mem_if_t makehint_mem_rd_req;
@@ -553,6 +554,7 @@ abr_ctrl_inst
 
   .mldsa_k_o(mldsa_k),
   .mldsa_l_o(mldsa_l),
+  .mldsa_eta_o(mldsa_eta),
   .mldsa_omega_o(mldsa_omega),
   .normcheck_bound_o(normcheck_bound),
   .makehint_enable_o(makehint_enable),
@@ -962,6 +964,7 @@ skencode_inst
   .skencode_done(skencode_done),
   .mldsa_k_i(mldsa_k),
   .mldsa_l_i(mldsa_l),
+  .mldsa_eta_i(mldsa_eta),
 
   .keymem_a_wr_req(skencode_keymem_if),
   .keymem_a_wr_data(skencode_wr_data),

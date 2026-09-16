@@ -71,6 +71,7 @@ module abr_ctrl
   //consumers take it as a value rather than a parameter.
   output logic [3:0]                 mldsa_k_o,
   output logic [3:0]                 mldsa_l_o,
+  output logic [3:0]                 mldsa_eta_o,
   output logic [7:0]                 mldsa_omega_o,
   output logic [REG_SIZE-2:0]        normcheck_bound_o,
   output logic                       sha3_start_o,
@@ -1968,6 +1969,7 @@ end
   end
   always_comb mldsa_k_o       = 4'(mldsa_k_of(mldsa_param_set));
   always_comb mldsa_l_o       = mldsa_l;
+  always_comb mldsa_eta_o     = 4'(mldsa_eta_of(mldsa_param_set));
   always_comb mldsa_omega_o   = 8'(mldsa_omega_of(mldsa_param_set));
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
   always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);

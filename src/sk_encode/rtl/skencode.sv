@@ -48,6 +48,8 @@ module skencode
         //MLDSA_L above stay at the maximum and only size the storage.
         input wire [3:0] mldsa_k_i,
         input wire [3:0] mldsa_l_i,
+        //eta of the active parameter set: 2 (3-bit packing) or 4 (4-bit packing).
+        input wire [3:0] mldsa_eta_i,
         input wire [MEM_ADDR_WIDTH-1:0] dest_base_addr,
         input wire [MEM_ADDR_WIDTH-1:0] src_base_addr,
         input wire  [3:0][REG_SIZE-1:0] mem_a_rd_data,
@@ -86,7 +88,10 @@ module skencode
     
     logic [2:0] main_state, next_main_state, write_state, next_write_state;
     logic error_flag;
-    logic [7:0][2:0] encoded_coeffs;
+    logic eta4;
+    logic [7:0][3:0] encoded_coeffs;
+    logic [31:0] enc_string32;
+    logic [31:0] eta4_wr_data;
     logic [7:0] encoding_error;
     logic [23:0] one_encoding_string;
     logic [95:0] buffer;
@@ -97,11 +102,18 @@ module skencode
     always_comb s1_dwords     = 32'(mldsa_l_i) * COEFF_DEPTH;
     always_comb s1_pad_dwords = (32'(MLDSA_L) - 32'(mldsa_l_i)) * COEFF_DEPTH;
     always_comb the_last_addr = ((32'(mldsa_k_i) + 32'(mldsa_l_i)) * COEFF_DEPTH) - 32'd1;
-    always_comb the_last_api  = ((32'(mldsa_k_i) + 32'(mldsa_l_i)) * MLDSA_N * 3) / 32;
+    always_comb the_last_api  = ((32'(mldsa_k_i) + 32'(mldsa_l_i)) * MLDSA_N * (eta4 ? 32'd4 : 32'd3)) / 32;
     always_comb mem_rd_offset = (num_mem_operands < s1_dwords) ? num_mem_operands
                                                                : num_mem_operands + s1_pad_dwords;
 
-    assign one_encoding_string = {encoded_coeffs[7],encoded_coeffs[6],encoded_coeffs[5],encoded_coeffs[4],
+    always_comb eta4 = (mldsa_eta_i == 4'd4);
+
+    //eta = 2 packs 3 bits per coefficient, so eight coefficients form 24 bits
+    //and four such groups fill three dwords. eta = 4 packs 4 bits, so eight
+    //coefficients are exactly one dword and no accumulation is needed.
+    assign one_encoding_string = {encoded_coeffs[7][2:0],encoded_coeffs[6][2:0],encoded_coeffs[5][2:0],encoded_coeffs[4][2:0],
+                                    encoded_coeffs[3][2:0],encoded_coeffs[2][2:0],encoded_coeffs[1][2:0],encoded_coeffs[0][2:0]};
+    assign enc_string32        = {encoded_coeffs[7],encoded_coeffs[6],encoded_coeffs[5],encoded_coeffs[4],
                                     encoded_coeffs[3],encoded_coeffs[2],encoded_coeffs[1],encoded_coeffs[0]};
     
     
@@ -198,6 +210,26 @@ module skencode
             keymem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
             num_api_operands    <= '0;
             consumer_selector   <= '0;
+        end
+        else if (eta4) begin
+            //One input beat produces exactly one dword, so the buffer and the
+            //producer/consumer handshake are bypassed entirely.
+            consumer_selector   <= '0;
+            eta4_wr_data        <= enc_string32;
+
+            if (skencode_enable) begin
+                num_api_operands    <= '0;
+            end
+            else if (mem_rd_data_valid) begin
+                num_api_operands    <= num_api_operands +'h1;
+            end
+
+            if (mem_rd_data_valid) begin
+                keymem_a_wr_req <= '{rd_wr_en: RW_WRITE, addr: locked_dest_addr + num_api_operands};
+            end
+            else begin
+                keymem_a_wr_req <= '{rd_wr_en: RW_IDLE, addr: '0};
+            end
         end
         else begin
             if (write_state == SKENC_WRITE)
@@ -301,68 +333,52 @@ module skencode
 
     // Assigns the appropriate 32-bit portion of the buffer to keymem_a_wr_data based on consumer_selector.
     always_comb begin : API_org
-        case(consumer_selector)
-            2'h0: keymem_a_wr_data = buffer[31:0];
-            2'h1: keymem_a_wr_data = buffer[63:32];
-            2'h2: keymem_a_wr_data = buffer[95:64];
-            2'h3: keymem_a_wr_data = '0; // Ignored case
-        endcase
+        if (eta4) begin
+            keymem_a_wr_data = eta4_wr_data;
+        end
+        else begin
+            case(consumer_selector)
+                2'h0: keymem_a_wr_data = buffer[31:0];
+                2'h1: keymem_a_wr_data = buffer[63:32];
+                2'h2: keymem_a_wr_data = buffer[95:64];
+                2'h3: keymem_a_wr_data = '0; // Ignored case
+            endcase
+        end
     end : API_org
 
+    //skEncode maps a coefficient c in [-eta, eta] to eta - c. Negative values
+    //are stored as q + c, so they are recognised by q - v <= eta.
     always_comb begin : encoding
         for (int i = 0; i < 4; i++) begin
-            unique case(mem_a_rd_data[i]) inside
-                REG_SIZE'(0): begin
-                    encoded_coeffs[i] = 2;
-                    encoding_error[i] = 0;
-                end
-                REG_SIZE'(1): begin
-                    encoded_coeffs[i] = 1;
-                    encoding_error[i] = 0;
-                end
-                REG_SIZE'(2): begin
-                    encoded_coeffs[i] = 0;
-                    encoding_error[i] = 0;
-                end
-                MLDSA_Q-1: begin
-                    encoded_coeffs[i] = 3;
-                    encoding_error[i] = 0;
-                end
-                MLDSA_Q-2: begin
-                    encoded_coeffs[i] = 4;
-                    encoding_error[i] = 0;
-                end
-                default: begin
-                    encoded_coeffs[i] = 0;
-                    encoding_error[i] = 1;
-                end
-            endcase
-            unique case(mem_b_rd_data[i])
-                REG_SIZE'(0): begin
-                    encoded_coeffs[i+4] = 2;
-                    encoding_error[i+4] = 0;
-                end
-                REG_SIZE'(1): begin
-                    encoded_coeffs[i+4] = 1;
-                    encoding_error[i+4] = 0;
-                end
-                REG_SIZE'(2): begin
-                    encoded_coeffs[i+4] = 0;
-                    encoding_error[i+4] = 0;
-                end
-                MLDSA_Q-1: begin
-                    encoded_coeffs[i+4] = 3;
-                    encoding_error[i+4] = 0;
-                end
-                MLDSA_Q-2: begin
-                    encoded_coeffs[i+4] = 4;
-                    encoding_error[i+4] = 0;
-                end
-                default: begin
-                    encoded_coeffs[i+4] = 0;
-                    encoding_error[i+4] = 1;
-                end
-            endcase
+            logic [REG_SIZE-1:0] neg_a, neg_b;
+            neg_a = REG_SIZE'(MLDSA_Q) - mem_a_rd_data[i];
+            neg_b = REG_SIZE'(MLDSA_Q) - mem_b_rd_data[i];
+
+            if (mem_a_rd_data[i] <= REG_SIZE'(mldsa_eta_i)) begin
+                encoded_coeffs[i] = mldsa_eta_i - 4'(mem_a_rd_data[i]);
+                encoding_error[i] = 0;
+            end
+            else if ((neg_a != '0) && (neg_a <= REG_SIZE'(mldsa_eta_i))) begin
+                encoded_coeffs[i] = mldsa_eta_i + 4'(neg_a);
+                encoding_error[i] = 0;
+            end
+            else begin
+                encoded_coeffs[i] = '0;
+                encoding_error[i] = 1;
+            end
+
+            if (mem_b_rd_data[i] <= REG_SIZE'(mldsa_eta_i)) begin
+                encoded_coeffs[i+4] = mldsa_eta_i - 4'(mem_b_rd_data[i]);
+                encoding_error[i+4] = 0;
+            end
+            else if ((neg_b != '0) && (neg_b <= REG_SIZE'(mldsa_eta_i))) begin
+                encoded_coeffs[i+4] = mldsa_eta_i + 4'(neg_b);
+                encoding_error[i+4] = 0;
+            end
+            else begin
+                encoded_coeffs[i+4] = '0;
+                encoding_error[i+4] = 1;
+            end
         end
     end : encoding
     
