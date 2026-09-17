@@ -58,6 +58,7 @@ package mldsa_sequences_pkg;
   `include "src/ML_DSA_randomized_zeroize_stream_msg_sequence.svh"
   `include "src/ML_DSA_externalmu_KATs_sequence.svh"
   `include "src/ML_DSA_externalmu_ACVP_KATs_sequence.svh"
+  `include "src/ML_DSA_65_externalmu_ACVP_KATs_sequence.svh"
   `include "src/ML_DSA_ACVP_rejection_KATs_sequence.svh"
   `include "src/ML_KEM_keygen_KATs_sequence.svh"
   `include "src/ML_KEM_512_keygen_KATs_sequence.svh"

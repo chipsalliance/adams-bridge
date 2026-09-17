@@ -1,0 +1,4 @@
+---
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_65_externalmu_ACVP_KATs_test'
+testname: ML_DSA_65_externalmu_ACVP_KATs_test
