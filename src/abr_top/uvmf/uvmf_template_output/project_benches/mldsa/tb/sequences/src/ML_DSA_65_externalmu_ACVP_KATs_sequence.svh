@@ -38,6 +38,8 @@ class ML_DSA_65_externalmu_ACVP_KATs_sequence extends mldsa_bench_sequence_base;
   localparam bit [31:0] MLDSA_CTRL_SIGN_EXTMU   = 32'h0000_0122;
   localparam bit [31:0] MLDSA_CTRL_VERIFY_EXTMU = 32'h0000_0123;
   localparam bit [31:0] MLDSA_CTRL_ZEROIZE      = 32'h0000_0008;
+  // PARAM_SET = 2'b10 with CTRL = 0: selects the aperture, starts nothing.
+  localparam bit [31:0] MLDSA_CTRL_PARAM_ONLY   = 32'h0000_0100;
 
   // ML-DSA-65 FIPS 204 sizes, in dwords.
   //   pk = 32 + 320*6            = 1952 bytes = 488 dwords
@@ -199,6 +201,14 @@ class ML_DSA_65_externalmu_ACVP_KATs_sequence extends mldsa_bench_sequence_base;
       reg_model.MLDSA_PUBKEY.m_mem.write(status, j, kat_PK_arr[j], UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) `uvm_error("REG_WRITE", $sformatf("Failed to write MLDSA_PUBKEY[%0d]", j));
     end
+
+    // The SIGNATURE aperture is not flat: the z and h bases move with the c~
+    // width, so the parameter set has to be selected before the signature is
+    // written. Writing PARAM_SET with CTRL = 0 programs the aperture without
+    // starting an operation. The preceding zeroize returned it to category 5.
+    data = MLDSA_CTRL_PARAM_ONLY;
+    reg_model.MLDSA_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    if (status != UVM_IS_OK) `uvm_error("REG_WRITE", "Failed to write MLDSA_CTRL (param set)");
 
     for (int j = 0; j < ML_DSA_65_SIG_DWORDS; j++) begin
       reg_model.MLDSA_SIGNATURE.m_mem.write(status, j, hw_sig_arr[j], UVM_FRONTDOOR, reg_model.default_map, this);

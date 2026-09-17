@@ -1992,8 +1992,24 @@ end
       mlkem_param_set_reg <= MLKEM_PARAM_1024;
     end
     else begin
-      if (|mldsa_cmd_reg) mldsa_param_set_reg <= mldsa_param_set_req;
-      if (|mlkem_cmd_reg) mlkem_param_set_reg <= mlkem_param_set_req;
+      //MLDSA_CTRL.PARAM_SET self-clears once a command is captured, so the value
+      //in flight at that moment is the one the operation runs with. It is also
+      //latched on a plain PARAM_SET write (no command), because the SIGNATURE
+      //aperture is not a flat array - z lives in its own RAM and h in a register,
+      //and both bases move with the c~ width. Software therefore has to be able to
+      //select the parameter set before it writes the signature it wants verified.
+      //Encoding 2'b00 is "unprogrammed" and never latches on its own; category 5
+      //software, which writes either 2'b00 or 2'b11, always ends up at
+      //MLDSA_PARAM_87 exactly as before.
+      if (|mldsa_cmd_reg)
+        mldsa_param_set_reg <= mldsa_param_set_req;
+      else if (abr_ready & (abr_reg_hwif_out.MLDSA_CTRL.PARAM_SET.value != 2'b00))
+        mldsa_param_set_reg <= mldsa_param_set_req;
+
+      if (|mlkem_cmd_reg)
+        mlkem_param_set_reg <= mlkem_param_set_req;
+      else if (abr_ready & (abr_reg_hwif_out.MLKEM_CTRL.PARAM_SET.value != 2'b00))
+        mlkem_param_set_reg <= mlkem_param_set_req;
     end
   end
 
