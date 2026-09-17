@@ -187,6 +187,12 @@ package abr_params_pkg;
     mldsa_gamma1_w_of = (s == MLDSA_PARAM_44) ? 17 : 19;
   endfunction
 
+  //z is packed at 1+log2(gamma1) bits per coefficient, 256 coefficients per
+  //polynomial, l polynomials: 8*l*(1+gamma1_w) dwords = 576 / 800 / 1120
+  function automatic int mldsa_sig_z_dwords_of(mldsa_param_set_e s);
+    mldsa_sig_z_dwords_of = 8 * mldsa_l_of(s) * (1 + mldsa_gamma1_w_of(s));
+  endfunction
+
   //gamma2 divisor: (q-1)/88 for ML-DSA-44, (q-1)/32 otherwise
   function automatic int mldsa_gamma2_div_of(mldsa_param_set_e s);
     mldsa_gamma2_div_of = (s == MLDSA_PARAM_44) ? 88 : 32;
