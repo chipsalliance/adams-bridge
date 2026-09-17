@@ -251,6 +251,134 @@ module abr_seq_vec
                 MLDSA_SIGN_MAKE_W_S+62 : data_o_rom <= ABR_VEC_MAT_A;
                 MLDSA_SIGN_MAKE_W_S+63 : data_o_rom <= abr_vec_k(4'd7);
                 //ML-DSA verify: per-row z norm checks
+                //ML-DSA sign, challenge loop. These rows were never exercised at
+                //category 5 (l=7, k=8 leaves every row in range), so they are tagged
+                //here for the first time. z = y + c*s1 is l-indexed, 5 rows per row of z.
+                MLDSA_SIGN_VALID_S+1   : data_o_rom <= abr_vec_l(4'd0);
+                MLDSA_SIGN_VALID_S+2   : data_o_rom <= abr_vec_l(4'd0);
+                MLDSA_SIGN_VALID_S+3   : data_o_rom <= abr_vec_l(4'd0);
+                MLDSA_SIGN_VALID_S+4   : data_o_rom <= abr_vec_l(4'd0);
+                MLDSA_SIGN_VALID_S+5   : data_o_rom <= abr_vec_l(4'd0);
+
+                MLDSA_SIGN_VALID_S+6   : data_o_rom <= abr_vec_l(4'd1);
+                MLDSA_SIGN_VALID_S+7   : data_o_rom <= abr_vec_l(4'd1);
+                MLDSA_SIGN_VALID_S+8   : data_o_rom <= abr_vec_l(4'd1);
+                MLDSA_SIGN_VALID_S+9   : data_o_rom <= abr_vec_l(4'd1);
+                MLDSA_SIGN_VALID_S+10  : data_o_rom <= abr_vec_l(4'd1);
+
+                MLDSA_SIGN_VALID_S+11  : data_o_rom <= abr_vec_l(4'd2);
+                MLDSA_SIGN_VALID_S+12  : data_o_rom <= abr_vec_l(4'd2);
+                MLDSA_SIGN_VALID_S+13  : data_o_rom <= abr_vec_l(4'd2);
+                MLDSA_SIGN_VALID_S+14  : data_o_rom <= abr_vec_l(4'd2);
+                MLDSA_SIGN_VALID_S+15  : data_o_rom <= abr_vec_l(4'd2);
+
+                MLDSA_SIGN_VALID_S+16  : data_o_rom <= abr_vec_l(4'd3);
+                MLDSA_SIGN_VALID_S+17  : data_o_rom <= abr_vec_l(4'd3);
+                MLDSA_SIGN_VALID_S+18  : data_o_rom <= abr_vec_l(4'd3);
+                MLDSA_SIGN_VALID_S+19  : data_o_rom <= abr_vec_l(4'd3);
+                MLDSA_SIGN_VALID_S+20  : data_o_rom <= abr_vec_l(4'd3);
+
+                MLDSA_SIGN_VALID_S+21  : data_o_rom <= abr_vec_l(4'd4);
+                MLDSA_SIGN_VALID_S+22  : data_o_rom <= abr_vec_l(4'd4);
+                MLDSA_SIGN_VALID_S+23  : data_o_rom <= abr_vec_l(4'd4);
+                MLDSA_SIGN_VALID_S+24  : data_o_rom <= abr_vec_l(4'd4);
+                MLDSA_SIGN_VALID_S+25  : data_o_rom <= abr_vec_l(4'd4);
+
+                MLDSA_SIGN_VALID_S+26  : data_o_rom <= abr_vec_l(4'd5);
+                MLDSA_SIGN_VALID_S+27  : data_o_rom <= abr_vec_l(4'd5);
+                MLDSA_SIGN_VALID_S+28  : data_o_rom <= abr_vec_l(4'd5);
+                MLDSA_SIGN_VALID_S+29  : data_o_rom <= abr_vec_l(4'd5);
+                MLDSA_SIGN_VALID_S+30  : data_o_rom <= abr_vec_l(4'd5);
+
+                MLDSA_SIGN_VALID_S+31  : data_o_rom <= abr_vec_l(4'd6);
+                MLDSA_SIGN_VALID_S+32  : data_o_rom <= abr_vec_l(4'd6);
+                MLDSA_SIGN_VALID_S+33  : data_o_rom <= abr_vec_l(4'd6);
+                MLDSA_SIGN_VALID_S+34  : data_o_rom <= abr_vec_l(4'd6);
+                MLDSA_SIGN_VALID_S+35  : data_o_rom <= abr_vec_l(4'd6);
+
+                //c*t0 is k-indexed, 2 rows per row of t0.
+                MLDSA_SIGN_VALID_S+36  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+37  : data_o_rom <= abr_vec_k(4'd0);
+
+                MLDSA_SIGN_VALID_S+38  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+39  : data_o_rom <= abr_vec_k(4'd1);
+
+                MLDSA_SIGN_VALID_S+40  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+41  : data_o_rom <= abr_vec_k(4'd2);
+
+                MLDSA_SIGN_VALID_S+42  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+43  : data_o_rom <= abr_vec_k(4'd3);
+
+                MLDSA_SIGN_VALID_S+44  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+45  : data_o_rom <= abr_vec_k(4'd4);
+
+                MLDSA_SIGN_VALID_S+46  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+47  : data_o_rom <= abr_vec_k(4'd5);
+
+                MLDSA_SIGN_VALID_S+48  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+49  : data_o_rom <= abr_vec_k(4'd6);
+
+                MLDSA_SIGN_VALID_S+50  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+51  : data_o_rom <= abr_vec_k(4'd7);
+
+                //r0 / ct0 / hint is k-indexed, 6 rows per row of w0.
+                MLDSA_SIGN_VALID_S+52  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+53  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+54  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+55  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+56  : data_o_rom <= abr_vec_k(4'd0);
+                MLDSA_SIGN_VALID_S+57  : data_o_rom <= abr_vec_k(4'd0);
+
+                MLDSA_SIGN_VALID_S+58  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+59  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+60  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+61  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+62  : data_o_rom <= abr_vec_k(4'd1);
+                MLDSA_SIGN_VALID_S+63  : data_o_rom <= abr_vec_k(4'd1);
+
+                MLDSA_SIGN_VALID_S+64  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+65  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+66  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+67  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+68  : data_o_rom <= abr_vec_k(4'd2);
+                MLDSA_SIGN_VALID_S+69  : data_o_rom <= abr_vec_k(4'd2);
+
+                MLDSA_SIGN_VALID_S+70  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+71  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+72  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+73  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+74  : data_o_rom <= abr_vec_k(4'd3);
+                MLDSA_SIGN_VALID_S+75  : data_o_rom <= abr_vec_k(4'd3);
+
+                MLDSA_SIGN_VALID_S+76  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+77  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+78  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+79  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+80  : data_o_rom <= abr_vec_k(4'd4);
+                MLDSA_SIGN_VALID_S+81  : data_o_rom <= abr_vec_k(4'd4);
+
+                MLDSA_SIGN_VALID_S+82  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+83  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+84  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+85  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+86  : data_o_rom <= abr_vec_k(4'd5);
+                MLDSA_SIGN_VALID_S+87  : data_o_rom <= abr_vec_k(4'd5);
+
+                MLDSA_SIGN_VALID_S+88  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+89  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+90  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+91  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+92  : data_o_rom <= abr_vec_k(4'd6);
+                MLDSA_SIGN_VALID_S+93  : data_o_rom <= abr_vec_k(4'd6);
+
+                MLDSA_SIGN_VALID_S+94  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+95  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+96  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+97  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+98  : data_o_rom <= abr_vec_k(4'd7);
+                MLDSA_SIGN_VALID_S+99  : data_o_rom <= abr_vec_k(4'd7);
+
+
                 MLDSA_VERIFY_S+2      : data_o_rom <= abr_vec_l(4'd0);
                 MLDSA_VERIFY_S+3      : data_o_rom <= abr_vec_l(4'd1);
                 MLDSA_VERIFY_S+4      : data_o_rom <= abr_vec_l(4'd2);
