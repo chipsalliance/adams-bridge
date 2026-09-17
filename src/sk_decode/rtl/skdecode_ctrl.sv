@@ -69,6 +69,15 @@ module skdecode_ctrl
     localparam int S2_SEG_BASE = MLDSA_L * POLY_DEPTH;
     localparam int T0_SEG_BASE = (MLDSA_L + MLDSA_K) * POLY_DEPTH;
     logic [ABR_MEM_ADDR_WIDTH-1:0] dest_base_addr_reg;
+    //At eta = 4 one 32 bit key memory word is consumed per write beat, so the
+    //segment needs exactly as many reads as it has beats. The read enables are
+    //gated by last_poly_last_addr, which suppresses the read on the terminal
+    //beat. At eta = 2 the 3 of 4 pacer needs only three quarters of the beats so
+    //the suppressed one is never required. At eta = 4 it is, so allow exactly one
+    //final read while the counter sits at its terminal value.
+    logic s1s2_last_rd_done;
+    logic s1s2_rd_extra;
+    logic s1s2_rd_en;
     mem_rw_mode_e mem_rw_mode, kmem_a_rw_mode;
     mem_rw_mode_e kmem_b_rw_mode;
     logic [8:0] skdecode_count;
@@ -155,6 +164,20 @@ module skdecode_ctrl
             dest_base_addr_reg <= '0;
         else if (skdecode_enable)
             dest_base_addr_reg <= dest_base_addr;
+    end
+
+    always_comb s1s2_rd_extra = eta4_i & ~s1s2_last_rd_done;
+    always_comb s1s2_rd_en    = (~last_poly_last_addr | s1s2_rd_extra) & mem_rd_pace[0];
+
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            s1s2_last_rd_done <= 1'b0;
+        else if (zeroize | skdecode_enable)
+            s1s2_last_rd_done <= 1'b0;
+        else if (arc_SKDEC_RD_IDLE_SKDEC_RD_S1 | arc_SKDEC_RD_S1_SKDEC_RD_S2)
+            s1s2_last_rd_done <= 1'b0;
+        else if (s1s2_enable_fsm & last_poly_last_addr & mem_rd_pace[0])
+            s1s2_last_rd_done <= 1'b1;
     end
 
     //Read addr counter
@@ -264,9 +287,9 @@ module skdecode_ctrl
             end
             SKDEC_RD_S1: begin
                 read_fsm_state_ns   = arc_SKDEC_RD_S1_SKDEC_RD_S2 ? SKDEC_RD_S2 : SKDEC_RD_S1;
-                incr_rd_addr        = ~last_poly_last_addr & mem_rd_pace[0];
-                kmem_a_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                incr_rd_addr        = s1s2_rd_en;
+                kmem_a_rw_mode      = s1s2_rd_en & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = s1s2_rd_en &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = mldsa_l_i;
@@ -275,9 +298,9 @@ module skdecode_ctrl
             end
             SKDEC_RD_S2: begin
                 read_fsm_state_ns   = arc_SKDEC_RD_S2_SKDEC_RD_T0 ? SKDEC_RD_T0 : SKDEC_RD_S2;
-                incr_rd_addr        = ~last_poly_last_addr & mem_rd_pace[0];
-                kmem_a_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
-                kmem_b_rw_mode      = ~last_poly_last_addr & mem_rd_pace[0] &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                incr_rd_addr        = s1s2_rd_en;
+                kmem_a_rw_mode      = s1s2_rd_en & ~kmem_rd_addr[0] ? RW_READ : RW_IDLE;
+                kmem_b_rw_mode      = s1s2_rd_en &  kmem_rd_addr[0] ? RW_READ : RW_IDLE;
                 incr_skdec_count    = ~last_poly_last_addr;
                 s1s2_enable_fsm     = 1'b1;
                 num_poly            = mldsa_k_i;
