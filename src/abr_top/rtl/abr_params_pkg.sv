@@ -171,6 +171,17 @@ package abr_params_pkg;
     endcase
   endfunction
 
+  //c~ is 2*lambda bits = lambda/4 bytes: 32 / 48 / 64 for -44 / -65 / -87.
+  //Category 5 returns 64, which is the width the c~ register is instantiated at,
+  //so every expression derived from this collapses to the previous constant there.
+  function automatic int mldsa_ctilde_bytes_of(mldsa_param_set_e s);
+    mldsa_ctilde_bytes_of = mldsa_lambda_of(s) / 4;
+  endfunction
+
+  function automatic int mldsa_ctilde_dwords_of(mldsa_param_set_e s);
+    mldsa_ctilde_dwords_of = mldsa_ctilde_bytes_of(s) / 4;
+  endfunction
+
   //log2(gamma1): 17 for ML-DSA-44, 19 otherwise
   function automatic int mldsa_gamma1_w_of(mldsa_param_set_e s);
     mldsa_gamma1_w_of = (s == MLDSA_PARAM_44) ? 17 : 19;

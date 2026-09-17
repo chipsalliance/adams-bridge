@@ -152,6 +152,7 @@ module sample_in_ball_tb
   .zeroize(zeroize), 
   //input data
   .data_valid_i(piso_valid),
+  .tau_i(8'(SIB_TAU)),
   .data_hold_o(piso_hold),
   .data_i(piso_data),
   .sib_done_o(sib_done),

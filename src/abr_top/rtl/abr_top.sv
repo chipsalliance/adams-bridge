@@ -215,6 +215,7 @@ module abr_top
   logic [3:0] mldsa_l;
   logic [3:0] mldsa_eta;
   logic [7:0] mldsa_omega;
+  logic [7:0] mldsa_tau;
   logic makehint_invalid;
   mem_if_t makehint_mem_rd_req;
   logic [ABR_MEM_DATA_WIDTH-1:0] makehint_mem_rd_data;
@@ -556,6 +557,7 @@ abr_ctrl_inst
   .mldsa_l_o(mldsa_l),
   .mldsa_eta_o(mldsa_eta),
   .mldsa_omega_o(mldsa_omega),
+  .mldsa_tau_o(mldsa_tau),
   .normcheck_bound_o(normcheck_bound),
   .makehint_enable_o(makehint_enable),
   .makehint_invalid_i(makehint_invalid),
@@ -676,6 +678,7 @@ sampler_top_inst
   .mldsa_eta4_i(mldsa_eta4),
   .gamma1_17_i(mldsa_gamma1_17),
   .eta3_i(mlkem_eta3),
+  .mldsa_tau_i(mldsa_tau),
   .sha3_start_i(sha3_start), //start the sha3 engine
   .sha3_masked_i(sha3_masked), //masking enable signal for the sha3 engine
   .msg_start_i(msg_start), //start a new message

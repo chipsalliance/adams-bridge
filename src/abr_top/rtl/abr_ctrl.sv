@@ -73,6 +73,7 @@ module abr_ctrl
   output logic [3:0]                 mldsa_l_o,
   output logic [3:0]                 mldsa_eta_o,
   output logic [7:0]                 mldsa_omega_o,
+  output logic [7:0]                 mldsa_tau_o,
   output logic [REG_SIZE-2:0]        normcheck_bound_o,
   output logic                       sha3_start_o,
   output logic                       sha3_masked_o,
@@ -716,6 +717,18 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic [SIG_C_REG_ADDR_W-1:0] api_sig_c_addr;
   logic [SIG_H_REG_ADDR_W-1:0] api_sig_h_addr;
   logic [ABR_REG_WIDTH-1:0] signature_reg_rdata;
+  //Active c~ / z / h region sizes in dwords, and the c~ byte count fed to the two
+  //SampleInBall absorbs. c~ is 2*lambda bits, so lambda/4 bytes: 32 / 48 / 64 for
+  //-44 / -65 / -87. The signature aperture is contiguous (c~ || z || h), matching
+  //the FIPS 204 byte stream and the pk/sk convention already used for keygen.
+  //Category 5 evaluates to 16 / 1120 / 21, i.e. the previous constants.
+  logic [SIG_ADDR_W-1:0] mldsa_ctilde_dwords;
+  logic [SIG_ADDR_W-1:0] mldsa_sig_z_dwords;
+  logic [SIG_ADDR_W-1:0] mldsa_sig_h_dwords;
+  logic [SIG_ADDR_W-1:0] mldsa_sig_z_base, mldsa_sig_h_base, mldsa_sig_dwords;
+  logic [ABR_OPR_WIDTH-1:0] mldsa_ctilde_bytes;
+  //Zero-extension mask for the c~ register. All ones at category 5.
+  logic [(SIGNATURE_C_NUM_DWORDS*32)-1:0] mldsa_ctilde_mask;
 
 //public key memory
   logic pubkey_ram_we, pubkey_ram_re;
@@ -874,7 +887,8 @@ always_comb kv_mlkem_msg_write_data = '0;
   
     for (int unsigned dword=0; dword < VERIFY_RES_NUM_DWORDS; dword++) begin 
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.we = set_verify_valid | mldsa_verify_res_we;
-      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[dword*32 +: 32];
+      abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.next = mldsa_ctilde_mask[dword*32 +: 32] &
+                                                               (set_verify_valid ? ~signature_reg.enc.c[dword] : sampler_state_data_i[dword*32 +: 32]);
       abr_reg_hwif_in.MLDSA_VERIFY_RES[dword].VERIFY_RES.hwclr = zeroize;
     end
   
@@ -1180,19 +1194,43 @@ always_comb kv_mlkem_msg_write_data = '0;
       else if (mlkem_api_ek_reg_dec) api_reg_rdata <= {ABR_REG_WIDTH{mlkem_api_ek_rd_vld}} & abr_scratch_reg.raw[mlkem_api_ek_reg_addr];    
       else if (api_pubkey_rho_dec)   api_reg_rdata <= {ABR_REG_WIDTH{mldsa_valid_reg}} & abr_scratch_reg.raw[api_pk_reg_raddr];
       else if (api_sig_reg_re)       api_reg_rdata <= {ABR_REG_WIDTH{mldsa_valid_reg}} & signature_reg_rdata;
+      //Signature dwords above the active length are not part of the FIPS 204 byte
+      //stream. Return zero rather than holding the previous read, so a narrower
+      //parameter set cannot expose a category 5 residue. Inert at category 5,
+      //where the aperture is fully decoded.
+      else if (abr_reg_hwif_out.MLDSA_SIGNATURE.req & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr &
+               ~(api_sig_c_dec | api_sig_z_dec | api_sig_h_dec)) api_reg_rdata <= '0;
     end
   end
 
   always_comb api_sig_addr = abr_reg_hwif_out.MLDSA_SIGNATURE.addr[SIG_ADDR_W+1:2];
 
-  always_comb api_sig_c_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[0:SIGNATURE_C_NUM_DWORDS-1]};
-  always_comb api_sig_z_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS:SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS-1]};
-  always_comb api_sig_h_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & api_sig_addr inside {[SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS:SIGNATURE_NUM_DWORDS-1]};
+  //Active signature region sizes. The aperture is contiguous, so the z and h
+  //bases move with the c~ width. Category 5 reproduces 16, 16+1120 and 1157.
+  always_comb mldsa_ctilde_bytes  = ABR_OPR_WIDTH'(mldsa_ctilde_bytes_of(mldsa_param_set));
+  always_comb mldsa_ctilde_dwords = SIG_ADDR_W'(mldsa_ctilde_bytes_of(mldsa_param_set)/4);
+  //z = l * 256 coefficients * 20 bits -> 160*l dwords
+  always_comb mldsa_sig_z_dwords  = SIG_ADDR_W'(32'd160 * 32'(mldsa_l));
+  //h = omega hint bytes + k running counts, rounded up to a dword
+  always_comb mldsa_sig_h_dwords  = SIG_ADDR_W'((32'(mldsa_omega_o) + 32'(mldsa_k_o) + 32'd3)/32'd4);
+  always_comb mldsa_sig_z_base    = mldsa_ctilde_dwords;
+  always_comb mldsa_sig_h_base    = mldsa_ctilde_dwords + mldsa_sig_z_dwords;
+  always_comb mldsa_sig_dwords    = mldsa_sig_h_base + mldsa_sig_h_dwords;
 
-  always_comb api_sig_z_addr[0].addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - SIGNATURE_C_NUM_DWORDS)/SIG_Z_MEM_NUM_DWORD );
-  always_comb api_sig_z_addr[0].offset = (api_sig_addr - SIGNATURE_C_NUM_DWORDS)%SIG_Z_MEM_NUM_DWORD;
+  always_comb begin
+    for (int unsigned dword = 0; dword < SIGNATURE_C_NUM_DWORDS; dword++) begin
+      mldsa_ctilde_mask[dword*32 +: 32] = {32{SIG_ADDR_W'(dword) < mldsa_ctilde_dwords}};
+    end
+  end
+
+  always_comb api_sig_c_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & (api_sig_addr < mldsa_ctilde_dwords);
+  always_comb api_sig_z_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & (api_sig_addr >= mldsa_sig_z_base) & (api_sig_addr < mldsa_sig_h_base);
+  always_comb api_sig_h_dec = abr_reg_hwif_out.MLDSA_SIGNATURE.req & (api_sig_addr >= mldsa_sig_h_base) & (api_sig_addr < mldsa_sig_dwords);
+
+  always_comb api_sig_z_addr[0].addr   = SIG_Z_MEM_ADDR_W'( (api_sig_addr - mldsa_sig_z_base)/SIG_Z_MEM_NUM_DWORD );
+  always_comb api_sig_z_addr[0].offset = (api_sig_addr - mldsa_sig_z_base)%SIG_Z_MEM_NUM_DWORD;
   always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
-  always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - (SIGNATURE_C_NUM_DWORDS+SIGNATURE_Z_NUM_DWORDS) );
+  always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - mldsa_sig_h_base );
 
   always_comb api_sig_z_we = abr_ready & api_sig_z_dec & abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
 
@@ -1241,9 +1279,16 @@ always_comb kv_mlkem_msg_write_data = '0;
     end else begin
       //HW write c
       if (sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_SIG_C_REG_ID)) begin
-        signature_reg.enc.c <= sampler_state_data_i[511:0];
+        signature_reg.enc.c <= sampler_state_data_i[511:0] & mldsa_ctilde_mask;
       end else if (abr_ready & api_sig_c_dec & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr) begin
         signature_reg.enc.c[api_sig_c_addr] <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
+      end
+      //c~ is only lambda/4 bytes wide. Hold the dwords above it at zero so that
+      //neither the verify compare nor the VERIFY_RES readback can observe the
+      //challenge hash of a previous operation left in the unused tail. At
+      //category 5 no dword is in the tail, so this is inert there.
+      for (int unsigned dword = 0; dword < SIGNATURE_C_NUM_DWORDS; dword++) begin
+        if (SIG_ADDR_W'(dword) >= mldsa_ctilde_dwords) signature_reg.enc.c[dword] <= '0;
       end
       //HW write h
       if (set_signature_valid) begin
@@ -1682,7 +1727,11 @@ always_comb kv_mlkem_msg_write_data = '0;
   // the flag can never report the verdict of a previous verify.
   //--------------------------------------------------------------------
   always_comb mldsa_verify_res_we = verify_valid & sampler_state_dv_i & (abr_instr.operand3 == MLDSA_DEST_VERIFY_RES_REG_ID);
-  always_comb mldsa_verify_res_match = (sampler_state_data_i[(VERIFY_RES_NUM_DWORDS*32)-1:0] == signature_reg.enc.c);
+  //Both operands are masked to the active c~ width. The recomputed challenge hash
+  //carries SHAKE output beyond lambda/4 bytes, and the API-written c~ can only be
+  //trusted up to the same bound, so comparing the tails would be meaningless.
+  always_comb mldsa_verify_res_match = ((sampler_state_data_i[(VERIFY_RES_NUM_DWORDS*32)-1:0] & mldsa_ctilde_mask) ==
+                                        (signature_reg.enc.c & mldsa_ctilde_mask));
 
   always_ff @(posedge clk or negedge rst_b) begin : mldsa_verify_result
     if (!rst_b)
@@ -1971,6 +2020,7 @@ end
   always_comb mldsa_l_o       = mldsa_l;
   always_comb mldsa_eta_o     = 4'(mldsa_eta_of(mldsa_param_set));
   always_comb mldsa_omega_o   = 8'(mldsa_omega_of(mldsa_param_set));
+  always_comb mldsa_tau_o     = 8'(mldsa_tau_of(mldsa_param_set));
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
   always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);
   always_comb mldsa_gamma1_17_o = ABR_NEED_GAMMA1_17 & (mldsa_param_set == MLDSA_PARAM_44);
@@ -2408,6 +2458,12 @@ always_comb begin
     ABR_OPR_WIDTH'(CT_NUM_BYTES)    : abr_instr_ds.length = mlkem_ct_bytes;
     default                         : abr_instr_ds.length = abr_instr_o.length;
   endcase
+  //SampleInBall absorbs c~, whose length is lambda/4 bytes. ABR_UOP_SIB appears on
+  //exactly two ROM rows, so the opcode is a safe tag (the literal 'd64 is not
+  //unique). Category 5 substitutes the identical value. Placed after the unique
+  //case above so it takes precedence without perturbing that case's uniqueness.
+  if (abr_instr_o.opcode == ABR_UOP_SIB)
+    abr_instr_ds.length = mldsa_ctilde_bytes;
   //power2round appends t0 to the private key immediately after s1 || s2, whose
   //length depends on l, k and eta. Category 5 reproduces MLDSA_SK_T0_OFFSET.
   if (abr_instr_o.operand3 == MLDSA_SK_T0_OFFSET)

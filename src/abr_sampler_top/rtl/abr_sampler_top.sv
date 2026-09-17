@@ -37,6 +37,8 @@ module abr_sampler_top
   input logic              gamma1_17_i,
   //Active ML-KEM parameter set uses eta1 = 3 (ML-KEM-512 only). Public.
   input logic              eta3_i,
+  //Number of non-zero challenge coefficients (FIPS 204 tau). Public.
+  input logic [7:0]        mldsa_tau_i,
 
   input logic                    sha3_start_i,
   input logic                    sha3_masked_i,
@@ -739,6 +741,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .zeroize(zeroize_sib), 
     //input data
     .data_valid_i(sib_piso_dv),
+    .tau_i(mldsa_tau_i),
     .data_hold_o(sib_piso_hold),
     .data_i(sib_piso_data),
     .sib_done_o(sib_done),

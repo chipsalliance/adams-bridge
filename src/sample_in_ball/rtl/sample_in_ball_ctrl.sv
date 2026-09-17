@@ -30,6 +30,9 @@ module sample_in_ball_ctrl
 
   //input data
   input  logic                                          data_valid_i,
+  //Number of non-zero coefficients to sample (FIPS 204 tau: 39 / 49 / 60).
+  //Category 5 drives 60, which reproduces the previous SIB_TAU parameter.
+  input  logic [7:0]                                    tau_i,
   output logic                                          data_hold_o,
   input  logic [SIB_NUM_SAMPLERS-1:0][SIB_SAMPLE_W-1:0] data_i,
   output logic                                          sib_done_o,
@@ -159,13 +162,19 @@ module sample_in_ball_ctrl
 
   //Initialize rejection value to 256 - TAU
   //Increment the rejection value whenever a valid sample is found
+  //The seed is reloaded for the whole time the FSM is idle rather than only at
+  //sib_done_o. The sampler pulses its zeroize at *done*, so seeding only at those
+  //edges would latch the tau of the previous operation and silently sample the
+  //wrong number of coefficients on the first operation after a parameter change.
+  //A same-core sign/verify pair would still agree, so this is only observable
+  //against external vectors.
   always_ff @(posedge clk or negedge rst_b) begin
     if (!rst_b) begin
-      rej_value <= SIB_NUM_COEFF - SIB_TAU;
+      rej_value <= SIB_SAMPLE_W'(SIB_NUM_COEFF - SIB_TAU);
     end else if (zeroize) begin
-      rej_value <= SIB_NUM_COEFF - SIB_TAU;
-    end else if (sib_done_o) begin
-      rej_value <= SIB_NUM_COEFF - SIB_TAU;
+      rej_value <= SIB_SAMPLE_W'(SIB_NUM_COEFF - SIB_TAU);
+    end else if (sib_fsm_ps inside {SIB_IDLE, SIB_DONE}) begin
+      rej_value <= SIB_SAMPLE_W'(SIB_NUM_COEFF - 32'(tau_i));
     end else if (rej_value_en) begin
       rej_value <= rej_value + 1'b1;
     end else begin
