@@ -2489,6 +2489,15 @@ always_comb begin
   //which is already k, so the override is inert.
   if (abr_pc_is_mlkem & (abr_vec.ds == ABR_DS_ROM) & (abr_instr_o.imm[10:8] == 3'd4))
     abr_instr_ds.imm[10:8] = 3'(mlkem_k_active);
+  //ML-DSA.KeyGen derives (rho, rho', K) from H(xi || IntegerToBytes(k,1) ||
+  //IntegerToBytes(l,1)) and ML-KEM.KeyGen derives (rho, sigma) from
+  //G(d || IntegerToBytes(k,1)). Both domain separators move with the parameter
+  //set and each occupies exactly one ROM row, so the destination register is a
+  //safe tag. Category 5 and ML-KEM-1024 reproduce the ROM values exactly.
+  if (abr_instr_o.operand3 == MLDSA_DEST_K_RHO_REG_ID)
+    abr_instr_ds.imm = ABR_IMM_WIDTH'({4'd0, mldsa_l, 4'd0, mldsa_k_o});
+  if (abr_instr_o.operand3 == MLKEM_DEST_RHO_SIGMA_REG_ID)
+    abr_instr_ds.imm = ABR_IMM_WIDTH'({8'd0, 4'd0, mlkem_k_active});
 end
 
 always_comb mldsa_s1s2_dwords = ABR_OPR_WIDTH'(32'd8 * (32'(mldsa_l) + 32'(mldsa_k_o)) *
