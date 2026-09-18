@@ -67,6 +67,7 @@ package mldsa_tests_pkg;
    `include "src/ML_KEM_keygen_KATs_test.svh"
    `include "src/ML_KEM_512_keygen_KATs_test.svh"
 `include "src/ML_KEM_512_kg_encaps_decaps_test.svh"
+`include "src/ML_KEM_1024_kg_encaps_decaps_test.svh"
 `include "src/ML_KEM_768_kg_encaps_decaps_test.svh"
    `include "src/ML_KEM_768_keygen_KATs_test.svh"
    `include "src/ML_KEM_encaps_KATs_test.svh"

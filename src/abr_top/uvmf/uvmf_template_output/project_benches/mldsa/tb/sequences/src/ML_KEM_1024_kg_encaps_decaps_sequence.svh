@@ -7,8 +7,8 @@
 //
 //----------------------------------------------------------------------
 //                                          
-// DESCRIPTION: ML-KEM-768 keygen -> encaps -> keygen/decaps round trip.
-// Exercises MLKEM_CTRL.PARAM_SET = 2'b10 across all three commands and
+// DESCRIPTION: ML-KEM-1024 keygen -> encaps -> keygen/decaps round trip.
+// Exercises MLKEM_CTRL.PARAM_SET = 2'b01 across all three commands and
 // checks that decapsulation recovers the shared secret that encapsulation
 // produced. Also checks that the unused tail of each aperture reads zero.
 //
@@ -16,9 +16,9 @@
 //----------------------------------------------------------------------
 //
 
-class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
+class ML_KEM_1024_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
 
-  `uvm_object_utils(ML_KEM_768_kg_encaps_decaps_sequence);
+  `uvm_object_utils(ML_KEM_1024_kg_encaps_decaps_sequence);
 
     
   // Variable arrays
@@ -31,20 +31,20 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
   bit [31:0] shared_key [];
   bit ready;
   bit valid;
-  // FIPS 203 sizes for ML-KEM-768: ek = 96k+8, dk = 192k+24, ct = 8(du*k+dv) dwords.
-  localparam int EK_DWORDS = 296;
-  localparam int DK_DWORDS = 600;
-  localparam int CT_DWORDS = 272;
+  // FIPS 203 sizes for ML-KEM-1024: ek = 96k+8, dk = 192k+24, ct = 8(du*k+dv) dwords.
+  localparam int EK_DWORDS = 392;
+  localparam int DK_DWORDS = 792;
+  localparam int CT_DWORDS = 392;
   int value;
   
   function new(string name = "");
     super.new(name);
     seed_d = new[8];
     seed_z = new[8];
-    ek = new[296];
-    dk = new[600];
+    ek = new[392];
+    dk = new[792];
     msg = new[8];
-    ciphertext = new[272];
+    ciphertext = new[392];
     shared_key = new[8];
   endfunction
 
@@ -115,7 +115,7 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
     end
 
     // Trigger KeyGen operation
-    data = 'h00000021; // KeyGen command, ML-KEM-768
+    data = 'h00000001; // KeyGen command, ML-KEM-1024
     reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to trigger KeyGen");
@@ -183,18 +183,6 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
       ready = data[0];
     end
 
-    // The zeroize above returned the parameter set latch to ML-KEM-1024. The
-    // encapsulation key aperture splits ByteEncode12(t_hat) (96*k dwords, memory)
-    // from the rho tail (8 dwords, flops) using the active set, so writing ek
-    // while the latch still says 1024 would push rho into memory and leave the
-    // rho flops at zero. H(ek) would then hash t_hat || 0^32. PARAM_SET with
-    // CTRL = 0 selects the aperture without starting an operation.
-    data = 32'h0000_0020; // PARAM_SET = ML-KEM-768, CTRL = 0
-    reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
-    if (status != UVM_IS_OK) begin
-      `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to select the parameter set");
-    end
-
     // Write MLKEM_ENCAPS_KEY
     for(int j = 0; j < EK_DWORDS; j++) begin
       reg_model.MLKEM_ENCAPS_KEY.m_mem.write(status, j, ek[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -216,7 +204,7 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
     end
 
     // Trigger Encaps operation
-    data = 'h00000022; // Encaps command, ML-KEM-768
+    data = 'h00000002; // Encaps command, ML-KEM-1024
     reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to trigger Encaps");
@@ -306,7 +294,7 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
     // ciphertext aperture skips the padding between c1 and c2 using the active
     // set, so the set has to be reprogrammed before the writeback. PARAM_SET with
     // CTRL = 0 selects the aperture without starting an operation.
-    data = 32'h0000_0020; // PARAM_SET = ML-KEM-768, CTRL = 0
+    data = 32'h0000_0000; // PARAM_SET = ML-KEM-1024 (reset default), CTRL = 0
     reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to select the parameter set");
@@ -323,7 +311,7 @@ class ML_KEM_768_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
     end
 
     // Trigger Decaps operation
-    data = 'h00000024; // Keygen/Decaps command, ML-KEM-768
+    data = 'h00000004; // Keygen/Decaps command, ML-KEM-1024
     reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
     if (status != UVM_IS_OK) begin
       `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to trigger Keygen/Decaps");

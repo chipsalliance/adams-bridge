@@ -516,6 +516,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic mldsa_keygen_done,mldsa_signature_done,mldsa_verify_done;
   logic mlkem_keygen_process, mlkem_keygen_process_nxt;
   logic mlkem_encaps_process, mlkem_encaps_process_nxt;
+  logic mlkem_cbd_eta2_row;
   logic mlkem_decaps_process, mlkem_decaps_process_nxt;
   logic mlkem_keygen_decaps_process, mlkem_keygen_decaps_process_nxt;
   logic mlkem_keygen_done,mlkem_encaps_done,mlkem_decaps_done;
@@ -664,6 +665,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   //(384/392 and 768/792) and the decode below is unchanged.
   logic [3:0] mlkem_k_active;
   logic [8:0] mlkem_ek_sampler_words;
+  logic [8:0] mlkem_ct_sampler_words, mlkem_c1_sampler_words;
   logic [ABR_OPR_WIDTH-1:0] mldsa_pk_bytes, mlkem_ek_bytes, mlkem_ct_bytes;
   logic [ABR_OPR_WIDTH-1:0] mldsa_s1s2_dwords;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_ek_mem_dwords, mlkem_ek_tot_dwords;
@@ -687,6 +689,7 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_addr;
   logic [SK_MEM_BANK_ADDR_W:0] mlkem_api_ct_mem_addr;
+  logic [SK_MEM_BANK_ADDR_W:0] mlkem_c1_dwords, mlkem_ct_dwords;
   logic [1:0] mlkem_api_ct_re_bank;
 
   logic mlkem_api_ct_mem_dec, mlkem_api_ct_rd_vld;
@@ -1064,9 +1067,22 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb mlkem_api_ct_addr = {2'b0,abr_reg_hwif_out.MLKEM_CIPHERTEXT.addr[10:2]};
 
-  always_comb mlkem_api_ct_mem_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & mlkem_api_ct_addr inside {[0:MLKEM_CIPHERTEXT_MEM_NUM_DWORDS-1]};
+  //c = ByteEncode_du(u) || ByteEncode_dv(v). c1 is 8*du*k dwords and c2 is 8*dv
+  //dwords, but the two live at fixed category-5 offsets in the key SRAM, so the
+  //byte stream is only contiguous in memory when du*k is at its category-5
+  //value. The aperture therefore skips the padding between them exactly the way
+  //the decaps key aperture skips the padding between dkPKE and its ek copy. At
+  //ML-KEM-1024 c1 is 352 dwords and 768+352 == 1120, so both branches reduce to
+  //the previous +C1 mapping and the override is inert.
+  always_comb mlkem_c1_dwords = (SK_MEM_BANK_ADDR_W+1)'(32'd8 * mlkem_du_of(mlkem_param_set) *
+                                                        32'(mlkem_k_active));
+  always_comb mlkem_ct_dwords = mlkem_c1_dwords + (SK_MEM_BANK_ADDR_W+1)'(32'd8 * mlkem_dv_of(mlkem_param_set));
 
-  assign mlkem_api_ct_mem_addr = mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0];
+  always_comb mlkem_api_ct_mem_dec = abr_reg_hwif_out.MLKEM_CIPHERTEXT.req & (mlkem_api_ct_addr < mlkem_ct_dwords);
+
+  always_comb mlkem_api_ct_mem_addr = (mlkem_api_ct_addr < mlkem_c1_dwords) ?
+                                      mlkem_api_ct_addr + MLKEM_DEST_C1_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0] :
+                                      mlkem_api_ct_addr + MLKEM_DEST_C2_MEM_OFFSET[SK_MEM_BANK_ADDR_W:0] - mlkem_c1_dwords;
 
   logic [$clog2(MLKEM_MSG_MEM_NUM_DWORDS)-1:0] kv_mlkem_msg_write_offset_rev;
   assign kv_mlkem_msg_write_offset_rev = $clog2(MLKEM_MSG_MEM_NUM_DWORDS)'(MLKEM_MSG_MEM_NUM_DWORDS-1-kv_mlkem_msg_write_offset);
@@ -1079,13 +1095,24 @@ always_comb kv_mlkem_msg_write_data = '0;
   //words before the rho tail is supplied from flops. k=4 gives the previous 192.
   always_comb mlkem_ek_sampler_words = 9'(32'(mlkem_k_active) * 32'd48);
 
+  always_comb mlkem_ct_sampler_words = 9'(32'd4 * mlkem_du_of(mlkem_param_set) * 32'(mlkem_k_active) +
+                                          32'd4 * mlkem_dv_of(mlkem_param_set));
+  always_comb mlkem_c1_sampler_words = 9'(32'd4 * mlkem_du_of(mlkem_param_set) * 32'(mlkem_k_active));
+
   always_comb sampler_sk_rd_en[0] = (sampler_src == MLKEM_EK_REG_ID) & (sampler_src_offset < mlkem_ek_sampler_words) |
                                     (sampler_src == MLKEM_MSG_ID) & (sampler_src_offset inside {[0:3]}) |
-                                    (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset inside {[0:195]});
+                                    (sampler_src == MLKEM_CIPHERTEXT_ID) & (sampler_src_offset < mlkem_ct_sampler_words);
 
+  //MLKEM_DECAPS_CHK+1 hashes the whole ciphertext for J(z || c), so it needs the
+  //same c1 -> c2 skip the software aperture above performs. At ML-KEM-1024 c1 is
+  //176 64-bit words and 560 - 176 == 384, so both arms reproduce the previous
+  //C1/2 constant and the override is inert.
   always_comb sampler_sk_rd_offset = (sampler_src == MLKEM_EK_REG_ID) ? MLKEM_DEST_EK_MEM_OFFSET/2 :
                                      (sampler_src == MLKEM_MSG_ID) ? MLKEM_DEST_MSG_MEM_OFFSET/2 :
-                                     (sampler_src == MLKEM_CIPHERTEXT_ID) ? MLKEM_DEST_C1_MEM_OFFSET/2 : '0;
+                                     (sampler_src == MLKEM_CIPHERTEXT_ID) ?
+                                       ((sampler_src_offset < mlkem_c1_sampler_words) ?
+                                         SK_MEM_BANK_ADDR_W'(MLKEM_DEST_C1_MEM_OFFSET/2) :
+                                         SK_MEM_BANK_ADDR_W'(MLKEM_DEST_C2_MEM_OFFSET/2) - SK_MEM_BANK_ADDR_W'(mlkem_c1_sampler_words)) : '0;
 
   //Secret Key Write Interface
   always_comb begin
@@ -2001,14 +2028,24 @@ end
       //Encoding 2'b00 is "unprogrammed" and never latches on its own; category 5
       //software, which writes either 2'b00 or 2'b11, always ends up at
       //MLDSA_PARAM_87 exactly as before.
+      //A plain aperture-select write is not covered by the command-time
+      //param_set_unsupported error, so it is gated here instead. Without the
+      //gate, software could point the apertures at a set that was compiled out,
+      //which would break the "comment the defines out and category 5 is
+      //untouched" property. An unsupported or reserved selection simply leaves
+      //the previous latch in place. Category 5 software writes 2'b00, which
+      //never latches, or 2'b11, which decodes to reserved and is now held off -
+      //either way the latch stays at the category 5 reset value as before.
       if (|mldsa_cmd_reg)
         mldsa_param_set_reg <= mldsa_param_set_req;
-      else if (abr_ready & (abr_reg_hwif_out.MLDSA_CTRL.PARAM_SET.value != 2'b00))
+      else if (abr_ready & (abr_reg_hwif_out.MLDSA_CTRL.PARAM_SET.value != 2'b00) &
+               mldsa_param_set_supported(mldsa_param_set_req))
         mldsa_param_set_reg <= mldsa_param_set_req;
 
       if (|mlkem_cmd_reg)
         mlkem_param_set_reg <= mlkem_param_set_req;
-      else if (abr_ready & (abr_reg_hwif_out.MLKEM_CTRL.PARAM_SET.value != 2'b00))
+      else if (abr_ready & (abr_reg_hwif_out.MLKEM_CTRL.PARAM_SET.value != 2'b00) &
+               mlkem_param_set_supported(mlkem_param_set_req))
         mlkem_param_set_reg <= mlkem_param_set_req;
     end
   end
@@ -2040,7 +2077,22 @@ end
   always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
   always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);
   always_comb mldsa_gamma1_17_o = ABR_NEED_GAMMA1_17 & (mldsa_param_set == MLDSA_PARAM_44);
-  always_comb mlkem_eta3_o      = ABR_NEED_CBD3 & (mlkem_param_set == MLKEM_PARAM_512);
+  //FIPS 203 K-PKE.KeyGen draws both s and e with eta_1, but K-PKE.Encrypt draws
+  //y with eta_1 and e1/e2 with eta_2. ML-KEM-512 is the only set where the two
+  //differ (eta_1 = 3, eta_2 = 2); at ML-KEM-768/1024 both are 2, so a single
+  //per-parameter-set eta is indistinguishable from the correct per-row one.
+  //Keygen CBD rows carry operand1 == MLKEM_SIGMA_ID, encapsulation rows carry
+  //MLKEM_R_ID. Within encapsulation the domain separator in imm (already
+  //remapped onto the active k by abr_instr_ds) names the vector: 0..k-1 is y,
+  //k..2k-1 is e1 and 2k is e2, so imm >= k selects exactly the eta_2 draws.
+  //Decapsulation re-runs the encapsulation rows, so it is covered by the same
+  //term. Category 5 is bit-inert: mlkem_param_set is never MLKEM_PARAM_512.
+  always_comb mlkem_cbd_eta2_row = abr_instr.opcode.sampler_en &
+                                   (abr_instr.opcode.mode.sampler_mode == ABR_CBD_SAMPLER) &
+                                   (abr_instr.operand1 == MLKEM_R_ID) &
+                                   (abr_instr.imm >= ABR_IMM_WIDTH'(mlkem_k_of(mlkem_param_set)));
+  always_comb mlkem_eta3_o      = ABR_NEED_CBD3 & (mlkem_param_set == MLKEM_PARAM_512) &
+                                  ~mlkem_cbd_eta2_row;
 
   always_comb begin
     sampler_mode_o = ABR_SAMPLER_NONE;
@@ -2466,13 +2518,18 @@ always_comb begin
   endcase
   //The three whole-key hashes (tr = H(pk), H(ek), and the decaps re-hash of the
   //ciphertext) stream a key-sized byte count, so their length has to follow the
-  //parameter set. Each of the three ROM constants is unique, which makes the
-  //ROM value itself a safe tag. Category 5 substitutes the identical value.
-  unique case (abr_instr_o.length)
-    ABR_OPR_WIDTH'(PUBKEY_NUM_BYTES): abr_instr_ds.length = mldsa_pk_bytes;
-    ABR_OPR_WIDTH'(EK_NUM_BYTES)    : abr_instr_ds.length = mlkem_ek_bytes;
-    ABR_OPR_WIDTH'(CT_NUM_BYTES)    : abr_instr_ds.length = mlkem_ct_bytes;
-    default                         : abr_instr_ds.length = abr_instr_o.length;
+  //parameter set. Neither field on its own is a safe tag: EK_NUM_BYTES and
+  //CT_NUM_BYTES are both 392*4, and operand1 doubles as a memory offset on
+  //arithmetic rows, where a small base could collide with a source ID. The pair
+  //is unique - MLDSA_PK_REG_ID at MLDSA_KG_S+101 and MLDSA_VERIFY_H_TR,
+  //MLKEM_EK_REG_ID at MLKEM_KG_S+44, MLKEM_DECAPS_S+5 and MLKEM_ENCAPS_S+7, and
+  //MLKEM_CIPHERTEXT_ID at MLKEM_DECAPS_CHK+1 are the only rows carrying both the
+  //ID and the matching length. Category 5 substitutes the identical value.
+  unique case ({abr_instr_o.operand1, abr_instr_o.length})
+    {ABR_OPR_WIDTH'(MLDSA_PK_REG_ID),     ABR_OPR_WIDTH'(PUBKEY_NUM_BYTES)} : abr_instr_ds.length = mldsa_pk_bytes;
+    {ABR_OPR_WIDTH'(MLKEM_EK_REG_ID),     ABR_OPR_WIDTH'(EK_NUM_BYTES)}     : abr_instr_ds.length = mlkem_ek_bytes;
+    {ABR_OPR_WIDTH'(MLKEM_CIPHERTEXT_ID), ABR_OPR_WIDTH'(CT_NUM_BYTES)}     : abr_instr_ds.length = mlkem_ct_bytes;
+    default                                                                 : abr_instr_ds.length = abr_instr_o.length;
   endcase
   //SampleInBall absorbs c~, whose length is lambda/4 bytes. ABR_UOP_SIB appears on
   //exactly two ROM rows, so the opcode is a safe tag (the literal 'd64 is not

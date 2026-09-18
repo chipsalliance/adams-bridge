@@ -183,6 +183,18 @@ class ML_KEM_512_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
       ready = data[0];
     end
 
+    // The zeroize above returned the parameter set latch to ML-KEM-1024. The
+    // encapsulation key aperture splits ByteEncode12(t_hat) (96*k dwords, memory)
+    // from the rho tail (8 dwords, flops) using the active set, so writing ek
+    // while the latch still says 1024 would push rho into memory and leave the
+    // rho flops at zero. H(ek) would then hash t_hat || 0^32. PARAM_SET with
+    // CTRL = 0 selects the aperture without starting an operation.
+    data = 32'h0000_0010; // PARAM_SET = ML-KEM-512, CTRL = 0
+    reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    if (status != UVM_IS_OK) begin
+      `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to select the parameter set");
+    end
+
     // Write MLKEM_ENCAPS_KEY
     for(int j = 0; j < EK_DWORDS; j++) begin
       reg_model.MLKEM_ENCAPS_KEY.m_mem.write(status, j, ek[j], UVM_FRONTDOOR, reg_model.default_map, this);
@@ -288,6 +300,16 @@ class ML_KEM_512_kg_encaps_decaps_sequence extends mldsa_bench_sequence_base;
       end else begin
         `uvm_info("REG_WRITE_PASS", $sformatf("Successfully wrote MLKEM_SEED_Z[%0d]: %h", j, seed_z[j]), UVM_LOW);
       end
+    end
+
+    // The zeroize above returned the parameter set latch to ML-KEM-1024, and the
+    // ciphertext aperture skips the padding between c1 and c2 using the active
+    // set, so the set has to be reprogrammed before the writeback. PARAM_SET with
+    // CTRL = 0 selects the aperture without starting an operation.
+    data = 32'h0000_0010; // PARAM_SET = ML-KEM-512, CTRL = 0
+    reg_model.MLKEM_CTRL.write(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
+    if (status != UVM_IS_OK) begin
+      `uvm_error("REG_WRITE_FAIL", "Failed to write MLKEM_CTRL to select the parameter set");
     end
 
     // Write MLKEM_CIPHERTEXT
