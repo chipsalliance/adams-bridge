@@ -65,6 +65,8 @@ package mldsa_sequences_pkg;
 `include "src/ML_KEM_512_kg_encaps_decaps_sequence.svh"
 `include "src/ML_KEM_1024_kg_encaps_decaps_sequence.svh"
 `include "src/ML_KEM_768_kg_encaps_decaps_sequence.svh"
+`include "src/ML_KEM_512_encaps_decaps_KATs_sequence.svh"
+`include "src/ML_KEM_768_encaps_decaps_KATs_sequence.svh"
   `include "src/ML_KEM_768_keygen_KATs_sequence.svh"
   `include "src/ML_KEM_encaps_KATs_sequence.svh"
   `include "src/ML_KEM_decaps_KATs_sequence.svh"
