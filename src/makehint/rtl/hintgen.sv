@@ -33,11 +33,19 @@ module hintgen
         input wire zeroize,
 
         input wire enable,
+        //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+        input wire gamma2_88_i,
         input wire [REG_SIZE-1:0] r,
         input wire z_neq_z,
         output logic h
 
     );
+
+    localparam int Q_MINUS_GAMMA2_88 = MLDSA_Q - MLDSA_GAMMA2_88;
+    logic [REG_SIZE-1:0] gamma2_active;
+    logic [REG_SIZE-1:0] q_minus_gamma2_active;
+    always_comb gamma2_active         = REG_SIZE'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? MLDSA_GAMMA2_88    : MLDSA_GAMMA2);
+    always_comb q_minus_gamma2_active = REG_SIZE'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? Q_MINUS_GAMMA2_88  : Q_MINUS_GAMMA2);
 
     logic r_lt_gamma2;
     logic r_gt_q_minus_gamma2;
@@ -59,9 +67,9 @@ module hintgen
     assign h = (enable & ~zeroize) ? or2_res : 'b0;
 
     always_comb begin
-        r_lt_gamma2         = (r <= MLDSA_GAMMA2)   ? 1'b1 : 1'b0;
-        r_gt_q_minus_gamma2 = (r >= Q_MINUS_GAMMA2) ? 1'b1 : 1'b0;
-        r_eq_q_minus_gamma2 = (r == Q_MINUS_GAMMA2) ? 1'b1 : 1'b0;
+        r_lt_gamma2         = (r <= gamma2_active)         ? 1'b1 : 1'b0;
+        r_gt_q_minus_gamma2 = (r >= q_minus_gamma2_active) ? 1'b1 : 1'b0;
+        r_eq_q_minus_gamma2 = (r == q_minus_gamma2_active) ? 1'b1 : 1'b0;
     end
 
     always_comb begin

@@ -53,6 +53,8 @@ module makehint
         //parameter once more than one set is enabled. MLDSA_K/OMEGA below stay as
         //the maximum values and only size the storage.
         input wire [7:0] omega_i,
+        //Selects gamma2 = (q-1)/88 (ML-DSA-44). Public control, never secret.
+        input wire gamma2_88_i,
         input wire [3:0] mldsa_k_i,
         input logic mem_rd_data_valid,
         input wire [(4*REG_SIZE)-1:0] r,
@@ -366,6 +368,7 @@ module makehint
                 .reset_n(reset_n),
                 .zeroize(zeroize),
                 .enable(mem_rd_data_valid),
+                .gamma2_88_i(gamma2_88_i),
                 .r(r[(REG_SIZE*i)+(REG_SIZE-2):(REG_SIZE*i)]), //remove MSB 0 since coeff coming from memory is 24 bit
                 .z_neq_z(z[i]),
                 .h(hint[i])

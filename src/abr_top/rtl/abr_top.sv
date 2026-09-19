@@ -1031,6 +1031,7 @@ makehint_inst
   .makehint_done(makehint_done),
 
   .omega_i(mldsa_omega),
+  .gamma2_88_i(mldsa_gamma2_88),
   .mldsa_k_i(mldsa_k),
 
   .mem_base_addr(aux_src0_base_addr),

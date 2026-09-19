@@ -159,10 +159,19 @@ module decompose
         end
     endgenerate
 
+    // The centred reduction constants follow the active gamma2. At category 5 and
+    // ML-DSA-65 these collapse to the original MLDSA_GAMMA2 / Q_MINUS_2GAMMA2
+    // literals, so the category 5 datapath is unchanged.
+    localparam int Q_MINUS_2GAMMA2_88 = MLDSA_Q - (2*MLDSA_GAMMA2_88);
+    logic [REG_SIZE-2:0] gamma2_active;
+    logic [REG_SIZE-2:0] q_minus_2gamma2_active;
+    always_comb gamma2_active          = (REG_SIZE-1)'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? MLDSA_GAMMA2_88    : MLDSA_GAMMA2);
+    always_comb q_minus_2gamma2_active = (REG_SIZE-1)'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? Q_MINUS_2GAMMA2_88 : Q_MINUS_2GAMMA2);
+
     generate
         for (genvar i = 0; i < 4; i++) begin
             always_comb begin
-                r0_mod_q[i] = (r0_mod_2gamma2[i] <= MLDSA_GAMMA2) ? {4'h0, r0_mod_2gamma2[i]} : (REG_SIZE-1)'(r0_mod_2gamma2[i] + Q_MINUS_2GAMMA2);
+                r0_mod_q[i] = (r0_mod_2gamma2[i] <= gamma2_active) ? {4'h0, r0_mod_2gamma2[i]} : (REG_SIZE-1)'(r0_mod_2gamma2[i] + q_minus_2gamma2_active);
             end
         end
     endgenerate
