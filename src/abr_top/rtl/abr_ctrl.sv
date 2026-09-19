@@ -717,6 +717,26 @@ always_comb kv_mlkem_msg_write_data = '0;
   logic api_sig_reg_re;
   logic [SIG_ADDR_W-1:0] api_sig_addr;
   mldsa_signature_z_addr_t [SRAM_LATENCY:0] api_sig_z_addr;
+  //ML-DSA-44 signature z repack (gamma1 = 2^17 -> 18 bits per coefficient).
+  //Internal storage keeps the category 5 row geometry, 8 coefficients per
+  //160 bit row, but packs them at 18 bits so a row holds 144 valid bits in
+  //[143:0] and zero in [159:144]. lcm(32,18) = 288 bits, so a two row window
+  //is exactly 9 API dwords and every API dword is byte aligned. Inert at
+  //category 5 and fully removed when ML-DSA-44 is not built.
+  logic z18_mode;
+  logic [SIG_Z_MEM_DATA_W-1:0] sig_z_ram_rdata_flat, sig_z_wdata_encode, sigdecode_z_rd_data_exp;
+  logic [SIG_ADDR_W-1:0] api_sig_z_index;
+  logic [22:0] z18_q_mult;
+  logic [SIG_Z_MEM_ADDR_W-2:0] z18_q, z18_q_q;
+  logic [3:0] z18_e, z18_e_q;
+  logic [2:0] z18_cap_sel, z18_odd_sel;
+  logic z18_start, z18_rd_start, z18_wr_start;
+  logic z18_busy, z18_is_wr_q, z18_p1_sent;
+  logic [SRAM_LATENCY:0] z18_rd_p0, z18_rd_p1;
+  logic [31:0] z18_rd_cap, z18_wdata_q, z18_rd_data;
+  logic z18_we0, z18_we1;
+  logic [SIG_Z_MEM_WSTROBE_W-1:0] z18_wstrobe0, z18_wstrobe1;
+  logic [SIG_Z_MEM_DATA_W-1:0] z18_wdata0, z18_wdata1;
   logic [SIG_C_REG_ADDR_W-1:0] api_sig_c_addr;
   logic [SIG_H_REG_ADDR_W-1:0] api_sig_h_addr;
   logic [ABR_REG_WIDTH-1:0] signature_reg_rdata;
@@ -954,9 +974,10 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_ack = privkey_out_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.wr_ack = abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req & abr_reg_hwif_out.MLDSA_PRIVKEY_OUT.req_is_wr;
     abr_reg_hwif_in.MLDSA_PRIVKEY_OUT.rd_data = privkey_out_rd_ack[SRAM_LATENCY] & mldsa_valid_reg & ~mldsa_privkey_lock ? privkey_out_rdata : 0;
-    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = signature_rd_ack[SRAM_LATENCY];
-    abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = abr_reg_hwif_out.MLDSA_SIGNATURE.req & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
-    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = api_sig_z_re[SRAM_LATENCY] ? sig_z_ram_rdata[api_sig_z_addr[SRAM_LATENCY].offset] : api_reg_rdata;
+    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_ack = (signature_rd_ack[SRAM_LATENCY] & ~z18_rd_p0[SRAM_LATENCY]) | z18_rd_p1[SRAM_LATENCY];
+    abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack = (abr_reg_hwif_out.MLDSA_SIGNATURE.req & abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr & ~z18_wr_start) | z18_we1;
+    abr_reg_hwif_in.MLDSA_SIGNATURE.rd_data = z18_rd_p1[SRAM_LATENCY]     ? z18_rd_data :
+                                              api_sig_z_re[SRAM_LATENCY]  ? sig_z_ram_rdata[api_sig_z_addr[SRAM_LATENCY].offset] : api_reg_rdata;
     abr_reg_hwif_in.MLDSA_PUBKEY.rd_ack = pubkey_rd_ack[SRAM_LATENCY];
     abr_reg_hwif_in.MLDSA_PUBKEY.wr_ack = abr_reg_hwif_out.MLDSA_PUBKEY.req &  abr_reg_hwif_out.MLDSA_PUBKEY.req_is_wr;
     abr_reg_hwif_in.MLDSA_PUBKEY.rd_data = api_pubkey_re[SRAM_LATENCY]     ? pubkey_ram_rdata[api_pubkey_mem_addr[SRAM_LATENCY].offset] :
@@ -1259,9 +1280,109 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb api_sig_c_addr = api_sig_addr[SIG_C_REG_ADDR_W-1:0];
   always_comb api_sig_h_addr = SIG_H_REG_ADDR_W'( api_sig_addr - mldsa_sig_h_base );
 
-  always_comb api_sig_z_we = abr_ready & api_sig_z_dec & abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
+  //-----------------------------------------------------------------------
+  //ML-DSA-44 z repack. Window index q = idx/9 selects the row pair
+  //{2q, 2q+1}; e = idx%9 selects the dword inside the 288 bit window.
+  //e 0..3 lives entirely in the even row at byte 4e, e 5..8 entirely in the
+  //odd row at byte 4e-18, and e == 4 straddles the pair. Every access is
+  //driven as two phases so the control has no straddle special case; the
+  //phase whose byte strobe is empty is simply a no-op write.
+  //-----------------------------------------------------------------------
+  always_comb z18_mode = ABR_NEED_GAMMA1_17 & mldsa_gamma1_17_o;
+  always_comb api_sig_z_index = api_sig_addr - mldsa_sig_z_base;
+  //(x*3641)>>15 is exactly x/9 for every 10 bit x, checked exhaustively.
+  always_comb z18_q_mult = 23'(api_sig_z_index) * 23'd3641;
+  always_comb z18_q      = z18_q_mult[15 +: (SIG_Z_MEM_ADDR_W-1)];
+  always_comb z18_e      = 4'( {1'b0,api_sig_z_index} - (12'(z18_q) * 12'd9) );
+  always_comb z18_cap_sel = (z18_e_q > 4'd4) ? 3'd0 : z18_e_q[2:0];
+  always_comb z18_odd_sel = (z18_e_q < 4'd5) ? 3'd0 : 3'(z18_e_q - 4'd5);
 
-  always_comb api_sig_z_re[0] = mldsa_valid_reg & api_sig_z_dec & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+  always_comb z18_rd_start = z18_mode & api_sig_z_dec & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr & mldsa_valid_reg;
+  always_comb z18_wr_start = z18_mode & api_sig_z_dec &  abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr & abr_ready;
+  always_comb z18_start    = z18_rd_start | z18_wr_start;
+
+  always_comb z18_rd_p0[0] = z18_rd_start;
+  always_comb z18_rd_p1[0] = z18_busy & ~z18_is_wr_q & ~z18_p1_sent;
+  always_comb z18_we0      = z18_wr_start;
+  always_comb z18_we1      = z18_busy & z18_is_wr_q;
+
+  //even row: e 0..3 a full dword at byte 4e, e == 4 the low halfword at byte 16
+  always_comb begin
+    z18_wstrobe0 = '0;
+    z18_wdata0   = '0;
+    if (z18_e < 4'd4) begin
+      z18_wstrobe0 = SIG_Z_MEM_WSTROBE_W'(4'hF) << (z18_e[1:0]*4);
+      z18_wdata0   = SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data) << (z18_e[1:0]*32);
+    end else if (z18_e == 4'd4) begin
+      z18_wstrobe0 = SIG_Z_MEM_WSTROBE_W'(2'b11) << 16;
+      z18_wdata0   = SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data[15:0]) << 128;
+    end
+  end
+
+  //odd row: e == 4 the high halfword at byte 0, e 5..8 a full dword at byte 4e-18
+  always_comb begin
+    z18_wstrobe1 = '0;
+    z18_wdata1   = '0;
+    if (z18_e_q == 4'd4) begin
+      z18_wstrobe1 = SIG_Z_MEM_WSTROBE_W'(2'b11);
+      z18_wdata1   = SIG_Z_MEM_DATA_W'(z18_wdata_q[31:16]);
+    end else if (z18_e_q > 4'd4) begin
+      z18_wstrobe1 = SIG_Z_MEM_WSTROBE_W'(4'hF) << (2 + z18_odd_sel*4);
+      z18_wdata1   = SIG_Z_MEM_DATA_W'(z18_wdata_q) << (16 + z18_odd_sel*32);
+    end
+  end
+
+  always_comb z18_rd_data = (z18_e_q < 4'd4)  ? z18_rd_cap :
+                            (z18_e_q == 4'd4) ? {sig_z_ram_rdata_flat[15:0], z18_rd_cap[15:0]} :
+                                                sig_z_ram_rdata_flat[16 + z18_odd_sel*32 +: 32];
+
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      z18_busy    <= '0;
+      z18_is_wr_q <= '0;
+      z18_p1_sent <= '0;
+      z18_e_q     <= '0;
+      z18_q_q     <= '0;
+      z18_wdata_q <= '0;
+      z18_rd_cap  <= '0;
+      z18_rd_p0[SRAM_LATENCY:1] <= '0;
+      z18_rd_p1[SRAM_LATENCY:1] <= '0;
+    end else if (zeroize) begin
+      z18_busy    <= '0;
+      z18_is_wr_q <= '0;
+      z18_p1_sent <= '0;
+      z18_e_q     <= '0;
+      z18_q_q     <= '0;
+      z18_wdata_q <= '0;
+      z18_rd_cap  <= '0;
+      z18_rd_p0[SRAM_LATENCY:1] <= '0;
+      z18_rd_p1[SRAM_LATENCY:1] <= '0;
+    end else begin
+      for (int unsigned s = 1; s <= SRAM_LATENCY; s++) begin
+        z18_rd_p0[s] <= z18_rd_p0[s-1];
+        z18_rd_p1[s] <= z18_rd_p1[s-1];
+      end
+      if (z18_rd_p0[SRAM_LATENCY]) z18_rd_cap <= sig_z_ram_rdata_flat[z18_cap_sel*32 +: 32];
+      if (z18_start) begin
+        z18_busy    <= 1'b1;
+        z18_is_wr_q <= abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
+        z18_e_q     <= z18_e;
+        z18_q_q     <= z18_q;
+        z18_wdata_q <= abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data;
+        z18_p1_sent <= 1'b0;
+      end else begin
+        if (z18_rd_p1[0]) z18_p1_sent <= 1'b1;
+        if (z18_we1 | z18_rd_p1[SRAM_LATENCY]) begin
+          z18_busy    <= 1'b0;
+          z18_p1_sent <= 1'b0;
+        end
+      end
+    end
+  end
+
+  always_comb api_sig_z_we = abr_ready & api_sig_z_dec & ~z18_mode & abr_reg_hwif_in.MLDSA_SIGNATURE.wr_ack;
+
+  always_comb api_sig_z_re[0] = mldsa_valid_reg & api_sig_z_dec & ~z18_mode & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
   always_comb api_sig_reg_re = (api_sig_c_dec | api_sig_h_dec) & ~abr_reg_hwif_out.MLDSA_SIGNATURE.req_is_wr;
 
   always_comb sig_z_mem_if.we_i = (sig_z_ram_we);
@@ -1271,29 +1392,56 @@ always_comb kv_mlkem_msg_write_data = '0;
   always_comb sig_z_mem_if.re_i = (sig_z_ram_re);
   always_comb sig_z_mem_if.raddr_i = (sig_z_ram_raddr);
   always_comb sig_z_ram_rdata = sig_z_mem_if.rdata_o;
+  always_comb sig_z_ram_rdata_flat = sig_z_ram_rdata;
 
   //read requests
   always_comb sigdecode_z_ram_re[0] = sigdecode_z_rd_req_i.rd_wr_en == RW_READ;
-  always_comb sig_z_ram_re = sigdecode_z_ram_re[0] | api_sig_z_re[0];
+  always_comb sig_z_ram_re = sigdecode_z_ram_re[0] | api_sig_z_re[0] | z18_rd_p0[0] | z18_rd_p1[0];
   always_comb sig_z_ram_raddr = ({SIG_Z_MEM_ADDR_W{sigdecode_z_ram_re[0]}} & sigdecode_z_rd_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
-                                ({SIG_Z_MEM_ADDR_W{api_sig_z_re[0]}} & api_sig_z_addr[0].addr);
+                                ({SIG_Z_MEM_ADDR_W{api_sig_z_re[0]}} & api_sig_z_addr[0].addr) |
+                                ({SIG_Z_MEM_ADDR_W{z18_rd_p0[0]}} & {z18_q, 1'b0}) |
+                                ({SIG_Z_MEM_ADDR_W{z18_rd_p1[0]}} & {z18_q_q, 1'b1});
 
-  always_comb sigdecode_z_rd_data_o = sig_z_ram_rdata;
+  //Expand the stored 18 bit coefficients back to the category 5 20 bit slots
+  //for sigdecode. A pure rewire at -44, a straight pass through elsewhere.
+  always_comb begin
+    for (int unsigned c = 0; c < SIG_Z_MEM_DATA_W/20; c++) begin
+      sigdecode_z_rd_data_exp[c*20 +: 20] = z18_mode ? {2'b0, sig_z_ram_rdata_flat[c*18 +: 18]}
+                                                     : sig_z_ram_rdata_flat[c*20 +: 20];
+    end
+  end
+  always_comb sigdecode_z_rd_data_o = sigdecode_z_rd_data_exp;
   always_comb sigdecode_z_rd_data_valid_o = sigdecode_z_ram_re[SRAM_LATENCY];
 
+  //Pack the sigencode stream to 18 bits per coefficient at -44. z is at most
+  //2*gamma1-1 = 2^18-1 there, so no information is lost.
+  always_comb begin
+    sig_z_wdata_encode = '0;
+    for (int unsigned c = 0; c < SIG_Z_MEM_DATA_W/20; c++) begin
+      if (z18_mode) sig_z_wdata_encode[c*18 +: 18] = sigencode_wr_data_i[c/4][c%4][17:0];
+      else          sig_z_wdata_encode[c*20 +: 20] = sigencode_wr_data_i[c/4][c%4];
+    end
+  end
+
   //write requests
-  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we_sig;
+  always_comb sig_z_ram_we = (sigencode_wr_req_i.rd_wr_en == RW_WRITE) | api_sig_z_we | zeroize_mem_we_sig | z18_we0 | z18_we1;
   always_comb sig_z_ram_waddr = ({SIG_Z_MEM_ADDR_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_req_i.addr[SIG_Z_MEM_ADDR_W:1]) |
                                 ({SIG_Z_MEM_ADDR_W{api_sig_z_we}} & api_sig_z_addr[0].addr) |
-                                ({SIG_Z_MEM_ADDR_W{zeroize_mem_we_sig}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]);
+                                ({SIG_Z_MEM_ADDR_W{zeroize_mem_we_sig}} & zeroize_mem_addr[SIG_Z_MEM_ADDR_W-1:0]) |
+                                ({SIG_Z_MEM_ADDR_W{z18_we0}} & {z18_q, 1'b0}) |
+                                ({SIG_Z_MEM_ADDR_W{z18_we1}} & {z18_q_q, 1'b1});
 
   always_comb sig_z_ram_wstrobe = ({SIG_Z_MEM_WSTROBE_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}}) |
                                   ({SIG_Z_MEM_WSTROBE_W{api_sig_z_we}} & ('hF << api_sig_z_addr[0].offset*4)) |
-                                  ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we_sig}});
+                                  ({SIG_Z_MEM_WSTROBE_W{zeroize_mem_we_sig}}) |
+                                  ({SIG_Z_MEM_WSTROBE_W{z18_we0}} & z18_wstrobe0) |
+                                  ({SIG_Z_MEM_WSTROBE_W{z18_we1}} & z18_wstrobe1);
 
 
-  always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sigencode_wr_data_i) |
-                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr[0].offset*32));
+  always_comb sig_z_ram_wdata = ({SIG_Z_MEM_DATA_W{(sigencode_wr_req_i.rd_wr_en == RW_WRITE)}} & sig_z_wdata_encode) |
+                                ({SIG_Z_MEM_DATA_W{(api_sig_z_we)}} & SIG_Z_MEM_DATA_W'(abr_reg_hwif_out.MLDSA_SIGNATURE.wr_data << api_sig_z_addr[0].offset*32)) |
+                                ({SIG_Z_MEM_DATA_W{z18_we0}} & z18_wdata0) |
+                                ({SIG_Z_MEM_DATA_W{z18_we1}} & z18_wdata1);
 
   always_comb signature_reg_rdata = {ABR_REG_WIDTH{api_sig_c_dec}} & signature_reg.enc.c[api_sig_c_addr] |
                                     {ABR_REG_WIDTH{api_sig_h_dec}} & signature_reg.enc.h[api_sig_h_addr];
