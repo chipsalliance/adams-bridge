@@ -61,6 +61,8 @@ package mldsa_sequences_pkg;
   `include "src/ML_DSA_65_externalmu_ACVP_KATs_sequence.svh"
   `include "src/ML_DSA_44_externalmu_ACVP_KATs_sequence.svh"
   `include "src/ML_DSA_ACVP_rejection_KATs_sequence.svh"
+  `include "src/ML_DSA_44_keygen_signing_KATs_sequence.svh"
+  `include "src/ML_DSA_65_keygen_signing_KATs_sequence.svh"
   `include "src/ML_KEM_keygen_KATs_sequence.svh"
   `include "src/ML_KEM_512_keygen_KATs_sequence.svh"
 `include "src/ML_KEM_512_kg_encaps_decaps_sequence.svh"
