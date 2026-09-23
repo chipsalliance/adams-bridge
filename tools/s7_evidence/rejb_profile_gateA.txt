@@ -1,0 +1,39 @@
+=== Gate A (pre-critique RTL, commit-candidate mechanism) 27/27 ===
+27
+
+--- ML_DSA_44_keygen_KATs_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=15 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=16 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_44_randomized_kg_sign_verify_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=23 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=24 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_65_keygen_KATs_test
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=21 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=22 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+--- ML_DSA_65_keygen_signing_KATs_test
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=32 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=33 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+--- ML_DSA_65_randomized_kg_sign_verify_test
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=32 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=260 n=33 min=481 max=481 spread=0 natmin=260 natmax=260 natspread=0
+--- ML_DSA_87_randomized_kg_sign_verify_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=44 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=45 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_ACVP_rejection_KATs_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=14 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=15 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_externalmu_KATs_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=14 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=15 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_keygen_KATs_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=44 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=45 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_keygen_signing_KATs_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=44 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=45 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_MLKEM_param_set_mix_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=14 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=15 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+--- ML_DSA_randomized_all_test
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=29 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0
+ABR_REJB_LEN eta4=0 len=236 nat=234 n=30 min=236 max=236 spread=0 natmin=234 natmax=234 natspread=0

@@ -2483,8 +2483,18 @@ as 49 -> 59 was done for `eta = 2`.
 
 **Measured result.** `abr_sampler_top` carries a simulation-only profiler
 (enabled with the `+abr_rejb_profile` plusarg) that times every RejBounded
-activation from `sampler_start_i` to `sampler_done` and prints
-`ABR_REJB_LEN`. Against the KAT suites:
+activation and prints `ABR_REJB_LEN`. It reports two lengths:
+
+* `nat` - `sampler_start_i` to `sampler_done`, the natural length of the
+  sampling loop;
+* `len` - `sampler_start_i` to `sampler_busy_o` falling, the **observable**
+  length, which is what the sequencer and any external observer see. This is
+  the one the constant-time claim rests on, and `min`/`max`/`spread` track it.
+
+At `eta = 2` the two are the same. At `eta = 4` the `ABR_SAMPLER_PAD` state
+described under (c) below makes `len` constant at `REJB_ETA4_FIXED_LEN` while
+`nat` remains the un-padded loop length. Against the KAT suites, measuring the
+natural loop length:
 
 | parameter set | eta | lanes | HOLD | activations | loop length | spread |
 |---------------|----:|------:|-----:|------------:|------------:|-------:|
@@ -2510,6 +2520,16 @@ reproduce it exactly:
 | `ML_DSA_65_randomized_kg_sign_verify` | 4 | 33 | 260 | **0** |
 | `ML_DSA_87_randomized_kg_sign_verify` | 2 | 45 | 234 | **0** |
 
+These are natural loop lengths (`nat`). The observable length (`len`) runs two
+cycles longer in every case - the FSM spends one cycle in `ABR_SAMPLER_DONE`
+and one more before `sampler_busy_o` falls - so the measured observable lengths
+are **236** at `eta = 2` (`234 + 2`) and a constant **481** at `eta = 4`
+(`REJB_ETA4_FIXED_LEN + 2 = 479 + 2`), both with `spread = 0`. That the `+2`
+tail is identical at both parameter sets and across every activation is the
+measurement that retires the one structural assumption in this argument, namely
+that the `splitter_en | splitter_ready` term folded into `sampler_busy_o` has a
+fixed, data-independent tail.
+
 Re-run the measurement after any change to `REJB_NUM_SAMPLERS_*`,
 `REJB_MASKED_KECCAK_HOLD_*`, the PISO width, or the masked Keccak latency:
 
@@ -2519,51 +2539,127 @@ pb fe sim --tb integration_lib::uvmf_mldsa \
 grep ABR_REJB_LEN sim.log        # every line must report spread=0
 ```
 
-**Residual, and why it is not closed here.** The measurement above is an
-empirical result over a finite number of activations, not a proof. The
-structural bound is as follows. The RejBounded PISO is 1334 bits, i.e.
-about 1.23 Keccak states, and `hold_o` back-pressures the state transfer,
-so **at most two Keccak states can be resident when the drain begins, no
-matter how large HOLD is made**. Raising HOLD past 85 therefore buys
-nothing - the third state cannot be accumodated. Two states supply 544 half
-bytes, and at `p = 9/16`
+**(c) Whole-polynomial supply, and the `ABR_SAMPLER_PAD` state.** Conditions
+(a) and (b) make the *drain* demand-limited, which removes every seed
+dependence the loop has **provided the resident Keccak states supply the 256
+coefficients the polynomial needs**. That last proviso is a third condition,
+and at `eta = 4` it is the binding one.
+
+`hold_o` back-pressures the PISO, so at most two Keccak states are resident
+when the drain begins. Two states supply 544 half bytes, and at `p = 9/16`
 
 $$
-\Pr\!\bigl[\mathrm{Bin}(544,\,9/16) < 256\bigr] \;\approx\; 7.0 \times 10^{-6}
+\Pr\!\bigl[\mathrm{Bin}(544,\,9/16) < 256\bigr] \;=\; 6.985 \times 10^{-6}
 $$
 
-so on the order of one polynomial in 143 000 would need a third squeeze and
-would run long, which is a secret-dependent length. For comparison the
-`eta = 2` figure is 5.3e-194, i.e. it never happens, which is why category 5
-needs no such caveat. The honest statement is therefore: **the eta = 4 path
-is constant-time up to a quantified residual of about 7e-6 per polynomial
-(about 7.7e-5 per ML-DSA-65 keygen over its 11 RejBounded polynomials), not
-unconditionally constant-time.** This is the same class of residual that
-`rej_sampler` (ExpandA) already carries, with the important difference that
-ExpandA samples the *public* matrix **A** from the *public* seed rho, so its
-residual leaks nothing, whereas RejBounded samples the secret `s1`/`s2`.
+so roughly one polynomial in 143 000 needs a third squeeze and runs about a
+masked permutation long. At `eta = 2` the same figure is `5.3e-194`, which is
+why category 5 never had to address this.
 
-Two closure options exist, both costed, neither taken here because both are
-area/architecture decisions rather than bug fixes:
+**Raising HOLD does not close it** - the third state cannot be accommodated
+however long the first drain is delayed. **Growing the PISO does not close it
+either.** This was stated in an earlier revision of this document and is
+wrong: the binding constraint is not buffer depth but the masked permutation
+*rate*. Keccak state *n* is not available before
 
-| option | change | cost | effect |
-|--------|--------|------|--------|
-| grow the backlog | widen `REJS_PISO_BUFFER_W` so three Keccak states (816 half bytes) can be resident before the drain | approximately 2000 extra flops, plus a wider PISO shifter on the critical path | `Pr[Bin(816, 9/16) < 256]` is below 2^-200; removes the residual outright |
-| pad the loop | hold `sampler_done` until a fixed cycle count has elapsed, so a rare third squeeze is absorbed by slack that is always spent | one counter and one comparator, but the pad has to cover a full masked squeeze: 260 -> 369 cycles per polynomial, approximately 1200 extra cycles per ML-DSA-65 keygen | makes the length unconditionally constant by construction |
+$$
+111 + 109\,(n-1) \ \text{sampler cycles}
+$$
 
-Note the padding option is *not* cheap in cycles: the slack has to cover a
-whole masked Keccak permutation (109 sampler cycles), because that is what a
-third squeeze costs. It is nearly free in area but costs roughly 42 percent
-of each RejBounded polynomial. The PISO-growth option is the reverse - it
-costs area and PISO timing but nothing in throughput, and it removes the
-residual rather than masking it.
+whatever the buffer depth, while the drain has ended by cycle 260. State 3
+arrives at about cycle 329 into a loop that finished 69 cycles earlier. A
+deeper PISO would let state 3 be *stored* sooner, not *produced* sooner.
 
-The recommendation is therefore to **leave the residual as measured and
-documented** unless a side-channel review judges a 7e-6 per-polynomial
-length variation to be exploitable. Reaching it requires roughly 143 000
-keygens with the same secret to observe a single long polynomial, and a
-keygen does not reuse its secret. If it is judged unacceptable, prefer
-growing the PISO over padding the loop.
+The only closure is therefore **time**. `abr_sampler_top` gives the `eta = 4`
+RejBounded activation a compile-time constant observable length: when the
+sampling loop completes, the FSM moves to a new `ABR_SAMPLER_PAD` state and
+keeps `sampler_busy_o` asserted until `REJB_ETA4_FIXED_LEN` cycles have
+elapsed since `sampler_start_i`. Because `abr_ctrl` gates sequencer advance on
+`~sampler_busy_i`, this is the length an external observer actually sees.
+
+**Sizing the pad.** The worst observable two-squeeze length is 261 cycles
+(cycle-accurate model, `tools/rejb_model.py`). Each further squeeze can add at
+most one masked permutation, `K_masked = 109`. Covering *two* further squeezes
+therefore needs
+
+$$
+261 + 2 \times 109 \;=\; 479 \;=\; \texttt{REJB\_ETA4\_FIXED\_LEN}
+$$
+
+which also bounds the model's measured four-squeeze worst case of 460 cycles.
+The residual is then the probability that even four squeezes fall short
+(`tools/rejb_exact.py`):
+
+| squeezes covered by the pad | half bytes | Pr[short] | log2 | per ML-DSA-65 keygen (11 polys) |
+|---:|---:|:--|--:|--:|
+| 2 (no pad - what session 6 shipped) | 544 | 7.0e-6 | -17.1 | 2^-13.7 |
+| 3 | 816 | 4.4e-47 | -154.0 | 2^-150.5 |
+| **4 (chosen, `REJB_ETA4_FIXED_LEN = 479`)** | **1088** | **1.2e-107** | **-355.2** | **2^-351.7** |
+
+Four squeezes rather than three was chosen because the three-squeeze pad
+(369 cycles) would have rested on a Monte-Carlo maximum being exact, whereas
+479 follows from the structural bound "one extra squeeze costs at most
+`K_masked`" and needs no simulation to justify. The category-5 `HOLD = 59`
+choice was itself signed off at `2^-92` per keygen, so `2^-352` is three and a
+half times deeper than the bar this design already accepted.
+
+**Cost.** 260 -> 479 cycles per RejBounded polynomial, about +2.4 k cycles per
+ML-DSA-65 keygen. RejBounded is used **only in keygen** - signing reads `s1`
+and `s2` from the secret key and never samples them - so signature and
+verification latency are completely unchanged, and no other parameter set is
+affected at all. At `eta = 2` the pad is not merely inactive, it is not
+elaborated: `g_rejb_pad` is guarded by `ABR_NEED_ETA4`, `rejb_pad_hold` is
+tied to zero, and `ABR_SAMPLER_PAD` becomes unreachable and collapses in
+synthesis.
+
+**Guard rails.** Two assertions protect the sizing:
+
+* `ERR_REJB_ETA4_PAD_UNDERSIZED` - if the natural `sampler_done` ever lands
+  after the pad has already expired, the activation escapes through the
+  unpadded path and the length becomes secret-dependent again. This fires
+  immediately if `REJB_ETA4_FIXED_LEN` is ever undersized, for example after a
+  change to `K_masked`, the lane count, HOLD or the PISO width.
+* `ERR_REJB_PAD_AT_ETA2` - the pad must never be entered at `eta = 2`, which
+  pins the category-5 timing.
+* `ERR_REJB_ETA4_EARLY_DONE` - an `eta = 4` RejBounded activation must not be
+  able to reach `ABR_SAMPLER_DONE`, and therefore must not be able to drop
+  `sampler_busy_o`, before the pad has expired. This is the direct statement of
+  the constant observable length; `ERR_REJB_ETA4_PAD_UNDERSIZED` only says that
+  the natural completion lands inside the pad window.
+* `ERR_REJB_START_DURING_PAD` - a start pulse must never land in the pad. The
+  sequencer gates a new start on `~sampler_busy_i` so it cannot, but if it ever
+  did it would reset the pad counter without launching an operation.
+
+**What the claim covers, and what it does not.** The pad equalises
+`sampler_busy_o`, which is the only thing `abr_ctrl` and therefore anything
+outside Adams-Bridge can observe: `ABR_CTRL_DONE` advances the sequencer on
+`~sampler_busy_i`, so the whole keygen schedule downstream of a RejBounded
+activation now moves on a fixed cycle. It does **not** equalise the *internal*
+activity trace. In the `7.0e-6` case that needs a third squeeze, the masked
+Keccak runs for roughly `K_masked` more cycles and the `sampler_mem_dv_o` write
+beats to the sample memory stretch correspondingly, inside a busy window that is
+now constant. That difference is invisible architecturally - the sample memory
+is internal to `abr_top` - but it is a power and EM difference, and it is called
+out here rather than hidden so that the side-channel review has it in scope.
+
+Note that the category-5 path makes exactly the same distinction and simply
+never has to state it: at `p = 15/16` the drain does not stall with probability
+`1 - 5.3e-194`, so the internal trace is constant for the same reason the
+external one is. At `eta = 4` the two probabilities separate - `1 - 2^-355` for
+the external length, `1 - 7.0e-6` for the internal trace - and only the external
+one could be closed without restructuring the datapath. The profiler therefore
+measures both: `ABR_REJB_LEN` reports the observable length and
+`ABR_REJB_WTRACE` reports the first beat, last beat and beat count of the write
+trace, so that "the internal trace is also constant in practice" is a
+measurement over the whole regression rather than an assumption.
+
+**Residual leak surface after the pad.** What remains is `2^-352` per
+ML-DSA-65 keygen, which is below every other negligibility bound in this
+design. For completeness, the same class of residual exists in `rej_sampler`
+(ExpandA) and is not padded there - deliberately, because ExpandA samples the
+*public* matrix **A** from the *public* seed rho, so a seed-dependent length
+leaks nothing secret. RejBounded is padded precisely because it samples the
+secret `s1`/`s2`.
 
 **Implementation.** The two banks are physically separate
 (`rej_bounded_ctrl`): the category-5 path keeps 8 `rej_bounded2` lanes

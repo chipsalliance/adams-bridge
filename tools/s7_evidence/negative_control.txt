@@ -1,0 +1,24 @@
+=== Negative control: REJB_NUM_SAMPLERS_ETA4 = 8 (starved eta=4 bank) ===
+Both tests still functionally PASS:
+ML_DSA_65_keygen_KATs_test UVM_ERROR=0 UVM_FATAL=0 LOG=/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_65_keygen_KATs_test/20260923.174540
+ML_DSA_65_randomized_kg_sign_verify_test UVM_ERROR=0 UVM_FATAL=0 LOG=/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_65_randomized_kg_sign_verify_test/20260923.174531
+NEG_DONE
+
+Profiler (last lines per test):
+ABR_REJB_LEN eta4=1 len=481 nat=262 n=28 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=198 last=263 beats=64 firstspread=1 lastspread=7 beatspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=262 n=29 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=198 last=263 beats=64 firstspread=1 lastspread=7 beatspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=263 n=30 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=199 last=264 beats=64 firstspread=1 lastspread=7 beatspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=264 n=31 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=199 last=265 beats=64 firstspread=1 lastspread=7 beatspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=262 n=32 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=199 last=263 beats=64 firstspread=1 lastspread=7 beatspread=0
+ABR_REJB_LEN eta4=1 len=481 nat=263 n=33 min=481 max=481 spread=0 natmin=260 natmax=267 natspread=7
+ABR_REJB_WTRACE eta4=1 first=198 last=264 beats=64 firstspread=1 lastspread=7 beatspread=0
+
+RESULT: the natural loop length becomes seed dependent (natspread=7, 260..267)
+and the internal write trace stretches with it (lastspread=7), but the
+OBSERVABLE length stays pinned at 481 with spread=0. That is exactly what
+ABR_SAMPLER_PAD is for. With the shipped 20-lane bank natspread is 0 as well.

@@ -72,6 +72,60 @@ of the six settings, or would make a read-only identity register mutable and
 force software to re-read it after every `PARAM_SET` write. Software reads
 `PARAM_SET` to learn which set is selected.
 
+## Constant-time sampling at every parameter set
+
+Rejection sampling is the one place where a parameter change can turn a
+constant-time unit into a data-dependent one, because the acceptance
+probability is a function of the parameter. Every sampling unit was re-derived
+at the new sets rather than reused.
+
+| unit | what it samples | secret? | acceptance probability | constant time because |
+|---|---|---|---|---|
+| `rej_sampler` (ExpandA) | matrix **A** / **Â** | no - derived from public rho | ML-DSA 8380417/2^23, ML-KEM 3329/4096; identical at every set | length may vary; the input and the output are public |
+| `sample_in_ball` | challenge **c** | no - derived from the public c-tilde | tau/256 with tau = 39/49/60 | `tau_i` is a runtime input; rejection is on public data |
+| `exp_mask` (ExpandMask) | mask **y** | **yes** | no rejection at all | fixed length by construction at gamma1 = 2^17 and 2^19 |
+| `cbd_sampler` | **s**, **e**, **r** | **yes** | no rejection at all | fixed length by construction at eta1 = 2 and 3 |
+| `rej_bounded` (ExpandS) | **s1**, **s2** | **yes** | **15/16 at eta = 2 but only 9/16 at eta = 4** | see below |
+
+`rej_bounded` at `eta = 4` (ML-DSA-65 key generation) is the only unit whose
+constant-time property does not survive the parameter change unaided. Three
+mechanisms restore it, and all three are sized from the acceptance probability:
+
+1. **Supply margin** - `REJB_NUM_SAMPLERS_ETA4 = 20` lanes instead of 8, so the
+   bank delivers 11.25 accepts per clock against the fixed 4-coefficient sink.
+   This keeps the drain demand-limited rather than supply-limited.
+2. **Masked-Keccak hold** - `REJB_MASKED_KECCAK_HOLD_ETA4 = 85` instead of 59,
+   so the second masked permutation is never waited on mid-stream.
+3. **Constant observable length** - `REJB_ETA4_FIXED_LEN = 479`. The activation
+   is held in `ABR_SAMPLER_PAD` until a compile-time constant number of cycles
+   has elapsed, which absorbs the rare polynomial that needs a third or fourth
+   Keccak squeeze. Residual probability of exceeding the pad is 2^-352 per
+   ML-DSA-65 key generation.
+
+The cost is confined to ML-DSA-65 key generation (+2.4 k cycles); `rej_bounded`
+is not used in signing, and no other parameter set is affected. At category 5
+the eta = 4 bank, the hold override and the pad state are not elaborated, so
+category-5 area and cycle counts are bit- and cycle-identical to the
+category-5-only core. The full derivation, including why deepening the PISO
+does **not** close the residual, is in `docs/AdamsBridge_MLDSA.md`.
+
+**Scope of the claim.** `ABR_SAMPLER_PAD` equalises `sampler_busy_o`, which is
+what the sequencer and everything outside Adams-Bridge observe. It does not
+equalise the internal activity trace: in the 7.0e-6 case that needs a third
+squeeze, the masked Keccak and the sample-memory write beats extend inside the
+now-constant busy window. That is a power and EM difference, not an
+architectural timing one, and it is listed here explicitly so that it is in
+scope for the side-channel review rather than assumed away. Category 5 makes the
+same distinction implicitly - there the internal trace is constant for the same
+reason the external one is, with probability 1 - 5.3e-194.
+
+The same audit applies to the 4-coefficient datapath: every new path keeps
+`COEFF_PER_CLK = 4` at the memory interface. The eta = 4 RejBounded bank
+presents 20 lanes to an `abr_sample_buffer` with `NUM_RD = 4`, the eta1 = 3 CBD
+path keeps `CBD_NUM_SAMPLERS = CBD_VLD_SAMPLES = COEFF_PER_CLK`, and the
+gamma1 = 2^17 ExpandMask path keeps `EXP_NUM_SAMPLERS = 4` and narrows the
+sample from 20 to 18 bits rather than changing the rate.
+
 # Memory requirement
 
 The following table shows the required memory instances for Adam's Bridge:
