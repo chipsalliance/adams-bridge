@@ -1,0 +1,4 @@
+---
+plusargs:
+  - '+UVM_TESTNAME=ML_DSA_65_randomized_kg_sign_verify_test'
+testname: ML_DSA_65_randomized_kg_sign_verify_test
