@@ -34,6 +34,44 @@ The project contains comprehensive documentation of all submodules for ML-DSA an
 - [ML-KEM Documentation](./AdamsBridge_MLKEM.md)
 - [Side-Channel Analysis countermeasures](./AdamsBridgeSCA.md)
 
+# Parameter set selection
+
+The core implements every NIST parameter set of both algorithms: ML-DSA-44, -65
+and -87 (FIPS 204 Table 1) and ML-KEM-512, -768 and -1024 (FIPS 203 Table 2).
+The set is selected at run time, per algorithm, through a two-bit field in the
+control register.
+
+| field | 00 | 01 | 10 | 11 |
+|---|---|---|---|---|
+| `MLDSA_CTRL.PARAM_SET` | ML-DSA-87 (cat 5) | ML-DSA-44 (cat 2) | ML-DSA-65 (cat 3) | reserved |
+| `MLKEM_CTRL.PARAM_SET` | ML-KEM-1024 (cat 5) | ML-KEM-512 (cat 1) | ML-KEM-768 (cat 3) | reserved |
+
+The field is per algorithm and not a shared "security level" because the two
+families do not line up: ML-KEM-512 is category 1 and there is no ML-KEM at
+category 2, while ML-DSA-44 is category 2. A single shared level field would
+have encodings that are meaningless for one family or the other.
+
+**Backward compatibility.** `PARAM_SET` occupies bits that were previously
+reserved, and its reset value `2'b00` selects the category 5 sets. No other
+control or status field changed, and no reset value anywhere changed. A driver
+written against the category-5-only core therefore runs unmodified on this core
+and gets bit-identical results and the same cycle counts. This is the reason
+category 5 was given encoding `2'b00` rather than a more natural ordering such
+as `44 = 00`.
+
+Hardware latches `PARAM_SET` when a command starts and holds it for the whole
+operation, so it cannot be changed mid-operation. Selecting the reserved
+encoding, or a set that was not enabled at elaboration time, sets
+`<ALG>_STATUS.ERROR` and the command does not run.
+
+**The NAME registers do not encode the parameter set.** `MLDSA_NAME` reads back
+`"MLDSA"` and `MLKEM_NAME` reads back `"MLKEM"`, space padded to eight bytes.
+NAME identifies the algorithm the core implements, and the core implements all
+of its parameter sets; embedding a level in NAME would either be a lie at five
+of the six settings, or would make a read-only identity register mutable and
+force software to re-read it after every `PARAM_SET` write. Software reads
+`PARAM_SET` to learn which set is selected.
+
 # Memory requirement
 
 The following table shows the required memory instances for Adam's Bridge:

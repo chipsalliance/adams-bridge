@@ -1,0 +1,234 @@
+2026-09-22 13:02:16 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --testfile /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml --submit-timeout-arg 3600 +abr_rejb_profile
+2026-09-22 13:02:16 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--testfile', '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml', '--submit-timeout-arg', '3600', '+abr_rejb_profile', '--tool', 'vcs', '-reportstats', '+warn=noRT-ISV', '+sc_time_resolution=100fs', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/parse_sim_log_config.yml']
+2026-09-22 13:02:16 [INFO]: SE v: Creating...
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/sim.yml
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/tools/config/smartexp_roots/frontend/sim.yml
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/sim.yml
+2026-09-22 13:02:16 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/sim.yml
+2026-09-22 13:02:16 [INFO]: SE v: Evaluating...
+2026-09-22 13:02:16 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-22 13:02:16 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-22 13:02:16 [INFO]: Using platform: sim
+Job <48170275> is submitted to queue <caliptra>.
+<<Waiting for dispatch ...>>
+ClusterId            :  svc
+Queue                :  caliptra
+Fairshare/UserGroup  :  caliptra__caliptra__normal
+NumCPUs              :  1
+Command              :  run_docker run cpscontainers.azurecr.io/dv/dev:r8_latest /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/9c562b91-4ca3-4b59-8c2f-dddfaca83fdf.env --timeout 3600 --job_id_variable LSB_JOBID pb fe sim --tb integration_lib::uvmf_mldsa --testfile /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml --submit-timeout-arg 3600 +abr_rejb_profile
+Resource             :  select[os==redhat8&&type==X86_64]rusage[VCS-Base-Runtime-Pkg=1,VCS-Base-Runtime-Pkg=1]
+LogFile              :  /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/48170275.log
+JobId                :  48170275
+JobUrl               :  https://lsfrtm.svceng.com/cacti/plugins/heuristics/heuristics_jobs.php?action=viewjob&cluster_tz=false&clusterid=9&indexid=0&jobid=48170275&submit_time=1790107340&start_time=-62169955200&end_time=-62169955200
+<<Starting on bronco35301>>
+r8_latest: Pulling from dv/dev
+Digest: sha256:2bd6a228da30cd0e9a4ccc2b79c2b767e93577a4751b2be6d1d02a3aa69c6256
+Status: Image is up to date for cpscontainers.azurecr.io/dv/dev:r8_latest
+cpscontainers.azurecr.io/dv/dev:r8_latest
+Command: /usr/bin/docker container run --cgroup-parent /lsf/svc/job.48170275.2291989.1790107344 --env-file /tmp/tmpjZEJUs -v /tmp/tmpNwVq7H:/etc/group --group-add 7202 --group-add 120 -v /tmp/tmpsCR5zb:/etc/passwd -v /usr/local/python-3.7.3:/usr/local/python-3.7.3:slave -v /usr/local/modules:/usr/local/modules:slave -v /usr/local/noncad:/usr/local/noncad:slave -v /home:/home:slave -v /etc/resolv.conf:/etc/resolv.conf:slave -v /var/lib/sss:/var/lib/sss:slave -v /etc/krb5.conf:/etc/krb5.conf:slave -v /etc/nsswitch.conf:/etc/nsswitch.conf:slave -v /proj:/proj:slave -v /apps:/apps:slave -h bronco35301 -w / -e USER=mojtabab -e HOME=/home/mojtabab --user 7957:120 --cidfile /tmp/tmpsa1mlL --init --shm-size 1G --cap-add SYS_PTRACE --ipc=host --privileged --net=host --pid=host --rm -i cpscontainers.azurecr.io/dv/dev:r8_latest /bin/sh -c cd /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge &&  /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/9c562b91-4ca3-4b59-8c2f-dddfaca83fdf.env --timeout 3600 --job_id_variable LSB_JOBID pb fe sim --tb integration_lib::uvmf_mldsa --testfile /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml --submit-timeout-arg 3600 +abr_rejb_profile
+2026-09-22 20:02:26,560 [INFO] Setting timeout alarm for 216000 seconds (3600 minutes)
+2026-09-22 20:02:29 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --testfile /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml --submit-timeout-arg 3600 +abr_rejb_profile
+2026-09-22 20:02:29 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--testfile', '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/ML_DSA_MLKEM_param_set_mix_test.yml', '--submit-timeout-arg', '3600', '+abr_rejb_profile', '--tool', 'vcs', '-reportstats', '+warn=noRT-ISV', '+sc_time_resolution=100fs', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/parse_sim_log_config.yml']
+2026-09-22 20:02:29 [INFO]: SE v: Creating...
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/sim.yml
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/tools/config/smartexp_roots/frontend/sim.yml
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/sim.yml
+2026-09-22 20:02:29 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/sim.yml
+2026-09-22 20:02:29 [INFO]: SE v: Evaluating...
+2026-09-22 20:02:29 [INFO]: SE v command args action from verif_tools_vcs_asserts: append ['sim', '-assert nopostproc'] to options
+2026-09-22 20:02:29 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-22 20:02:29 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-22 20:02:29 [INFO]: Using platform: sim
+2026-09-22 20:02:31 [INFO]: Loaded spec cache /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/integration_lib__uvmf_mldsa_1.6.3_3.1.0_frontend.sim_sim.yml - validating...
+2026-09-22 20:02:31 [INFO]: Spec cache - differing basic info! Delta: cfg
+2026-09-22 20:02:31 [INFO]: Invalid spec cache /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/integration_lib__uvmf_mldsa_1.6.3_3.1.0_frontend.sim_sim.yml - ignoring
+2026-09-22 20:02:31 [WARNING]: Invalid repo: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra
+2026-09-22 20:02:32 [INFO]: Loading repo configs from /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/config/compilespecs.yml
+2026-09-22 20:02:33 [INFO]: Searching for global collateral in all components
+2026-09-22 20:02:33 [WARNING]: Found multiple global options sections that lead to different sources.
+integration_lib::uvmf_mldsa, integration_lib::abr_coverage
+2026-09-22 20:02:33 [WARNING]: Found multiple global options sections that lead to different sources.
+integration_lib::uvmf_mldsa, integration_lib::abr_top
+2026-09-22 20:02:33 [WARNING]: Coverage: No coverage directories given, not merging coverage
+2026-09-22 20:02:33 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_MLKEM_param_set_mix_test/20260922.200229/sim_config.yml
+2026-09-22 20:02:33 [INFO]: Logical groups:            sim_prep, sim
+2026-09-22 20:02:33 [INFO]: Mapped Physical libraries: sim_prep, sim
+2026-09-22 20:02:33 [INFO]: echo "[PRE-EXEC] Copying C executable vector generator to /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge" && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5 . && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg . && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5_strm_msg_debug . && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium2 . && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium3 . && mkdir -p ml-kem/tv && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/ML_KEM_ref/ml-kem/random_test_ml_kem.py ml-kem/ && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/ML_KEM_ref/ml-kem/ml_kem.py ml-kem/ && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/ML_KEM_ref/ml-kem/Module.py ml-kem/ && cp /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/ML_KEM_ref/ml-kem/utils.py ml-kem/
+[PRE-EXEC] Copying C executable vector generator to /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge
+2026-09-22 20:02:33 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build_config.yml
+2026-09-22 20:02:33 [INFO]: Running pre exec for simulation.
+2026-09-22 20:02:33 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-22 20:02:33 [INFO]: python3w -r ../../../../../../../../../../tmp/tmphah85ngx/requirements.txt /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/lib/eda/../../bin/cosim-wrapper.py /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa -ucli -i /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_MLKEM_param_set_mix_test/20260922.200229/sim.do -sv_root /home/cad/tools/mentor/questa_vip/2022.2/questa_mvc_core/linux_x86_64_gcc-6.2.0_vcs -sv_lib libahb_IN_SystemVerilog_VCS_full -sv_lib libapb3_IN_SystemVerilog_VCS_full +QVIP_UVM_REPORTING +UVM_VERBOSITY=UVM_LOW +abr_rejb_profile -reportstats +warn=noRT-ISV +sc_time_resolution=100fs +UVM_TESTNAME=ML_DSA_MLKEM_param_set_mix_test -assert nopostproc -sv_root /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi -sv_lib lib_dpi +warn=noUCLI-131   -cm_dir coverage +ntb_random_seed=1 +vcs+lic+wait 2>&1 | tee /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_MLKEM_param_set_mix_test/20260922.200229/sim.log
+Warning : License for product VCSRuntime_Net(724) will expire within 20 days, on: 11-oct-2026.
+
+If you would like to temporarily disable this message, set 
+ the VCS_LIC_EXPIRE_WARNING environment variable to the number of days
+before expiration that you want this message to start (the minimum is 0).
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-7_Full64; Runtime version R-2020.12-SP2-7_Full64;  Sep 22 20:02 2026
+----------------------------------------------------------------
+UVM-1.1d
+(C) 2007-2013 Mentor Graphics Corporation
+(C) 2007-2013 Cadence Design Systems, Inc.
+(C) 2006-2013 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_MUST_HAVE_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+
+//  Questa Verification IP
+//  Version 2022.2 : 20220406 linux_x86_64 04/20/2022:16:06
+//
+//  Copyright 2007-2022 Mentor Graphics Corporation
+//  All Rights Reserved.
+//
+//  THIS WORK CONTAINS TRADE SECRET AND PROPRIETARY INFORMATION
+//  WHICH IS THE PROPERTY OF MENTOR GRAPHICS CORPORATION OR ITS
+//  LICENSORS AND IS SUBJECT TO LICENSE TERMS.
+
+----------------------------------------------------------------
+//  UVM Framework 
+//  Version 2022.3
+//  (C) 2013-2022 Siemens Corporation
+//  Digital Industries Software
+//  Siemens EDA
+//  All Rights Reserved.
+----------------------------------------------------------------
+
+
+
+----------------------------------------------------
+MVC instances summary: MVCs 1, ends 6
+    /hdl_top/uvm_test_top_environment_qvip_ahb_lite_slave_subenv_qvip_hdl/ahb_lite_slave_0_bfm ( AHB_NUM_MASTERS = 1, AHB_NUM_MASTER_BITS = 1, AHB_NUM_SLAVES = 1, AHB_ADDRESS_WIDTH = 32, AHB_WDATA_WIDTH = 32, AHB_RDATA_WIDTH = 32 ) { master:1 slave:1 arbiter:1 decoder:1 clock_source:1 reset_source:1 }
+----------------------------------------------------
+
+ucli% run
+hdl_top.dut.gen_lfsr[0].abr_prim_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_lfsr[1].abr_prim_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.abr_keccak_msg_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.gen_keccak_dom_lfsr[0].abr_keccak_dom_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.gen_keccak_dom_lfsr[1].abr_keccak_dom_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.gen_keccak_dom_lfsr[2].abr_keccak_dom_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.gen_keccak_dom_lfsr[3].abr_keccak_dom_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+hdl_top.dut.gen_keccak_lfsr.gen_keccak_dom_lfsr[4].abr_keccak_dom_lfsr_inst.p_randomize_default_seed: DefaultSeed = 0x1, DefaultSeedLocal = 0x1
+UVM_INFO @ 0.000ns: reporter [RNTST] Running test ML_DSA_MLKEM_param_set_mix_test...
+Simulation time units set to ps
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src/test_top.svh(85) @ 0.000ns: uvm_test_top [TEST_TOP] DILITHIUM_COMMAND set to: test_dilithium5
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_env_configuration.svh(136) @ 0.000ns: reporter [LOCK_MODEL] Register model mldsa_rm is successfully locked.
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_predictor.svh(121) @ 0.000ns: uvm_test_top.environment.mldsa_pred [PREDICTOR] DILITHIUM_COMMAND to be used: test_dilithium5
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_predictor.svh(133) @ 0.000ns: uvm_test_top.environment.mldsa_pred [PREDICTOR] ML-DSA buffers sized for test_dilithium5: SK=1224 PK=648 SIG=1157 dwords
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_predictor.svh(143) @ 0.000ns: uvm_test_top.environment.mldsa_pred [PREDICTOR] expect_predictor_verif_failure to be used: 0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_predictor.svh(144) @ 0.000ns: uvm_test_top.environment.mldsa_pred [PREDICTOR] disable_pred_from_test to be used: 1
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(124) @ 0.000ns: uvm_test_top.environment.mldsa_sb [SCOREBOARD] expect_verif_failure to be used: 0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(125) @ 0.000ns: uvm_test_top.environment.mldsa_sb [SCOREBOARD] expect_verif_pass_after_failure to be used: 0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(126) @ 0.000ns: uvm_test_top.environment.mldsa_sb [SCOREBOARD] disable_scrboard_from_test to be used: 1
+UVM_INFO /home/cad/tools/mentor/questa_vip/2022.2/questa_mvc_src/sv/mvc_base/mvc_config.svh(117) @ 0.000ns: reporter [QVIP_REPORTER] uvm_test_top.environment.qvip_ahb_lite_slave_subenv.ahb_lite_slave_0.m_reporter registered...
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/testbench/hdl_top.sv(83) @ 200.000ns: reporter [HDL_TOP_TB]  waiting for the reset event trigger
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(558) @ 400.000ns: reporter@@top_level_sequence [PS_MIX] unit 0 of 3
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(333) @ 400.000ns: reporter@@top_level_sequence [PS_MIX] unit: ML-DSA-65 keygen+sign+verify
+ABR_REJB_LEN eta4=1 len=260 n=1 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=2 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=3 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=4 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=5 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=6 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=7 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=8 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=9 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=10 min=260 max=260 spread=0
+ABR_REJB_LEN eta4=1 len=260 n=11 min=260 max=260 spread=0
+PERF,MLDSA_KEYGEN_SIGN,cycles=182814,rejections=8
+PERF,MLDSA_VERIFY,cycles=12286,rejections=0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/mldsa_bench_sequence_base.svh(190) @ 2085630.000ns: reporter@@top_level_sequence [VERIFY_PASS] MLDSA_STATUS.VERIFY_PASS = 1 as expected
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(558) @ 2085650.000ns: reporter@@top_level_sequence [PS_MIX] unit 1 of 3
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(360) @ 2085650.000ns: reporter@@top_level_sequence [PS_MIX] unit: ML-KEM-768 keygen+encaps+decaps
+PERF,MLKEM_KEYGEN,cycles=5298,rejections=0
+PERF,MLKEM_ENCAPS,cycles=6507,rejections=0
+PERF,MLKEM_KEYGEN_DEC,cycles=14358,rejections=0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(558) @ 2453510.000ns: reporter@@top_level_sequence [PS_MIX] unit 2 of 3
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(333) @ 2453510.000ns: reporter@@top_level_sequence [PS_MIX] unit: ML-DSA-44 keygen+sign+verify
+ABR_REJB_LEN eta4=0 len=234 n=12 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=13 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=14 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=15 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=16 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=17 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=18 min=234 max=260 spread=26
+ABR_REJB_LEN eta4=0 len=234 n=19 min=234 max=260 spread=26
+PERF,MLDSA_KEYGEN_SIGN,cycles=41006,rejections=3
+PERF,MLDSA_VERIFY,cycles=8195,rejections=0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/mldsa_bench_sequence_base.svh(190) @ 3098980.000ns: reporter@@top_level_sequence [VERIFY_PASS] MLDSA_STATUS.VERIFY_PASS = 1 as expected
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/src/ML_DSA_MLKEM_param_set_mix_sequence.svh(567) @ 3099000.000ns: reporter@@top_level_sequence [PS_MIX] parameter set mix completed: 3 back to back units, no reset after the first
+UVM_INFO /home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_objection.svh(1267) @ 3099000.000ns: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(323) @ 3099000.000ns: uvm_test_top.environment.mldsa_sb [SCBD_REPORT] Total Matches: 0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(324) @ 3099000.000ns: uvm_test_top.environment.mldsa_sb [SCBD_REPORT] Total Mismatches: 0
+UVM_INFO /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/verification_ip/environment_packages/mldsa_env_pkg/src/mldsa_scoreboard.svh(325) @ 3099000.000ns: uvm_test_top.environment.mldsa_sb [SCBD_REPORT] No Predicted Entries to Compare Against: 0
+* TESTCASE PASSED
+
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   25
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[HDL_TOP_TB]     1
+[LOCK_MODEL]     1
+[PREDICTOR]     4
+[PS_MIX]     7
+[QVIP_REPORTER]     1
+[RNTST]     1
+[SCBD_REPORT]     3
+[SCOREBOARD]     3
+[TEST_DONE]     1
+[TEST_TOP]     1
+[VERIFY_PASS]     2
+$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
+$finish at simulation time 3099000.000ns
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 3099000000 ps
+
+Simulation Performance Summary
+==============================
+Simulation started at :  Tue Sep 22 20:02:35 2026
+Elapsed Time          :  348 sec
+CPU Time              :  343.0 sec
+Virtual memory size   :  723.3 MB
+Resident set size     :  279.2 MB
+Shared memory size    :  8.6 MB
+Private memory size   :  271.1 MB
+Major page faults     :  2048
+Machine name          :  bronco35301
+==============================
+
+Tue Sep 22 20:08:22 2026
+2026-09-22 20:08:22 [INFO]: Running post exec for simulation.
+2026-09-22 20:08:23 [INFO]: Parsing log file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_MLKEM_param_set_mix_test/20260922.200229/sim.log with the following config files /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/parse_sim_log_config.yml
+2026-09-22 20:08:23 [INFO]: Found match for rule vcs_start on line 6
+2026-09-22 20:08:23 [INFO]: Found match for rule status on line 117
+2026-09-22 20:08:23 [INFO]: Found match for rule sim_log_testcase_status on line 117
+2026-09-22 20:08:23 [INFO]: Found match for rule vcs_end on line 138
+2026-09-22 20:08:23 [INFO]: Found match for rule completed on line 138
+2026-09-22 20:08:23 [INFO]: Found match for rule simulation_time on line 139
+2026-09-22 20:08:23 [INFO]: Found match for rule cpu_time on line 147
+2026-09-22 20:08:23 [INFO]: Found match for rule Virtual_Memory on line 148
+2026-09-22 20:08:23 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_MLKEM_param_set_mix_test/20260922.200229/sim_config.yml
+2026-09-22 20:08:23,230 [INFO] Child process completed.
+2026-09-22 20:08:23,230 [INFO] Returning process return code=0

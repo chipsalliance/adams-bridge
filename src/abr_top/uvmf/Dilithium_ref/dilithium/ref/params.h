@@ -3,6 +3,27 @@
 
 #include "config.h"
 
+/*
+ * WARNING - THIS TREE IS NOT A VALID FIPS 204 VECTOR SOURCE FOR ML-DSA-44/65.
+ *
+ * This copy of the Dilithium reference has been locally modified for the
+ * Adams-Bridge category-5 bring-up: tr and c~ are hardcoded to SEEDBYTES*2
+ * (64 bytes) in sign.c for every value of DILITHIUM_MODE. FIPS 204 requires
+ * lambda/4 bytes of c~, i.e. 32 bytes for ML-DSA-44, 48 bytes for ML-DSA-65
+ * and 64 bytes for ML-DSA-87, and a 64-byte tr only for ML-DSA-87.
+ *
+ * Consequently DILITHIUM_MODE 2 and 3 built from this tree produce signatures
+ * that are self-consistent but do NOT match FIPS 204, and must never be used
+ * to generate or check known-answer vectors for ML-DSA-44 or ML-DSA-65.
+ *
+ * Use tools/mldsa_ref.py in the security-levels workspace instead - it tracks
+ * lambda per parameter set. Fixing this tree means plumbing a CTILDEBYTES
+ * parameter through sign.c, packing.c and the test harness.
+ */
+#if DILITHIUM_MODE == 2 || DILITHIUM_MODE == 3
+#warning "Dilithium_ref is hardcoded to category-5 c~/tr sizing: MODE 2/3 output is NOT FIPS 204 compliant. See the warning block in params.h."
+#endif
+
 #define SEEDBYTES 32
 #define CRHBYTES 64
 #define N 256

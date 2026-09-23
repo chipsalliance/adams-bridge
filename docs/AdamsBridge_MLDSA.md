@@ -127,6 +127,35 @@ MSG_STROBE only needs to be programmed before the stream of full dwords, and bef
 Valid values of MSG_STROBE include 4'b1111, 4'b0111, 4'b0011, 4'b0001, and 4'b0000.
 Note that MSG_STROBE resets to 4'b1111 but is cleared to 4'b0000 by ZEROIZE, so it must always be reprogrammed to 4'b1111 before streaming a message following a zeroize.
 
+#### What is actually absorbed: M' = 0x00 || 0x00 || M
+
+Adams Bridge implements the *pure* (non pre-hashed) variant of FIPS 204
+Algorithms 2 (`ML-DSA.Sign`) and 3 (`ML-DSA.Verify`). Those algorithms do
+not absorb the raw message. They absorb
+
+```
+M' = IntegerToBytes(0, 1) || IntegerToBytes(|ctx|, 1) || ctx || M
+```
+
+where the first byte is the domain separator for the pure variant and the
+second is the context length. With the empty context that the core uses
+by default this reduces to
+
+```
+M' = 0x00 || 0x00 || M
+```
+
+Hardware prepends those two bytes itself, both for the `MLDSA_MSG`
+register path and for the streaming path. **Software must write only `M`**
+- prepending the bytes in software would double them and produce
+signatures that no compliant verifier accepts. When a non empty context
+is programmed through the ctx register the second byte carries `|ctx|`
+and the context bytes follow, per the same formula.
+
+This is identical at ML-DSA-44, -65 and -87; the parameter set does not
+change `M'`. It does not apply to the external-mu modes, which bypass mu
+derivation entirely and therefore never form `M'`.
+
 ## status 
 
 ​The read-only status register consists of the following flags: 
@@ -2400,6 +2429,153 @@ cycles, so safety decreases. HOLD = 59 saves 16 cycles per polynomial
 versus 75 while sitting comfortably in the negligible-probability
 constant-time regime, and is empirically confirmed to yield exactly
 237-cycle RejBounded loops (spread = 0) across all seeds.
+
+#### eta = 4 (ML-DSA-65)
+
+The analysis above is specific to `eta = 2`. FIPS 204 Algorithm 15
+accepts a half byte `b` only when `b < 2*eta + 1`, so the acceptance
+probability is **15/16 at eta = 2 but only 9/16 at eta = 4**. Reusing the
+category-5 sizing at ML-DSA-65 would void the constant-time argument, so
+the `eta = 4` bank is sized separately. Two independent conditions have
+to hold.
+
+**(a) Steady-state supply margin.** The downstream sink is a hard
+`COEFF_PER_CLK = 4` coefficients per clock for the whole 64-cycle output
+of a polynomial. If the sampler bank cannot beat that rate by a
+comfortable margin, the drain is *supply* limited rather than *demand*
+limited, and the loop length tracks the number of rejections - i.e. it
+leaks `s1`/`s2` directly, for the entire polynomial and not just inside
+the HOLD window.
+
+| bank | lanes | accepts / clk | margin over 4 / clk |
+|------|------:|--------------:|--------------------:|
+| eta = 2 (category 5) | 8  | 7.50  | 1.875x |
+| eta = 4, 8 lanes (naive reuse) | 8  | 4.50  | **1.125x - fails** |
+| eta = 4, 12 lanes | 12 | 6.75  | 1.688x (below category 5) |
+| eta = 4, 16 lanes | 16 | 9.00  | 2.250x |
+| **eta = 4, 20 lanes (chosen)** | **20** | **11.25** | **2.812x** |
+| eta = 4, 24 lanes | 24 | 13.50 | 3.375x (no measured gain) |
+
+A 60 k-seed cycle-accurate Monte-Carlo of PISO + RejBounded +
+`abr_sample_buffer` + the 4-coefficient sink confirms the table: at 8
+lanes the loop length is spread over **18 cycles** (129 - 147), at 16
+lanes the probability of landing off the modal length is 5.4e-3, and at
+20 lanes it is 2.5e-4. Twenty-four lanes measured no better than twenty,
+so `REJB_NUM_SAMPLERS_ETA4 = 20` sits at the knee of the curve.
+
+**(b) HOLD window underrun.** The closed form from the previous section
+applies unchanged with `p = 9/16`. Note that the window supply is capped
+at one Keccak state (272 half bytes), so beyond about 12 lanes this term
+is governed by HOLD alone:
+
+| HOLD | Pr[underrun], 20 lanes | log2 Pr | verdict |
+|-----:|:----------------------:|:-------:|---------|
+| 59 (category-5 value) | 1.0        |   0   | **unsafe - always underruns** |
+| 70   | 6.2 x 10^-1 |  -0.7  | unsafe |
+| 80   | 2.5 x 10^-6 | -18.6  | marginal |
+| **85** | **1.2 x 10^-12** | **-39.6** | **chosen** |
+| 90   | 9.5 x 10^-22 | -69.8  | more margin, 5 more cycles |
+| 95   | 4.9 x 10^-34 | -110.6 | diminishing |
+
+`REJB_MASKED_KECCAK_HOLD_ETA4 = 85` mirrors the category-5 style of
+taking the marginal value (80) and adding a few cycles of margin, exactly
+as 49 -> 59 was done for `eta = 2`.
+
+**Measured result.** `abr_sampler_top` carries a simulation-only profiler
+(enabled with the `+abr_rejb_profile` plusarg) that times every RejBounded
+activation from `sampler_start_i` to `sampler_done` and prints
+`ABR_REJB_LEN`. Against the KAT suites:
+
+| parameter set | eta | lanes | HOLD | activations | loop length | spread |
+|---------------|----:|------:|-----:|------------:|------------:|-------:|
+| ML-DSA-87 (category 5) | 2 | 8  | 59 | 45 | 234 | **0** |
+| ML-DSA-65              | 4 | 20 | 85 | 22 | 260 | **0** |
+
+Both sets are exactly `175 + HOLD` cycles. The 175-cycle constant is the
+fixed FSM and first-masked-squeeze latency; the loop length is therefore a
+pure function of a compile-time constant and carries no dependence on the
+sampled values. The drain never stalls in either configuration - had it
+stalled, the length would exceed `175 + HOLD`. Note this also corrects the
+category-5 figure quoted earlier in this section: the measured value is
+234, not 237.
+
+The KAT suites use fixed seeds. The randomized keygen+sign+verify tests
+(`ML_DSA_{44,65,87}_randomized_kg_sign_verify_test`) repeat the measurement on
+random seeds, which is the case a timing argument actually rests on, and
+reproduce it exactly:
+
+| test | eta | activations | loop length | spread |
+|------|----:|------------:|------------:|-------:|
+| `ML_DSA_44_randomized_kg_sign_verify` | 2 | 24 | 234 | **0** |
+| `ML_DSA_65_randomized_kg_sign_verify` | 4 | 33 | 260 | **0** |
+| `ML_DSA_87_randomized_kg_sign_verify` | 2 | 45 | 234 | **0** |
+
+Re-run the measurement after any change to `REJB_NUM_SAMPLERS_*`,
+`REJB_MASKED_KECCAK_HOLD_*`, the PISO width, or the masked Keccak latency:
+
+```
+pb fe sim --tb integration_lib::uvmf_mldsa \
+  --testfile .../ML_DSA_65_keygen_KATs_test.yml +abr_rejb_profile
+grep ABR_REJB_LEN sim.log        # every line must report spread=0
+```
+
+**Residual, and why it is not closed here.** The measurement above is an
+empirical result over a finite number of activations, not a proof. The
+structural bound is as follows. The RejBounded PISO is 1334 bits, i.e.
+about 1.23 Keccak states, and `hold_o` back-pressures the state transfer,
+so **at most two Keccak states can be resident when the drain begins, no
+matter how large HOLD is made**. Raising HOLD past 85 therefore buys
+nothing - the third state cannot be accumodated. Two states supply 544 half
+bytes, and at `p = 9/16`
+
+$$
+\Pr\!\bigl[\mathrm{Bin}(544,\,9/16) < 256\bigr] \;\approx\; 7.0 \times 10^{-6}
+$$
+
+so on the order of one polynomial in 143 000 would need a third squeeze and
+would run long, which is a secret-dependent length. For comparison the
+`eta = 2` figure is 5.3e-194, i.e. it never happens, which is why category 5
+needs no such caveat. The honest statement is therefore: **the eta = 4 path
+is constant-time up to a quantified residual of about 7e-6 per polynomial
+(about 7.7e-5 per ML-DSA-65 keygen over its 11 RejBounded polynomials), not
+unconditionally constant-time.** This is the same class of residual that
+`rej_sampler` (ExpandA) already carries, with the important difference that
+ExpandA samples the *public* matrix **A** from the *public* seed rho, so its
+residual leaks nothing, whereas RejBounded samples the secret `s1`/`s2`.
+
+Two closure options exist, both costed, neither taken here because both are
+area/architecture decisions rather than bug fixes:
+
+| option | change | cost | effect |
+|--------|--------|------|--------|
+| grow the backlog | widen `REJS_PISO_BUFFER_W` so three Keccak states (816 half bytes) can be resident before the drain | approximately 2000 extra flops, plus a wider PISO shifter on the critical path | `Pr[Bin(816, 9/16) < 256]` is below 2^-200; removes the residual outright |
+| pad the loop | hold `sampler_done` until a fixed cycle count has elapsed, so a rare third squeeze is absorbed by slack that is always spent | one counter and one comparator, but the pad has to cover a full masked squeeze: 260 -> 369 cycles per polynomial, approximately 1200 extra cycles per ML-DSA-65 keygen | makes the length unconditionally constant by construction |
+
+Note the padding option is *not* cheap in cycles: the slack has to cover a
+whole masked Keccak permutation (109 sampler cycles), because that is what a
+third squeeze costs. It is nearly free in area but costs roughly 42 percent
+of each RejBounded polynomial. The PISO-growth option is the reverse - it
+costs area and PISO timing but nothing in throughput, and it removes the
+residual rather than masking it.
+
+The recommendation is therefore to **leave the residual as measured and
+documented** unless a side-channel review judges a 7e-6 per-polynomial
+length variation to be exploitable. Reaching it requires roughly 143 000
+keygens with the same secret to observe a single long polynomial, and a
+keygen does not reuse its secret. If it is judged unacceptable, prefer
+growing the PISO over padding the loop.
+
+**Implementation.** The two banks are physically separate
+(`rej_bounded_ctrl`): the category-5 path keeps 8 `rej_bounded2` lanes
+and a 3-bit `abr_sample_buffer`, and the `eta = 4` path adds 20
+`rej_bounded4` lanes and a 4-bit buffer under `if (ABR_NEED_ETA4)`. The
+input valid of each bank is gated by `eta4_i` so the inactive bank never
+fills, and the outputs are muxed on `eta4_i`, which is the public
+parameter set and never secret material. Splitting the banks (rather than
+widening the shared one) also restores the category-5 buffer to exactly
+3 bits when ML-DSA-65 is compiled in. `abr_sampler_top` selects the
+matching PISO output rate through the new `ABR_REJB4_MODE`, so the PISO
+hands over 20 half bytes per cycle instead of 8.
 
 ## SampleInBall architecture
 

@@ -1,0 +1,4 @@
+# RejBounded loop-length profiler, aggregated over the final 27-test gate
+# columns: count eta4 len spread
+    267 0 234 0
+     99 1 260 0

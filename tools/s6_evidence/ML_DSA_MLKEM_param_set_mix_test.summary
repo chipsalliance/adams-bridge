@@ -1,0 +1,38 @@
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   25
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[HDL_TOP_TB]     1
+[LOCK_MODEL]     1
+[PREDICTOR]     4
+[PS_MIX]     7
+[QVIP_REPORTER]     1
+[RNTST]     1
+[SCBD_REPORT]     3
+[SCOREBOARD]     3
+[TEST_DONE]     1
+[TEST_TOP]     1
+[VERIFY_PASS]     2
+$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
+$finish at simulation time 3099000.000ns
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 3099000000 ps
+
+Simulation Performance Summary
+==============================
+Simulation started at :  Wed Sep 23 05:06:56 2026
+Elapsed Time          :  335 sec
+CPU Time              :  326.9 sec
+Virtual memory size   :  723.3 MB
+Resident set size     :  275.5 MB
+Shared memory size    :  140.9 MB
+Private memory size   :  138.1 MB
+Major page faults     :  1456
+Machine name          :  bronco42601
+==============================
+
+Wed Sep 23 05:12:30 2026
