@@ -270,18 +270,18 @@ module rej_bounded_tb
           error_ctr += 1;
         end
       end
+      if (vld_coeff_ctr == 256) begin
+        zeroize <= 1;
+      end
     end
 
   end
 
   initial begin
     forever begin
+      @(posedge zeroize)
       @(posedge clk_tb)
-      if (vld_coeff_ctr == 256) begin
-        zeroize <= 1;
-        @(posedge clk_tb)
-        zeroize <= 0;
-      end
+      zeroize <= 0;
     end
   end
 
