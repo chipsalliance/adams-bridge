@@ -165,6 +165,7 @@ module abr_sampler_top
   logic [$clog2(ABR_COEFF_CNT/4):0] coeff_cnt;
   logic vld_cycle;
   logic sampler_done;
+  logic rejb_pad_hold;
 
   logic zeroize_sha3, zeroize_rejb, zeroize_mldsa_rejs, zeroize_sib, zeroize_exp_mask;
   logic zeroize_cbd, zeroize_mlkem_rejs;
@@ -368,18 +369,25 @@ always_comb begin : sampler_fsm_out_comb
       end
       ABR_SAMPLER_WAIT: begin
         if (sampler_done) begin
-          sampler_fsm_ns = ABR_SAMPLER_DONE;
+          sampler_fsm_ns = rejb_pad_hold ? ABR_SAMPLER_PAD : ABR_SAMPLER_DONE;
         end else if (sha3_state_dv & ~sha3_state_hold) begin
           sampler_fsm_ns = ABR_SAMPLER_RUN;
         end
       end
       ABR_SAMPLER_RUN: begin
         if (sampler_done) begin
-          sampler_fsm_ns = ABR_SAMPLER_DONE;
+          sampler_fsm_ns = rejb_pad_hold ? ABR_SAMPLER_PAD : ABR_SAMPLER_DONE;
         end else begin 
           sampler_fsm_ns = ABR_SAMPLER_WAIT;
           //drive run signal
           sha3_run = 1;
+        end
+      end
+      ABR_SAMPLER_PAD: begin
+        //Sampling is finished; stay busy until the constant observable length
+        //has elapsed so the activation cannot be timed against the secret.
+        if (~rejb_pad_hold) begin
+          sampler_fsm_ns = ABR_SAMPLER_DONE;
         end
       end
       ABR_SAMPLER_DONE: begin
@@ -570,6 +578,58 @@ endgenerate
         end
       end
       always_comb rejb_hold_active = (rejb_hold_cnt != 0);
+    end
+  endgenerate
+
+  //--------------------------------------------------------------------------
+  //Constant observable length for eta = 4 RejBounded activations.
+  //
+  //HOLD makes the drain demand limited, which removes every seed dependence the
+  //loop has *provided* the two resident Keccak states supply the 256 accepted
+  //coefficients. At eta = 2 that holds with probability 1 - 5.3e-194 and needs
+  //no further argument. At eta = 4 the acceptance rate is 9/16, so it holds only
+  //with probability 1 - 7.0e-6, and the rare polynomial that needs a third
+  //squeeze finishes roughly a masked permutation late. That residual is a direct
+  //timing dependence on s1/s2, so it is closed here by holding the activation in
+  //ABR_SAMPLER_PAD until a compile time constant number of cycles has elapsed.
+  //
+  //Deepening the PISO is not an alternative: the third Keccak state is not ready
+  //before ~329 sampler cycles whatever the buffer depth, while the drain has
+  //ended by 260. Only time closes this.
+  //--------------------------------------------------------------------------
+  generate
+    if (ABR_NEED_ETA4) begin : g_rejb_pad
+      logic [$clog2(REJB_ETA4_FIXED_LEN+1)-1:0] rejb_pad_cnt;
+      always_ff @(posedge clk or negedge rst_b) begin
+        if (!rst_b) begin
+          rejb_pad_cnt <= '0;
+        end else if (zeroize | sampler_start_i) begin
+          rejb_pad_cnt <= '0;
+        end else if (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)) begin
+          rejb_pad_cnt <= rejb_pad_cnt + 1'b1;
+        end
+      end
+      always_comb rejb_pad_hold = mldsa_eta4_i &
+                                  (sampler_mode_i == ABR_REJ_BOUNDED) &
+                                  (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN));
+
+      //An eta = 4 RejBounded activation must not be able to reach ABR_SAMPLER_DONE
+      //- and therefore must not be able to drop sampler_busy_o - before the pad
+      //has expired. This is the direct statement of the constant observable
+      //length, as opposed to ERR_REJB_ETA4_PAD_UNDERSIZED which only says the
+      //natural completion lands inside the pad window.
+      `ABR_ASSERT_NEVER(ERR_REJB_ETA4_EARLY_DONE,
+          mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) &&
+          (sampler_fsm_ps == ABR_SAMPLER_DONE) &&
+          (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)), clk, !rst_b)
+
+      //The sequencer gates a new start on ~sampler_busy_i, so a start pulse can
+      //never land in the pad. If it ever did it would reset the pad counter
+      //without launching an operation and stretch the pad indefinitely.
+      `ABR_ASSERT_NEVER(ERR_REJB_START_DURING_PAD,
+          sampler_start_i && (sampler_fsm_ps == ABR_SAMPLER_PAD), clk, !rst_b)
+    end else begin : g_no_rejb_pad
+      always_comb rejb_pad_hold = 1'b0;
     end
   endgenerate
 
@@ -906,6 +966,19 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
         (rejb_hold_val == $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_ETA4)),
       clk, !rst_b)
 
+  // The pad must always be longer than the natural completion, otherwise the
+  // activation escapes through the un-padded path and the length becomes secret
+  // dependent again. This fires if REJB_ETA4_FIXED_LEN is ever sized too short
+  // for the masked Keccak latency it has to cover.
+  `ABR_ASSERT(ERR_REJB_ETA4_PAD_UNDERSIZED,
+      (ABR_NEED_ETA4 && mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) && sampler_done)
+        |-> rejb_pad_hold,
+      clk, !rst_b)
+
+  // The pad exists only for eta = 4. Category 5 must never enter it.
+  `ABR_ASSERT_NEVER(ERR_REJB_PAD_AT_ETA2,
+      (sampler_fsm_ps == ABR_SAMPLER_PAD) && !mldsa_eta4_i, clk, !rst_b)
+
 `ifndef SYNTHESIS
   //--------------------------------------------------------------------------
   //RejBounded loop-length profiler (simulation only, off unless +abr_rejb_profile
@@ -919,22 +992,58 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   //different (but individually constant) loop lengths. A test that switches
   //parameter sets mid-run visits both bins, and pooling them would report a
   //spread that reflects the parameter set rather than the secret.
+  //
+  //Two lengths are reported.
+  //  nat = sampler_start_i -> sampler_done. This is the *natural* length of the
+  //        sampling loop. At eta = 4 it is constant only up to the 7e-6 chance
+  //        of needing a third Keccak squeeze.
+  //  obs = sampler_start_i -> sampler_busy_o falling. This is what the sequencer
+  //        and therefore an external observer actually sees, and it is the one
+  //        the constant-time claim rests on. ABR_SAMPLER_PAD makes it constant at
+  //        eta = 4 whether or not a third squeeze happened.
+  //min/max/spread track obs; natmin/natmax/natspread track nat.
   //--------------------------------------------------------------------------
   // synopsys translate_off
   bit         rejb_prof_en;
   int         rejb_prof_cnt;
+  int         rejb_prof_nat;
   bit         rejb_prof_active;
   int         rejb_prof_min [0:1];
   int         rejb_prof_max [0:1];
+  int         rejb_prof_natmin [0:1];
+  int         rejb_prof_natmax [0:1];
   int         rejb_prof_num [0:1];
   bit         rejb_prof_eta4;
+  //Write trace: the cycle of the first and last sampler_mem_dv_o beat, and the
+  //number of beats, all relative to sampler_start_i. This is the *internal*
+  //activity trace. It is not visible outside abr_top - the sequencer only sees
+  //sampler_busy_o - but making it a measured constant rather than an assumed
+  //one is what the category-5 constant-time argument itself rests on, so it is
+  //measured here too.
+  int         rejb_prof_wf;
+  int         rejb_prof_wl;
+  int         rejb_prof_wn;
+  int         rejb_prof_wfmin [0:1];
+  int         rejb_prof_wfmax [0:1];
+  int         rejb_prof_wlmin [0:1];
+  int         rejb_prof_wlmax [0:1];
+  int         rejb_prof_wnmin [0:1];
+  int         rejb_prof_wnmax [0:1];
 
   initial begin
     rejb_prof_en  = $test$plusargs("abr_rejb_profile");
     for (int b = 0; b < 2; b++) begin
-      rejb_prof_min[b] = 32'h7fff_ffff;
-      rejb_prof_max[b] = 0;
-      rejb_prof_num[b] = 0;
+      rejb_prof_min[b]    = 32'h7fff_ffff;
+      rejb_prof_max[b]    = 0;
+      rejb_prof_natmin[b] = 32'h7fff_ffff;
+      rejb_prof_natmax[b] = 0;
+      rejb_prof_num[b]    = 0;
+      rejb_prof_wfmin[b]  = 32'h7fff_ffff;
+      rejb_prof_wfmax[b]  = 0;
+      rejb_prof_wlmin[b]  = 32'h7fff_ffff;
+      rejb_prof_wlmax[b]  = 0;
+      rejb_prof_wnmin[b]  = 32'h7fff_ffff;
+      rejb_prof_wnmax[b]  = 0;
     end
   end
 
@@ -942,23 +1051,65 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     if (!rst_b) begin
       rejb_prof_active <= 1'b0;
       rejb_prof_cnt    <= 0;
+      rejb_prof_nat    <= 0;
+      rejb_prof_wf     <= 0;
+      rejb_prof_wl     <= 0;
+      rejb_prof_wn     <= 0;
     end else if (rejb_prof_en) begin
       if (sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED)) begin
         rejb_prof_active <= 1'b1;
         rejb_prof_cnt    <= 0;
+        rejb_prof_nat    <= 0;
+        rejb_prof_wf     <= 0;
+        rejb_prof_wl     <= 0;
+        rejb_prof_wn     <= 0;
         rejb_prof_eta4   <= mldsa_eta4_i;
       end else if (rejb_prof_active) begin
         if (sampler_done && (sampler_mode_i == ABR_REJ_BOUNDED)) begin
+          rejb_prof_nat <= rejb_prof_cnt;
+        end
+        if (sampler_mem_dv_o) begin
+          if (rejb_prof_wn == 0) rejb_prof_wf <= rejb_prof_cnt;
+          rejb_prof_wl <= rejb_prof_cnt;
+          rejb_prof_wn <= rejb_prof_wn + 1;
+        end
+        if (!sampler_busy_o) begin
           rejb_prof_active <= 1'b0;
           rejb_prof_num[rejb_prof_eta4] = rejb_prof_num[rejb_prof_eta4] + 1;
           if (rejb_prof_cnt < rejb_prof_min[rejb_prof_eta4])
             rejb_prof_min[rejb_prof_eta4] = rejb_prof_cnt;
           if (rejb_prof_cnt > rejb_prof_max[rejb_prof_eta4])
             rejb_prof_max[rejb_prof_eta4] = rejb_prof_cnt;
-          $display("ABR_REJB_LEN eta4=%0d len=%0d n=%0d min=%0d max=%0d spread=%0d",
-                   rejb_prof_eta4, rejb_prof_cnt, rejb_prof_num[rejb_prof_eta4],
+          if (rejb_prof_nat < rejb_prof_natmin[rejb_prof_eta4])
+            rejb_prof_natmin[rejb_prof_eta4] = rejb_prof_nat;
+          if (rejb_prof_nat > rejb_prof_natmax[rejb_prof_eta4])
+            rejb_prof_natmax[rejb_prof_eta4] = rejb_prof_nat;
+          $display({"ABR_REJB_LEN eta4=%0d len=%0d nat=%0d n=%0d min=%0d max=%0d ",
+                    "spread=%0d natmin=%0d natmax=%0d natspread=%0d"},
+                   rejb_prof_eta4, rejb_prof_cnt, rejb_prof_nat,
+                   rejb_prof_num[rejb_prof_eta4],
                    rejb_prof_min[rejb_prof_eta4], rejb_prof_max[rejb_prof_eta4],
-                   rejb_prof_max[rejb_prof_eta4] - rejb_prof_min[rejb_prof_eta4]);
+                   rejb_prof_max[rejb_prof_eta4] - rejb_prof_min[rejb_prof_eta4],
+                   rejb_prof_natmin[rejb_prof_eta4], rejb_prof_natmax[rejb_prof_eta4],
+                   rejb_prof_natmax[rejb_prof_eta4] - rejb_prof_natmin[rejb_prof_eta4]);
+          if (rejb_prof_wf < rejb_prof_wfmin[rejb_prof_eta4])
+            rejb_prof_wfmin[rejb_prof_eta4] = rejb_prof_wf;
+          if (rejb_prof_wf > rejb_prof_wfmax[rejb_prof_eta4])
+            rejb_prof_wfmax[rejb_prof_eta4] = rejb_prof_wf;
+          if (rejb_prof_wl < rejb_prof_wlmin[rejb_prof_eta4])
+            rejb_prof_wlmin[rejb_prof_eta4] = rejb_prof_wl;
+          if (rejb_prof_wl > rejb_prof_wlmax[rejb_prof_eta4])
+            rejb_prof_wlmax[rejb_prof_eta4] = rejb_prof_wl;
+          if (rejb_prof_wn < rejb_prof_wnmin[rejb_prof_eta4])
+            rejb_prof_wnmin[rejb_prof_eta4] = rejb_prof_wn;
+          if (rejb_prof_wn > rejb_prof_wnmax[rejb_prof_eta4])
+            rejb_prof_wnmax[rejb_prof_eta4] = rejb_prof_wn;
+          $display({"ABR_REJB_WTRACE eta4=%0d first=%0d last=%0d beats=%0d ",
+                    "firstspread=%0d lastspread=%0d beatspread=%0d"},
+                   rejb_prof_eta4, rejb_prof_wf, rejb_prof_wl, rejb_prof_wn,
+                   rejb_prof_wfmax[rejb_prof_eta4] - rejb_prof_wfmin[rejb_prof_eta4],
+                   rejb_prof_wlmax[rejb_prof_eta4] - rejb_prof_wlmin[rejb_prof_eta4],
+                   rejb_prof_wnmax[rejb_prof_eta4] - rejb_prof_wnmin[rejb_prof_eta4]);
         end else begin
           rejb_prof_cnt <= rejb_prof_cnt + 1;
         end

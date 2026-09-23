@@ -78,6 +78,31 @@ package abr_sampler_pkg;
   parameter REJB_MASKED_KECCAK_HOLD_ETA4 = 85;
   parameter REJB_MASKED_KECCAK_HOLD_MAX  = ABR_NEED_ETA4 ? REJB_MASKED_KECCAK_HOLD_ETA4
                                                          : REJB_MASKED_KECCAK_HOLD_MASKED;
+  //Lane count and HOLD together make the eta = 4 activation length constant only
+  //while two Keccak states (544 half bytes) cover the 256 coefficients a
+  //polynomial needs. At p = 9/16 that fails with probability
+  //Pr[Bin(544, 9/16) < 256] = 7.0e-6, and the rare polynomial that needs a third
+  //squeeze runs about a masked permutation longer - a secret dependent length.
+  //Deepening the PISO does not fix this: state n is not available before
+  //111 + 109*(n-1) sampler cycles whatever the buffer depth, and the drain has
+  //ended by 260. The only closure is time, so the eta = 4 activation is held to a
+  //compile time constant observable length.
+  //
+  //Sizing. The worst observable two squeeze length is 261 cycles (cycle accurate
+  //model, tools/rejb_model.py). Each further squeeze can add at most one masked
+  //permutation, K_masked = 109. Covering two further squeezes therefore needs
+  //  261 + 2*109 = 479
+  //cycles, which also bounds the model's measured four squeeze worst case of 460.
+  //Residual after padding is Pr[Bin(1088, 9/16) < 256] = 1.2e-107 = 2^-355 per
+  //polynomial, 2^-352 per ML-DSA-65 keygen (11 RejBounded polynomials) - see
+  //tools/rejb_exact.py. That is far below the 2^-92 per keygen bar the
+  //category-5 HOLD was itself signed off against, and unlike a three squeeze pad
+  //it does not depend on a Monte Carlo maximum being exact.
+  //
+  //Cost is +219 cycles per RejBounded polynomial, ~+2.4k cycles per ML-DSA-65
+  //keygen only. RejBounded is not used in signing - s1/s2 are read from sk - so
+  //signature latency is unchanged. See docs/AdamsBridge_MLDSA.md.
+  parameter REJB_ETA4_FIXED_LEN = 479;
 
 //Exp Mask
   parameter EXP_NUM_SAMPLERS     = 4;
@@ -120,7 +145,11 @@ package abr_sampler_pkg;
     ABR_SAMPLER_PROC   = 3'b001,
     ABR_SAMPLER_WAIT   = 3'b010,
     ABR_SAMPLER_RUN    = 3'b011,
-    ABR_SAMPLER_DONE   = 3'b100
+    ABR_SAMPLER_DONE   = 3'b100,
+    //Appended, never renumbered. Only reachable when an eta = 4 RejBounded
+    //activation has to be stretched to its constant observable length.
+    //Unreachable - and therefore collapsed in synthesis - at category 5.
+    ABR_SAMPLER_PAD    = 3'b101
   } abr_sampler_fsm_state_e;
 
   typedef enum logic [2:0] {
