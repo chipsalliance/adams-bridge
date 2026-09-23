@@ -1,38 +1,5 @@
---- UVM Report Summary ---
-
-** Report counts by severity
-UVM_INFO :   19
-UVM_WARNING :    0
-UVM_ERROR :    0
-UVM_FATAL :    0
-** Report counts by id
-[HDL_TOP_TB]     1
-[KAT]     2
-[LOCK_MODEL]     1
-[PREDICTOR]     4
-[QVIP_REPORTER]     1
-[RNTST]     1
-[SCBD_REPORT]     3
-[SCOREBOARD]     3
-[TEST_DONE]     1
-[TEST_TOP]     1
-[VERIFY_PASS]     1
-$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
-$finish at simulation time 2755190.000ns
-           V C S   S i m u l a t i o n   R e p o r t 
-Time: 2755190000 ps
-
-Simulation Performance Summary
-==============================
-Simulation started at :  Wed Sep 23 04:37:07 2026
-Elapsed Time          :  342 sec
-CPU Time              :  308.2 sec
-Virtual memory size   :  722.8 MB
-Resident set size     :  279.3 MB
-Shared memory size    :  27.7 MB
-Private memory size   :  251.6 MB
-Major page faults     :  1712
-Machine name          :  bronco109004
-==============================
-
-Wed Sep 23 04:42:48 2026
+=== ML_DSA_65_externalmu_ACVP_KATs_test  (/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_65_externalmu_ACVP_KATs_test/20260924.003714) ===
+92:UVM_INFO :   19
+93:UVM_WARNING :    0
+94:UVM_ERROR :    0
+95:UVM_FATAL :    0

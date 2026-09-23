@@ -41,7 +41,7 @@ module cbd_sampler
   //FIPS 203 Alg. 8 (SamplePolyCBD): b = sum of the first eta bits, c = sum of
   //the next eta bits, sample = b - c. eta moves the split point, so when more
   //than one ML-KEM parameter set is enabled it has to be a runtime value.
-  always_comb eta_active = (ABR_NEED_CBD3 & eta3_i) ? 3'd3 : 3'd2;
+  always_comb eta_active = eta3_i ? 3'd3 : 3'd2;
 
   //Check sample validity
   always_comb begin

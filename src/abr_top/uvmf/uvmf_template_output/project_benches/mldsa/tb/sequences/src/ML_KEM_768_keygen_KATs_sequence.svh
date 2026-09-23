@@ -100,7 +100,7 @@ class ML_KEM_768_keygen_KATs_sequence extends mldsa_bench_sequence_base;
           `uvm_error("REG_READ", "Failed to read MLKEM_STATUS");
         end
         if (data[2]) begin
-          `uvm_fatal("MLKEM_ERROR", $sformatf("MLKEM_STATUS.ERROR asserted for ML-KEM-768 KeyGen (status=%0h). Parameter set likely not enabled at elaboration.", data));
+          `uvm_fatal("MLKEM_ERROR", $sformatf("MLKEM_STATUS.ERROR asserted for ML-KEM-768 KeyGen (status=%0h).", data));
         end
         valid = data[1];
       end

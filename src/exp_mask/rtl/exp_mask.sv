@@ -39,7 +39,7 @@ module exp_mask
   //compute gamma1 - a. gamma1 is 2^19 for ML-DSA-65/87 and 2^17 for ML-DSA-44
   //(FIPS 204 Alg. 34, ExpandMask).
   logic [23:0] gamma1;
-  always_comb gamma1 = (ABR_NEED_GAMMA1_17 & gamma1_17_i) ? (24'd1 << 17) : (24'd1 << 19);
+  always_comb gamma1 = gamma1_17_i ? (24'd1 << 17) : (24'd1 << 19);
   always_comb {c0,r0} = gamma1 - data_i;
   //compute potential % q value
   always_comb {c1,r1} = r0 + MLDSA_Q;

@@ -76,10 +76,9 @@ virtual class ML_DSA_randomized_kg_sign_verify_base_sequence extends mldsa_bench
     end
   endtask
 
-  // Polls for completion and turns MLDSA_STATUS.ERROR into a fatal. At a
-  // parameter set that was not enabled at elaboration the command aborts
-  // through the error path, which would otherwise show up as a silent hang or
-  // as a wall of data mismatches instead of one clear message.
+  // Polls for completion and turns MLDSA_STATUS.ERROR into a fatal, which would
+  // otherwise show up as a silent hang or as a wall of data mismatches instead
+  // of one clear message.
   virtual task wait_valid(string what);
     valid = 0;
     while (!valid) begin
@@ -87,7 +86,7 @@ virtual class ML_DSA_randomized_kg_sign_verify_base_sequence extends mldsa_bench
       if (status != UVM_IS_OK) `uvm_error("REG_READ", "Failed to read MLDSA_STATUS");
       if (data[3]) begin
         `uvm_fatal("MLDSA_ERROR", $sformatf(
-          "MLDSA_STATUS.ERROR asserted for %s %s (status=%0h). Parameter set likely not enabled at elaboration.",
+          "MLDSA_STATUS.ERROR asserted for %s %s (status=%0h).",
           ps_name, what, data))
       end
       valid = data[1];

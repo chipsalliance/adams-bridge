@@ -120,9 +120,8 @@ class ML_DSA_MLKEM_param_set_mix_sequence extends mldsa_bench_sequence_base;
     end
   endtask
 
-  // A command issued at a parameter set that was not enabled at elaboration
-  // aborts through MLDSA_STATUS.ERROR. Turning that into one clear fatal beats
-  // letting it surface as a hang or as a wall of data mismatches.
+  // A command that aborts through MLDSA_STATUS.ERROR is turned into one clear
+  // fatal; letting it surface as a hang or as a wall of data mismatches is worse.
   virtual task dsa_wait_valid(string what);
     valid = 0;
     while (!valid) begin
@@ -130,7 +129,7 @@ class ML_DSA_MLKEM_param_set_mix_sequence extends mldsa_bench_sequence_base;
       if (status != UVM_IS_OK) `uvm_error("REG_READ", "Failed to read MLDSA_STATUS");
       if (data[3]) begin
         `uvm_fatal("MLDSA_ERROR", $sformatf(
-          "MLDSA_STATUS.ERROR asserted for %s (status=%0h). Parameter set likely not enabled at elaboration.",
+          "MLDSA_STATUS.ERROR asserted for %s (status=%0h).",
           what, data))
       end
       valid = data[1];
@@ -159,7 +158,7 @@ class ML_DSA_MLKEM_param_set_mix_sequence extends mldsa_bench_sequence_base;
       if (status != UVM_IS_OK) `uvm_error("REG_READ", "Failed to read MLKEM_STATUS");
       if (data[3]) begin
         `uvm_fatal("MLKEM_ERROR", $sformatf(
-          "MLKEM_STATUS.ERROR asserted for %s (status=%0h). Parameter set likely not enabled at elaboration.",
+          "MLKEM_STATUS.ERROR asserted for %s (status=%0h).",
           what, data))
       end
       valid = data[1];

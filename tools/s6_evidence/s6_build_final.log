@@ -1,64 +1,64 @@
-2026-09-22 21:11:57 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
-2026-09-22 21:11:57 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--submit-timeout-arg', '3600', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml', '--tool', 'vcs', '--analyze-args=-assert svaext', '--analyze-args=-noinherit_timescale=1ns/1ps']
-2026-09-22 21:11:57 [INFO]: SE v: Creating...
-2026-09-22 21:11:57 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
-2026-09-22 21:11:57 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
-2026-09-22 21:11:57 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/build.yml
-2026-09-22 21:11:57 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/build.yml
-2026-09-22 21:11:57 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/build.yml
-2026-09-22 21:11:57 [INFO]: SE v: Evaluating...
-2026-09-22 21:11:57 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
-2026-09-22 21:11:57 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
-2026-09-22 21:11:57 [INFO]: Using platform: sim
-Job <48288752> is submitted to queue <caliptra>.
+2026-09-23 14:01:50 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
+2026-09-23 14:01:50 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--submit-timeout-arg', '3600', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml', '--tool', 'vcs', '--analyze-args=-assert svaext', '--analyze-args=-noinherit_timescale=1ns/1ps']
+2026-09-23 14:01:50 [INFO]: SE v: Creating...
+2026-09-23 14:01:50 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
+2026-09-23 14:01:50 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
+2026-09-23 14:01:50 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/build.yml
+2026-09-23 14:01:50 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/build.yml
+2026-09-23 14:01:50 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/build.yml
+2026-09-23 14:01:50 [INFO]: SE v: Evaluating...
+2026-09-23 14:01:50 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-23 14:01:50 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-23 14:01:50 [INFO]: Using platform: sim
+Job <48725106> is submitted to queue <caliptra>.
 <<Waiting for dispatch ...>>
 ClusterId            :  svc
 Queue                :  caliptra
 Fairshare/UserGroup  :  caliptra__caliptra__normal
 NumCPUs              :  1
-Command              :  run_docker run cpscontainers.azurecr.io/dv/dev:r8_latest /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/ae8441c5-4635-4572-ac1c-d5f02a9c3bf2.env --timeout 3600 --job_id_variable LSB_JOBID pb fe build --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
+Command              :  run_docker run cpscontainers.azurecr.io/dv/dev:r8_latest /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260923/5d14cc34-eeb8-457f-9de2-3edde7e78ab6.env --timeout 3600 --job_id_variable LSB_JOBID pb fe build --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
 Resource             :  select[os==redhat8&&type==X86_64]rusage[VCS-Base-Runtime-Pkg=1]
-LogFile              :  /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/48288752.log
-JobId                :  48288752
-JobUrl               :  https://lsfrtm.svceng.com/cacti/plugins/heuristics/heuristics_jobs.php?action=viewjob&cluster_tz=false&clusterid=9&indexid=0&jobid=48288752&submit_time=1790136718&start_time=-62169955200&end_time=-62169955200
-<<Starting on bronco100003>>
+LogFile              :  /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260923/48725106.log
+JobId                :  48725106
+JobUrl               :  https://lsfrtm.svceng.com/cacti/plugins/heuristics/heuristics_jobs.php?action=viewjob&cluster_tz=false&clusterid=9&indexid=0&jobid=48725106&submit_time=1790197310&start_time=-62169955200&end_time=-62169955200
+<<Starting on bronco37701>>
 r8_latest: Pulling from dv/dev
 Digest: sha256:2bd6a228da30cd0e9a4ccc2b79c2b767e93577a4751b2be6d1d02a3aa69c6256
 Status: Image is up to date for cpscontainers.azurecr.io/dv/dev:r8_latest
 cpscontainers.azurecr.io/dv/dev:r8_latest
-Command: /usr/bin/docker container run --cgroup-parent /lsf/svc/job.48288752.3854276.1790136722 --env-file /tmp/tmp6MK3Qi -v /tmp/tmpUTIzv3:/etc/group --group-add 7202 --group-add 120 -v /tmp/tmpBDdTf_:/etc/passwd -v /usr/local/python-3.7.3:/usr/local/python-3.7.3:slave -v /usr/local/modules:/usr/local/modules:slave -v /usr/local/noncad:/usr/local/noncad:slave -v /home:/home:slave -v /etc/resolv.conf:/etc/resolv.conf:slave -v /var/lib/sss:/var/lib/sss:slave -v /etc/krb5.conf:/etc/krb5.conf:slave -v /etc/nsswitch.conf:/etc/nsswitch.conf:slave -v /proj:/proj:slave -v /apps:/apps:slave -h bronco100003 -w / -e USER=mojtabab -e HOME=/home/mojtabab --user 7957:120 --cidfile /tmp/tmpCDVLOO --init --shm-size 1G --cap-add SYS_PTRACE --ipc=host --privileged --net=host --pid=host --rm -i cpscontainers.azurecr.io/dv/dev:r8_latest /bin/sh -c cd /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge &&  /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260922/ae8441c5-4635-4572-ac1c-d5f02a9c3bf2.env --timeout 3600 --job_id_variable LSB_JOBID pb fe build --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
-2026-09-23 04:12:06,483 [INFO] Setting timeout alarm for 216000 seconds (3600 minutes)
-2026-09-23 04:12:13 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
-2026-09-23 04:12:13 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--submit-timeout-arg', '3600', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml', '--tool', 'vcs', '--analyze-args=-assert svaext', '--analyze-args=-noinherit_timescale=1ns/1ps']
-2026-09-23 04:12:13 [INFO]: SE v: Creating...
-2026-09-23 04:12:13 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
-2026-09-23 04:12:13 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
-2026-09-23 04:12:13 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/build.yml
-2026-09-23 04:12:13 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/build.yml
-2026-09-23 04:12:13 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/build.yml
-2026-09-23 04:12:13 [INFO]: SE v: Evaluating...
-2026-09-23 04:12:13 [INFO]: SE v command args action from frameworks_3rd_party_post_targets_conditions_rule: append /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/etc/systemc_patch.yml to patch
-2026-09-23 04:12:13 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
-2026-09-23 04:12:13 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
-2026-09-23 04:12:13 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/etc/systemc_patch.yml
-2026-09-23 04:12:13 [INFO]: Using platform: sim
-2026-09-23 04:12:16 [INFO]: Logging output to file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build.log
-2026-09-23 04:12:16 [WARNING]: Invalid repo: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra
-2026-09-23 04:12:17 [INFO]: Loading repo configs from /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/config/compilespecs.yml
-2026-09-23 04:12:18 [INFO]: Searching for global collateral in all components
-2026-09-23 04:12:18 [WARNING]: Found multiple global options sections that lead to different sources.
+Command: /usr/bin/docker container run --cgroup-parent /lsf/svc/job.48725106.2745434.1790197314 --env-file /tmp/tmpY2SZHu -v /tmp/tmpU16Hw5:/etc/group --group-add 7202 --group-add 120 -v /tmp/tmpxl5t9u:/etc/passwd -v /usr/local/python-3.7.3:/usr/local/python-3.7.3:slave -v /usr/local/modules:/usr/local/modules:slave -v /usr/local/noncad:/usr/local/noncad:slave -v /home:/home:slave -v /etc/resolv.conf:/etc/resolv.conf:slave -v /var/lib/sss:/var/lib/sss:slave -v /etc/krb5.conf:/etc/krb5.conf:slave -v /etc/nsswitch.conf:/etc/nsswitch.conf:slave -v /proj:/proj:slave -v /apps:/apps:slave -h bronco37701 -w / -e USER=mojtabab -e HOME=/home/mojtabab --user 7957:120 --cidfile /tmp/tmpYVdQSc --init --shm-size 1G --cap-add SYS_PTRACE --ipc=host --privileged --net=host --pid=host --rm -i cpscontainers.azurecr.io/dv/dev:r8_latest /bin/sh -c cd /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge &&  /home/continuous_integration/release/tools/workspace-tools/v3.0.0/bin/job_wrapper --env-file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/lsf_logs/20260923/5d14cc34-eeb8-457f-9de2-3edde7e78ab6.env --timeout 3600 --job_id_variable LSB_JOBID pb fe build --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
+2026-09-23 21:01:57,473 [INFO] Setting timeout alarm for 216000 seconds (3600 minutes)
+2026-09-23 21:02:00 [INFO]: Input arguments: --tb integration_lib::uvmf_mldsa --submit-timeout-arg 3600
+2026-09-23 21:02:00 [INFO]: (Expanded) arguments: ['--tb', 'integration_lib::uvmf_mldsa', '--submit-timeout-arg', '3600', '--logparse-cfg=/home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml', '--tool', 'vcs', '--analyze-args=-assert svaext', '--analyze-args=-noinherit_timescale=1ns/1ps']
+2026-09-23 21:02:00 [INFO]: SE v: Creating...
+2026-09-23 21:02:00 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/vars.yml
+2026-09-23 21:02:00 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_globals/global.yml
+2026-09-23 21:02:00 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra/config/smartexp_roots/frontend/build.yml
+2026-09-23 21:02:00 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/base_config/config/smartexp_roots/frontend/build.yml
+2026-09-23 21:02:00 [INFO]: SE: Loading config file: /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/config/smartexp_roots/frontend/build.yml
+2026-09-23 21:02:00 [INFO]: SE v: Evaluating...
+2026-09-23 21:02:01 [INFO]: SE v command args action from frameworks_3rd_party_post_targets_conditions_rule: append /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/etc/systemc_patch.yml to patch
+2026-09-23 21:02:01 [INFO]: Using default config : /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-23 21:02:01 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/infra/sim_tools/etc/default_config.yml
+2026-09-23 21:02:01 [INFO]: Reading YAML config /home/ws/caliptra/mojtabab/caliptra/ws2/common/verif/src/frameworks/3rd_party/etc/systemc_patch.yml
+2026-09-23 21:02:01 [INFO]: Using platform: sim
+2026-09-23 21:02:03 [INFO]: Logging output to file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build.log
+2026-09-23 21:02:03 [WARNING]: Invalid repo: /home/ws/caliptra/mojtabab/caliptra/ws2/Caliptra
+2026-09-23 21:02:03 [INFO]: Loading repo configs from /home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/config/compilespecs.yml
+2026-09-23 21:02:05 [INFO]: Searching for global collateral in all components
+2026-09-23 21:02:05 [WARNING]: Found multiple global options sections that lead to different sources.
 integration_lib::uvmf_mldsa, integration_lib::abr_coverage
-2026-09-23 04:12:18 [WARNING]: Found multiple global options sections that lead to different sources.
+2026-09-23 21:02:05 [WARNING]: Found multiple global options sections that lead to different sources.
 integration_lib::uvmf_mldsa, integration_lib::abr_top
-2026-09-23 04:12:39 [WARNING]: Timed out trying to lock the compile spec cache
-2026-09-23 04:12:39 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build_config.yml
-2026-09-23 04:12:39 [INFO]: Logical groups:            packages, tb, rtl, asserts, dpi_compile, dpi_link, systemc, elab
-2026-09-23 04:12:39 [INFO]: Mapped Physical libraries: packages, tb, rtl, asserts, dpi_compile, dpi_link, systemc, elab
-2026-09-23 04:12:39 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:39 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:39 [INFO]: vlogan -full64 -sverilog -kdb=common_elab -incr_vlogan +lint=IA_CHECKFAIL -vts_ignore_env='*OSCI_*' -vts_ignore_env='*QSYS_*' -vts_ignore_env='*QT_*' -vts_ignore_env='*SELINUX_*' -vts_ignore_env='*SSH*' -vts_ignore_env='*VOV*' -vts_ignore_env='*XDG*' -vts_ignore_env='*_LMFILES_*' -vts_ignore_env='VSCODE_*' -vts_ignore_env='TERM_PROGRAM*' -vts_ignore_env='*_modshare' -vts_ignore_env='DVT*' -vts_ignore_env=COLORTERM -vts_ignore_env=LIBGL_ALWAYS_INDIRECT -vts_ignore_env=ELECTRON_RUN_AS_NODE -vts_ignore_env=LOADEDMODULES -vts_ignore_env=LD_LIBRARY_PATH_BACKUP -vts_ignore_env=GIT_ASKPASS -vts_ignore_env=CPS_LOCAL_DIR -vts_ignore_env=JOB_LOCAL_DIR -vts_ignore_env=COMODULE_CACHE -vts_ignore_env=HOST -vts_ignore_env=HOSTNAME -vts_ignore_env=NC_NOLOG -vts_ignore_env=NC_JOBID -vts_ignore_env=NC_SLAVE_PID -vts_ignore_env=NC_TASKER_PID -vts_ignore_env=COMPUTE_SITE -vts_ignore_env=SIM_COLLATERAL_SIM_PATH -vts_ignore_env=SUBMIT_JOB_LOG_FILE -vts_ignore_env=UNAMEV -vts_ignore_env=VTS_USER_IGNORE_ENV -assert svaext +define+ABR_ASSERT_ON +define+SIMULATION -noinherit_timescale=1ns/1ps +warn=noRVOSFD -suppress=SV-LCM-PPWI  -f /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/tb_files.verilog.f -assert svaext -noinherit_timescale=1ns/1ps  -work tb
+2026-09-23 21:02:25 [WARNING]: Timed out trying to lock the compile spec cache
+2026-09-23 21:02:25 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build_config.yml
+2026-09-23 21:02:25 [INFO]: Logical groups:            packages, tb, rtl, asserts, dpi_compile, dpi_link, systemc, elab
+2026-09-23 21:02:25 [INFO]: Mapped Physical libraries: packages, tb, rtl, asserts, dpi_compile, dpi_link, systemc, elab
+2026-09-23 21:02:25 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:25 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:25 [INFO]: vlogan -full64 -sverilog -kdb=common_elab -incr_vlogan +lint=IA_CHECKFAIL -vts_ignore_env='*OSCI_*' -vts_ignore_env='*QSYS_*' -vts_ignore_env='*QT_*' -vts_ignore_env='*SELINUX_*' -vts_ignore_env='*SSH*' -vts_ignore_env='*VOV*' -vts_ignore_env='*XDG*' -vts_ignore_env='*_LMFILES_*' -vts_ignore_env='VSCODE_*' -vts_ignore_env='TERM_PROGRAM*' -vts_ignore_env='*_modshare' -vts_ignore_env='DVT*' -vts_ignore_env=COLORTERM -vts_ignore_env=LIBGL_ALWAYS_INDIRECT -vts_ignore_env=ELECTRON_RUN_AS_NODE -vts_ignore_env=LOADEDMODULES -vts_ignore_env=LD_LIBRARY_PATH_BACKUP -vts_ignore_env=GIT_ASKPASS -vts_ignore_env=CPS_LOCAL_DIR -vts_ignore_env=JOB_LOCAL_DIR -vts_ignore_env=COMODULE_CACHE -vts_ignore_env=HOST -vts_ignore_env=HOSTNAME -vts_ignore_env=NC_NOLOG -vts_ignore_env=NC_JOBID -vts_ignore_env=NC_SLAVE_PID -vts_ignore_env=NC_TASKER_PID -vts_ignore_env=COMPUTE_SITE -vts_ignore_env=SIM_COLLATERAL_SIM_PATH -vts_ignore_env=SUBMIT_JOB_LOG_FILE -vts_ignore_env=UNAMEV -vts_ignore_env=VTS_USER_IGNORE_ENV -assert svaext +define+ABR_ASSERT_ON +define+SIMULATION -noinherit_timescale=1ns/1ps +warn=noRVOSFD -suppress=SV-LCM-PPWI  -f /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/tb_files.verilog.f -assert svaext -noinherit_timescale=1ns/1ps  -work tb
                          Chronologic VCS (TM)
-      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 04:12:40 2026
+      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 21:02:26 2026
 
                     Copyright (c) 1991 - 2022 Synopsys, Inc.
    This software and the associated documentation are proprietary to Synopsys,
@@ -79,7 +79,7 @@ integration_lib::uvmf_mldsa, integration_lib::abr_top
 
 Lint-[IA_CHECKFAIL] Incr-Analysis checking fail
   The design has to be re-analyzed due to inconsistent environment variables.
-  Mismatching env variable: __LSF_JOB_TMPDIR__=/tmp/48288752.tmpdir.
+  Mismatching env variable: __LSF_JOB_TMPDIR__=/tmp/48725106.tmpdir.
 
 *WARN* Open /home/mojtabab/manage.rc for read error: No such file or directory
 *WARN* "/home/mojtabab/manage.rc" is invalid rcfile.
@@ -942,7 +942,11 @@ Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/calip
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_clk_gen.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/ntt_top/rtl/ntt_defines_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert_standard_macros.svh'.
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
@@ -956,14 +960,6 @@ Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/cal
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_macros.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/ntt_top/rtl/ntt_defines_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_be_ram.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
@@ -972,6 +968,8 @@ Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/calip
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_ram_regout.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_icg.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
+Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
+Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_icg.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_2ff_sync.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_piso_multi.sv'
@@ -992,9 +990,7 @@ Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/calip
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_splitter.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_recombiner.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_util_pkg.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_subreg_pkg.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi_pkg.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi_pkg.sv'.
@@ -1252,11 +1248,11 @@ Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/cal
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/mldsa_tests_pkg.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/testbench/hdl_top.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/testbench/hvl_top.sv'
-CPU time: 5.375 seconds to compile
-2026-09-23 04:12:53 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:53 [INFO]: vlogan -full64 -sverilog -kdb=common_elab -incr_vlogan +lint=IA_CHECKFAIL -vts_ignore_env='*OSCI_*' -vts_ignore_env='*QSYS_*' -vts_ignore_env='*QT_*' -vts_ignore_env='*SELINUX_*' -vts_ignore_env='*SSH*' -vts_ignore_env='*VOV*' -vts_ignore_env='*XDG*' -vts_ignore_env='*_LMFILES_*' -vts_ignore_env='VSCODE_*' -vts_ignore_env='TERM_PROGRAM*' -vts_ignore_env='*_modshare' -vts_ignore_env='DVT*' -vts_ignore_env=COLORTERM -vts_ignore_env=LIBGL_ALWAYS_INDIRECT -vts_ignore_env=ELECTRON_RUN_AS_NODE -vts_ignore_env=LOADEDMODULES -vts_ignore_env=LD_LIBRARY_PATH_BACKUP -vts_ignore_env=GIT_ASKPASS -vts_ignore_env=CPS_LOCAL_DIR -vts_ignore_env=JOB_LOCAL_DIR -vts_ignore_env=COMODULE_CACHE -vts_ignore_env=HOST -vts_ignore_env=HOSTNAME -vts_ignore_env=NC_NOLOG -vts_ignore_env=NC_JOBID -vts_ignore_env=NC_SLAVE_PID -vts_ignore_env=NC_TASKER_PID -vts_ignore_env=COMPUTE_SITE -vts_ignore_env=SIM_COLLATERAL_SIM_PATH -vts_ignore_env=SUBMIT_JOB_LOG_FILE -vts_ignore_env=UNAMEV -vts_ignore_env=VTS_USER_IGNORE_ENV -assert svaext +define+ABR_ASSERT_ON +define+SIMULATION -noinherit_timescale=1ns/1ps +warn=noRVOSFD -suppress=SV-LCM-PPWI  -f /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/rtl_files.verilog.f -assert svaext -noinherit_timescale=1ns/1ps  -work rtl
+CPU time: 5.775 seconds to compile
+2026-09-23 21:02:33 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:33 [INFO]: vlogan -full64 -sverilog -kdb=common_elab -incr_vlogan +lint=IA_CHECKFAIL -vts_ignore_env='*OSCI_*' -vts_ignore_env='*QSYS_*' -vts_ignore_env='*QT_*' -vts_ignore_env='*SELINUX_*' -vts_ignore_env='*SSH*' -vts_ignore_env='*VOV*' -vts_ignore_env='*XDG*' -vts_ignore_env='*_LMFILES_*' -vts_ignore_env='VSCODE_*' -vts_ignore_env='TERM_PROGRAM*' -vts_ignore_env='*_modshare' -vts_ignore_env='DVT*' -vts_ignore_env=COLORTERM -vts_ignore_env=LIBGL_ALWAYS_INDIRECT -vts_ignore_env=ELECTRON_RUN_AS_NODE -vts_ignore_env=LOADEDMODULES -vts_ignore_env=LD_LIBRARY_PATH_BACKUP -vts_ignore_env=GIT_ASKPASS -vts_ignore_env=CPS_LOCAL_DIR -vts_ignore_env=JOB_LOCAL_DIR -vts_ignore_env=COMODULE_CACHE -vts_ignore_env=HOST -vts_ignore_env=HOSTNAME -vts_ignore_env=NC_NOLOG -vts_ignore_env=NC_JOBID -vts_ignore_env=NC_SLAVE_PID -vts_ignore_env=NC_TASKER_PID -vts_ignore_env=COMPUTE_SITE -vts_ignore_env=SIM_COLLATERAL_SIM_PATH -vts_ignore_env=SUBMIT_JOB_LOG_FILE -vts_ignore_env=UNAMEV -vts_ignore_env=VTS_USER_IGNORE_ENV -assert svaext +define+ABR_ASSERT_ON +define+SIMULATION -noinherit_timescale=1ns/1ps +warn=noRVOSFD -suppress=SV-LCM-PPWI  -f /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/rtl_files.verilog.f -assert svaext -noinherit_timescale=1ns/1ps  -work rtl
                          Chronologic VCS (TM)
-      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 04:12:53 2026
+      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 21:02:34 2026
 
                     Copyright (c) 1991 - 2022 Synopsys, Inc.
    This software and the associated documentation are proprietary to Synopsys,
@@ -1277,12 +1273,16 @@ CPU time: 5.375 seconds to compile
 
 Lint-[IA_CHECKFAIL] Incr-Analysis checking fail
   The design has to be re-analyzed due to inconsistent environment variables.
-  Mismatching env variable: __LSF_JOB_TMPDIR__=/tmp/48288752.tmpdir.
+  Mismatching env variable: __LSF_JOB_TMPDIR__=/tmp/48725106.tmpdir.
 
 *WARN* Open /home/mojtabab/manage.rc for read error: No such file or directory
 *WARN* "/home/mojtabab/manage.rc" is invalid rcfile.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/ntt_top/rtl/ntt_defines_pkg.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert_standard_macros.svh'.
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
@@ -1296,14 +1296,6 @@ Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/cal
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_macros.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/ntt_top/rtl/ntt_defines_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_ram.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_1r1w_be_ram.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
@@ -1312,6 +1304,8 @@ Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/calip
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_ram_regout.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_icg.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
+Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
+Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_config_defines.svh'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_icg.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_2ff_sync.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_piso_multi.sv'
@@ -1332,9 +1326,7 @@ Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/calip
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_splitter.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_libs/rtl/abr_recombiner.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_util_pkg.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_pkg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_subreg_pkg.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi_pkg.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi_pkg.sv'.
@@ -1353,24 +1345,12 @@ Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim_generic/rtl/abr_prim_generic_xor2.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim_generic/rtl/abr_prim_generic_xor2.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_cdc_rand_delay.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_2sync.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_lfsr.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_lfsr.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi4_sync.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi4_sync.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_diff_decode.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_diff_decode.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sec_anchor_buf.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sec_anchor_buf.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_slicer.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_slicer.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_count.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_count.sv'.
@@ -1380,51 +1360,12 @@ Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_dom_and_2share.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_dom_and_2share.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sec_anchor_flop.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sec_anchor_flop.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_reg_we_check.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_reg_we_check.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_packer_fifo.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_packer_fifo.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_max_tree.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_max_tree.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_subreg_arb.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_subreg.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_intr_hw.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_intr_hw.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_onehot_check.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_onehot_check.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi8_sync.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_mubi8_sync.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_fifo_sync_cnt.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_fifo_sync_cnt.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_buf.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_receiver.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_receiver.sv'.
+Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_module_name_macros.svh'.
+Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_buf.sv'.
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_sender.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_alert_sender.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_fifo_sync.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_fifo_sync.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_arbiter_ppc.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_arbiter_ppc.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sum_tree.sv'
-Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
-Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_sum_tree.sv'.
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_subreg_ext.sv'
-Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_edge_detector.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv'
+Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded_ctrl.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded2.sv'
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv'
@@ -1538,13 +1479,13 @@ Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl
 Parsing design file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg.sv'
 Parsing included file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_assert.sv'.
 Back to file '/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_reg.sv'.
-CPU time: .957 seconds to compile
-2026-09-23 04:12:56 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:56 [INFO]: gcc -m64 -fPIC -Wall -g  -Wno-unused-variable -Wno-unused-function -DVCS -I/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi -I/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/include -shared -c /home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi/uvm_dpi.cc /home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi/uvm_regex.cc
-2026-09-23 04:12:57 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:57 [INFO]: gcc -m64 -fPIC -shared   -o /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/lib_dpi.so /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/uvm_dpi.o /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/uvm_regex.o
-2026-09-23 04:12:58 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
-2026-09-23 04:12:58 [INFO]: vcs -full64 -kdb=common_elab -lca -debug_access+all -j8 +vcs+lic+wait -partcomp -fastpartcomp=j8 -suppress=TFIPC  -assert enable_hier   hdl_top hvl_top -o simv.uvmf_mldsa
+CPU time: .917 seconds to compile
+2026-09-23 21:02:35 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:35 [INFO]: gcc -m64 -fPIC -Wall -g  -Wno-unused-variable -Wno-unused-function -DVCS -I/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi -I/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/include -shared -c /home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi/uvm_dpi.cc /home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/dpi/uvm_regex.cc
+2026-09-23 21:02:35 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:35 [INFO]: gcc -m64 -fPIC -shared   -o /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/lib_dpi.so /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/uvm_dpi.o /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/dpi/uvm_regex.o
+2026-09-23 21:02:35 [INFO]: Component providing global collateral: integration_lib::uvmf_mldsa
+2026-09-23 21:02:35 [INFO]: vcs -full64 -kdb=common_elab -lca -debug_access+all -j8 +vcs+lic+wait -partcomp -fastpartcomp=j8 -suppress=TFIPC  -assert enable_hier   hdl_top hvl_top -o simv.uvmf_mldsa
 
 Warning-[LCA_FEATURES_ENABLED] Usage warning
   LCA features enabled by '-lca' argument on the command line.  For more 
@@ -1553,7 +1494,7 @@ Warning-[LCA_FEATURES_ENABLED] Usage warning
 
 Doing common elaboration 
                          Chronologic VCS (TM)
-      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 04:13:02 2026
+      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 21:02:39 2026
 
                     Copyright (c) 1991 - 2022 Synopsys, Inc.
    This software and the associated documentation are proprietary to Synopsys,
@@ -1584,6 +1525,161 @@ Top Level Modules:
 TimeScale is 1 ns / 1 ps
 
 Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'RTL.abr_ctrl_pkg' because of following changes.
+  
+  Modified Design Units : 
+  	TB.mldsa_sequences_pkg : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/mldsa_sequences_pkg.sv",
+  22
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  	RTL.rej_bounded4 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
+  31
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  	RTL.rej_bounded4 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
+  31
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  	RTL.rej_bounded4 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
+  31
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
   Recompiling partition 'TB.hdl_top' because of following changes.
   
   Modified Design Units : 
@@ -1592,25 +1688,55 @@ Note-[PC_RECOMPILE] Recompiling partition
   29
   	RTL.abr_params_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
+  26
   	RTL.abr_sampler_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv",
   26
   	RTL.abr_sampler_top : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_top.sv",
   15
+  	RTL.cbd_sampler : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/cbd_sampler/rtl/cbd_sampler.sv",
+  17
+  	RTL.cbd_sampler_ctrl : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/cbd_sampler/rtl/cbd_sampler_ctrl.sv",
+  16
+  	RTL.decompose : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose.sv",
+  37
+  	RTL.decompose_mod_2gamma2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_mod_2gamma2.sv",
+  21
+  	RTL.decompose_r1_lut : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_r1_lut.sv",
+  23
+  	RTL.decompose_usehint : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_usehint.sv",
+  25
+  	RTL.decompose_w1_encode : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_w1_encode.sv",
+  31
+  	RTL.exp_mask : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/exp_mask/rtl/exp_mask.sv",
+  18
+  	RTL.hintgen : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/makehint/rtl/hintgen.sv",
+  22
   	RTL.rej_bounded_ctrl : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded_ctrl.sv",
   16
+  	RTL.sigdecode_z_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sig_decode_z/rtl/sigdecode_z_top.sv",
+  29
+  	RTL.sigencode_z_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sig_encode_z/rtl/sigencode_z_top.sv",
+  29
+  	RTL.skdecode_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sk_decode/rtl/skdecode_top.sv",
+  32
   	TB.abr_params_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	TB.mldsa_sequences_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/mldsa_sequences_pkg.sv",
-  22
-  	TB.mldsa_tests_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/mldsa_tests_pkg.sv",
-  21
+  26
   
 
 
@@ -1618,9 +1744,144 @@ Note-[PC_RECOMPILE] Recompiling partition
   Recompiling partition 'TB.hdl_top' because of following changes.
   
   Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
   	RTL.rej_bounded4 : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
   31
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  	RTL.rej_bounded4 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
+  31
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  Removed Design Units : $unit 
+  
+
+
+Note-[PC_RECOMPILE] Recompiling partition
+  Recompiling partition 'TB.hdl_top' because of following changes.
+  
+  Added Design Units : 
+  	$unit : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
+  1
+  	RTL.abr_prim_flop_en : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_flop_en.sv",
+  19
+  	RTL.abr_prim_xor2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_prim/rtl/abr_prim_xor2.sv",
+  19
+  	RTL.rej_bounded4 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
+  31
+  Removed Design Units : $unit 
   
 
 
@@ -1633,212 +1894,122 @@ Note-[PC_RECOMPILE] Recompiling partition
   29
   	RTL.abr_params_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	RTL.abr_sampler_top : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_top.sv",
-  15
-  	TB.abr_params_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	TB.mldsa_sequences_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/mldsa_sequences_pkg.sv",
-  22
-  	TB.mldsa_tests_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/mldsa_tests_pkg.sv",
-  21
-  
-
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Added Design Units : 
-  	RTL.rej_bounded4 : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
-  31
-  
-
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Modified Design Units : 
-  	RTL.abr_ctrl : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl.sv",
-  29
-  	RTL.abr_params_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
+  26
   	RTL.abr_sampler_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_pkg.sv",
   26
   	RTL.abr_sampler_top : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_top.sv",
   15
+  	RTL.cbd_sampler : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/cbd_sampler/rtl/cbd_sampler.sv",
+  17
+  	RTL.cbd_sampler_ctrl : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/cbd_sampler/rtl/cbd_sampler_ctrl.sv",
+  16
+  	RTL.decompose : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose.sv",
+  37
+  	RTL.decompose_mod_2gamma2 : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_mod_2gamma2.sv",
+  21
+  	RTL.decompose_r1_lut : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_r1_lut.sv",
+  23
+  	RTL.decompose_usehint : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_usehint.sv",
+  25
+  	RTL.decompose_w1_encode : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/decompose/rtl/decompose_w1_encode.sv",
+  31
+  	RTL.exp_mask : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/exp_mask/rtl/exp_mask.sv",
+  18
+  	RTL.hintgen : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/makehint/rtl/hintgen.sv",
+  22
   	RTL.rej_bounded_ctrl : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded_ctrl.sv",
   16
-  	TB.abr_params_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	TB.mldsa_sequences_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/mldsa_sequences_pkg.sv",
-  22
-  	TB.mldsa_tests_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/mldsa_tests_pkg.sv",
-  21
-  
-
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Added Design Units : 
-  	RTL.rej_bounded4 : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
-  31
-  
-
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Modified Design Units : 
-  	RTL.abr_ctrl : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_ctrl.sv",
+  	RTL.sigdecode_z_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sig_decode_z/rtl/sigdecode_z_top.sv",
   29
-  	RTL.abr_params_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	RTL.abr_sampler_top : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_top.sv",
-  15
+  	RTL.sigencode_z_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sig_encode_z/rtl/sigencode_z_top.sv",
+  29
+  	RTL.skdecode_top : 
+  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/sk_decode/rtl/skdecode_top.sv",
+  32
   	TB.abr_params_pkg : 
   "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/rtl/abr_params_pkg.sv",
-  28
-  	TB.mldsa_sequences_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/sequences/mldsa_sequences_pkg.sv",
-  22
-  	TB.mldsa_tests_pkg : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/mldsa_tests_pkg.sv",
-  21
+  26
   
 
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Added Design Units : 
-  	RTL.rej_bounded4 : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/rej_bounded/rtl/rej_bounded4.sv",
-  31
-  
-
-
-Note-[PC_RECOMPILE] Recompiling partition
-  Recompiling partition 'TB.hdl_top' because of following changes.
-  
-  Modified Design Units : 
-  	RTL.abr_sampler_top : 
-  "/home/ws/caliptra/mojtabab/caliptra/ws2/chipsalliance/caliptra-rtl/submodules/adams-bridge/src/abr_sampler_top/rtl/abr_sampler_top.sv",
-  15
-  
-
-/bin/rm -rf /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/libvcspc_TB_hdl_top_gYGk3b.so.daidir/ar.lst
-/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs -j8 -mx_invoke_vcs_from_tool -mxunielab     -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_options -partcomp_master_daidir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir   -q  -assert svaext  -assert enable_hier   -full64   -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_added_options  -cm_dir simv.uvmf_mldsa.vdb  -Xufe=skip_pc_config  -cm implAssert  -q     -partcomp=so -partcomp_so_dir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b VCS_PARTCOMP_LIB.pc_TB_hdl_top_config -o /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/libvcspc_TB_hdl_top_gYGk3b.so -Mdir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/csrc  -Xarijit=0x2 -sverilog   -l /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/TB_hdl_top_gYGk3b.log 
+/bin/rm -rf /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/libvcspc_RTL_abr_ctrl_pkg_8OG3yc.so.daidir/ar.lst
+/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs -j8 -mx_invoke_vcs_from_tool -mxunielab     -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_options -partcomp_master_daidir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir   -q  -assert svaext  -assert enable_hier   -full64   -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_added_options  -cm_dir simv.uvmf_mldsa.vdb  -Xufe=skip_pc_config  -cm implAssert  -q     -partcomp=so -partcomp_so_dir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc VCS_PARTCOMP_LIB.pc_RTL_abr_ctrl_pkg_config -o /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/libvcspc_RTL_abr_ctrl_pkg_8OG3yc.so -Mdir=/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/csrc  -Xarijit=0x2 -sverilog   -l /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/RTL_abr_ctrl_pkg_8OG3yc.log 
 *WARN* Open /home/mojtabab/manage.rc for read error: No such file or directory
 *WARN* "/home/mojtabab/manage.rc" is invalid rcfile.
 
 Note-[VCS_PARAL] Parallel code-gen enabled
   VCS is running with parallel code generation(-j)...
 
-68 modules and 0 UDP read.
-recompiling module abr_prim_count
-recompiling module abr_sampler_top
-recompiling module skdecode_top
-recompiling module abr_reg
-recompiling module abr_sha3pad
-recompiling module abr_top
-recompiling module abr_ctrl
-recompiling module ntt_top
-recompiling module ntt_karatsuba_pairwm
-recompiling module abr_prim_lfsr
-recompiling module compress_top
-recompiling module abr_seq_vec
-recompiling module rej_bounded_ctrl
-recompiling module decompose_mod_2gamma2
-recompiling module abr_keccak_round
-recompiling module abr_1r1w_ram
-recompiling module sib_mem
-recompiling module cbd_sampler
-recompiling module hvl_top
-recompiling module makehint
-recompiling module norm_check_top
-recompiling module abr_add_sub_mod
-recompiling module abr_prim_sparse_fsm_flop
-recompiling module decompose_r1_lut
-recompiling module rej_bounded2
-recompiling module sigencode_z_top
-recompiling module abr_splitter
-recompiling module abr_keccak_2share
-recompiling module abr_prim_lfsr
-recompiling module decompress_top
-recompiling module power2round_top
-recompiling module pkdecode
+47 modules and 0 UDP read.
 recompiling package vcs_paramclassrepository
-recompiling module rej_sampler_ctrl
-recompiling module decompose_usehint
-recompiling module ahb_lite_slave
-recompiling module exp_mask_ctrl
-recompiling module rej_sampler
-recompiling module decompose
-recompiling module abr_keccak_2share
-recompiling module hdl_top
-recompiling module abr_1r1w_ram
-recompiling module ntt_shuffle_buffer
-recompiling module decompress
-recompiling module norm_check
-recompiling module abr_prim_generic_xor2
-recompiling module sample_in_ball_ctrl
-recompiling module abr_prim_dom_and_2share
-recompiling module abr_sha3
-recompiling module abr_1r1w_ram
-recompiling module ntt_twiddle_lookup
-recompiling module abr_mem_top
-recompiling module abr_rd_lat_buffer
-recompiling module skdecode_s1s2_unpack
-recompiling module rej_sampler_ctrl
-recompiling module hdl_qvip_ahb_lite_slave
-recompiling module abr_prim_generic_xor2
-recompiling module abr_prim_lfsr
-recompiling module sigdecode_h
-recompiling module abr_1r1w_ram
-recompiling module abr_rd_lat_buffer
-recompiling module ntt_hybrid_butterfly_2x2
-recompiling module hintgen
-recompiling module abr_piso_multi
-recompiling module power2round_skencode
-recompiling module sigdecode_z_unit
-recompiling module abr_recombiner
-recompiling module power2round_core
-recompiling module rej_sampler
-recompiling module abr_seq
-recompiling module ntt_butterfly
-recompiling module skencode
-recompiling module sigdecode_z_top
-recompiling module abr_msg_buffer
-recompiling module abr_ahb_slv_sif
-recompiling module compress
-recompiling module exp_mask
-recompiling module rej_bounded4
-make[1]: Entering directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/csrc'
-/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/libvcspc_TB_hdl_top_gYGk3b.so up to date
-make[1]: Leaving directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/csrc'
-/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs: line 33903: 3861215 Segmentation fault      (core dumped) ${TOOL_HOME}/bin/cfs_ident_exec -f ${XML_INPUT_EXE} -o "${fsearchDir}/idents_tapi.xml" -o_SrcFile "${dirSrcFiles}/src_files_c" ${all_dyn_libs} > tapi_xml_writer.log
+recompiling package abr_reg_uvm
+recompiling package abr_prim_mubi_pkg
+recompiling package rw_txn_pkg
+recompiling package mldsa_reg_model_top_pkg
+recompiling package uvm_pkg
+recompiling package abr_params_pkg
+recompiling package mvc_pkg
+recompiling package abr_ctrl_pkg
+recompiling package abr_sampler_pkg
+recompiling package norm_check_defines_pkg
+recompiling package abr_ahb_defines_pkg
+recompiling package mgc_ahb_v2_0_pkg
+recompiling package abr_prim_alert_pkg
+recompiling package abr_prim_pkg
+recompiling package ntt_defines_pkg
+recompiling package uvmf_base_pkg_hdl
+recompiling package abr_prim_cipher_pkg
+recompiling package uvmf_base_pkg
+recompiling package mgc_ahb_seq_pkg
+recompiling package abr_reg_pkg
+recompiling package sib_pkg
+recompiling package ntt_defines_pkg
+recompiling package QUESTA_MVC
+recompiling package abr_params_pkg
+recompiling package mldsa_tests_pkg
+recompiling package makehint_defines_pkg
+recompiling package skdecode_defines_pkg
+recompiling package mldsa_sequences_pkg
+recompiling package mldsa_parameters_pkg
+recompiling package decompress_defines_pkg
+recompiling package sigencode_z_defines_pkg
+recompiling package txn_logger_pkg
+recompiling package abr_sha3_pkg
+recompiling package mldsa_env_pkg
+recompiling package decompose_defines_pkg
+recompiling package sigdecode_z_defines_pkg
+recompiling package slave_mem_models_pkg
+recompiling package qvip_utils_pkg
+recompiling package qvip_ahb_lite_slave_pkg
+recompiling package compress_defines_pkg
+recompiling package sigdecode_h_defines_pkg
+recompiling package addr_map_pkg
+recompiling package qvip_ahb_lite_slave_params_pkg
+recompiling package rw_api_seq_pkg
+recompiling package abr_prim_sparse_fsm_pkg
+recompiling package power2round_defines_pkg
+All of 47 modules done
+make[1]: Entering directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/csrc'
+/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/libvcspc_RTL_abr_ctrl_pkg_8OG3yc.so up to date
+make[1]: Leaving directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/RTL_abr_ctrl_pkg_8OG3yc/csrc'
+/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs: line 33903: 2756545 Segmentation fault      (core dumped) ${TOOL_HOME}/bin/cfs_ident_exec -f ${XML_INPUT_EXE} -o "${fsearchDir}/idents_tapi.xml" -o_SrcFile "${dirSrcFiles}/src_files_c" ${all_dyn_libs} > tapi_xml_writer.log
 /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs   -partcomp=stitch -Xufe=stitch_kdb -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_stitch_options -Xpiyushb1=0x80 -sverilog  -full64     -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.partcomp_added_options  -cm implAssert   -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.stitch_so_list -o simv.uvmf_mldsa csrc/topshell_partcomp.v -file /home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/simv.uvmf_mldsa.daidir/.topshell_list 
 *** Using vcs compiler /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/bin/vcs1 instead of /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/bin/vcs1...
                          Chronologic VCS (TM)
-      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 04:13:35 2026
+      Version R-2020.12-SP2-7_Full64 -- Wed Sep 23 21:03:11 2026
 
                     Copyright (c) 1991 - 2022 Synopsys, Inc.
    This software and the associated documentation are proprietary to Synopsys,
@@ -1876,21 +2047,19 @@ If you would like to temporarily disable this message, set
 before expiration that you want this message to start (the minimum is 0).
 make[1]: Entering directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/csrc'
 make[1]: Leaving directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/csrc'
-make[1]: Entering directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/csrc'
-make[1]: Leaving directory '/home/pure_scratch/caliptra/users/users/mojtabab/workspaces/ws2-5f7b9b94d323d09d7504a798296fd540/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/partitionlib/TB_hdl_top_gYGk3b/csrc'
-CPU time: .627 seconds to compile + .652 seconds to elab
+CPU time: .658 seconds to compile + .407 seconds to elab
 Done Verilog partition compilations
 Done all partition compilations
 
 rm -f _cuarc*.so _csrc*.so pre_vcsobj_*.so share_vcsobj_*.so
 if [ -x ../simv.uvmf_mldsa ]; then chmod a-x ../simv.uvmf_mldsa; fi
-g++  -o ../simv.uvmf_mldsa    -Wl,--whole-archive  -Wl,--no-whole-archive -Wl,-rpath='$ORIGIN'//simv.uvmf_mldsa.daidir//libvcspc  -z muldefs -rdynamic -Wl,-rpath='$ORIGIN'/simv.uvmf_mldsa.daidir -Wl,-rpath=./simv.uvmf_mldsa.daidir -Wl,-rpath=/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib -L/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib -Wl,-rpath-link=./  /usr/lib64/libnuma.so.1   SIMB.o objs/SIM_d.o    SIM_l.o        pcomp_elab_code.o rmapats_mop.o rmapats.o rmar.o   libvcspc__SNPS_VCS_intf_repository.so __SNPS_VCS_intf_repositor_1_archive_1.so __SNPS_VCS_intf_repositor_2_archive_1.so libvcspc__vcs_pc_package__4opMYc.so __vcs_pc_package__4opMY_1_archive_1.so __vcs_pc_package__4opMY_2_archive_1.so __vcs_pc_package__4opMY_3_archive_1.so libvcspc_RTL_abr_ctrl_pkg_8OG3yc.so _RTL_abr_ctrl_pkg_8OG3y_1_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_2_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_3_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_4_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_5_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_6_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_7_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_8_archive_1.so libvcspc_TB_hdl_top_gYGk3b.so _TB_hdl_top_gYGk3_1_archive_1.so _TB_hdl_top_gYGk3_2_archive_1.so _TB_hdl_top_gYGk3_3_archive_1.so _TB_hdl_top_gYGk3_4_archive_1.so _TB_hdl_top_gYGk3_5_archive_1.so _TB_hdl_top_gYGk3_6_archive_1.so _TB_hdl_top_gYGk3_7_archive_1.so _TB_hdl_top_gYGk3_8_archive_1.so           -lerrorinf -lsnpsmalloc -lvfs    -lvcsnew -lsimprofile -lvirsim -lvcsucli -lhdlxmr -lreader_common /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/libBA.a -luclinative /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/vcs_tls.o   -Wl,-whole-archive  -lvcsucli    -Wl,-no-whole-archive       ./../simv.uvmf_mldsa.daidir/vc_hdrs.o  _vcs_pli_stub_.o   /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/vcs_save_restore_new.o /home/cad/tools/synopsys/verdi/2021.09-1/share/PLI/VCS/LINUX64/pli.a -ldl  -lc -lm -lpthread -ldl 
+g++  -o ../simv.uvmf_mldsa    -Wl,--whole-archive  -Wl,--no-whole-archive -Wl,-rpath='$ORIGIN'//simv.uvmf_mldsa.daidir//libvcspc  -z muldefs -rdynamic -Wl,-rpath='$ORIGIN'/simv.uvmf_mldsa.daidir -Wl,-rpath=./simv.uvmf_mldsa.daidir -Wl,-rpath=/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib -L/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib -Wl,-rpath-link=./  /usr/lib64/libnuma.so.1   SIMB.o objs/SIM_d.o    SIM_l.o        pcomp_elab_code.o rmapats_mop.o rmapats.o rmar.o   libvcspc__SNPS_VCS_intf_repository.so __SNPS_VCS_intf_repositor_1_archive_1.so __SNPS_VCS_intf_repositor_2_archive_1.so libvcspc__vcs_pc_package__4opMYc.so __vcs_pc_package__4opMY_1_archive_1.so __vcs_pc_package__4opMY_2_archive_1.so __vcs_pc_package__4opMY_3_archive_1.so libvcspc_RTL_abr_ctrl_pkg_8OG3yc.so _RTL_abr_ctrl_pkg_8OG3y_1_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_2_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_3_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_4_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_5_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_6_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_7_archive_1.so _RTL_abr_ctrl_pkg_8OG3y_8_archive_1.so libvcspc_TB_hdl_top_XOHdeb.so _TB_hdl_top_XOHde_1_archive_1.so _TB_hdl_top_XOHde_2_archive_1.so _TB_hdl_top_XOHde_3_archive_1.so _TB_hdl_top_XOHde_4_archive_1.so _TB_hdl_top_XOHde_5_archive_1.so _TB_hdl_top_XOHde_6_archive_1.so _TB_hdl_top_XOHde_7_archive_1.so _TB_hdl_top_XOHde_8_archive_1.so           -lerrorinf -lsnpsmalloc -lvfs    -lvcsnew -lsimprofile -lvirsim -lvcsucli -lhdlxmr -lreader_common /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/libBA.a -luclinative /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/vcs_tls.o   -Wl,-whole-archive  -lvcsucli    -Wl,-no-whole-archive       ./../simv.uvmf_mldsa.daidir/vc_hdrs.o  _vcs_pli_stub_.o   /home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/linux64/lib/vcs_save_restore_new.o /home/cad/tools/synopsys/verdi/2021.09-1/share/PLI/VCS/LINUX64/pli.a -ldl  -lc -lm -lpthread -ldl 
 ../simv.uvmf_mldsa up to date
-/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs: line 33903: 3867361 Segmentation fault      (core dumped) ${TOOL_HOME}/bin/cfs_ident_exec -f ${XML_INPUT_EXE} -o "${fsearchDir}/idents_tapi.xml" -o_SrcFile "${dirSrcFiles}/src_files_c" ${all_dyn_libs} > tapi_xml_writer.log
-CPU time: 1.373 seconds to compile + .049 seconds to elab + 1.068 seconds to link
+/home/cad/tools/synopsys/vcs-mx/2020.12-SP2-7/bin/vcs: line 33903: 2758890 Segmentation fault      (core dumped) ${TOOL_HOME}/bin/cfs_ident_exec -f ${XML_INPUT_EXE} -o "${fsearchDir}/idents_tapi.xml" -o_SrcFile "${dirSrcFiles}/src_files_c" ${all_dyn_libs} > tapi_xml_writer.log
+CPU time: 1.336 seconds to compile + .050 seconds to elab + 1.042 seconds to link
 Verdi KDB elaboration done and the database successfully generated
-2026-09-23 04:13:47 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build_config.yml
-2026-09-23 04:13:47 [INFO]: Parsing log file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build.log with the following config files /home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml
-2026-09-23 04:13:47 [INFO]: There were 0 errors parsing log file
-2026-09-23 04:13:47,671 [INFO] Child process completed.
-2026-09-23 04:13:47,671 [INFO] Returning process return code=0
+2026-09-23 21:03:21 [INFO]: Writing config file: /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build_config.yml
+2026-09-23 21:03:21 [INFO]: Parsing log file /home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/libs/vcs/R-2020.12-SP2-7_Full64/integration_lib/uvmf_mldsa/build.log with the following config files /home/ws/caliptra/mojtabab/caliptra/ws2/common/caliptra_config/config/parse_build_log_config.yml
+2026-09-23 21:03:21 [INFO]: There were 0 errors parsing log file
+2026-09-23 21:03:22,201 [INFO] Child process completed.
+2026-09-23 21:03:22,201 [INFO] Returning process return code=0

@@ -90,7 +90,7 @@ class ML_DSA_44_keygen_KATs_sequence extends mldsa_bench_sequence_base;
           `uvm_error("REG_READ", "Failed to read MLDSA_STATUS");
         end
         if (data[3]) begin
-          `uvm_fatal("MLDSA_ERROR", $sformatf("MLDSA_STATUS.ERROR asserted for ML-DSA-44 KeyGen (status=%0h). Parameter set likely not enabled at elaboration.", data));
+          `uvm_fatal("MLDSA_ERROR", $sformatf("MLDSA_STATUS.ERROR asserted for ML-DSA-44 KeyGen (status=%0h).", data));
         end
         valid = data[1];
       end

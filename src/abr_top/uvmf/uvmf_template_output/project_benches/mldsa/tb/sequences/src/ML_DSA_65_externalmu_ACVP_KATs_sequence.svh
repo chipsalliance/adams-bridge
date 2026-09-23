@@ -165,7 +165,7 @@ class ML_DSA_65_externalmu_ACVP_KATs_sequence extends mldsa_bench_sequence_base;
       reg_model.MLDSA_STATUS.read(status, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) `uvm_error("REG_READ", "Failed to read MLDSA_STATUS");
       if (data[3]) begin
-        `uvm_fatal("MLDSA_ERROR", $sformatf("MLDSA_STATUS.ERROR asserted for ML-DSA-65 sign (status=%0h). Parameter set likely not enabled at elaboration.", data));
+        `uvm_fatal("MLDSA_ERROR", $sformatf("MLDSA_STATUS.ERROR asserted for ML-DSA-65 sign (status=%0h).", data));
       end
       valid = data[1];
     end

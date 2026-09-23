@@ -106,60 +106,50 @@ module decompose_w1_encode
     // 3 words are emitted; a 256-coefficient polynomial is 1536 bits = 24 words,
     // so every polynomial starts and ends byte-aligned.
     //--------------------------------------------------------------------------
-    generate
-        if (ABR_NEED_GAMMA2_88) begin : gen_w1_88
-            localparam int ACC_W = 88; //max pending bits before an emit is 56+24
+    localparam int ACC_W = 88; //max pending bits before an emit is 56+24
 
-            logic [ACC_W-1:0] acc, acc_base, acc_nxt;
-            logic [2:0]       cnt8, cnt8_base; //pending bytes, 0..7
-            logic [23:0]      din24;
-            logic             emit;
-            logic [63:0]      w1_88;
-            logic             buffer_en_88;
+    logic [ACC_W-1:0] acc, acc_base, acc_nxt;
+    logic [2:0]       cnt8, cnt8_base; //pending bytes, 0..7
+    logic [23:0]      din24;
+    logic             emit;
+    logic [63:0]      w1_88;
+    logic             buffer_en_88;
 
-            always_comb begin
-                din24     = {r1_i[3], r1_i[2], r1_i[1], r1_i[0]};
-                acc_base  = init_count_first ? '0 : acc;
-                cnt8_base = init_count_first ? '0 : cnt8;
-                acc_nxt   = acc_base | (ACC_W'(din24) << {cnt8_base, 3'b000});
-                //3 more bytes pending; emit as soon as the total reaches 8
-                emit      = (cnt8_base >= 3'd5);
-            end
+    always_comb begin
+        din24     = {r1_i[3], r1_i[2], r1_i[1], r1_i[0]};
+        acc_base  = init_count_first ? '0 : acc;
+        cnt8_base = init_count_first ? '0 : cnt8;
+        acc_nxt   = acc_base | (ACC_W'(din24) << {cnt8_base, 3'b000});
+        //3 more bytes pending; emit as soon as the total reaches 8
+        emit      = (cnt8_base >= 3'd5);
+    end
 
-            always_ff @(posedge clk or negedge reset_n) begin
-                if (!reset_n) begin
-                    acc          <= '0;
-                    cnt8         <= '0;
-                    w1_88        <= '0;
-                    buffer_en_88 <= 1'b0;
-                end
-                else if (zeroize) begin
-                    acc          <= '0;
-                    cnt8         <= '0;
-                    w1_88        <= '0;
-                    buffer_en_88 <= 1'b0;
-                end
-                else begin
-                    buffer_en_88 <= w1_encode_enable & emit;
-                    if (w1_encode_enable) begin
-                        acc   <= emit ? (acc_nxt >> 64)    : acc_nxt;
-                        cnt8  <= emit ? (cnt8_base - 3'd5) : (cnt8_base + 3'd3);
-                        if (emit) w1_88 <= acc_nxt[63:0];
-                    end
-                end
-            end
-
-            always_comb begin
-                w1_o      = gamma2_88_i ? w1_88        : w1_32;
-                buffer_en = gamma2_88_i ? buffer_en_88 : buffer_en_32;
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            acc          <= '0;
+            cnt8         <= '0;
+            w1_88        <= '0;
+            buffer_en_88 <= 1'b0;
+        end
+        else if (zeroize) begin
+            acc          <= '0;
+            cnt8         <= '0;
+            w1_88        <= '0;
+            buffer_en_88 <= 1'b0;
+        end
+        else begin
+            buffer_en_88 <= w1_encode_enable & emit;
+            if (w1_encode_enable) begin
+                acc   <= emit ? (acc_nxt >> 64)    : acc_nxt;
+                cnt8  <= emit ? (cnt8_base - 3'd5) : (cnt8_base + 3'd3);
+                if (emit) w1_88 <= acc_nxt[63:0];
             end
         end
-        else begin : gen_w1_32_only
-            always_comb begin
-                w1_o      = w1_32;
-                buffer_en = buffer_en_32;
-            end
-        end
-    endgenerate
+    end
+
+    always_comb begin
+        w1_o      = gamma2_88_i ? w1_88        : w1_32;
+        buffer_en = gamma2_88_i ? buffer_en_88 : buffer_en_32;
+    end
 
 endmodule

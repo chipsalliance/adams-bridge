@@ -69,15 +69,13 @@ package abr_sampler_pkg;
   //a 2.8x margin against the 1.875x the category-5 eta = 2 path enjoys.
   //See docs/AdamsBridge_MLDSA.md, "Masked-Keccak PISO stall (constant-time)".
   parameter REJB_NUM_SAMPLERS_ETA4      = 20;
-  parameter REJB_NUM_SAMPLERS_MAX       = ABR_NEED_ETA4 ? REJB_NUM_SAMPLERS_ETA4
-                                                        : REJB_NUM_SAMPLERS;
+  parameter REJB_NUM_SAMPLERS_MAX       = REJB_NUM_SAMPLERS_ETA4;
   parameter REJB_PISO_OUTPUT_RATE_ETA4  = REJB_NUM_SAMPLERS_ETA4*REJB_SAMPLE_W;
   parameter REJB_PISO_OUTPUT_RATE_MAX   = REJB_NUM_SAMPLERS_MAX*REJB_SAMPLE_W;
   //The eta = 4 drain is slower per PISO word, so the first Keccak state must be
   //held longer before the second one is guaranteed to be in flight.
   parameter REJB_MASKED_KECCAK_HOLD_ETA4 = 85;
-  parameter REJB_MASKED_KECCAK_HOLD_MAX  = ABR_NEED_ETA4 ? REJB_MASKED_KECCAK_HOLD_ETA4
-                                                         : REJB_MASKED_KECCAK_HOLD_MASKED;
+  parameter REJB_MASKED_KECCAK_HOLD_MAX  = REJB_MASKED_KECCAK_HOLD_ETA4;
   //Lane count and HOLD together make the eta = 4 activation length constant only
   //while two Keccak states (544 half bytes) cover the 256 coefficients a
   //polynomial needs. At p = 9/16 that fails with probability

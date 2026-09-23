@@ -92,7 +92,7 @@ class ML_KEM_512_encaps_decaps_KATs_sequence extends mldsa_bench_sequence_base;
       if (status != UVM_IS_OK)
         `uvm_error("REG_READ_FAIL", "Failed to read MLKEM_STATUS");
       if (data[2])
-        `uvm_fatal("MLKEM_ERROR", $sformatf("MLKEM_STATUS.ERROR asserted during %s (status=%0h). ML-KEM-512 likely not enabled at elaboration.", what, data));
+        `uvm_fatal("MLKEM_ERROR", $sformatf("MLKEM_STATUS.ERROR asserted during %s (status=%0h).", what, data));
       valid = data[1];
     end
   endtask

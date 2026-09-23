@@ -1287,7 +1287,7 @@ always_comb kv_mlkem_msg_write_data = '0;
   //driven as two phases so the control has no straddle special case; the
   //phase whose byte strobe is empty is simply a no-op write.
   //-----------------------------------------------------------------------
-  always_comb z18_mode = ABR_NEED_GAMMA1_17 & mldsa_gamma1_17_o;
+  always_comb z18_mode = mldsa_gamma1_17_o;
   always_comb api_sig_z_index = api_sig_addr - mldsa_sig_z_base;
   //(x*3641)>>15 is exactly x/9 for every 10 bit x, checked exhaustively.
   always_comb z18_q_mult = 23'(api_sig_z_index) * 23'd3641;
@@ -1930,8 +1930,8 @@ always_comb kv_mlkem_msg_write_data = '0;
                                   sampler_busy_i | ntt_busy;
 
 always_comb begin
-  //A reserved encoding, or a parameter set that was not enabled at elaboration
-  //time, must abort the command rather than run it on the wrong datapath.
+  //A reserved encoding must abort the command rather than run it on the wrong
+  //datapath.
   param_set_unsupported = ((|mldsa_cmd_reg) & ~mldsa_param_set_supported(mldsa_param_set_req)) |
                           ((|mlkem_cmd_reg) & ~mlkem_param_set_supported(mlkem_param_set_req));
   error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure |
@@ -2229,9 +2229,9 @@ end
   always_comb mldsa_eta_o     = 4'(mldsa_eta_of(mldsa_param_set));
   always_comb mldsa_omega_o   = 8'(mldsa_omega_of(mldsa_param_set));
   always_comb mldsa_tau_o     = 8'(mldsa_tau_of(mldsa_param_set));
-  always_comb mldsa_eta4_o    = ABR_NEED_ETA4 & (mldsa_param_set == MLDSA_PARAM_65);
-  always_comb mldsa_gamma2_88_o = ABR_NEED_GAMMA2_88 & (mldsa_param_set == MLDSA_PARAM_44);
-  always_comb mldsa_gamma1_17_o = ABR_NEED_GAMMA1_17 & (mldsa_param_set == MLDSA_PARAM_44);
+  always_comb mldsa_eta4_o    = (mldsa_param_set == MLDSA_PARAM_65);
+  always_comb mldsa_gamma2_88_o = (mldsa_param_set == MLDSA_PARAM_44);
+  always_comb mldsa_gamma1_17_o = (mldsa_param_set == MLDSA_PARAM_44);
   //FIPS 203 K-PKE.KeyGen draws both s and e with eta_1, but K-PKE.Encrypt draws
   //y with eta_1 and e1/e2 with eta_2. ML-KEM-512 is the only set where the two
   //differ (eta_1 = 3, eta_2 = 2); at ML-KEM-768/1024 both are 2, so a single
@@ -2246,7 +2246,7 @@ end
                                    (abr_instr.opcode.mode.sampler_mode == ABR_CBD_SAMPLER) &
                                    (abr_instr.operand1 == MLKEM_R_ID) &
                                    (abr_instr.imm >= ABR_IMM_WIDTH'(mlkem_k_of(mlkem_param_set)));
-  always_comb mlkem_eta3_o      = ABR_NEED_CBD3 & (mlkem_param_set == MLKEM_PARAM_512) &
+  always_comb mlkem_eta3_o      = (mlkem_param_set == MLKEM_PARAM_512) &
                                   ~mlkem_cbd_eta2_row;
 
   always_comb begin
@@ -2285,8 +2285,8 @@ end
   //ML-KEM-1024 is the identity mapping, so the ROM stays untouched.
   function automatic compress_mode_t mlkem_cmp_mode(input logic [2:0] rom_mode);
     case (rom_mode)
-      compress11 : mlkem_cmp_mode = ABR_NEED_DUDV_10_4 & (mlkem_param_set != MLKEM_PARAM_1024) ? compress10 : compress11;
-      compress5  : mlkem_cmp_mode = ABR_NEED_DUDV_10_4 & (mlkem_param_set != MLKEM_PARAM_1024) ? compress4  : compress5;
+      compress11 : mlkem_cmp_mode = (mlkem_param_set != MLKEM_PARAM_1024) ? compress10 : compress11;
+      compress5  : mlkem_cmp_mode = (mlkem_param_set != MLKEM_PARAM_1024) ? compress4  : compress5;
       default    : mlkem_cmp_mode = rom_mode;
     endcase
   endfunction

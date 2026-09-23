@@ -35,12 +35,7 @@ addrmap abr_reg {
     reg {
         name = "MLDSA component name register type definition";
         desc = "Two 32-bit read-only registers representing of the name
-                of MLDSA component. Reads back \"MLDSA\", space padded to eight
-                bytes.
-                [br] NAME identifies the algorithm, not a parameter set: the core
-                [br] implements every ML-DSA parameter set, so the string does not
-                [br] change with MLDSA_CTRL.PARAM_SET. Read PARAM_SET to learn which
-                [br] set is selected.";
+                of MLDSA component.";
 
         default sw = r;
         default hw = w;
@@ -91,12 +86,9 @@ addrmap abr_reg {
                 [br]            01 for ML-DSA-44 (category 2)
                 [br]            10 for ML-DSA-65 (category 3)
                 [br]            11 reserved
-                [br] The reset value selects ML-DSA-87, so software that is unaware of
-                [br] this field keeps the category 5 behaviour.
                 [br] Hardware latches this field when a command starts and holds it for
                 [br] the whole operation, so it cannot be changed mid-operation.
-                [br] Selecting a reserved encoding, or a parameter set that was not
-                [br] enabled at elaboration time, sets MLDSA_STATUS.ERROR and the
+                [br] Selecting a reserved encoding sets MLDSA_STATUS.ERROR and the
                 [br] command does not run."; swwe = abr_ready; hwclr;} PARAM_SET[2] = 2'b0;
     
     } MLDSA_CTRL;
@@ -186,13 +178,7 @@ addrmap abr_reg {
         name = "MLDSA component message register type definition";
         desc = "16 32-bit registers storing the message.
                 The message can be a fixed size of 512-bit value in [0 : 2^512-1].
-                [br]
-                [br] The hardware signs and verifies the pure (non pre-hashed)
-                [br] variant of FIPS 204 Algorithms 2 and 3, so what is actually
-                [br] absorbed is M' = 0x00 || 0x00 || M, i.e. the domain
-                [br] separator byte 0x00 for the pure variant followed by a
-                [br] context length of 0x00 (empty context), then the message
-                [br] written here. Software writes only M; the two prefix bytes
+                [br] Software writes only M; the two prefix bytes
                 [br] are prepended by hardware and must not be included.
                 [br] This is identical for every ML-DSA parameter set.";
 
@@ -332,12 +318,7 @@ addrmap abr_reg {
     reg {
         name = "MLKEM component name register type definition";
         desc = "Two 32-bit read-only registers representing of the name
-                of MLKEM component. Reads back \"MLKEM\", space padded to eight
-                bytes.
-                [br] NAME identifies the algorithm, not a parameter set: the core
-                [br] implements every ML-KEM parameter set, so the string does not
-                [br] change with MLKEM_CTRL.PARAM_SET. Read PARAM_SET to learn which
-                [br] set is selected.";
+                of MLKEM component.";
 
         default sw = r;
         default hw = w;
@@ -382,14 +363,9 @@ addrmap abr_reg {
                 [br]            01 for ML-KEM-512 (category 1)
                 [br]            10 for ML-KEM-768 (category 3)
                 [br]            11 reserved
-                [br] The reset value selects ML-KEM-1024, so software that is unaware of
-                [br] this field keeps the category 5 behaviour.
-                [br] There is no ML-KEM parameter set at category 2, which is why this
-                [br] field is per algorithm rather than a shared security level.
                 [br] Hardware latches this field when a command starts and holds it for
                 [br] the whole operation, so it cannot be changed mid-operation.
-                [br] Selecting a reserved encoding, or a parameter set that was not
-                [br] enabled at elaboration time, sets MLKEM_STATUS.ERROR and the
+                [br] Selecting a reserved encoding sets MLKEM_STATUS.ERROR and the
                 [br] command does not run."; swwe = abr_ready; hwclr;} PARAM_SET[2] = 2'b0;
     
     } MLKEM_CTRL;

@@ -76,7 +76,7 @@ module sigencode_z_top
     logic gamma1_17_gated;
 
     //Constant folds to 0 when ML-DSA-44 is not built in.
-    always_comb gamma1_17_gated = ABR_NEED_GAMMA1_17 & gamma1_17_i;
+    always_comb gamma1_17_gated = gamma1_17_i;
 
 
     // State Machine

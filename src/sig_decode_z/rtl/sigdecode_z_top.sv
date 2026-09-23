@@ -75,7 +75,7 @@ module sigdecode_z_top
     logic gamma1_17_gated;
 
     //Constant folds to 0 when ML-DSA-44 is not built in.
-    always_comb gamma1_17_gated = ABR_NEED_GAMMA1_17 & gamma1_17_i;
+    always_comb gamma1_17_gated = gamma1_17_i;
 
     //Only the active l polynomials of z are decoded; the remaining cat-5 sized
     //slots are left untouched. l is public, so this bound is not secret dependent.

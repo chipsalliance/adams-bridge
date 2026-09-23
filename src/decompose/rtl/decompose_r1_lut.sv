@@ -43,7 +43,7 @@ module decompose_r1_lut
     always_comb begin
         r1_m32       = '0;
         r_corner_m32 = 1'b1;
-        for (int i = MLDSA_M_32-1; i >= 0; i--) begin
+        for (int i = MLDSA_W1_MOD_32-1; i >= 0; i--) begin
             if (r <= ((2*i)+1)*MLDSA_GAMMA2_32) begin
                 r1_m32       = MLDSA_W1_COEFF_W'(i);
                 r_corner_m32 = 1'b0;
@@ -51,35 +51,25 @@ module decompose_r1_lut
         end
     end
 
-    generate
-        if (ABR_NEED_GAMMA2_88) begin : gen_m88
-            //44-bucket chain, only elaborated when ML-DSA-44 is enabled.
-            logic [MLDSA_W1_COEFF_W-1:0] r1_m88;
-            logic                        r_corner_m88;
+    //44-bucket chain for ML-DSA-44.
+    logic [MLDSA_W1_COEFF_W-1:0] r1_m88;
+    logic                        r_corner_m88;
 
-            always_comb begin
-                r1_m88       = '0;
-                r_corner_m88 = 1'b1;
-                for (int i = MLDSA_M_88-1; i >= 0; i--) begin
-                    if (r <= ((2*i)+1)*MLDSA_GAMMA2_88) begin
-                        r1_m88       = MLDSA_W1_COEFF_W'(i);
-                        r_corner_m88 = 1'b0;
-                    end
-                end
-            end
-
-            always_comb begin
-                r1       = gamma2_88_i ? r1_m88       : r1_m32;
-                r_corner = gamma2_88_i ? r_corner_m88 : r_corner_m32;
+    always_comb begin
+        r1_m88       = '0;
+        r_corner_m88 = 1'b1;
+        for (int i = MLDSA_W1_MOD_88-1; i >= 0; i--) begin
+            if (r <= ((2*i)+1)*MLDSA_GAMMA2_88) begin
+                r1_m88       = MLDSA_W1_COEFF_W'(i);
+                r_corner_m88 = 1'b0;
             end
         end
-        else begin : gen_m32_only
-            always_comb begin
-                r1       = r1_m32;
-                r_corner = r_corner_m32;
-            end
-        end
-    endgenerate
+    end
+
+    always_comb begin
+        r1       = gamma2_88_i ? r1_m88       : r1_m32;
+        r_corner = gamma2_88_i ? r_corner_m88 : r_corner_m32;
+    end
 
     always_comb z_nez = (r1 != 'h0);
 

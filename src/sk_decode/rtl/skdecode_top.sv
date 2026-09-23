@@ -335,44 +335,31 @@ module skdecode_top
     );
 
     //At eta = 4 the eight packed fields are 4 bits each, so one 32-bit key memory
-    //word is consumed per beat and no repacking is needed. Elaborated only when a
-    //parameter set with eta = 4 is enabled, so category 5 pays nothing for it.
-    generate
-        if (ABR_NEED_ETA4) begin : gen_s1s2_eta4_buffer
-            logic [7:0][3:0] s1s2_buf_data_eta4;
-            logic s1s2_data_valid_eta4;
+    //word is consumed per beat and no repacking is needed.
+    logic [7:0][3:0] s1s2_buf_data_eta4;
+    logic s1s2_data_valid_eta4;
 
-            abr_rd_lat_buffer #(
-                .WR_WIDTH(32),
-                .RD_WIDTH(32),
-                .BUFFER_DEPTH(64)
-            ) skdec_s1s2_eta4_rd_lat_buffer_inst (
-                .clk(clk),
-                .rst_b(reset_n),
-                .zeroize(zeroize),
-                .data_i(keymem_rd_data_reg[0]),
-                .data_valid_i(keymem_rd_data_valid_f & s1s2_enable & eta4),
-                .data_o(s1s2_buf_data_eta4),
-                .data_valid_o(s1s2_data_valid_eta4)
-            );
+    abr_rd_lat_buffer #(
+        .WR_WIDTH(32),
+        .RD_WIDTH(32),
+        .BUFFER_DEPTH(64)
+    ) skdec_s1s2_eta4_rd_lat_buffer_inst (
+        .clk(clk),
+        .rst_b(reset_n),
+        .zeroize(zeroize),
+        .data_i(keymem_rd_data_reg[0]),
+        .data_valid_i(keymem_rd_data_valid_f & s1s2_enable & eta4),
+        .data_o(s1s2_buf_data_eta4),
+        .data_valid_o(s1s2_data_valid_eta4)
+    );
 
-            always_comb begin
-                s1s2_data_valid = eta4 ? s1s2_data_valid_eta4 : s1s2_data_valid_eta2;
-                for (int i = 0; i < 8; i++) begin
-                    s1s2_field_data[i] = eta4 ? s1s2_buf_data_eta4[i]
-                                              : {1'b0, s1s2_buf_data[i]};
-                end
-            end
+    always_comb begin
+        s1s2_data_valid = eta4 ? s1s2_data_valid_eta4 : s1s2_data_valid_eta2;
+        for (int i = 0; i < 8; i++) begin
+            s1s2_field_data[i] = eta4 ? s1s2_buf_data_eta4[i]
+                                      : {1'b0, s1s2_buf_data[i]};
         end
-        else begin : gen_s1s2_eta2_only
-            always_comb begin
-                s1s2_data_valid = s1s2_data_valid_eta2;
-                for (int i = 0; i < 8; i++) begin
-                    s1s2_field_data[i] = {1'b0, s1s2_buf_data[i]};
-                end
-            end
-        end
-    endgenerate
+    end
 
     skdecode_ctrl
     skdecode_ctrl_inst (

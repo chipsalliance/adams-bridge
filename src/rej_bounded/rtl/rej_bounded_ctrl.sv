@@ -25,8 +25,7 @@ module rej_bounded_ctrl
   //Lane count for the eta = 4 bank. Sized in abr_sampler_pkg and passed in so
   //this module stays free of a dependency on the sampler package.
   ,parameter REJ_NUM_SAMPLERS_ETA4 = 20
-  ,localparam REJ_NUM_SAMPLERS_MAX  = ABR_NEED_ETA4 ? REJ_NUM_SAMPLERS_ETA4
-                                                    : REJ_NUM_SAMPLERS
+  ,localparam REJ_NUM_SAMPLERS_MAX  = REJ_NUM_SAMPLERS_ETA4
   )
   (
   input logic clk,
@@ -58,7 +57,7 @@ module rej_bounded_ctrl
   logic                                            eta2_buffer_valid;
   logic [REJ_VLD_SAMPLES-1:0][ETA2_BUFFER_W-1:0]   eta2_buffer;
 
-  always_comb eta2_valid_i = data_valid_i & (ABR_NEED_ETA4 ? ~eta4_i : 1'b1);
+  always_comb eta2_valid_i = data_valid_i & ~eta4_i;
 
   for (genvar inst_g = 0; inst_g < REJ_NUM_SAMPLERS; inst_g++) begin : rej_bounded_inst
     rej_bounded2 #(
@@ -110,47 +109,41 @@ module rej_bounded_ctrl
   logic                                            eta4_buffer_valid;
   logic [REJ_VLD_SAMPLES-1:0][ETA4_BUFFER_W-1:0]   eta4_buffer;
 
-  if (ABR_NEED_ETA4) begin : g_eta4_bank
-    logic                                                 eta4_valid_i;
-    logic [REJ_NUM_SAMPLERS_ETA4-1:0]                     eta4_sample_valid;
-    logic [REJ_NUM_SAMPLERS_ETA4-1:0][ETA4_BUFFER_W-1:0]  eta4_buffer_data;
+  logic                                                 eta4_valid_i;
+  logic [REJ_NUM_SAMPLERS_ETA4-1:0]                     eta4_sample_valid;
+  logic [REJ_NUM_SAMPLERS_ETA4-1:0][ETA4_BUFFER_W-1:0]  eta4_buffer_data;
 
-    always_comb eta4_valid_i = data_valid_i & eta4_i;
+  always_comb eta4_valid_i = data_valid_i & eta4_i;
 
-    for (genvar inst_g = 0; inst_g < REJ_NUM_SAMPLERS_ETA4; inst_g++) begin : rej_bounded4_inst
-      rej_bounded4 #(
-        .REJ_SAMPLE_W(REJ_SAMPLE_W),
-        .REJ_VALUE(REJ_VALUE_ETA4)
-      ) rej_bounded4_i (
-        .valid_i(eta4_valid_i),
-        .data_i(data_i[inst_g]),
+  for (genvar inst_g = 0; inst_g < REJ_NUM_SAMPLERS_ETA4; inst_g++) begin : rej_bounded4_inst
+    rej_bounded4 #(
+      .REJ_SAMPLE_W(REJ_SAMPLE_W),
+      .REJ_VALUE(REJ_VALUE_ETA4)
+    ) rej_bounded4_i (
+      .valid_i(eta4_valid_i),
+      .data_i(data_i[inst_g]),
 
-        .valid_o(eta4_sample_valid[inst_g]),
-        .data_o(eta4_buffer_data[inst_g])
-      );
-    end
-
-    abr_sample_buffer #(
-      .NUM_WR(REJ_NUM_SAMPLERS_ETA4),
-      .NUM_RD(REJ_VLD_SAMPLES),
-      .BUFFER_DATA_W(ETA4_BUFFER_W)
-    ) mldsa_sample_buffer_eta4_i (
-      .clk(clk),
-      .rst_b(rst_b),
-      .zeroize(zeroize),
-      //input data
-      .data_valid_i(eta4_sample_valid),
-      .data_i(eta4_buffer_data),
-      .buffer_full_o(eta4_buffer_full),
-      //output data
-      .data_valid_o(eta4_buffer_valid),
-      .data_o(eta4_buffer)
+      .valid_o(eta4_sample_valid[inst_g]),
+      .data_o(eta4_buffer_data[inst_g])
     );
-  end else begin : g_no_eta4_bank
-    always_comb eta4_buffer_full  = 1'b0;
-    always_comb eta4_buffer_valid = 1'b0;
-    always_comb eta4_buffer       = '0;
   end
+
+  abr_sample_buffer #(
+    .NUM_WR(REJ_NUM_SAMPLERS_ETA4),
+    .NUM_RD(REJ_VLD_SAMPLES),
+    .BUFFER_DATA_W(ETA4_BUFFER_W)
+  ) mldsa_sample_buffer_eta4_i (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize),
+    //input data
+    .data_valid_i(eta4_sample_valid),
+    .data_i(eta4_buffer_data),
+    .buffer_full_o(eta4_buffer_full),
+    //output data
+    .data_valid_o(eta4_buffer_valid),
+    .data_o(eta4_buffer)
+  );
 
   //--------------------------------------------------------------------------
   // Bank select. eta4_i is the public parameter set, never secret material,
@@ -160,7 +153,7 @@ module rej_bounded_ctrl
   logic [REJ_VLD_SAMPLES-1:0][ETA4_BUFFER_W-1:0] rej_buffer;
 
   always_comb begin
-    if (ABR_NEED_ETA4 & eta4_i) begin
+    if (eta4_i) begin
       data_hold_o      = eta4_buffer_full;
       rej_buffer_valid = eta4_buffer_valid;
       for (int sample = 0; sample < REJ_VLD_SAMPLES; sample++)
@@ -180,7 +173,7 @@ module rej_bounded_ctrl
   //  eta=4: 9 outcomes,  4 - b         (FIPS 204 Alg 15)
   always_comb begin
     for (int sample = 0; sample < REJ_VLD_SAMPLES; sample++) begin
-      if (ABR_NEED_ETA4 && eta4_i) begin
+      if (eta4_i) begin
         unique case (rej_buffer[sample])
           'd0 : data_o[sample] = 4;
           'd1 : data_o[sample] = 3;

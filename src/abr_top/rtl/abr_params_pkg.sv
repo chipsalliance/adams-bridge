@@ -23,49 +23,14 @@
 `ifndef ABR_PARAMS_PKG
 `define ABR_PARAMS_PKG
 
-`include "abr_config_defines.svh"
-
 package abr_params_pkg;
 
   //----------------------------------------------------------------
-  // Supported parameter sets
+  // Parameter sets
   //
-  // Driven by the `define switches in abr_config_defines.svh. These
-  // decide what is *built*; the active set within the enabled ones is
-  // selected at runtime via the PARAM_SET register field.
+  // The core implements every ML-DSA and ML-KEM parameter set. The
+  // active set is selected at runtime via the PARAM_SET register field.
   //----------------------------------------------------------------
-  `ifdef ABR_MLDSA_44_ENABLED
-  parameter bit MLDSA_44_EN   = 1'b1;
-  `else
-  parameter bit MLDSA_44_EN   = 1'b0;
-  `endif
-  `ifdef ABR_MLDSA_65_ENABLED
-  parameter bit MLDSA_65_EN   = 1'b1;
-  `else
-  parameter bit MLDSA_65_EN   = 1'b0;
-  `endif
-  `ifdef ABR_MLDSA_87_ENABLED
-  parameter bit MLDSA_87_EN   = 1'b1;
-  `else
-  parameter bit MLDSA_87_EN   = 1'b0;
-  `endif
-
-  `ifdef ABR_MLKEM_512_ENABLED
-  parameter bit MLKEM_512_EN  = 1'b1;
-  `else
-  parameter bit MLKEM_512_EN  = 1'b0;
-  `endif
-  `ifdef ABR_MLKEM_768_ENABLED
-  parameter bit MLKEM_768_EN  = 1'b1;
-  `else
-  parameter bit MLKEM_768_EN  = 1'b0;
-  `endif
-  `ifdef ABR_MLKEM_1024_ENABLED
-  parameter bit MLKEM_1024_EN = 1'b1;
-  `else
-  parameter bit MLKEM_1024_EN = 1'b0;
-  `endif
-
   //Runtime parameter set encodings. RSVD must be rejected by abr_ctrl.
   typedef enum logic [1:0] {
     MLDSA_PARAM_44   = 2'b00,
@@ -103,26 +68,19 @@ package abr_params_pkg;
     endcase
   endfunction
 
-  //A parameter set is usable only if it was enabled at elaboration time. An
-  //integrator who comments a set out must get a clean error, not silent
-  //execution on the wrong datapath.
+  //Every defined parameter set is implemented; only the reserved encoding is
+  //rejected.
   function automatic bit mldsa_param_set_supported(input mldsa_param_set_e s);
-    case (s)
-      MLDSA_PARAM_44: mldsa_param_set_supported = MLDSA_44_EN;
-      MLDSA_PARAM_65: mldsa_param_set_supported = MLDSA_65_EN;
-      MLDSA_PARAM_87: mldsa_param_set_supported = MLDSA_87_EN;
-      default       : mldsa_param_set_supported = 1'b0;
-    endcase
+    mldsa_param_set_supported = (s != MLDSA_PARAM_RSVD);
   endfunction
 
   function automatic bit mlkem_param_set_supported(input mlkem_param_set_e s);
-    case (s)
-      MLKEM_PARAM_512 : mlkem_param_set_supported = MLKEM_512_EN;
-      MLKEM_PARAM_768 : mlkem_param_set_supported = MLKEM_768_EN;
-      MLKEM_PARAM_1024: mlkem_param_set_supported = MLKEM_1024_EN;
-      default         : mlkem_param_set_supported = 1'b0;
-    endcase
+    mlkem_param_set_supported = (s != MLKEM_PARAM_RSVD);
   endfunction
+
+  //gamma2 = (q-1)/GAMMA2_DIV. FIPS 204 Table 1: 32 for ML-DSA-65/87, 88 for ML-DSA-44.
+  parameter int MLDSA_GAMMA2_DIV_32 = 32;
+  parameter int MLDSA_GAMMA2_DIV_88 = 88;
 
   //Per-set dimensions (FIPS 204 Table 1 / FIPS 203 Table 2)
   function automatic int mldsa_k_of(mldsa_param_set_e s);
@@ -195,7 +153,8 @@ package abr_params_pkg;
 
   //gamma2 divisor: (q-1)/88 for ML-DSA-44, (q-1)/32 otherwise
   function automatic int mldsa_gamma2_div_of(mldsa_param_set_e s);
-    mldsa_gamma2_div_of = (s == MLDSA_PARAM_44) ? 88 : 32;
+    mldsa_gamma2_div_of = (s == MLDSA_PARAM_44) ? MLDSA_GAMMA2_DIV_88
+                                                : MLDSA_GAMMA2_DIV_32;
   endfunction
 
   //beta = tau * eta (FIPS 204 Table 1)
@@ -235,12 +194,10 @@ package abr_params_pkg;
   parameter MLDSA_Q_WIDTH = $clog2(MLDSA_Q) + 1; //24
   parameter REG_SIZE = 24;
   parameter MLDSA_N = 256;
-  parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/32;
-  // gamma2 takes two values across the parameter sets. m = (q-1)/(2*gamma2) is
-  // the number of high-bit buckets and therefore the range of a w1 coefficient.
-  // ML-DSA-65/87: gamma2 = (q-1)/32, m = 16.  ML-DSA-44: gamma2 = (q-1)/88, m = 44.
-  parameter MLDSA_GAMMA2_32 = (MLDSA_Q-1)/32;
-  parameter MLDSA_GAMMA2_88 = (MLDSA_Q-1)/88;
+  parameter MLDSA_GAMMA2 = (MLDSA_Q-1)/MLDSA_GAMMA2_DIV_32;
+  //gamma2 takes two values across the parameter sets.
+  parameter MLDSA_GAMMA2_32 = (MLDSA_Q-1)/MLDSA_GAMMA2_DIV_32;
+  parameter MLDSA_GAMMA2_88 = (MLDSA_Q-1)/MLDSA_GAMMA2_DIV_88;
 
   function automatic int mldsa_gamma1_of(mldsa_param_set_e s);
     mldsa_gamma1_of = 1 << mldsa_gamma1_w_of(s);
@@ -250,20 +207,22 @@ package abr_params_pkg;
     mldsa_gamma2_of = (MLDSA_Q-1)/mldsa_gamma2_div_of(s);
   endfunction
 
-  parameter int MLDSA_M_32  = 16;
-  parameter int MLDSA_M_88  = 44;
-  //Largest k/l over the ENABLED parameter sets. All storage is sized by these,
-  //so a lower set is a strict prefix and costs no extra memory.
-  parameter MLDSA_K = MLDSA_87_EN ? 8 : MLDSA_65_EN ? 6 : 4;
+  //Number of HighBits buckets m = (q-1)/(2*gamma2) = GAMMA2_DIV/2. A w1
+  //coefficient lies in [0, m-1] and UseHint is modulo m (FIPS 204 Alg. 40).
+  parameter int MLDSA_W1_MOD_32 = MLDSA_GAMMA2_DIV_32/2; //16
+  parameter int MLDSA_W1_MOD_88 = MLDSA_GAMMA2_DIV_88/2; //44
+  //Storage is sized for the largest parameter set; a lower set is a strict
+  //prefix of it and costs no extra memory.
+  parameter MLDSA_K = 8;
   //Named _MAX to avoid colliding with the module-local MLDSA_L parameters in
   //sig{en,de}code_z_defines_pkg, which are wildcard-imported alongside this pkg.
-  parameter MLDSA_L_MAX = MLDSA_87_EN ? 7 : MLDSA_65_EN ? 5 : 4;
+  parameter MLDSA_L_MAX = 7;
   parameter MLDSA_D = 13;
   parameter MLDSA_ETA = 2;
   parameter MLDSA_ETA_W = 3;
-  //Widest eta over the enabled sets: bitlen(2*eta) = 3 for eta=2, 4 for eta=4
-  parameter MLDSA_ETA_MAX = MLDSA_65_EN ? 4 : 2;
-  parameter MLDSA_ETA_W_MAX = MLDSA_65_EN ? 4 : 3;
+  //Widest eta over the parameter sets: bitlen(2*eta) = 3 for eta=2, 4 for eta=4
+  parameter MLDSA_ETA_MAX = 4;
+  parameter MLDSA_ETA_W_MAX = 4;
   parameter [10:0][7:0] PREHASH_OID = 88'h0302040365014886600906;
 
   parameter MLKEM_NTT_N = 128;
@@ -272,20 +231,10 @@ package abr_params_pkg;
   parameter MLKEM_Q = 12'd3329;
   parameter MLKEM_Q_WIDTH = $clog2(MLKEM_Q); //12
   parameter MLKEM_N = 256;
-  parameter MLKEM_K = MLKEM_1024_EN ? 4 : MLKEM_768_EN ? 3 : 2;
+  parameter MLKEM_K = 4;
   parameter MLKEM_ETA = 2;
   //eta1 = 3 only for ML-KEM-512; eta2 is always 2
-  parameter MLKEM_ETA1_MAX = MLKEM_512_EN ? 3 : 2;
-
-  //----------------------------------------------------------------
-  // Class-C guards: arithmetic that exists ONLY for a given set.
-  // Each maps to exactly one enable flag, so area is attributable.
-  //----------------------------------------------------------------
-  parameter bit ABR_NEED_ETA4      = MLDSA_65_EN;                 //rej_bounded4
-  parameter bit ABR_NEED_GAMMA2_88 = MLDSA_44_EN;                 //decompose 88-way
-  parameter bit ABR_NEED_GAMMA1_17 = MLDSA_44_EN;                 //exp_mask 2^17
-  parameter bit ABR_NEED_CBD3      = MLKEM_512_EN;                //cbd_sampler eta1=3
-  parameter bit ABR_NEED_DUDV_10_4 = MLKEM_512_EN | MLKEM_768_EN; //compress {16,40}
+  parameter MLKEM_ETA1_MAX = 3;
 
   parameter COEFF_PER_CLK = 4;
 
@@ -310,19 +259,19 @@ package abr_params_pkg;
   parameter ABR_MEM_W1_DEPTH = 512;
   parameter ABR_MEM_W1_ADDR_W = $clog2(ABR_MEM_W1_DEPTH);
   // w1 memory holds the MakeHint boolean (z != z') for 4 coefficients per word,
-  // one bit each. It is independent of gamma2 and must stay 4 for every set.
+  // one bit each. It is independent of gamma2 and is 4 for every set.
   parameter ABR_MEM_W1_DATA_W = 4;
-  // Bit width of a single encoded w1 coefficient. m = (q-1)/(2*gamma2) is 16 for
-  // ML-DSA-65/87 (4 bits) and 44 for ML-DSA-44 (6 bits).
-  parameter MLDSA_W1_COEFF_W   = ABR_NEED_GAMMA2_88 ? 6 : 4;
+  // Bit width of a single encoded w1 coefficient: 4 bits for m = 16
+  // (ML-DSA-65/87) and 6 bits for m = 44 (ML-DSA-44).
+  parameter MLDSA_W1_COEFF_W   = 6;
   // omega is NOT monotonic in the security level (44:80, 65:55, 87:75), so the
-  // hint-array widths must be sized to the max over the ENABLED sets.
-  parameter int MLDSA_OMEGA_MAX = MLDSA_44_EN ? 80 : (MLDSA_87_EN ? 75 : 55);
+  // hint-array widths are sized to the max over the parameter sets.
+  parameter int MLDSA_OMEGA_MAX = 80;
 
   //Size of the encoded h field of the signature, (omega + k) bytes. This is not
-  //MLDSA_OMEGA_MAX + k_max: the largest omega (80, ML-DSA-44) and the largest k
-  //(8, ML-DSA-87) never occur together. Per set: 44 -> 84, 65 -> 61, 87 -> 83.
-  parameter int MLDSA_SIG_H_BYTES_MAX = MLDSA_44_EN ? 84 : (MLDSA_87_EN ? 83 : 61);
+  //MLDSA_OMEGA_MAX + MLDSA_K: the largest omega (80, ML-DSA-44) and the largest
+  //k (8, ML-DSA-87) never occur together. Per set: 44 -> 84, 65 -> 61, 87 -> 83.
+  parameter int MLDSA_SIG_H_BYTES_MAX = 84;
   
   parameter ABR_MEM_MAX_DEPTH = ABR_MEM_INST2_DEPTH;
   parameter ABR_MEM_ADDR_WIDTH = $clog2(ABR_MEM_MAX_DEPTH) + 3; //+ 3 bits for bank selection
@@ -343,27 +292,13 @@ package abr_params_pkg;
     MLKEM_KEYGEN_DEC  = 3'b100
   } mlkem_cmd_e;
 
-  //Core identity. The core now implements every ML-DSA and ML-KEM parameter
-  //set, so the NAME registers name the *algorithm*, not one parameter set.
-  //Reporting "MLDSA-87" while running ML-DSA-44 would make the identity
-  //registers actively misleading, and reporting a different string per set
-  //would make NAME a mutable field that software has to re-read after every
-  //PARAM_SET write. Naming the algorithm avoids both.
-  //
-  //Encoding: the 64-bit value is read as NAME[0] = bits [31:0] and
-  //NAME[1] = bits [63:32]; within each 32-bit word the two 16-bit halves are
-  //swapped relative to ASCII order. "MLDSA   " therefore encodes as
-  //{32'h2020_4120, 32'h4453_4D4C} and "MLKEM   " as {32'h2020_4D20, 32'h4B45_4D4C}.
-  //Names are space padded to the full eight bytes.
-  parameter [63  : 0] MLDSA_CORE_NAME        = 64'h20204120_44534D4C; // "MLDSA   "
-  parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
-  parameter [63  : 0] MLKEM_CORE_NAME        = 64'h20204D20_4B454D4C; // "MLKEM   "
-  parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
-
-  //The NAME registers are parameter-set independent: NAME identifies the
-  //algorithm the core implements, and the core implements all of them. The
-  //active parameter set is reported by MLDSA_CTRL.PARAM_SET / MLKEM_CTRL.PARAM_SET,
-  //which is where software should read it from.
+  //NAME identifies the algorithm, not a parameter set: the core implements every
+  //parameter set, so the string does not change with PARAM_SET. Names are space
+  //padded to eight bytes.
+  parameter [63  : 0] MLDSA_CORE_NAME        = 64'h20205341_2D444D4C; // "ML-DSA  "
+  parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00000000_3000342E; // "4.0"
+  parameter [63  : 0] MLKEM_CORE_NAME        = 64'h2020454D_2D4B4D4C; // "ML-KEM  "
+  parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00000000_3000342E; // "4.0"
 
   // Implementation parameters
   parameter ABR_REG_WIDTH = 32;

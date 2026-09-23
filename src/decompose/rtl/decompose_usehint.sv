@@ -59,7 +59,7 @@ module decompose_usehint
     logic [MLDSA_W1_COEFF_W-1:0] w1_reg;
     logic hint_reg;
 
-    always_comb usehint_modulus = UH_W'(gamma2_88_i ? MLDSA_M_88      : MLDSA_M_32);
+    always_comb usehint_modulus = UH_W'(gamma2_88_i ? MLDSA_W1_MOD_88 : MLDSA_W1_MOD_32);
     always_comb gamma2_active   = REG_SIZE'(gamma2_88_i ? MLDSA_GAMMA2_88 : MLDSA_GAMMA2_32);
 
     //Delay flops

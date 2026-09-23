@@ -1,44 +1,5 @@
---- UVM Report Summary ---
-
-** Report counts by severity
-UVM_INFO :11289
-UVM_WARNING :   18
-UVM_ERROR :    0
-UVM_FATAL :    0
-** Report counts by id
-[HDL_TOP_TB]     1
-[KAT]     4
-[LOCK_MODEL]     1
-[MAP_INIT]     1
-[PREDICTOR]     4
-[PRED_RUN_EXE]     6
-[QVIP_REPORTER]     1
-[REG_READ_PASS]  5616
-[REG_WRITE]     3
-[REG_WRITE_PASS]    27
-[RNTST]     1
-[SCBD_REPORT]     3
-[SCOREBOARD]     3
-[TEST_DONE]     1
-[TEST_TOP]     1
-[UVM/FLD/SET/BSY]    18
-[VALIDATION_PASS]  5616
-$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
-$finish at simulation time 723260.000ns
-           V C S   S i m u l a t i o n   R e p o r t 
-Time: 723260000 ps
-
-Simulation Performance Summary
-==============================
-Simulation started at :  Wed Sep 23 04:16:39 2026
-Elapsed Time          :  68 sec
-CPU Time              :  64.5 sec
-Virtual memory size   :  719.7 MB
-Resident set size     :  274.4 MB
-Shared memory size    :  140.0 MB
-Private memory size   :  134.4 MB
-Major page faults     :  1511
-Machine name          :  bearcat01203
-==============================
-
-Wed Sep 23 04:17:46 2026
+=== ML_DSA_keygen_KATs_test  (/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_keygen_KATs_test/20260924.001455) ===
+11471:UVM_INFO :11289
+11472:UVM_WARNING :   18
+11473:UVM_ERROR :    0
+11474:UVM_FATAL :    0

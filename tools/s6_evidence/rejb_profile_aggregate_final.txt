@@ -1,4 +1,6 @@
-# RejBounded loop-length profiler, aggregated over the final 27-test gate
-# columns: count eta4 len spread
-    267 0 234 0
-     99 1 260 0
+# RejBounded profiler, aggregated over the 27-test gate
+# obs = start -> busy falling (constant-time claim rests on this)
+# nat = start -> sampler_done (natural loop length, pre-pad)
+eta4     count   obsmin   obsmax obsspread   natmin   natmax natspread
+0          274      236      236        0      234      234        0
+1           99      481      481        0      260      260        0

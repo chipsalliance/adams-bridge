@@ -68,8 +68,8 @@ module cbd_sampler_ctrl
         3'd0 : data_o[sample] = 0;
         3'd1 : data_o[sample] = 1;
         3'd2 : data_o[sample] = 2;
-        3'd3 : data_o[sample] = ABR_NEED_CBD3 ? 3            : '0;
-        3'd5 : data_o[sample] = ABR_NEED_CBD3 ? MLKEM_Q-3    : '0;
+        3'd3 : data_o[sample] = 3;
+        3'd5 : data_o[sample] = MLKEM_Q-3;
         3'd7 : data_o[sample] = MLKEM_Q-1;
         3'd6 : data_o[sample] = MLKEM_Q-2;
         default : data_o[sample] = '0;

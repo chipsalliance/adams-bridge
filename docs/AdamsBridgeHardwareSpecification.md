@@ -61,11 +61,12 @@ as `44 = 00`.
 
 Hardware latches `PARAM_SET` when a command starts and holds it for the whole
 operation, so it cannot be changed mid-operation. Selecting the reserved
-encoding, or a set that was not enabled at elaboration time, sets
-`<ALG>_STATUS.ERROR` and the command does not run.
+encoding sets `<ALG>_STATUS.ERROR` and the command does not run. There is no
+build-time configuration: every parameter set is always elaborated, and
+`PARAM_SET` is the only selector.
 
 **The NAME registers do not encode the parameter set.** `MLDSA_NAME` reads back
-`"MLDSA"` and `MLKEM_NAME` reads back `"MLKEM"`, space padded to eight bytes.
+`"ML-DSA"` and `MLKEM_NAME` reads back `"ML-KEM"`, space padded to eight bytes.
 NAME identifies the algorithm the core implements, and the core implements all
 of its parameter sets; embedding a level in NAME would either be a lie at five
 of the six settings, or would make a read-only identity register mutable and

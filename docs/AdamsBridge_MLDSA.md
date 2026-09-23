@@ -2607,10 +2607,9 @@ half times deeper than the bar this design already accepted.
 ML-DSA-65 keygen. RejBounded is used **only in keygen** - signing reads `s1`
 and `s2` from the secret key and never samples them - so signature and
 verification latency are completely unchanged, and no other parameter set is
-affected at all. At `eta = 2` the pad is not merely inactive, it is not
-elaborated: `g_rejb_pad` is guarded by `ABR_NEED_ETA4`, `rejb_pad_hold` is
-tied to zero, and `ABR_SAMPLER_PAD` becomes unreachable and collapses in
-synthesis.
+affected at all. At `eta = 2` the pad is inactive: `rejb_pad_hold` is gated by
+`mldsa_eta4_i`, so `ABR_SAMPLER_PAD` is never entered and the category-5 timing
+is untouched.
 
 **Guard rails.** Two assertions protect the sizing:
 
@@ -2664,12 +2663,12 @@ secret `s1`/`s2`.
 **Implementation.** The two banks are physically separate
 (`rej_bounded_ctrl`): the category-5 path keeps 8 `rej_bounded2` lanes
 and a 3-bit `abr_sample_buffer`, and the `eta = 4` path adds 20
-`rej_bounded4` lanes and a 4-bit buffer under `if (ABR_NEED_ETA4)`. The
+`rej_bounded4` lanes and a 4-bit buffer. The
 input valid of each bank is gated by `eta4_i` so the inactive bank never
 fills, and the outputs are muxed on `eta4_i`, which is the public
 parameter set and never secret material. Splitting the banks (rather than
-widening the shared one) also restores the category-5 buffer to exactly
-3 bits when ML-DSA-65 is compiled in. `abr_sampler_top` selects the
+widening the shared one) keeps the category-5 buffer at exactly
+3 bits. `abr_sampler_top` selects the
 matching PISO output rate through the new `ABR_REJB4_MODE`, so the PISO
 hands over 20 half bytes per cycle instead of 8.
 

@@ -36,8 +36,7 @@ module rej_bounded_tb
   parameter REJ_VALUE = 15;
   //eta = 4 bank lane count; must match abr_sampler_pkg::REJB_NUM_SAMPLERS_ETA4
   parameter REJ_NUM_SAMPLERS_ETA4 = 20;
-  localparam REJ_NUM_SAMPLERS_MAX = abr_params_pkg::ABR_NEED_ETA4 ?
-                                      REJ_NUM_SAMPLERS_ETA4 : REJ_NUM_SAMPLERS;
+  localparam REJ_NUM_SAMPLERS_MAX = REJ_NUM_SAMPLERS_ETA4;
   localparam REJ_VLD_SAMPLE_W = $clog2(REJ_VALUE);
   parameter PISO_BUFFER_W    = 1334;
   parameter PISO_INPUT_RATE  = 1088;

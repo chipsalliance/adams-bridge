@@ -1,43 +1,5 @@
---- UVM Report Summary ---
-
-** Report counts by severity
-UVM_INFO : 5587
-UVM_WARNING :   18
-UVM_ERROR :    0
-UVM_FATAL :    0
-** Report counts by id
-[ALL_SEQ]     1
-[HDL_TOP_TB]     1
-[LOCK_MODEL]     1
-[MAP_INIT]     3
-[PREDICTOR]     4
-[PRED_RUN_EXE]     6
-[QVIP_REPORTER]     1
-[REG_READ]  3693
-[REG_WRITE]  1867
-[RNTST]     1
-[SCBD_REPORT]     3
-[SCOREBOARD]     3
-[TEST_DONE]     1
-[TEST_TOP]     1
-[UVM/FLD/SET/BSY]    18
-[VERIFY_PASS]     1
-$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
-$finish at simulation time 4942890.000ns
-           V C S   S i m u l a t i o n   R e p o r t 
-Time: 4942890000 ps
-
-Simulation Performance Summary
-==============================
-Simulation started at :  Wed Sep 23 04:55:11 2026
-Elapsed Time          :  576 sec
-CPU Time              :  563.5 sec
-Virtual memory size   :  726.3 MB
-Resident set size     :  244.9 MB
-Shared memory size    :  114.9 MB
-Private memory size   :  169.3 MB
-Major page faults     :  2303
-Machine name          :  bronco42601
-==============================
-
-Wed Sep 23 05:04:46 2026
+=== ML_DSA_randomized_all_test  (/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_DSA_randomized_all_test/20260924.005429) ===
+5751:UVM_INFO : 5587
+5752:UVM_WARNING :   18
+5753:UVM_ERROR :    0
+5754:UVM_FATAL :    0

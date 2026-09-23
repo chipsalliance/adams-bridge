@@ -288,7 +288,7 @@ module abr_sampler_top
         zeroize_rejb |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = (ABR_NEED_ETA4 & mldsa_eta4_i) ? ABR_REJB4_MODE : ABR_REJB_MODE;
+        piso_mode = mldsa_eta4_i ? ABR_REJB4_MODE : ABR_REJB_MODE;
       end
       ABR_SAMPLE_IN_BALL: begin
         mode = abr_sha3_pkg::Shake;
@@ -485,54 +485,26 @@ endgenerate
   
 
   //Multi-rate piso.
-  //The eta = 4 RejBounded rate is an eighth mode, so it is only elaborated when
-  //ML-DSA-65 is compiled in. Keeping the seven-mode instance for every other
-  //configuration preserves the "comment the defines out and category 5 is
-  //structurally untouched" property - with NUM_MODES = 7 the code 3'b111 is out
-  //of range and clamps, exactly as it did before this change.
-  generate
-    if (ABR_NEED_ETA4) begin : g_piso_eta4
-      abr_piso_multi #(
-        .NUM_MODES(8),
-        .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-        .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
-        .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
-        .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE}),
-        .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3, REJB_PISO_OUTPUT_RATE_ETA4})
-      ) abr_piso_inst (
-        .clk(clk),
-        .rst_b(rst_b),
-        .zeroize(zeroize_piso),
-        .mode(piso_mode),
-        .valid_i(sha3_piso_dv),
-        .hold_o(sha3_state_hold),
-        .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
-        .valid_o(piso_dv),
-        .hold_i(piso_hold),
-        .data_o(piso_data)
-      );
-    end else begin : g_piso
-      abr_piso_multi #(
-        .NUM_MODES(7),
-        .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-        .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
-        .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
-        .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
-        .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3})
-      ) abr_piso_inst (
-        .clk(clk),
-        .rst_b(rst_b),
-        .zeroize(zeroize_piso),
-        .mode(piso_mode),
-        .valid_i(sha3_piso_dv),
-        .hold_o(sha3_state_hold),
-        .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
-        .valid_o(piso_dv),
-        .hold_i(piso_hold),
-        .data_o(piso_data)
-      );
-    end
-  endgenerate
+  //The eta = 4 RejBounded rate is an eighth mode.
+  abr_piso_multi #(
+    .NUM_MODES(8),
+    .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
+    .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
+    .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
+    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE}),
+    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3, REJB_PISO_OUTPUT_RATE_ETA4})
+  ) abr_piso_inst (
+    .clk(clk),
+    .rst_b(rst_b),
+    .zeroize(zeroize_piso),
+    .mode(piso_mode),
+    .valid_i(sha3_piso_dv),
+    .hold_o(sha3_state_hold),
+    .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
+    .valid_o(piso_dv),
+    .hold_i(piso_hold),
+    .data_o(piso_data)
+  );
 
   logic sha3_state_dv_q;
   logic sha3_state_dv_rise;
@@ -557,7 +529,7 @@ endgenerate
     end else begin : g_rejb_hold
       // The eta = 4 bank drains a PISO word more slowly, so it needs a longer
       // head start before the second Keccak state is guaranteed to be in flight.
-      always_comb rejb_hold_val = (ABR_NEED_ETA4 & mldsa_eta4_i)
+      always_comb rejb_hold_val = mldsa_eta4_i
                    ? $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_ETA4)
                    : $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_MASKED);
       // Load counter only on the FIRST sha3_state_dv rise per rejb activation.
@@ -597,41 +569,35 @@ endgenerate
   //before ~329 sampler cycles whatever the buffer depth, while the drain has
   //ended by 260. Only time closes this.
   //--------------------------------------------------------------------------
-  generate
-    if (ABR_NEED_ETA4) begin : g_rejb_pad
-      logic [$clog2(REJB_ETA4_FIXED_LEN+1)-1:0] rejb_pad_cnt;
-      always_ff @(posedge clk or negedge rst_b) begin
-        if (!rst_b) begin
-          rejb_pad_cnt <= '0;
-        end else if (zeroize | sampler_start_i) begin
-          rejb_pad_cnt <= '0;
-        end else if (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)) begin
-          rejb_pad_cnt <= rejb_pad_cnt + 1'b1;
-        end
-      end
-      always_comb rejb_pad_hold = mldsa_eta4_i &
-                                  (sampler_mode_i == ABR_REJ_BOUNDED) &
-                                  (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN));
-
-      //An eta = 4 RejBounded activation must not be able to reach ABR_SAMPLER_DONE
-      //- and therefore must not be able to drop sampler_busy_o - before the pad
-      //has expired. This is the direct statement of the constant observable
-      //length, as opposed to ERR_REJB_ETA4_PAD_UNDERSIZED which only says the
-      //natural completion lands inside the pad window.
-      `ABR_ASSERT_NEVER(ERR_REJB_ETA4_EARLY_DONE,
-          mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) &&
-          (sampler_fsm_ps == ABR_SAMPLER_DONE) &&
-          (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)), clk, !rst_b)
-
-      //The sequencer gates a new start on ~sampler_busy_i, so a start pulse can
-      //never land in the pad. If it ever did it would reset the pad counter
-      //without launching an operation and stretch the pad indefinitely.
-      `ABR_ASSERT_NEVER(ERR_REJB_START_DURING_PAD,
-          sampler_start_i && (sampler_fsm_ps == ABR_SAMPLER_PAD), clk, !rst_b)
-    end else begin : g_no_rejb_pad
-      always_comb rejb_pad_hold = 1'b0;
+  logic [$clog2(REJB_ETA4_FIXED_LEN+1)-1:0] rejb_pad_cnt;
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) begin
+      rejb_pad_cnt <= '0;
+    end else if (zeroize | sampler_start_i) begin
+      rejb_pad_cnt <= '0;
+    end else if (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)) begin
+      rejb_pad_cnt <= rejb_pad_cnt + 1'b1;
     end
-  endgenerate
+  end
+  always_comb rejb_pad_hold = mldsa_eta4_i &
+                              (sampler_mode_i == ABR_REJ_BOUNDED) &
+                              (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN));
+
+  //An eta = 4 RejBounded activation must not be able to reach ABR_SAMPLER_DONE
+  //- and therefore must not be able to drop sampler_busy_o - before the pad
+  //has expired. This is the direct statement of the constant observable
+  //length, as opposed to ERR_REJB_ETA4_PAD_UNDERSIZED which only says the
+  //natural completion lands inside the pad window.
+  `ABR_ASSERT_NEVER(ERR_REJB_ETA4_EARLY_DONE,
+      mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) &&
+      (sampler_fsm_ps == ABR_SAMPLER_DONE) &&
+      (rejb_pad_cnt != $bits(rejb_pad_cnt)'(REJB_ETA4_FIXED_LEN)), clk, !rst_b)
+
+  //The sequencer gates a new start on ~sampler_busy_i, so a start pulse can
+  //never land in the pad. If it ever did it would reset the pad counter
+  //without launching an operation and stretch the pad indefinitely.
+  `ABR_ASSERT_NEVER(ERR_REJB_START_DURING_PAD,
+      sampler_start_i && (sampler_fsm_ps == ABR_SAMPLER_PAD), clk, !rst_b)
 
   always_comb mldsa_rejs_piso_dv = piso_dv & (sampler_mode_i == MLDSA_REJ_SAMPLER); 
   always_comb mlkem_rejs_piso_dv = piso_dv & (sampler_mode_i == MLKEM_REJ_SAMPLER); 
@@ -655,7 +621,7 @@ endgenerate
   //held at zero so the unused eta = 4 samplers cannot see stale PISO bits.
   always_comb begin
     rejb_piso_data = '0;
-    if (ABR_NEED_ETA4 & mldsa_eta4_i)
+    if (mldsa_eta4_i)
       rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE_MAX-1:0];
     else
       rejb_piso_data[REJB_NUM_SAMPLERS-1:0] = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
@@ -663,7 +629,7 @@ endgenerate
   //ML-DSA-44 delivers 18-bit samples; zero-extend into the 20-bit lanes so the
   //downstream exp_mask instances keep a single width.
   always_comb begin
-    if (ABR_NEED_GAMMA1_17 & gamma1_17_i) begin
+    if (gamma1_17_i) begin
       for (int i = 0; i < EXP_NUM_SAMPLERS; i++)
         exp_piso_data[i] = EXP_SAMPLE_W'(piso_data[(i*EXP_SAMPLE_W_17) +: EXP_SAMPLE_W_17]);
     end
@@ -678,7 +644,7 @@ endgenerate
   //which is arithmetically inert because the sampler only reads 2*eta bits.
   always_comb begin
     for (int unsigned i = 0; i < CBD_NUM_SAMPLERS; i++) begin
-      if (ABR_NEED_CBD3 & eta3_i)
+      if (eta3_i)
         cbd_piso_data[i] = piso_data[i*CBD_SAMPLE_W_3 +: CBD_SAMPLE_W_3];
       else
         cbd_piso_data[i] = CBD_SAMPLE_W_MAX'(piso_data[i*CBD_SAMPLE_W +: CBD_SAMPLE_W]);
@@ -955,14 +921,14 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   // bank would silently become supply limited and the RejBounded loop length
   // would start tracking the rejection pattern of the secret s1/s2.
   `ABR_ASSERT(ERR_REJB_PISO_MODE_MISMATCH,
-      ((sampler_mode_i == ABR_REJ_BOUNDED) && ABR_NEED_ETA4) |->
+      (sampler_mode_i == ABR_REJ_BOUNDED) |->
         (piso_mode == (mldsa_eta4_i ? ABR_REJB4_MODE : ABR_REJB_MODE)),
       clk, !rst_b)
 
   // The constant-time stall must be sized for the active eta. Loading the
   // category-5 value while eta4 is selected reopens the same leak.
   `ABR_ASSERT(ERR_REJB_HOLD_VAL_MISMATCH,
-      (Sha3EnMasking && ABR_NEED_ETA4 && mldsa_eta4_i) |->
+      (Sha3EnMasking && mldsa_eta4_i) |->
         (rejb_hold_val == $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_ETA4)),
       clk, !rst_b)
 
@@ -971,7 +937,7 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   // dependent again. This fires if REJB_ETA4_FIXED_LEN is ever sized too short
   // for the masked Keccak latency it has to cover.
   `ABR_ASSERT(ERR_REJB_ETA4_PAD_UNDERSIZED,
-      (ABR_NEED_ETA4 && mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) && sampler_done)
+      (mldsa_eta4_i && (sampler_mode_i == ABR_REJ_BOUNDED) && sampler_done)
         |-> rejb_pad_hold,
       clk, !rst_b)
 

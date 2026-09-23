@@ -165,8 +165,8 @@ module decompose
     localparam int Q_MINUS_2GAMMA2_88 = MLDSA_Q - (2*MLDSA_GAMMA2_88);
     logic [REG_SIZE-2:0] gamma2_active;
     logic [REG_SIZE-2:0] q_minus_2gamma2_active;
-    always_comb gamma2_active          = (REG_SIZE-1)'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? MLDSA_GAMMA2_88    : MLDSA_GAMMA2);
-    always_comb q_minus_2gamma2_active = (REG_SIZE-1)'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? Q_MINUS_2GAMMA2_88 : Q_MINUS_2GAMMA2);
+    always_comb gamma2_active          = (REG_SIZE-1)'(gamma2_88_i ? MLDSA_GAMMA2_88    : MLDSA_GAMMA2);
+    always_comb q_minus_2gamma2_active = (REG_SIZE-1)'(gamma2_88_i ? Q_MINUS_2GAMMA2_88 : Q_MINUS_2GAMMA2);
 
     generate
         for (genvar i = 0; i < 4; i++) begin

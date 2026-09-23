@@ -44,8 +44,8 @@ module hintgen
     localparam int Q_MINUS_GAMMA2_88 = MLDSA_Q - MLDSA_GAMMA2_88;
     logic [REG_SIZE-1:0] gamma2_active;
     logic [REG_SIZE-1:0] q_minus_gamma2_active;
-    always_comb gamma2_active         = REG_SIZE'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? MLDSA_GAMMA2_88    : MLDSA_GAMMA2);
-    always_comb q_minus_gamma2_active = REG_SIZE'((ABR_NEED_GAMMA2_88 & gamma2_88_i) ? Q_MINUS_GAMMA2_88  : Q_MINUS_GAMMA2);
+    always_comb gamma2_active         = REG_SIZE'(gamma2_88_i ? MLDSA_GAMMA2_88   : MLDSA_GAMMA2);
+    always_comb q_minus_gamma2_active = REG_SIZE'(gamma2_88_i ? Q_MINUS_GAMMA2_88 : Q_MINUS_GAMMA2);
 
     logic r_lt_gamma2;
     logic r_gt_q_minus_gamma2;

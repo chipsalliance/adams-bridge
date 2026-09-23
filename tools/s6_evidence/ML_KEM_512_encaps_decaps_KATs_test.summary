@@ -1,38 +1,5 @@
---- UVM Report Summary ---
-
-** Report counts by severity
-UVM_INFO :   23
-UVM_WARNING :    0
-UVM_ERROR :    0
-UVM_FATAL :    0
-** Report counts by id
-[HDL_TOP_TB]     1
-[KAT]     6
-[LOCK_MODEL]     1
-[MAP_INIT]     1
-[PREDICTOR]     4
-[QVIP_REPORTER]     1
-[RNTST]     1
-[SCBD_REPORT]     3
-[SCOREBOARD]     3
-[TEST_DONE]     1
-[TEST_TOP]     1
-$finish called from file "/home/cad/tools/mentor/questa/2022.2_1/questasim/verilog_src/uvm-1.1d/src/base/uvm_root.svh", line 430.
-$finish at simulation time 417940.000ns
-           V C S   S i m u l a t i o n   R e p o r t 
-Time: 417940000 ps
-
-Simulation Performance Summary
-==============================
-Simulation started at :  Wed Sep 23 04:55:11 2026
-Elapsed Time          :  50 sec
-CPU Time              :  43.2 sec
-Virtual memory size   :  719.2 MB
-Resident set size     :  274.7 MB
-Shared memory size    :  140.7 MB
-Private memory size   :  134.0 MB
-Major page faults     :  1308
-Machine name          :  bronco42601
-==============================
-
-Wed Sep 23 04:56:00 2026
+=== ML_KEM_512_encaps_decaps_KATs_test  (/home/ws/caliptra/mojtabab/caliptra/ws2/scratch/mojtabab/simland/uvmf_mldsa/ML_KEM_512_encaps_decaps_KATs_test/20260924.005421) ===
+99:UVM_INFO :   23
+100:UVM_WARNING :    0
+101:UVM_ERROR :    0
+102:UVM_FATAL :    0
