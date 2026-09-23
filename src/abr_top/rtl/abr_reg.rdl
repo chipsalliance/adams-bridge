@@ -35,7 +35,12 @@ addrmap abr_reg {
     reg {
         name = "MLDSA component name register type definition";
         desc = "Two 32-bit read-only registers representing of the name
-                of MLDSA component.";
+                of MLDSA component. Reads back \"MLDSA\", space padded to eight
+                bytes.
+                [br] NAME identifies the algorithm, not a parameter set: the core
+                [br] implements every ML-DSA parameter set, so the string does not
+                [br] change with MLDSA_CTRL.PARAM_SET. Read PARAM_SET to learn which
+                [br] set is selected.";
 
         default sw = r;
         default hw = w;
@@ -180,7 +185,16 @@ addrmap abr_reg {
     reg {
         name = "MLDSA component message register type definition";
         desc = "16 32-bit registers storing the message.
-                The message can be a fixed size of 512-bit value in [0 : 2^512-1].";
+                The message can be a fixed size of 512-bit value in [0 : 2^512-1].
+                [br]
+                [br] The hardware signs and verifies the pure (non pre-hashed)
+                [br] variant of FIPS 204 Algorithms 2 and 3, so what is actually
+                [br] absorbed is M' = 0x00 || 0x00 || M, i.e. the domain
+                [br] separator byte 0x00 for the pure variant followed by a
+                [br] context length of 0x00 (empty context), then the message
+                [br] written here. Software writes only M; the two prefix bytes
+                [br] are prepended by hardware and must not be included.
+                [br] This is identical for every ML-DSA parameter set.";
 
         default sw = w;
         default hw = rw;
@@ -318,7 +332,12 @@ addrmap abr_reg {
     reg {
         name = "MLKEM component name register type definition";
         desc = "Two 32-bit read-only registers representing of the name
-                of MLKEM component.";
+                of MLKEM component. Reads back \"MLKEM\", space padded to eight
+                bytes.
+                [br] NAME identifies the algorithm, not a parameter set: the core
+                [br] implements every ML-KEM parameter set, so the string does not
+                [br] change with MLKEM_CTRL.PARAM_SET. Read PARAM_SET to learn which
+                [br] set is selected.";
 
         default sw = r;
         default hw = w;

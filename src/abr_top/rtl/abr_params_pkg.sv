@@ -343,38 +343,27 @@ package abr_params_pkg;
     MLKEM_KEYGEN_DEC  = 3'b100
   } mlkem_cmd_e;
 
-  parameter [63  : 0] MLDSA_CORE_NAME        = 64'h3837412D_44534D4C; // "MLDSA-87"
+  //Core identity. The core now implements every ML-DSA and ML-KEM parameter
+  //set, so the NAME registers name the *algorithm*, not one parameter set.
+  //Reporting "MLDSA-87" while running ML-DSA-44 would make the identity
+  //registers actively misleading, and reporting a different string per set
+  //would make NAME a mutable field that software has to re-read after every
+  //PARAM_SET write. Naming the algorithm avoids both.
+  //
+  //Encoding: the 64-bit value is read as NAME[0] = bits [31:0] and
+  //NAME[1] = bits [63:32]; within each 32-bit word the two 16-bit halves are
+  //swapped relative to ASCII order. "MLDSA   " therefore encodes as
+  //{32'h2020_4120, 32'h4453_4D4C} and "MLKEM   " as {32'h2020_4D20, 32'h4B45_4D4C}.
+  //Names are space padded to the full eight bytes.
+  parameter [63  : 0] MLDSA_CORE_NAME        = 64'h20204120_44534D4C; // "MLDSA   "
   parameter [63  : 0] MLDSA_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
-  parameter [63  : 0] MLKEM_CORE_NAME        = 64'h32343130_4D2D4B45; // "KEM-1024"
+  parameter [63  : 0] MLKEM_CORE_NAME        = 64'h20204D20_4B454D4C; // "MLKEM   "
   parameter [63  : 0] MLKEM_CORE_VERSION     = 64'h00003100_302e322e; // "2.0.1"
 
-  //Per-set core names. MLDSA_CORE_NAME/MLKEM_CORE_NAME above stay as the
-  //category 5 names so the reset value of the NAME registers is unchanged.
-  parameter [63  : 0] MLDSA_CORE_NAME_44     = 64'h3434412D_44534D4C; // "MLDSA-44"
-  parameter [63  : 0] MLDSA_CORE_NAME_65     = 64'h3635412D_44534D4C; // "MLDSA-65"
-  parameter [63  : 0] MLDSA_CORE_NAME_87     = MLDSA_CORE_NAME;       // "MLDSA-87"
-  parameter [63  : 0] MLKEM_CORE_NAME_512    = 64'h32203531_4D2D4B45; // "KEM-512 "
-  parameter [63  : 0] MLKEM_CORE_NAME_768    = 64'h38203736_4D2D4B45; // "KEM-768 "
-  parameter [63  : 0] MLKEM_CORE_NAME_1024   = MLKEM_CORE_NAME;       // "KEM-1024"
-
-  //The NAME registers must describe the parameter set the core is actually
-  //configured for. Reporting "MLDSA-87" while running ML-DSA-44 would make the
-  //identity registers actively misleading.
-  function automatic logic [63:0] mldsa_core_name_of(input mldsa_param_set_e s);
-    case (s)
-      MLDSA_PARAM_44: mldsa_core_name_of = MLDSA_CORE_NAME_44;
-      MLDSA_PARAM_65: mldsa_core_name_of = MLDSA_CORE_NAME_65;
-      default       : mldsa_core_name_of = MLDSA_CORE_NAME_87;
-    endcase
-  endfunction
-
-  function automatic logic [63:0] mlkem_core_name_of(input mlkem_param_set_e s);
-    case (s)
-      MLKEM_PARAM_512: mlkem_core_name_of = MLKEM_CORE_NAME_512;
-      MLKEM_PARAM_768: mlkem_core_name_of = MLKEM_CORE_NAME_768;
-      default        : mlkem_core_name_of = MLKEM_CORE_NAME_1024;
-    endcase
-  endfunction
+  //The NAME registers are parameter-set independent: NAME identifies the
+  //algorithm the core implements, and the core implements all of them. The
+  //active parameter set is reported by MLDSA_CTRL.PARAM_SET / MLKEM_CTRL.PARAM_SET,
+  //which is where software should read it from.
 
   // Implementation parameters
   parameter ABR_REG_WIDTH = 32;

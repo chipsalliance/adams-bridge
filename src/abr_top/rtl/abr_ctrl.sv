@@ -571,7 +571,6 @@ always_comb kv_mlkem_msg_write_data = '0;
   mldsa_param_set_e mldsa_param_set_req, mldsa_param_set_reg;
   mlkem_param_set_e mlkem_param_set_req, mlkem_param_set_reg;
   logic             param_set_unsupported;
-  logic [63:0]      mldsa_core_name_sel, mlkem_core_name_sel;
   logic [3:0] mldsa_l;
   logic [REG_SIZE-2:0] mldsa_gamma1_minus_beta, mldsa_gamma2_minus_beta, mldsa_gamma2;
   chk_norm_mode_t normcheck_mode;
@@ -846,8 +845,8 @@ always_comb kv_mlkem_msg_write_data = '0;
 
   always_comb begin : ABR_REG_HWIF_IN_ASSIGN
     //MLDSA
-    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = mldsa_core_name_sel[31:0];
-    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = mldsa_core_name_sel[63:32];
+    abr_reg_hwif_in.MLDSA_NAME[0].NAME.next = MLDSA_CORE_NAME[31:0];
+    abr_reg_hwif_in.MLDSA_NAME[1].NAME.next = MLDSA_CORE_NAME[63:32];
     abr_reg_hwif_in.MLDSA_VERSION[0].VERSION.next = MLDSA_CORE_VERSION[31:0];
     abr_reg_hwif_in.MLDSA_VERSION[1].VERSION.next = MLDSA_CORE_VERSION[63:32];
 
@@ -926,8 +925,8 @@ always_comb kv_mlkem_msg_write_data = '0;
     abr_reg_hwif_in.MLDSA_CTX_CONFIG.CTX_SIZE.hwclr = zeroize;
 
     //MLKEM
-    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = mlkem_core_name_sel[31:0];
-    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = mlkem_core_name_sel[63:32];
+    abr_reg_hwif_in.MLKEM_NAME[0].NAME.next = MLKEM_CORE_NAME[31:0];
+    abr_reg_hwif_in.MLKEM_NAME[1].NAME.next = MLKEM_CORE_NAME[63:32];
     abr_reg_hwif_in.MLKEM_VERSION[0].VERSION.next = MLKEM_CORE_VERSION[31:0];
     abr_reg_hwif_in.MLKEM_VERSION[1].VERSION.next = MLKEM_CORE_VERSION[63:32];
 
@@ -2184,13 +2183,23 @@ end
       //the previous latch in place. Category 5 software writes 2'b00, which
       //never latches, or 2'b11, which decodes to reserved and is now held off -
       //either way the latch stays at the category 5 reset value as before.
-      if (|mldsa_cmd_reg)
+      //The command path is gated on support as well. An unsupported or reserved
+      //selection is already aborted by param_set_unsupported, which reads the
+      //request and not the latch, so refusing to latch it costs nothing and
+      //keeps the invariant "the latch is always a set that is elaborated". Were
+      //it latched, an aborted command would leave every derived dimension (k, l,
+      //eta, gamma, omega, tau) and the reported core name resolving through their
+      //default branches until the next zeroize. Category 5 software writes 2'b00,
+      //which decodes to MLDSA_PARAM_87 and latches exactly as before, or 2'b11,
+      //which decodes to reserved and previously latched a value that every _of()
+      //function mapped back to category 5 anyway - so behaviour is unchanged.
+      if (|mldsa_cmd_reg & mldsa_param_set_supported(mldsa_param_set_req))
         mldsa_param_set_reg <= mldsa_param_set_req;
       else if (abr_ready & (abr_reg_hwif_out.MLDSA_CTRL.PARAM_SET.value != 2'b00) &
                mldsa_param_set_supported(mldsa_param_set_req))
         mldsa_param_set_reg <= mldsa_param_set_req;
 
-      if (|mlkem_cmd_reg)
+      if (|mlkem_cmd_reg & mlkem_param_set_supported(mlkem_param_set_req))
         mlkem_param_set_reg <= mlkem_param_set_req;
       else if (abr_ready & (abr_reg_hwif_out.MLKEM_CTRL.PARAM_SET.value != 2'b00) &
                mlkem_param_set_supported(mlkem_param_set_req))
@@ -2201,8 +2210,6 @@ end
   always_comb mldsa_param_set = mldsa_param_set_reg;
   always_comb mlkem_param_set = mlkem_param_set_reg;
 
-  always_comb mldsa_core_name_sel = mldsa_core_name_of(mldsa_param_set);
-  always_comb mlkem_core_name_sel = mlkem_core_name_of(mlkem_param_set);
   always_comb mldsa_l         = 4'(mldsa_l_of(mldsa_param_set));
   //Norm check bounds (FIPS 204 Algorithm 2, steps 21 and 24). The controller
   //selects the bound so a single comparator array covers every parameter set.
@@ -2917,6 +2924,37 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
               (abr_reg_hwif_in.MLDSA_PRIVKEY_IN.wr_ack & abr_ready & api_keymem_wr_dec)
                 |-> (api_sk_mem_waddr < (PRIVKEY_NUM_DWORDS - 32)),
               clk, !rst_b)
+
+  //--------------------------------------------------------------------------
+  //Parameter set latch. These guard the two properties the whole multi-set
+  //effort rests on: a compiled-out set can never be selected (which is what
+  //keeps "comment the defines out and category 5 is untouched" true), and the
+  //set can never move underneath an operation that is already running.
+  //--------------------------------------------------------------------------
+  //Only a supported set can ever be latched. An unsupported write leaves the
+  //previous value in place, so the latch is always a set that is elaborated.
+  `ABR_ASSERT(ERR_MLDSA_PARAM_SET_UNSUPPORTED,
+              mldsa_param_set_supported(mldsa_param_set_reg), clk, !rst_b)
+  `ABR_ASSERT(ERR_MLKEM_PARAM_SET_UNSUPPORTED,
+              mlkem_param_set_supported(mlkem_param_set_reg), clk, !rst_b)
+
+  //Zeroize returns both latches to the category 5 reset default, so a fresh
+  //owner of the core never inherits the previous owner's parameter set.
+  `ABR_ASSERT(ERR_MLDSA_PARAM_SET_ZEROIZE,
+              $fell(zeroize) |-> (mldsa_param_set_reg == MLDSA_PARAM_87), clk, !rst_b)
+  `ABR_ASSERT(ERR_MLKEM_PARAM_SET_ZEROIZE,
+              $fell(zeroize) |-> (mlkem_param_set_reg == MLKEM_PARAM_1024), clk, !rst_b)
+
+  //The latch may only move on a command capture, on an explicit aperture-select
+  //write while the core is idle, or on reset/zeroize. In particular it cannot
+  //change while an operation is in flight, which would corrupt every derived
+  //dimension (k, l, eta, gamma, omega, tau) mid-sequence.
+  `ABR_ASSERT(ERR_MLDSA_PARAM_SET_MOVED_IN_FLIGHT,
+              $changed(mldsa_param_set_reg) |->
+                ($past(zeroize) | $past(|mldsa_cmd_reg) | $past(abr_ready)), clk, !rst_b)
+  `ABR_ASSERT(ERR_MLKEM_PARAM_SET_MOVED_IN_FLIGHT,
+              $changed(mlkem_param_set_reg) |->
+                ($past(zeroize) | $past(|mlkem_cmd_reg) | $past(abr_ready)), clk, !rst_b)
 
 `ifdef CALIPTRA
   `ABR_ASSERT_STABLE(ERR_ABR_MLDSA_SEED_RD_CTRL_NOT_STABLE, kv_mldsa_seed_read_ctrl_reg, clk, (!rst_b || (abr_prog_cntr == ABR_RESET)) )
