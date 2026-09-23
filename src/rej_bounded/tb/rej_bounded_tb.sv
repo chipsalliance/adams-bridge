@@ -34,6 +34,10 @@ module rej_bounded_tb
   parameter REJ_VLD_SAMPLES  = 4;
   parameter REJ_VLD_SAMPLES_W = 24;
   parameter REJ_VALUE = 15;
+  //eta = 4 bank lane count; must match abr_sampler_pkg::REJB_NUM_SAMPLERS_ETA4
+  parameter REJ_NUM_SAMPLERS_ETA4 = 20;
+  localparam REJ_NUM_SAMPLERS_MAX = abr_params_pkg::ABR_NEED_ETA4 ?
+                                      REJ_NUM_SAMPLERS_ETA4 : REJ_NUM_SAMPLERS;
   localparam REJ_VLD_SAMPLE_W = $clog2(REJ_VALUE);
   parameter PISO_BUFFER_W    = 1334;
   parameter PISO_INPUT_RATE  = 1088;
@@ -79,6 +83,13 @@ module rej_bounded_tb
   logic                                          piso_valid;
   logic                                          piso_hold;
   logic [REJ_NUM_SAMPLERS-1:0][REJ_SAMPLE_W-1:0] piso_data;
+  //This TB only exercises the eta = 2 bank, so the extra eta = 4 lanes are
+  //tied off.
+  logic [REJ_NUM_SAMPLERS_MAX-1:0][REJ_SAMPLE_W-1:0] dut_data_i;
+  always_comb begin
+    dut_data_i = '0;
+    dut_data_i[REJ_NUM_SAMPLERS-1:0] = piso_data;
+  end
 
   //output data
   logic                                         data_valid_o;
@@ -138,7 +149,8 @@ module rej_bounded_tb
     .REJ_NUM_SAMPLERS(REJ_NUM_SAMPLERS),
     .REJ_SAMPLE_W(REJ_SAMPLE_W),
     .REJ_VLD_SAMPLES(REJ_VLD_SAMPLES),
-    .REJ_VALUE(REJ_VALUE)
+    .REJ_VALUE(REJ_VALUE),
+    .REJ_NUM_SAMPLERS_ETA4(REJ_NUM_SAMPLERS_ETA4)
   ) dut (
   .clk(clk_i),
   .rst_b(rst_ni),
@@ -147,7 +159,7 @@ module rej_bounded_tb
   //input data
   .data_valid_i(piso_valid),
   .data_hold_o(piso_hold),
-  .data_i(piso_data),
+  .data_i(dut_data_i),
 
   //output data
   .data_valid_o(data_valid_o),

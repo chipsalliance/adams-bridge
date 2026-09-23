@@ -60,6 +60,24 @@ package abr_sampler_pkg;
   parameter REJB_PISO_OUTPUT_RATE = REJB_NUM_SAMPLERS*REJB_SAMPLE_W;
   // Hold rej_bounded on the FIRST Keccak state under masked SHAKE to make it constant-time.
   parameter REJB_MASKED_KECCAK_HOLD_MASKED = 59;
+  //ML-DSA-65 uses eta = 4. FIPS 204 Alg. 15 accepts a half byte only when it is
+  //< 9, so the acceptance probability drops from 15/16 to 9/16 and eight parallel
+  //samplers deliver only 4.5 coefficients per cycle against a fixed downstream
+  //demand of COEFF_PER_CLK = 4. That margin is too thin to keep the drain
+  //demand limited, and the loop length then varies with the seed - a direct
+  //timing leak on s1/s2. Twenty samplers restore 11.25 accepts per cycle, i.e.
+  //a 2.8x margin against the 1.875x the category-5 eta = 2 path enjoys.
+  //See docs/AdamsBridge_MLDSA.md, "Masked-Keccak PISO stall (constant-time)".
+  parameter REJB_NUM_SAMPLERS_ETA4      = 20;
+  parameter REJB_NUM_SAMPLERS_MAX       = ABR_NEED_ETA4 ? REJB_NUM_SAMPLERS_ETA4
+                                                        : REJB_NUM_SAMPLERS;
+  parameter REJB_PISO_OUTPUT_RATE_ETA4  = REJB_NUM_SAMPLERS_ETA4*REJB_SAMPLE_W;
+  parameter REJB_PISO_OUTPUT_RATE_MAX   = REJB_NUM_SAMPLERS_MAX*REJB_SAMPLE_W;
+  //The eta = 4 drain is slower per PISO word, so the first Keccak state must be
+  //held longer before the second one is guaranteed to be in flight.
+  parameter REJB_MASKED_KECCAK_HOLD_ETA4 = 85;
+  parameter REJB_MASKED_KECCAK_HOLD_MAX  = ABR_NEED_ETA4 ? REJB_MASKED_KECCAK_HOLD_ETA4
+                                                         : REJB_MASKED_KECCAK_HOLD_MASKED;
 
 //Exp Mask
   parameter EXP_NUM_SAMPLERS     = 4;
@@ -112,7 +130,8 @@ package abr_sampler_pkg;
     ABR_SIB_MODE,
     ABR_CBD_MODE,
     ABR_EXP17_MODE,
-    ABR_CBD3_MODE
+    ABR_CBD3_MODE,
+    ABR_REJB4_MODE
   } abr_piso_mode_e;
 
   //common structures

@@ -127,7 +127,7 @@ module abr_sampler_top
   //rej bounded
   logic                                               rejb_piso_dv;
   logic                                               rejb_piso_hold;
-  logic [REJB_NUM_SAMPLERS-1:0][REJB_SAMPLE_W-1:0]    rejb_piso_data;
+  logic [REJB_NUM_SAMPLERS_MAX-1:0][REJB_SAMPLE_W-1:0] rejb_piso_data;
 
   logic                                               rejb_dv;
   logic [REJB_VLD_SAMPLES-1:0][MLDSA_Q_WIDTH-1:0]     rejb_data;
@@ -287,7 +287,7 @@ module abr_sampler_top
         zeroize_rejb |= sampler_done;
         zeroize_sha3 |= sampler_done;
         zeroize_piso |= sampler_done;
-        piso_mode = ABR_REJB_MODE;
+        piso_mode = (ABR_NEED_ETA4 & mldsa_eta4_i) ? ABR_REJB4_MODE : ABR_REJB_MODE;
       end
       ABR_SAMPLE_IN_BALL: begin
         mode = abr_sha3_pkg::Shake;
@@ -476,31 +476,61 @@ generate
 endgenerate
   
 
-  //Multi-rate piso
-  abr_piso_multi #(
-    .NUM_MODES(7),
-    .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
-    .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
-    .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
-    .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
-    .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3})
-  ) abr_piso_inst (
-    .clk(clk),
-    .rst_b(rst_b),
-    .zeroize(zeroize_piso),
-    .mode(piso_mode),
-    .valid_i(sha3_piso_dv),
-    .hold_o(sha3_state_hold),
-    .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
-    .valid_o(piso_dv),
-    .hold_i(piso_hold),
-    .data_o(piso_data)
-  );
+  //Multi-rate piso.
+  //The eta = 4 RejBounded rate is an eighth mode, so it is only elaborated when
+  //ML-DSA-65 is compiled in. Keeping the seven-mode instance for every other
+  //configuration preserves the "comment the defines out and category 5 is
+  //structurally untouched" property - with NUM_MODES = 7 the code 3'b111 is out
+  //of range and clamps, exactly as it did before this change.
+  generate
+    if (ABR_NEED_ETA4) begin : g_piso_eta4
+      abr_piso_multi #(
+        .NUM_MODES(8),
+        .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
+        .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
+        .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
+        .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE}),
+        .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3, REJB_PISO_OUTPUT_RATE_ETA4})
+      ) abr_piso_inst (
+        .clk(clk),
+        .rst_b(rst_b),
+        .zeroize(zeroize_piso),
+        .mode(piso_mode),
+        .valid_i(sha3_piso_dv),
+        .hold_o(sha3_state_hold),
+        .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
+        .valid_o(piso_dv),
+        .hold_i(piso_hold),
+        .data_o(piso_data)
+      );
+    end else begin : g_piso
+      abr_piso_multi #(
+        .NUM_MODES(7),
+        .PISO_BUFFER_W(REJS_PISO_BUFFER_W),
+        .PISO_ACT_INPUT_RATE(REJS_PISO_INPUT_RATE),
+        .PISO_ACT_OUTPUT_RATE(REJS_PISO_OUTPUT_RATE),
+        .INPUT_RATES('{REJS_PISO_INPUT_RATE, REJB_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, SIB_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE, EXP_PISO_INPUT_RATE, CBD_PISO_INPUT_RATE}),
+        .OUTPUT_RATES('{REJS_PISO_OUTPUT_RATE, REJB_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE, SIB_PISO_OUTPUT_RATE, CBD_PISO_OUTPUT_RATE, EXP_PISO_OUTPUT_RATE_17, CBD_PISO_OUTPUT_RATE_3})
+      ) abr_piso_inst (
+        .clk(clk),
+        .rst_b(rst_b),
+        .zeroize(zeroize_piso),
+        .mode(piso_mode),
+        .valid_i(sha3_piso_dv),
+        .hold_o(sha3_state_hold),
+        .data_i(sha3_state[REJS_PISO_INPUT_RATE-1:0]),
+        .valid_o(piso_dv),
+        .hold_i(piso_hold),
+        .data_o(piso_data)
+      );
+    end
+  endgenerate
 
   logic sha3_state_dv_q;
   logic sha3_state_dv_rise;
   logic rejb_hold_done;         // sticky: cleared on start, set after first hold
-  logic [$clog2(REJB_MASKED_KECCAK_HOLD_MASKED+2)-1:0] rejb_hold_cnt;
+  logic [$clog2(REJB_MASKED_KECCAK_HOLD_MAX+2)-1:0] rejb_hold_cnt;
+  logic [$clog2(REJB_MASKED_KECCAK_HOLD_MAX+2)-1:0] rejb_hold_val;
   logic rejb_hold_active;
 
   always_ff @(posedge clk or negedge rst_b) begin
@@ -511,11 +541,17 @@ endgenerate
   always_comb sha3_state_dv_rise = sha3_state_dv & ~sha3_state_dv_q;
 
   generate
-    if (!Sha3EnMasking || (REJB_MASKED_KECCAK_HOLD_MASKED == 0)) begin : g_no_rejb_hold
+    if (!Sha3EnMasking || (REJB_MASKED_KECCAK_HOLD_MAX == 0)) begin : g_no_rejb_hold
       always_comb rejb_hold_cnt    = '0;
+      always_comb rejb_hold_val    = '0;
       always_comb rejb_hold_active = 1'b0;
       always_comb rejb_hold_done   = 1'b1;
     end else begin : g_rejb_hold
+      // The eta = 4 bank drains a PISO word more slowly, so it needs a longer
+      // head start before the second Keccak state is guaranteed to be in flight.
+      always_comb rejb_hold_val = (ABR_NEED_ETA4 & mldsa_eta4_i)
+                   ? $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_ETA4)
+                   : $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_MASKED);
       // Load counter only on the FIRST sha3_state_dv rise per rejb activation.
       always_ff @(posedge clk or negedge rst_b) begin
         if (!rst_b) begin
@@ -527,7 +563,7 @@ endgenerate
         end else if ((sampler_mode_i == ABR_REJ_BOUNDED)
                      && sha3_state_dv_rise
                      && !rejb_hold_done) begin
-          rejb_hold_cnt  <= $bits(rejb_hold_cnt)'(REJB_MASKED_KECCAK_HOLD_MASKED);
+          rejb_hold_cnt  <= rejb_hold_val;
           rejb_hold_done <= 1'b1;
         end else if (rejb_hold_cnt != 0) begin
           rejb_hold_cnt  <= rejb_hold_cnt - 1'b1;
@@ -554,7 +590,16 @@ endgenerate
                           ((sampler_mode_i == ABR_CBD_SAMPLER)    & cbd_piso_hold);
 
   always_comb rejs_piso_data = piso_data[REJS_PISO_OUTPUT_RATE-1:0];
-  always_comb rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
+  //At eta = 4 the PISO delivers REJB_NUM_SAMPLERS_ETA4 half bytes per cycle;
+  //at eta = 2 only the low REJB_NUM_SAMPLERS lanes are driven and the rest are
+  //held at zero so the unused eta = 4 samplers cannot see stale PISO bits.
+  always_comb begin
+    rejb_piso_data = '0;
+    if (ABR_NEED_ETA4 & mldsa_eta4_i)
+      rejb_piso_data = piso_data[REJB_PISO_OUTPUT_RATE_MAX-1:0];
+    else
+      rejb_piso_data[REJB_NUM_SAMPLERS-1:0] = piso_data[REJB_PISO_OUTPUT_RATE-1:0];
+  end
   //ML-DSA-44 delivers 18-bit samples; zero-extend into the 20-bit lanes so the
   //downstream exp_mask instances keep a single width.
   always_comb begin
@@ -655,7 +700,9 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
     .REJ_NUM_SAMPLERS(REJB_NUM_SAMPLERS),
     .REJ_SAMPLE_W(REJB_SAMPLE_W),
     .REJ_VLD_SAMPLES(REJB_VLD_SAMPLES),
-    .REJ_VALUE(REJB_VALUE)
+    .REJ_VLD_SAMPLES_W(REJB_VLD_SAMPLES_W),
+    .REJ_VALUE(REJB_VALUE),
+    .REJ_NUM_SAMPLERS_ETA4(REJB_NUM_SAMPLERS_ETA4)
   ) rej_bounded_inst (
     .clk(clk),
     .rst_b(rst_b),
@@ -841,5 +888,84 @@ always_comb sampler_ntt_data_o = sampler_ntt_data[SRAM_LATENCY];
   `ABR_ASSERT_NEVER(ERR_REJB_UNMASKED_ON_MASKED_BUILD,
       sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED) && Sha3EnMasking && !sha3_masked_i,
       clk, !rst_b)
+
+  // The eta = 4 bank needs REJB_NUM_SAMPLERS_ETA4 half bytes per cycle to stay
+  // demand limited (see docs/AdamsBridge_MLDSA.md, "eta = 4 (ML-DSA-65)").
+  // If the PISO were ever left in the eta = 2 mode while eta4 is selected the
+  // bank would silently become supply limited and the RejBounded loop length
+  // would start tracking the rejection pattern of the secret s1/s2.
+  `ABR_ASSERT(ERR_REJB_PISO_MODE_MISMATCH,
+      ((sampler_mode_i == ABR_REJ_BOUNDED) && ABR_NEED_ETA4) |->
+        (piso_mode == (mldsa_eta4_i ? ABR_REJB4_MODE : ABR_REJB_MODE)),
+      clk, !rst_b)
+
+  // The constant-time stall must be sized for the active eta. Loading the
+  // category-5 value while eta4 is selected reopens the same leak.
+  `ABR_ASSERT(ERR_REJB_HOLD_VAL_MISMATCH,
+      (Sha3EnMasking && ABR_NEED_ETA4 && mldsa_eta4_i) |->
+        (rejb_hold_val == $bits(rejb_hold_val)'(REJB_MASKED_KECCAK_HOLD_ETA4)),
+      clk, !rst_b)
+
+`ifndef SYNTHESIS
+  //--------------------------------------------------------------------------
+  //RejBounded loop-length profiler (simulation only, off unless +abr_rejb_profile
+  //is passed). The constant-time argument for RejBounded is a claim about the
+  //number of cycles between activation and completion being independent of the
+  //secret seed, so it needs to be measurable rather than argued. Enable the
+  //plusarg and grep the log for ABR_REJB_LEN; a constant-time build prints the
+  //same length for every activation at a given parameter set.
+  //
+  //The statistics are binned per eta, because eta=2 and eta=4 legitimately have
+  //different (but individually constant) loop lengths. A test that switches
+  //parameter sets mid-run visits both bins, and pooling them would report a
+  //spread that reflects the parameter set rather than the secret.
+  //--------------------------------------------------------------------------
+  // synopsys translate_off
+  bit         rejb_prof_en;
+  int         rejb_prof_cnt;
+  bit         rejb_prof_active;
+  int         rejb_prof_min [0:1];
+  int         rejb_prof_max [0:1];
+  int         rejb_prof_num [0:1];
+  bit         rejb_prof_eta4;
+
+  initial begin
+    rejb_prof_en  = $test$plusargs("abr_rejb_profile");
+    for (int b = 0; b < 2; b++) begin
+      rejb_prof_min[b] = 32'h7fff_ffff;
+      rejb_prof_max[b] = 0;
+      rejb_prof_num[b] = 0;
+    end
+  end
+
+  always @(posedge clk) begin
+    if (!rst_b) begin
+      rejb_prof_active <= 1'b0;
+      rejb_prof_cnt    <= 0;
+    end else if (rejb_prof_en) begin
+      if (sampler_start_i && (sampler_mode_i == ABR_REJ_BOUNDED)) begin
+        rejb_prof_active <= 1'b1;
+        rejb_prof_cnt    <= 0;
+        rejb_prof_eta4   <= mldsa_eta4_i;
+      end else if (rejb_prof_active) begin
+        if (sampler_done && (sampler_mode_i == ABR_REJ_BOUNDED)) begin
+          rejb_prof_active <= 1'b0;
+          rejb_prof_num[rejb_prof_eta4] = rejb_prof_num[rejb_prof_eta4] + 1;
+          if (rejb_prof_cnt < rejb_prof_min[rejb_prof_eta4])
+            rejb_prof_min[rejb_prof_eta4] = rejb_prof_cnt;
+          if (rejb_prof_cnt > rejb_prof_max[rejb_prof_eta4])
+            rejb_prof_max[rejb_prof_eta4] = rejb_prof_cnt;
+          $display("ABR_REJB_LEN eta4=%0d len=%0d n=%0d min=%0d max=%0d spread=%0d",
+                   rejb_prof_eta4, rejb_prof_cnt, rejb_prof_num[rejb_prof_eta4],
+                   rejb_prof_min[rejb_prof_eta4], rejb_prof_max[rejb_prof_eta4],
+                   rejb_prof_max[rejb_prof_eta4] - rejb_prof_min[rejb_prof_eta4]);
+        end else begin
+          rejb_prof_cnt <= rejb_prof_cnt + 1;
+        end
+      end
+    end
+  end
+  // synopsys translate_on
+`endif
 
 endmodule
