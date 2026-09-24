@@ -46,11 +46,6 @@ control register.
 | `MLDSA_CTRL.PARAM_SET` | ML-DSA-87 (cat 5) | ML-DSA-44 (cat 2) | ML-DSA-65 (cat 3) | reserved |
 | `MLKEM_CTRL.PARAM_SET` | ML-KEM-1024 (cat 5) | ML-KEM-512 (cat 1) | ML-KEM-768 (cat 3) | reserved |
 
-The field is per algorithm and not a shared "security level" because the two
-families do not line up: ML-KEM-512 is category 1 and there is no ML-KEM at
-category 2, while ML-DSA-44 is category 2. A single shared level field would
-have encodings that are meaningless for one family or the other.
-
 **Backward compatibility.** `PARAM_SET` occupies bits that were previously
 reserved, and its reset value `2'b00` selects the category 5 sets. No other
 control or status field changed, and no reset value anywhere changed. A driver
@@ -65,14 +60,6 @@ encoding sets `<ALG>_STATUS.ERROR` and the command does not run. There is no
 build-time configuration: every parameter set is always elaborated, and
 `PARAM_SET` is the only selector.
 
-**The NAME registers do not encode the parameter set.** `MLDSA_NAME` reads back
-`"ML-DSA"` and `MLKEM_NAME` reads back `"ML-KEM"`, space padded to eight bytes.
-NAME identifies the algorithm the core implements, and the core implements all
-of its parameter sets; embedding a level in NAME would either be a lie at five
-of the six settings, or would make a read-only identity register mutable and
-force software to re-read it after every `PARAM_SET` write. Software reads
-`PARAM_SET` to learn which set is selected.
-
 ## Constant-time sampling at every parameter set
 
 Rejection sampling is the one place where a parameter change can turn a
@@ -86,11 +73,10 @@ at the new sets rather than reused.
 | `sample_in_ball` | challenge **c** | no - derived from the public c-tilde | tau/256 with tau = 39/49/60 | `tau_i` is a runtime input; rejection is on public data |
 | `exp_mask` (ExpandMask) | mask **y** | **yes** | no rejection at all | fixed length by construction at gamma1 = 2^17 and 2^19 |
 | `cbd_sampler` | **s**, **e**, **r** | **yes** | no rejection at all | fixed length by construction at eta1 = 2 and 3 |
-| `rej_bounded` (ExpandS) | **s1**, **s2** | **yes** | **15/16 at eta = 2 but only 9/16 at eta = 4** | see below |
+| `rej_bounded` (ExpandS) | **s1**, **s2** | **yes** | 15/16 at eta = 2, 9/16 at eta = 4 | sized separately per eta - see below |
 
-`rej_bounded` at `eta = 4` (ML-DSA-65 key generation) is the only unit whose
-constant-time property does not survive the parameter change unaided. Three
-mechanisms restore it, and all three are sized from the acceptance probability:
+The lower acceptance probability at `eta = 4` (ML-DSA-65 key generation) is
+compensated by three mechanisms, each sized from that probability:
 
 1. **Supply margin** - `REJB_NUM_SAMPLERS_ETA4 = 20` lanes instead of 8, so the
    bank delivers 11.25 accepts per clock against the fixed 4-coefficient sink.
@@ -103,22 +89,21 @@ mechanisms restore it, and all three are sized from the acceptance probability:
    Keccak squeeze. Residual probability of exceeding the pad is 2^-352 per
    ML-DSA-65 key generation.
 
-The cost is confined to ML-DSA-65 key generation (+2.4 k cycles); `rej_bounded`
-is not used in signing, and no other parameter set is affected. At category 5
-the eta = 4 bank, the hold override and the pad state are not elaborated, so
-category-5 area and cycle counts are bit- and cycle-identical to the
-category-5-only core. The full derivation, including why deepening the PISO
-does **not** close the residual, is in `docs/AdamsBridge_MLDSA.md`.
+The pad is gated by `mldsa_eta4_i`, so it is never entered at `eta = 2` and the
+timing of the other parameter sets is unchanged. The full derivation, including
+the sizing tables and why deepening the PISO does **not** close the residual, is
+in `docs/AdamsBridge_MLDSA.md`.
 
-**Scope of the claim.** `ABR_SAMPLER_PAD` equalises `sampler_busy_o`, which is
-what the sequencer and everything outside Adams-Bridge observe. It does not
-equalise the internal activity trace: in the 7.0e-6 case that needs a third
-squeeze, the masked Keccak and the sample-memory write beats extend inside the
-now-constant busy window. That is a power and EM difference, not an
-architectural timing one, and it is listed here explicitly so that it is in
-scope for the side-channel review rather than assumed away. Category 5 makes the
-same distinction implicitly - there the internal trace is constant for the same
-reason the external one is, with probability 1 - 5.3e-194.
+**Scope of the claim.** The pad equalises `sampler_busy_o`, which is what the
+sequencer and everything outside Adams-Bridge observe, and the sample-memory
+write trace is measured constant as well (64 beats, fixed first and last beat,
+zero spread across seeds). What it does not equalise is the masked Keccak
+permutation count: the one polynomial in 143 000 that needs a third squeeze runs
+one extra permutation inside the now-constant busy window. That is a power and
+EM difference rather than an architectural timing one, and it is recorded here
+so that it stays in scope for the side-channel review rather than being assumed
+away. `docs/AdamsBridge_MLDSA.md` derives it and discusses equalising the
+squeeze count.
 
 The same audit applies to the 4-coefficient datapath: every new path keeps
 `COEFF_PER_CLK = 4` at the memory interface. The eta = 4 RejBounded bank

@@ -2611,6 +2611,49 @@ affected at all. At `eta = 2` the pad is inactive: `rejb_pad_hold` is gated by
 `mldsa_eta4_i`, so `ABR_SAMPLER_PAD` is never entered and the category-5 timing
 is untouched.
 
+**(d) What the pad does not equalise, and how the residual could be reduced.**
+The pad fixes the *observable* length. Two internal traces matter separately:
+
+* *Sample-memory writes* - already constant. The profiler's `ABR_REJB_WTRACE`
+  line reports, for every `eta = 4` activation, `beats = 64` with the first
+  write at cycle 198 and the last at 261, and `firstspread = lastspread =
+  beatspread = 0` across every seed in the randomized suite. The write trace
+  therefore carries no seed dependence.
+* *Masked Keccak permutation count* - **not** constant. The `7.0e-6` polynomial
+  that needs a third squeeze runs one extra permutation inside the now-constant
+  busy window. This is the whole of the residual, and it is a power/EM
+  distinguisher rather than a timing one.
+
+The residual can be removed outright by making the squeeze count itself a
+compile-time constant: always perform three squeezes at `eta = 4` instead of
+stopping at two whenever the polynomial happens to be satisfied. Three squeezes
+supply 816 half bytes; the mean number of accepts is 459 with `sigma ~ 14.2`, so
+256 sits at about `-14.3 sigma` and the probability of still falling short is
+`4.4e-47`. That would cut the internal-trace residual from `7.0e-6` to
+`2^-154`, and it would cost **no additional observable cycles**, because
+`REJB_ETA4_FIXED_LEN = 479` is already sized to cover four squeezes.
+
+It is not done in this change, because it is not local to the pad. Three
+coupled edits would be required, and one of them is a correctness hazard:
+
+1. `sampler_done` is combinational (`coeff_cnt == ABR_COEFF_CNT/4`) and drives
+   `zeroize_rejb`, `zeroize_sha3` and `zeroize_piso` in the same cycle. Those
+   interlocks would have to be deferred to the end of the forced squeeze
+   sequence, which moves a zeroize of masked state.
+2. The same `sampler_done` resets `coeff_cnt` and `dest_addr` to zero. If the
+   sampler bank keeps producing `rejb_dv` during the forced extra squeeze,
+   `sampler_mem_dv_pre` stays asserted and the extra coefficients are written
+   back over the **start of the polynomial**. Memory writes would have to be
+   gated independently of the squeeze control.
+3. The `ABR_SAMPLER_RUN` / `ABR_SAMPLER_WAIT` handshake stops asserting
+   `sha3_run` as soon as `sampler_done`, so the squeeze counter and its
+   terminal condition are new state in the sampler FSM.
+
+That is a change to the masked datapath and its zeroize interlocks, so it needs
+its own SCA review and its own assertions rather than riding along with a
+parameter-set change. It is recorded here as the identified closure for the
+residual.
+
 **Guard rails.** Two assertions protect the sizing:
 
 * `ERR_REJB_ETA4_PAD_UNDERSIZED` - if the natural `sampler_done` ever lands
