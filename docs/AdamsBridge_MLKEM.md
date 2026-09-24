@@ -76,6 +76,12 @@ uses a prefix of the window:
   (`mlkem_ek_sampler_words`, `mlkem_ct_sampler_words`, `mlkem_dk_mem_dwords`,
   `mlkem_ek_mem_dwords`, `mlkem_ct_dwords` in `abr_ctrl.sv`), so a write above the
   active length is not decoded and the sampler never reads past it.
+- **The tail reads as zero.** An API read above the active length fails the same
+  decode, so no RAM read enable is raised. `privkey_out_rdata` is a zero-defaulting
+  AND-OR mux gated by the pipelined read enables (`api_keymem_re_bank`), so with no
+  enable asserted it resolves to `'0` rather than holding the previously read dword.
+  A shorter operation therefore cannot expose key material left in the tail by an
+  earlier, longer one.
 - **`zeroize` clears the full ML-KEM-1024-sized backing store** regardless of which
   parameter set is active: the zeroize walk runs to `ABR_MEM_MAX_DEPTH` rather than
   to the active length.

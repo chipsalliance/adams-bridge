@@ -43,9 +43,12 @@ Two properties hold for the unused tail of a window at the shorter parameter set
 the API write decode and the sampler read bounds are both derived from the active
 parameter set, so a shorter operation ignores the tail rather than consuming it; and
 `zeroize` clears the full ML-DSA-87-sized backing store rather than only the active
-prefix. In addition, the c~ dwords above the active lambda/4 bytes are held at zero,
-so neither the verify compare nor the `VERIFY_RES` readback can observe a challenge
-hash left in the tail by a previous operation.
+prefix. The tail also reads as zero: an API read above `mldsa_sk_dwords` fails the
+`api_keymem_rd_dec` bound, so no RAM read enable is raised, and `privkey_out_rdata` is
+a zero-defaulting AND-OR mux gated by those enables. In addition, the c~ dwords above
+the active lambda/4 bytes are held at zero, so neither the verify compare nor the
+`VERIFY_RES` readback can observe a challenge hash left in the tail by a previous
+operation.
 
 
 | Name                        | Input/Output    | Operation       | Size (Byte)   |
