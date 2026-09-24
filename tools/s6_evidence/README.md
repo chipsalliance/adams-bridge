@@ -7,7 +7,7 @@ UVM report summary is the only reliable pass/fail record.
 |---|---|
 | `gate27_status.txt` | The final 27-test gate: one result line per test, parsed from the UVM report summary (`UVM_ERROR :` / `UVM_FATAL :`). `ALL_DONE` on the last line means the gate ran to completion; a missing summary is reported as `NOSUMMARY` and is never a pass. All 27 are `UVM_ERROR=0 UVM_FATAL=0`. |
 | `*.summary` | The UVM report summary block of each test's `sim.log` from that same gate. |
-| `rejb_profile_aggregate_final.txt` | Every `ABR_REJB_LEN` line from the gate, aggregated. 267 eta=2 activations all took 234 cycles, 99 eta=4 activations all took 260 - spread 0 in both bins. This is the constant-time claim measured rather than argued. |
+| `rejb_profile_aggregate_final.txt` | Every `ABR_REJB_LEN` line from the gate, aggregated. Two lengths are tabulated per activation and they must not be confused: `obs` (start to `sampler_busy_o` falling) is what anything outside Adams-Bridge can see and is the only thing the constant-time claim rests on; `nat` (start to `sampler_done`) is the pre-pad natural loop length. 274 eta=2 activations: obs 236, nat 234. 99 eta=4 activations: obs 481, nat 260. Spread is 0 in every column. This is the constant-time claim measured rather than argued. |
 | `s6_build_final.log` | The build the final gate ran against. |
 | `s6_gate27.sh` | The gate itself: 27 tests in parallel batches of 4, with `+abr_rejb_profile`, no build step. |
 | `s6_mix1.log`, `s6_mix_s12345.log`, `s6_mix_s987654.log` | Three extra seeds of `ML_DSA_MLKEM_param_set_mix_test`, the cross-parameter-set switching test. |
