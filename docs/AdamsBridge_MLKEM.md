@@ -22,13 +22,19 @@ The security level of ML-KEM defined by NIST are as follows:
 | :-------------- | :------------- |
 | ML-KEM-512      | Level-1        |
 | ML-KEM-768      | Level-3        |
-| **ML-KEM-1024** | **Level-5**    |
+| ML-KEM-1024     | Level-5        |
 
-CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-KEM-1024, and **Adams Bridge only supports ML-KEM-1024 parameter set.**
+Adams Bridge supports **all three** parameter sets. The set is selected at run time
+through the `PARAM_SET` field of the ML-KEM control register; there is no build-time
+configuration and nothing to enable. ML-KEM-1024 is the reset default, so an
+integrator that never writes `PARAM_SET` gets the CNSA 2.0 level, which is the only
+level CNSA 2.0 permits.
 
 # API
 
-The ML-KEM-1024 architecture inputs and outputs are described in the following table.
+The architecture inputs and outputs are described in the following table. Sizes are
+given for ML-KEM-1024; the smaller parameter sets occupy a **prefix** of the same
+register window rather than a separate window.
 
 
 | Name                        | Input/Output    | Operation       | Size (Byte)   |
@@ -48,6 +54,34 @@ The ML-KEM-1024 architecture inputs and outputs are described in the f
 | Interrupt                   | Output          | All             | 520           |
 | --------------------------- | --------------- | --------------- | ------------- |
 | Total                       |                 |                 | 7040          |
+
+The three key and ciphertext fields are the only ones whose length depends on the
+parameter set (FIPS 203 Table 2):
+
+| Field       | ML-KEM-512 | ML-KEM-768 | ML-KEM-1024 |
+| ----------- | ---------- | ---------- | ----------- |
+| encaps_key  | 800        | 1184       | 1568        |
+| decaps_key  | 1632       | 2400       | 3168        |
+| ciphertext  | 768        | 1088       | 1568        |
+
+All other fields — seeds, message, shared key, entropy — are 32 or 64 bytes at every
+parameter set.
+
+The register windows stay sized for ML-KEM-1024 at every parameter set, because the
+worst case dominates and resizing downward would buy nothing. A shorter operation
+uses a prefix of the window:
+
+- **Stale tail input is ignored, not consumed.** The API write decode and the
+  sampler read bounds are both derived from the active parameter set
+  (`mlkem_ek_sampler_words`, `mlkem_ct_sampler_words`, `mlkem_dk_mem_dwords`,
+  `mlkem_ek_mem_dwords`, `mlkem_ct_dwords` in `abr_ctrl.sv`), so a write above the
+  active length is not decoded and the sampler never reads past it.
+- **`zeroize` clears the full ML-KEM-1024-sized backing store** regardless of which
+  parameter set is active: the zeroize walk runs to `ABR_MEM_MAX_DEPTH` rather than
+  to the active length.
+- **Key windows are gated by `mlkem_valid_reg`**, and the decaps key additionally by
+  `mlkem_dk_lock`, so no key material is readable before the operation that produced
+  it has completed.
 
 ## name
 
@@ -379,7 +413,11 @@ Masking imposes **zero cycle overhead**. The only cost of enabling masking is ar
 
 
 
-- CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-KEM-1024, and **Adams Bridge only supports ML-KEM-1024 parameter set.**
+- CNSA 2.0 only allows the highest security level (Level-5) for PQC, which is
+  ML-KEM-1024. That is the reset default of the `PARAM_SET` field, so an integrator
+  targeting CNSA 2.0 who never writes the field gets Level-5. The latency figures in
+  this section are measured at ML-KEM-1024; ML-KEM-512 and ML-KEM-768 are also
+  supported and are faster, since their cost scales with k (2 and 3 rather than 4).
 - For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
@@ -1015,7 +1053,12 @@ The configurable design reduces hardware redundancy by allowing a single samplin
 
 # Compress/Decompress 
 
-The compression stage in ML-KEM takes full 12-bit polynomial coefficients and reduces them to a smaller representation of d bits, where d varies depending on the compression level. This design explicitly supports d values of 1, 5, 11, and 12. The value d = 12 is used to implement the byte encode and byte decode functions of the ML-KEM algorithm. This compression is a lossy operation that approximates a division by q \= 3329, mapping each coefficient in Zq to a smaller domain suitable for compact ciphertext encoding. In hardware, this typically requires multiplication by a scaling factor, followed by division and rounding operations that are expensive in terms of logic and latency.
+The compression stage in ML-KEM takes full 12-bit polynomial coefficients and reduces them to a smaller representation of d bits, where d varies depending on the compression level. This design explicitly supports d values of 1, 4, 5, 10, 11, and 12.
+The active d for the ciphertext is selected from the parameter set at runtime:
+`d_u` is 11 for ML-KEM-1024 and 10 for ML-KEM-512/768, and `d_v` is 5 for
+ML-KEM-1024 and 4 for ML-KEM-512/768 (see `mlkem_du_of` / `mlkem_dv_of` in
+`abr_params_pkg.sv`, and the `compress1/4/5/10/11/12` encodings in
+`compress_defines_pkg.sv`). The value d = 12 is used to implement the byte encode and byte decode functions of the ML-KEM algorithm. This compression is a lossy operation that approximates a division by q \= 3329, mapping each coefficient in Zq to a smaller domain suitable for compact ciphertext encoding. In hardware, this typically requires multiplication by a scaling factor, followed by division and rounding operations that are expensive in terms of logic and latency.
 
 ![](./images/MLKEM/image13.png)
 
@@ -1121,6 +1164,13 @@ The following table lists different operations used in the high-level controller
 
 ML-KEM shares the same three memory instances as MLDSA. ML-KEM coefficients use
 MLKEM_COEFF_DEPTH = 64 entries per polynomial (256 coefficients / 4 per clock).
+
+The offsets below are the static, ML-KEM-1024-sized allocation, and they do not move
+with the parameter set. Regions written as `S0..S3` / `T0..T3` / `U0..U3` / `E0..E3`
+are vectors of k polynomials, so at ML-KEM-512 (k = 2) only `S0..S1` are populated and
+at ML-KEM-768 (k = 3) only `S0..S2`; the remainder of each region is untouched by the
+shorter operation. The active k is `mlkem_k_of(mlkem_param_set)`, and `zeroize` clears
+the full allocation rather than only the active prefix.
 
 ### inst0 (ML-KEM)
 | Offset | Entries | Name | Notes |

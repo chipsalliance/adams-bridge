@@ -22,13 +22,30 @@ The security level of ML-DSA defined by NIST are as follows:
 | :------------- | :------------- |
 | ML-DSA-44      | Level-2        |
 | ML-DSA-65      | Level-3        |
-| **ML-DSA-87**  | **Level-5**    |
+| ML-DSA-87      | Level-5        |
 
-CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
+All three parameter sets are present in hardware unconditionally and are selected at
+runtime through the `PARAM_SET` field; there is no build-time configuration. CNSA 2.0
+only allows the highest security level (Level-5) for PQC, which is ML-DSA-87, and that
+is the reset default of `PARAM_SET` -- so an integrator targeting CNSA 2.0 who never
+writes the field gets ML-DSA-87.
 
 # API
 
-The ML-DSA-87 architecture inputs and outputs are described in the following table.
+The architecture inputs and outputs are described in the following table. The sizes
+shown are the ML-DSA-87 (worst-case) window sizes; the register windows stay
+ML-DSA-87-sized at every parameter set, and a shorter parameter set uses a prefix of
+each window. The per-set key and signature lengths are those of FIPS 204 Table 2,
+derived in hardware from `mldsa_k_of` / `mldsa_l_of` / `mldsa_lambda_of` in
+`abr_params_pkg.sv`.
+
+Two properties hold for the unused tail of a window at the shorter parameter sets:
+the API write decode and the sampler read bounds are both derived from the active
+parameter set, so a shorter operation ignores the tail rather than consuming it; and
+`zeroize` clears the full ML-DSA-87-sized backing store rather than only the active
+prefix. In addition, the c~ dwords above the active lambda/4 bytes are held at zero,
+so neither the verify compare nor the `VERIFY_RES` readback can observe a challenge
+hash left in the tail by a previous operation.
 
 
 | Name                        | Input/Output    | Operation       | Size (Byte)   |
@@ -899,7 +916,10 @@ Masking imposes **zero cycle overhead**. The only cost of enabling masking is ar
 
 
 
-- CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
+- CNSA 2.0 only allows the highest security level (Level-5) for PQC, which is
+  ML-DSA-87, and that is the reset default of the `PARAM_SET` field. The latency
+  figures in this section are measured at ML-DSA-87; ML-DSA-44 and ML-DSA-65 are
+  also supported and are faster, since their cost scales with the (k, l) dimensions.
 - For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
