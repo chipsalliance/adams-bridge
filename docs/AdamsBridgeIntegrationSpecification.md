@@ -18,8 +18,8 @@ and [AdamsBridgeSCA.md](AdamsBridgeSCA.md).
 | :--------- | :--------- |
 | `CALIPTRA_WORKSPACE` | Absolute path to the directory containing a `chipsalliance` subdirectory, which in turn contains the project repository root. |
 | `ADAMSBRIDGE_ROOT` | Absolute path to the Adams Bridge repository root. Recommended: `${CALIPTRA_WORKSPACE}/chipsalliance/caliptra-rtl/submodules/adams-bridge` when integrated with Caliptra, or the standalone `adams-bridge` checkout root otherwise. |
-| `ABR_PRIM_ROOT` | Path to technology-specific Adams Bridge primitive wrappers for synthesis. Defaults to `${ADAMSBRIDGE_ROOT}/src/abr_prim_generic` for the generic implementation. **Not used** when Adams Bridge is integrated with Caliptra -- see [Integration with Caliptra](#integration-with-caliptra-shared-technology-cells) below. |
-| `ABR_PRIM_MODULE_PREFIX` | Module name prefix for technology-specific Adams Bridge primitives. Defaults to `abr_prim_generic`. **Not used** when Adams Bridge is integrated with Caliptra -- see [Integration with Caliptra](#integration-with-caliptra-shared-technology-cells) below. |
+| `ABR_PRIM_ROOT` | The integrator needs to set this environment variable to the path to technology-specific Adams Bridge primitive wrappers for synthesis. Defaults to `${ADAMSBRIDGE_ROOT}/src/abr_prim_generic` for the generic implementation. Not used when Adams Bridge is integrated with Caliptra -- see [Integration with Caliptra](#integration-with-caliptra-shared-technology-cells) below. |
+| `ABR_PRIM_MODULE_PREFIX` | The integrator needs to set this environment variable to specify the module name prefix for technology-specific Adams Bridge modules for synthesis. Defaults to `abr_prim_generic`. Not used when Adams Bridge is integrated with Caliptra -- see [Integration with Caliptra](#integration-with-caliptra-shared-technology-cells) below. |
 
 # Technology-Specific Primitive Instantiation
 
@@ -38,7 +38,7 @@ Integrators shall follow this process to ensure that process-specific library ce
 
 ## Standalone Technology Swap
 
-To integrate technology-specific replacements for a standalone Adams Bridge build (not integrated with Caliptra), define the `ABR_PRIM_MODULE_PREFIX` macro (for example on the compile command line, `+define+ABR_PRIM_MODULE_PREFIX=<tech>_prim`) and compile the technology-specific RTL -- named `<prefix>_buf`, `<prefix>_flop`, `<prefix>_flop_en`, and `<prefix>_xor2` -- in place of the generic implementation under [`src/abr_prim_generic/rtl`](../src/abr_prim_generic/rtl), using the `ABR_PRIM_ROOT` environment variable to point the build at that directory. When `ABR_PRIM_MODULE_PREFIX` is not defined it defaults to `abr_prim_generic`, so the default build resolves to the generic modules and is functionally unchanged.
+To integrate technology-specific replacements for a standalone Adams Bridge build (not integrated with Caliptra), set the `ABR_PRIM_MODULE_PREFIX` and `ABR_PRIM_ROOT` environment variables, and provide the technology-specific RTL -- named `<prefix>_buf`, `<prefix>_flop`, `<prefix>_flop_en`, and `<prefix>_xor2` -- under the directory pointed to by `ABR_PRIM_ROOT`, in place of the generic implementation under [`src/abr_prim_generic/rtl`](../src/abr_prim_generic/rtl). When left unset, these default to `abr_prim_generic` and that directory, so the default build resolves to the generic modules and is functionally unchanged.
 
 ## Integration with Caliptra (Shared Technology Cells)
 
@@ -46,7 +46,7 @@ When Adams Bridge is compiled as part of Caliptra (i.e. the `` `CALIPTRA `` macr
 
 *   An integrator who has already built technology-specific `caliptra_prim_*_buf`/`flop`/`flop_en`/`xor2` cells for Caliptra does **not** need to build a second, separate set for Adams Bridge -- the same files, under the same `CALIPTRA_PRIM_ROOT`, satisfy both libraries.
 *   `ABR_PRIM_ROOT`/`ABR_PRIM_MODULE_PREFIX` are not consulted in this mode; setting them has no effect on a Caliptra-integrated build.
-*   The generated Caliptra file lists already perform this substitution: `abr_prim_generic_<name>.sv` is renamed to `${CALIPTRA_PRIM_MODULE_PREFIX}_<name>.sv` under `${CALIPTRA_PRIM_ROOT}/rtl`, identically to how `caliptra_prim_generic_<name>.sv` is renamed -- so for the four shared primitives, both libraries end up referencing the exact same technology-cell file.
+*   Caliptra's generated file lists route Adams Bridge's primitives through the same `CALIPTRA_PRIM_ROOT`-rooted technology-cell files as Caliptra's own -- so for the four shared primitives, both libraries end up referencing the exact same file, and no separate Adams Bridge-specific primitive files are needed.
 
 This resolution relies on `caliptra_prim_module_name_macros.svh` (and `config_defines.svh`, which defines `` `CALIPTRA ``) having already been compiled ahead of Adams Bridge's own files, which is already the case in Caliptra's standard compile order.
 
