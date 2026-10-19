@@ -17,8 +17,23 @@
 //
 // For production use it is recommended to implement the technology-specific
 // modules replacing the generic ones and point the compile at that RTL root.
+//
+// When Adams Bridge is integrated into Caliptra, reuse whatever prefix
+// Caliptra's own prim swap mechanism resolves to (its own default, or an
+// integrator's technology-specific override), so both libraries' primitives
+// swap together without a separately-maintained value. `CALIPTRA` is the
+// same build-mode flag abr_ctrl.sv/abr_top.sv already branch on for keyvault
+// wiring (defined by src/integration/rtl/config_defines.svh, pulled in very
+// early via src/libs); the Caliptra/Adams Bridge file-list generation already
+// compiles caliptra_prim ahead of abr_prim, so CALIPTRA_PRIM_MODULE_PREFIX is
+// resolved by the time this is reached.
 `ifndef ABR_PRIM_MODULE_PREFIX
-`define ABR_PRIM_MODULE_PREFIX abr_prim_generic
+  `ifdef CALIPTRA
+    `define ABR_PRIM_MODULE_PREFIX `CALIPTRA_PRIM_MODULE_PREFIX
+  `else
+    // Standalone Adams Bridge build: caliptra_prim is not present.
+    `define ABR_PRIM_MODULE_PREFIX abr_prim_generic
+  `endif // CALIPTRA
 `endif // ABR_PRIM_MODULE_PREFIX
 
 // Macro to generate the full module name for abr_prim modules.

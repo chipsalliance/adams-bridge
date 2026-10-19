@@ -11,11 +11,6 @@
   `define ABR_PRIM_DEFAULT_IMPL abr_prim_pkg::ImplGeneric
 `endif
 
-// This is to prevent AscentLint warnings in the generated
-// abstract prim wrapper. These warnings occur due to the .*
-// use. TODO: we may want to move these inline waivers
-// into a separate, generated waiver file for consistency.
-//ri lint_check_off OUTPUT_NOT_DRIVEN INPUT_NOT_READ HIER_BRANCH_NOT_READ
 module abr_prim_flop
 
 #(
@@ -36,16 +31,21 @@ if (Impl == abr_prim_pkg::ImplXilinx) begin : gen_xilinx
       .ResetValue(ResetValue),
       .Width(Width)
     ) u_impl_xilinx (
-      .*
+      .clk_i  (clk_i),
+      .rst_ni (rst_b),
+      .d_i    (d_i),
+      .q_o    (q_o)
     );
 end else begin : gen_generic
     `ABR_PRIM_MODULE_NAME(flop) #(
       .ResetValue(ResetValue),
       .Width(Width)
     ) u_impl_generic (
-      .*
+      .clk_i  (clk_i),
+      .rst_ni (rst_b),
+      .d_i    (d_i),
+      .q_o    (q_o)
     );
 end
 
 endmodule
-//ri lint_check_on OUTPUT_NOT_DRIVEN INPUT_NOT_READ HIER_BRANCH_NOT_READ
