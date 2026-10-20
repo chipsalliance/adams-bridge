@@ -1,5 +1,5 @@
 +incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl
-${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop_en.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_flop.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_buf.sv
-${ADAMSBRIDGE_ROOT}/src/abr_prim_generic/rtl/abr_prim_generic_xor2.sv
+${ABR_PRIM_ROOT}/rtl/${ABR_PRIM_MODULE_PREFIX}_flop_en.sv
+${ABR_PRIM_ROOT}/rtl/${ABR_PRIM_MODULE_PREFIX}_flop.sv
+${ABR_PRIM_ROOT}/rtl/${ABR_PRIM_MODULE_PREFIX}_buf.sv
+${ABR_PRIM_ROOT}/rtl/${ABR_PRIM_MODULE_PREFIX}_xor2.sv
