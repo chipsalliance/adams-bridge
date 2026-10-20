@@ -24,11 +24,10 @@
 // swap together without a separately-maintained value. `CALIPTRA` is the
 // same build-mode flag abr_ctrl.sv/abr_top.sv already branch on for keyvault
 // wiring (defined by src/integration/rtl/config_defines.svh, pulled in very
-// early via src/libs); the Caliptra/Adams Bridge file-list generation already
-// compiles caliptra_prim ahead of abr_prim, so CALIPTRA_PRIM_MODULE_PREFIX is
-// resolved by the time this is reached.
+// early via src/libs).
 `ifndef ABR_PRIM_MODULE_PREFIX
   `ifdef CALIPTRA
+    `include "caliptra_prim_module_name_macros.svh"
     `define ABR_PRIM_MODULE_PREFIX `CALIPTRA_PRIM_MODULE_PREFIX
   `else
     // Standalone Adams Bridge build: caliptra_prim is not present.
