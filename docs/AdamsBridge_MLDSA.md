@@ -2224,6 +2224,32 @@ Shares are produced at every point where secret data enters the memory subsystem
 
 ### Dual-NTT execution
 
+The top-level random sources are banks of 64-bit `FIB_XNOR` LFSRs. Each of the
+two NTT random streams uses two instances (128 state bits), supplying bits
+`[95:0]` to the coefficient splitter and `[101:96]` to shuffling. With SHA3
+masking enabled, thirteen further instances provide the 800 DOM bits and one
+auxiliary bit, and a separate instance provides the 64-bit message mask. All
+instances remain free-running; the DOM bank retains its neighboring-instance
+entropy coupling.
+
+Every reseed prologue, including signing retries and the ML-KEM entry points,
+keeps the existing two SHAKE256 derivations of `entropy || counter` before
+loading the LFSRs together. The free-running counter changes between
+derivations. Pass 1 refreshes the 512-bit entropy pool (bits `[511:0]`) and
+supplies the 256 NTT seed bits (`[767:512]`); pass 2, keyed by the refreshed
+pool, supplies the 832 DOM seed bits (`[831:0]`) and the 64-bit message seed
+(`[895:832]`). Only rate bits are consumed, and no output bit is shared between
+destinations. A bank of LFSRs is not a cryptographic random-number generator;
+this change does not by itself establish side-channel resistance.
+
+The focused `adams_bridge_lib::abr_lfsr_tb` Playbook target checks the 64-bit
+recurrence, reset/hold/reseed/lockup behavior, seed budget, and all six reseed
+prologues. Its standalone file list is `src/abr_top/config/abr_lfsr_tb.vf`.
+Runtime `+LFSR_FAULT=actual`, `expected`, `missing`, or `unknown` deliberately
+corrupts one checked channel; each control must fail the same checker.
+Top-level assertions additionally check bank widths, seed routing, and seed
+readiness during normal UVM ML-DSA/ML-KEM regressions.
+
 When `MASKING_EN = 1`, [`abr_top.sv`](../src/abr_top/rtl/abr_top.sv) instantiates `ABR_NUM_NTT = 2` identical NTT engines:
 
 | Engine    | Reads from        | Writes to         | Operand               |

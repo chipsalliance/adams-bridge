@@ -1489,14 +1489,13 @@ always_comb kv_mlkem_msg_write_data = '0;
       lfsr_entropy_reg <= lfsr_entropy_reg ^ entropy_reg;
     end
     else if (sampler_state_dv_i) begin
-      // Entropy pass 1: capture the 512-bit entropy feedback only.
+      // Pass 1: entropy feedback and NTT seeds from disjoint rate bits.
       if (abr_instr.operand3 == ABR_DEST_ENTROPY_REG_ID) begin
           lfsr_entropy_reg <= sampler_state_data_i[ENTROPY_LSB +: ENTROPY_W];
-      end
-      // Entropy pass 2: capture the LFSR seeds from a fresh squeeze; these bits are
-      // disjoint from the pass-1 feedback, so no entropy output is ever reused.
-      if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o.ntt  <= sampler_state_data_i[NTT_SEED_LSB +: NTT_SEED_W];
+      end
+      // Pass 2: DOM and message seeds from a fresh derivation keyed by pass 1.
+      if (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) begin
           lfsr_seed_o.dom  <= sampler_state_data_i[DOM_SEED_LSB +: KECCAK_DOM_LFSR_W];
           lfsr_seed_o.msg  <= sampler_state_data_i[MSG_SEED_LSB +: KECCAK_MSG_LFSR_W];
       end
@@ -2372,6 +2371,40 @@ always_comb zeroize_mem_o.addr = zeroize_mem_addr;
   `ABR_ASSERT_KNOWN(ERR_PWO_MEM_X, {pwo_mem_base_addr_o}, clk, !rst_b)
   `ABR_ASSERT_KNOWN(ERR_REG_HWIF_X, {abr_reg_hwif_in_o}, clk, !rst_b)
   `ABR_ASSERT(ZEROIZE_SEED_REG, $fell(zeroize) |-> (mldsa_seed_reg === '0), clk, !rst_b)
+
+  // Seed capture is visible one cycle after the sampler's valid beat. Literal
+  // bit ranges keep these checks independent of the package offsets.
+  `ABR_ASSERT(LfsrEntropyNttCapture_A,
+    sampler_state_dv_i && !set_entropy &&
+    (abr_instr.operand3 == ABR_DEST_ENTROPY_REG_ID) |=>
+      lfsr_entropy_reg == $past(sampler_state_data_i[511:0]) &&
+      lfsr_seed_o.ntt == $past(sampler_state_data_i[767:512]) &&
+      $stable({lfsr_seed_o.msg, lfsr_seed_o.dom}), clk, !rst_b)
+  `ABR_ASSERT(LfsrDomMsgCapture_A,
+    sampler_state_dv_i && !set_entropy &&
+    (abr_instr.operand3 == ABR_DEST_LFSR_SEED_REG_ID) |=>
+      {lfsr_seed_o.msg, lfsr_seed_o.dom} == $past(sampler_state_data_i[895:0]) &&
+      $stable(lfsr_seed_o.ntt), clk, !rst_b)
+
+`ifdef ABR_ASSERT_ON
+`ifndef SYNTHESIS
+  logic [1:0] lfsr_seed_pass_seen;
+  always_ff @(posedge clk or negedge rst_b) begin
+    if (!rst_b) lfsr_seed_pass_seen <= '0;
+    else if (zeroize || set_entropy || lfsr_enable_o) lfsr_seed_pass_seen <= '0;
+    else if (sampler_state_dv_i) begin
+      case (abr_instr.operand3)
+        ABR_DEST_ENTROPY_REG_ID:   lfsr_seed_pass_seen <= 2'b10;
+        ABR_DEST_LFSR_SEED_REG_ID: lfsr_seed_pass_seen[0] <= lfsr_seed_pass_seen[1];
+        default: ;
+      endcase
+    end
+  end
+  // Both passes, in order, must precede every load/retry.
+  `ABR_ASSERT(LfsrSeedsReady_A,
+    lfsr_enable_o |-> (&lfsr_seed_pass_seen), clk, !rst_b || zeroize)
+`endif
+`endif
 
   // ------------------------------------------------------------------
   // Decode-partition mutex checks
