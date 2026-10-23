@@ -1,0 +1,9 @@
++define+ABR_ASSERT_ON
++incdir+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_params_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_sampler_top/rtl/abr_sampler_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_ctrl_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_cipher_pkg.sv
+${ADAMSBRIDGE_ROOT}/src/abr_prim/rtl/abr_prim_lfsr.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/rtl/abr_seq.sv
+${ADAMSBRIDGE_ROOT}/src/abr_top/tb/abr_lfsr_tb.sv
