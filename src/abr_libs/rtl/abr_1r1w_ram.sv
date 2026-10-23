@@ -51,6 +51,8 @@ module abr_1r1w_ram #(
 
 `ABR_ASSERT_NEVER(ABR_MEM_RD_GT_DEPTH, raddr_i >= DEPTH, clk_i, 0, re_i) //no reset here, just enable on reads
 `ABR_ASSERT_NEVER(ABR_MEM_WR_GT_DEPTH, waddr_i >= DEPTH, clk_i, 0, we_i) //no reset here, just enable on writes
+// Read/write collisions (same address, same cycle) are not allowed.
+`ABR_ASSERT_NEVER(ABR_MEM_RW_COLLISION, we_i && re_i && (waddr_i == raddr_i), clk_i, 0)
 
 endmodule
 
