@@ -39,7 +39,8 @@ module decompress
         endcase
     end
     
-    always_comb op = (op_i < MLKEM_Q) ? op_i : '0; // Sanitize input to be in range [0, q-1]
+    // ByteDecode12: map 12-bit input into [0, q-1]; one subtraction suffices since 4095 < 2q.
+    always_comb op = (op_i < MLKEM_Q) ? op_i : (op_i - MLKEM_Q);
     always_comb op_mult_add = (MLKEM_Q * op_i) + 2**(d - 1);
     always_comb op_o = (mode == 3) ? op :  MLKEM_Q_WIDTH'(op_mult_add >> d);
 
