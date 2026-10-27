@@ -32,4 +32,15 @@ targets:
     directories: []
     waiver_files:
       - $MSFT_REPO_ROOT/src/decompress/config/design_lint/decompress/sglint_waivers
-
+---
+provides: [decompress_tb]
+schema_version: 2.4.0
+requires:
+  - decompress
+  - decompress_pkg
+targets:
+  rtl:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/tb/decompress_tb.sv
+    tops: [decompress_tb]

@@ -1043,6 +1043,8 @@ In our architecture, the same logic is reused for the division required during c
 
 Following compression, decompression performs the inverse operation by expanding d-bit coefficients back to 12-bit values in Zq ​based on the following formula. 
 
+The d = 12 mode implements ByteDecode12 rather than the lossy decompression formula below. Each decoded 12-bit integer is reduced modulo q = 3329 (FIPS 203, Algorithm 6) with a single conditional subtraction: values below q pass through unchanged, and values from 3329 through 4095 have q subtracted once (for example, 3955 decodes to 626). The encapsulation-key modulus check is handled separately and is unaffected.
+
 ![](./images/MLKEM/image17.png)
 
 Our architecture handles four such compressed coefficients per clock cycle using four parallel multipliers. Each compressed coefficient is scaled and shifted based on its original encoding formula to recover the approximate 12-bit representation. The decompression path supports multiple d values via a configurable datapath, enabling seamless integration into systems supporting different compression profiles for ML-KEM using the following equation. 
