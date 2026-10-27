@@ -2242,9 +2242,9 @@ pool, supplies the 832 DOM seed bits (`[831:0]`) and the 64-bit message seed
 destinations. A bank of LFSRs is not a cryptographic random-number generator;
 this change does not by itself establish side-channel resistance.
 
-The focused `adams_bridge_lib::abr_lfsr_tb` Playbook target checks the 64-bit
-recurrence, reset/hold/reseed/lockup behavior, seed budget, and all six reseed
-prologues. Its standalone file list is `src/abr_top/config/abr_lfsr_tb.vf`.
+The focused [`abr_lfsr_tb`](../src/abr_top/tb/abr_lfsr_tb.sv) testbench checks
+the 64-bit recurrence, reset/hold/reseed/lockup behavior, seed budget, and all
+six reseed prologues. Its standalone file list is `src/abr_top/config/abr_lfsr_tb.vf`.
 Runtime `+LFSR_FAULT=actual`, `expected`, `missing`, or `unknown` deliberately
 corrupts one checked channel; each control must fail the same checker.
 Top-level assertions additionally check bank widths, seed routing, and seed
