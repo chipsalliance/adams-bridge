@@ -98,6 +98,26 @@ global:
         - +define+ABR_ASSERT_ON
         - '-noinherit_timescale=1ns/1ps'
 ---
+provides: [abr_lfsr_tb]
+schema_version: 2.4.0
+requires:
+  - abr_ctrl_pkg
+  - abr_prim
+targets:
+  tb:
+    directories: [$COMPILE_ROOT/tb]
+    files:
+      - $COMPILE_ROOT/rtl/abr_seq.sv
+      - $COMPILE_ROOT/tb/abr_lfsr_tb.sv
+    tops: [abr_lfsr_tb]
+global:
+  tool:
+    vcs:
+      default:
+        - '-assert svaext'
+        - +define+ABR_ASSERT_ON
+        - '-noinherit_timescale=1ns/1ps'
+---
 provides: [abr_coverage]  
 schema_version: 2.4.0
 requires: 
