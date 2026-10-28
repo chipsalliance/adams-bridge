@@ -352,6 +352,34 @@ while (read_data == 0) {
 return shared_key;
 ```
 ​ 
+# Usage Model Restriction: Decapsulation Key Reuse
+
+Adams Bridge ML-KEM is designed and validated for an **ephemeral decapsulation-key usage model**. The integrator (firmware or the protocol layer above it) is responsible for enforcing this model. The hardware does not enforce it.
+
+## Requirements
+
+The *decapsulation key* is either the `decaps_key` input (DECAPS) or the `seed_d`/`seed_z` pair from which it is regenerated (KEYGEN_DECAPS).
+
+1. **Single use (default).** A decapsulation key SHALL be used for at most one decapsulation of a ciphertext received from an untrusted party. After that decapsulation, the integrator SHALL destroy the decapsulation key (or the seeds it was derived from) and use a fresh key pair for any later exchange.
+2. **Bounded reuse (exception).** If a protocol requires the same decapsulation key for more than one decapsulation (for example, a receiver key pair that serves several commands within one session), the integrator SHALL:
+   - bound the number of decapsulations allowed per key and regenerate the key when the bound is reached; and
+   - destroy and regenerate the key as soon as the protocol detects a failed exchange, i.e., the shared key returned by Adams Bridge fails its next authenticated use (for example, an AEAD tag or MAC check). Under implicit rejection, this is how an invalid ciphertext becomes visible.
+3. **No long-term keys.** Long-term or static decapsulation keys exposed to unauthenticated, attacker-chosen ciphertexts are **outside the intended usage model** of Adams Bridge.
+4. **Caller-supplied keys.** When the decapsulation key or seeds are supplied by an external caller (for example, through a mailbox command), the caller is responsible for meeting requirements 1–3.
+
+## Rationale
+
+The Fujisaki–Okamoto (FO) transform used by ML-KEM decapsulation decrypts the ciphertext, re-encrypts the recovered message, and compares the result with the received ciphertext. It then returns either the real shared key or the implicit-rejection key K̄ (FIPS 203 \[1\], Algorithm 18).
+
+Chosen-ciphertext side-channel attacks against this step (plaintext-checking and decryption-failure oracles) need many decapsulations under the **same** decapsulation key. Each query learns a small amount of information about the long-term K-PKE secret, and the secret is recovered once enough queries are combined. With the ephemeral usage model above, these attacks cannot collect the queries they need.
+
+The Adams Bridge side-channel countermeasures (see [AdamsBridgeSCA.md](./AdamsBridgeSCA.md)) assume this usage model. **They do not claim resistance against multi-query chosen-ciphertext side-channel attacks that require reusing a decapsulation key.**
+
+## Hardware Behavior
+
+- **No reuse tracking.** Adams Bridge has no notion of key identity across operations. It cannot detect or block reuse of a `decaps_key` or of `seed_d`/`seed_z`. ZEROIZE (mandatory after every operation) clears secret-holding registers, but nothing prevents the same values from being written again for a later operation.
+- **No decapsulation-failure indication.** As required by FIPS 203, a ciphertext that fails the re-encryption check produces the implicit-rejection key K̄. No status bit, interrupt, or error flag shows which path was taken. Exposing that outcome would itself create an oracle that bypasses implicit rejection. Detecting failures and rotating keys must therefore happen at the protocol layer (requirement 2).
+
 # Performance and Area Results
 
 ## ML-KEM-1024
