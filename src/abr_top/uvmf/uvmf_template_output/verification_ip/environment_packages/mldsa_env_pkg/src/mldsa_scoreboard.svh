@@ -143,7 +143,7 @@ class mldsa_scoreboard #(
     ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS, ahb_lite_slave_0_params::AHB_NUM_MASTER_BITS, ahb_lite_slave_0_params::AHB_NUM_SLAVES, ahb_lite_slave_0_params::AHB_ADDRESS_WIDTH, ahb_lite_slave_0_params::AHB_WDATA_WIDTH, ahb_lite_slave_0_params::AHB_RDATA_WIDTH) t;
     ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS, ahb_lite_slave_0_params::AHB_NUM_MASTER_BITS, ahb_lite_slave_0_params::AHB_NUM_SLAVES, ahb_lite_slave_0_params::AHB_ADDRESS_WIDTH, ahb_lite_slave_0_params::AHB_WDATA_WIDTH, ahb_lite_slave_0_params::AHB_RDATA_WIDTH) t_exp;
     bit txn_eq;
-    if (!$cast(t,_t)) begin
+    if (!$cast(t,_t.clone())) begin
       `uvm_fatal("SCBD_AHB","Cast from mvc_sequence_item_base to ahb_master_burst_transfer #(ahb_lite_slave_0_params::AHB_NUM_MASTERS, ahb_lite_slave_0_params::AHB_NUM_MASTER_BITS, ahb_lite_slave_0_params::AHB_NUM_SLAVES, ahb_lite_slave_0_params::AHB_ADDRESS_WIDTH, ahb_lite_slave_0_params::AHB_WDATA_WIDTH, ahb_lite_slave_0_params::AHB_RDATA_WIDTH) in write_actual_ahb_analysis_export failed!")
     end
     // `uvm_info("SCBD_AHB", "Transaction Received through actual_ahb_analysis_export", UVM_MEDIUM)
@@ -232,9 +232,8 @@ class mldsa_scoreboard #(
           end
       end
       else begin
-          `uvm_info("FIXME_CUSTOM_SCOREBOARD", "UVMF_CHANGE_ME: The mldsa_scoreboard::write_actual_ahb_analysis_export function needs to be completed with custom scoreboard functionality for unexpected actual transactions",UVM_HIGH)
-          `uvm_error("SCBD_AHB",$sformatf("NO PREDICTED ENTRY TO COMPARE AGAINST:%s",t.convert2string()))
-          nothing_to_compare_against_count++;
+          // Independent QVIP monitors may publish actual data before prediction.
+          ahb_actual_q.push_back(t);
       end
       -> entry_received;
     end
@@ -298,6 +297,10 @@ class mldsa_scoreboard #(
       end
     end
  
+    if (ahb_actual_q.size() > 0 &&
+        (ahb_expected_q.size() > 0 || ahb_expected_verif_q.size() > 0)) begin
+      write_actual_ahb_analysis_export(ahb_actual_q.pop_front());
+    end
     // pragma uvmf custom expected_ahb_analysis_export_scoreboard end
   endfunction
   
@@ -313,6 +316,12 @@ class mldsa_scoreboard #(
   virtual function void check_phase(uvm_phase phase);
 // pragma uvmf custom check_phase begin
      super.check_phase(phase);
+     nothing_to_compare_against_count = ahb_actual_q.size();
+     if (ahb_actual_q.size() > 0 || ahb_expected_q.size() > 0 ||
+         ahb_expected_verif_q.size() > 0) begin
+       `uvm_error("SCBD_AHB", $sformatf("Unmatched transactions: actual=%0d expected=%0d verification=%0d",
+           ahb_actual_q.size(), ahb_expected_q.size(), ahb_expected_verif_q.size()))
+     end
 // pragma uvmf custom check_phase end
   endfunction
 
@@ -323,7 +332,8 @@ class mldsa_scoreboard #(
      `uvm_info("SCBD_REPORT", $sformatf("Total Matches: %0d", match_count), UVM_LOW)
      `uvm_info("SCBD_REPORT", $sformatf("Total Mismatches: %0d", mismatch_count), UVM_LOW)
      `uvm_info("SCBD_REPORT", $sformatf("No Predicted Entries to Compare Against: %0d", nothing_to_compare_against_count), UVM_LOW)
-      if (mismatch_count == 0)
+      if (mismatch_count == 0 && nothing_to_compare_against_count == 0 &&
+          ahb_expected_q.size() == 0 && ahb_expected_verif_q.size() == 0)
           $display("* TESTCASE PASSED");
       else
           $display("* TESTCASE FAILED");
@@ -334,4 +344,3 @@ endclass
 
 // pragma uvmf custom external begin
 // pragma uvmf custom external end
-
