@@ -456,7 +456,7 @@ end
 generate
   if (Sha3EnMasking) begin : gen_sha3_masking_recombine
   //simple recombine
-  abr_prim_generic_xor2 #(
+  abr_prim_xor2 #(
     .Width (abr_sha3_pkg::StateW)
   ) u_abr_prim_xor_sha3_state (
     .in0_i (sha3_state_o[0]),

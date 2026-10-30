@@ -71,52 +71,55 @@ package abr_ctrl_pkg;
     localparam T1_COEFF_W = 10;
     
 
+    localparam ABR_LFSR_W = 64;
+
     // Dedicated, independently-seeded LFSRs for the masked Keccak core.
     //  - DOM multipliers: peak 800 fresh bits on Phase2Cycle1/Cycle2 (+1 aux per
     //    round), supplied every cycle by a free-running bank so the permutation
-    //    never stalls. FIB_XNOR caps at 168b/instance, so a bank is required:
-    //    5*161 = 805 >= 801 (800 rand + 1 aux).
-    //  - Message-share splitter: 64 bits/beat from a single 64b LFSR advanced
-    //    only on an accepted masked beat (independent stream, own seed).
-    localparam KECCAK_DOM_LFSR_DW  = 161;
-    localparam KECCAK_DOM_NUM_LFSR = 5;
-    localparam KECCAK_DOM_LFSR_W   = KECCAK_DOM_LFSR_DW * KECCAK_DOM_NUM_LFSR; // 805
-    localparam KECCAK_MSG_LFSR_W   = 64;
+    //    never stalls: 13*64 = 832 >= 801 (800 rand + 1 aux).
+    //  - Message-share splitter: 64 bits/beat from a separate free-running LFSR.
+    localparam KECCAK_DOM_LFSR_DW  = ABR_LFSR_W;
+    localparam KECCAK_DOM_NUM_LFSR = 13;
+    localparam KECCAK_DOM_LFSR_W   = KECCAK_DOM_LFSR_DW * KECCAK_DOM_NUM_LFSR; // 832
+    localparam KECCAK_MSG_LFSR_W   = ABR_LFSR_W;
 
-    localparam NTT_NUM_LFSR = 2;
-    localparam NTT_LFSR_W = 102; // Each LFSR width: (2*96 + 12) / 2 — 12 shuffle bits (6 per NTT)
-
-    // The entropy pool is refreshed and the LFSRs are seeded by TWO separate SHAKE256
-    // squeezes (see abr_seq), so the 512-bit entropy feedback and the LFSR seeds are
-    // never carved from the same squeeze — no output bit ever serves two purposes.
-    // Each pass reads only rate bits (<= 1088 for SHAKE256); capacity bits are never
-    // exposed.
-    //
-    // Pass 1 (ABR_DEST_ENTROPY_REG_ID beat): 512-bit entropy feedback from the LSB.
-    //   [ entropy ]
-    //   0        512
-    localparam int ENTROPY_LSB  = 0;
-    localparam int ENTROPY_W    = ENTROPY_NUM_DWORDS * 32;                  // 512
-    //
-    // Pass 2 (ABR_DEST_LFSR_SEED_REG_ID beat): LFSR seeds packed from the LSB, all
-    // mutually disjoint. Total 1073 bits, within the SHAKE256 rate; top 15 unused.
-    //   [ ntt seeds | dom seed | msg seed | ...unused... ]
-    //   0          204        1009       1073          1088
-    localparam int NTT_SEED_LSB = 0;
-    localparam int NTT_SEED_W   = NTT_NUM_LFSR * NTT_LFSR_W;                // 204
-    localparam int DOM_SEED_LSB = NTT_SEED_LSB + NTT_SEED_W;                // 204
-    localparam int MSG_SEED_LSB = DOM_SEED_LSB + KECCAK_DOM_LFSR_W;         // 1009
+    // Two 64-bit LFSRs supply each 96-bit splitter plus 6-bit shuffle stream.
+    localparam NTT_NUM_RAND_STREAMS = 2;
+    localparam NTT_LFSRS_PER_STREAM = 2;
+    localparam NTT_NUM_LFSR = NTT_NUM_RAND_STREAMS * NTT_LFSRS_PER_STREAM;
+    localparam NTT_LFSR_W = ABR_LFSR_W;
+    localparam NTT_RAND_W = NTT_LFSRS_PER_STREAM * NTT_LFSR_W;
 
     // Aggregated LFSR seed delivered from the sequencer in a single struct. The
     // NTT shuffle/split seeds are always consumed; the Keccak DOM and message-mask
     // seeds are only consumed when SHA3 masking is enabled (their LFSR generate
-    // branch in abr_top is elided otherwise, so dom/msg prune away). All slices are
-    // carved from disjoint, otherwise-unused upper SHAKE-squeeze bits.
+    // branch in abr_top is elided otherwise, so dom/msg prune away).
     typedef struct packed {
       logic [KECCAK_MSG_LFSR_W-1:0] msg;  // message-share splitter LFSR seed
       logic [KECCAK_DOM_NUM_LFSR-1:0][KECCAK_DOM_LFSR_DW-1:0] dom;  // DOM multiplier LFSR bank seed
       logic [NTT_NUM_LFSR-1:0][NTT_LFSR_W-1:0]       ntt;  // NTT shuffle/split LFSR seeds
     } abr_lfsr_seed_t;
+
+    // The entropy pool is refreshed and the LFSRs are seeded by TWO SHAKE256
+    // derivations of entropy||counter (see abr_seq). Each pass reads only rate bits
+    // (<= 1088 for SHAKE256); capacity bits are never exposed. Within a pass all
+    // destinations use disjoint bits, so no output bit ever serves two purposes.
+    localparam int SHAKE256_RATE_W = 1088;
+    //
+    // Pass 1 (ABR_DEST_ENTROPY_REG_ID beat): entropy feedback + NTT seeds.
+    //   [ entropy | ntt seeds | unused ]
+    //   0        512         768      1088
+    localparam int ENTROPY_LSB  = 0;
+    localparam int ENTROPY_W    = ENTROPY_NUM_DWORDS * 32;                  // 512
+    localparam int NTT_SEED_LSB = ENTROPY_LSB + ENTROPY_W;                  // 512
+    localparam int NTT_SEED_W   = NTT_NUM_LFSR * NTT_LFSR_W;                // 256
+    //
+    // Pass 2 (ABR_DEST_LFSR_SEED_REG_ID beat): DOM + message seeds, keyed by the
+    // pass-1 entropy feedback.
+    //   [ dom seeds | msg seed | unused ]
+    //   0          832        896      1088
+    localparam int DOM_SEED_LSB = 0;
+    localparam int MSG_SEED_LSB = DOM_SEED_LSB + KECCAK_DOM_LFSR_W;         // 832
 
     localparam SK_MEM_DEPTH = 1192;
     localparam SK_MEM_BANK_DEPTH = SK_MEM_DEPTH/2;

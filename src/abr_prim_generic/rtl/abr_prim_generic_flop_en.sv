@@ -10,7 +10,7 @@ module abr_prim_generic_flop_en #(
   parameter logic [Width-1:0] ResetValue = 0
 ) (
   input                    clk_i,
-  input                    rst_b,
+  input                    rst_ni,
   input                    en_i,
   input        [Width-1:0] d_i,
   output logic [Width-1:0] q_o
@@ -28,8 +28,8 @@ module abr_prim_generic_flop_en #(
     assign en = en_i;
   end
 
-  always_ff @(posedge clk_i or negedge rst_b) begin
-    if (!rst_b) begin
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
       q_o <= ResetValue;
     end else if (en) begin
       q_o <= d_i;

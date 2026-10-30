@@ -66,7 +66,7 @@ module abr_prim_dom_and_2share #(
   // Resharing of cross-domain terms
 
   // Preserve the logic sequence for XOR not to proceed cross-domain AND.
-  abr_prim_generic_xor2 #(
+  abr_prim_xor2 #(
     .Width ( DW*2 )
   ) u_abr_prim_xor_t01 (
     .in0_i ( {t_a0b1, t_a1b0} ),
@@ -75,7 +75,7 @@ module abr_prim_dom_and_2share #(
   );
 
   // Register stage
-  abr_prim_generic_flop_en #(
+  abr_prim_flop_en #(
     .Width      ( DW*2 ),
     .ResetValue ( '0   )
   ) u_abr_prim_flop_t01 (
@@ -96,7 +96,7 @@ module abr_prim_dom_and_2share #(
     // reshared cross-domain terms with inner-domain terms derived from different input data.
 
     logic [DW-1:0] t_a0b0_q, t_a1b1_q;
-    abr_prim_generic_flop_en #(
+    abr_prim_flop_en #(
       .Width      ( DW*2 ),
       .ResetValue ( '0   )
     ) u_abr_prim_flop_tab01 (
@@ -125,7 +125,7 @@ module abr_prim_dom_and_2share #(
   /////////////////
 
   // Preserve the logic sequence for XOR not to proceed the inner-domain AND.
-  abr_prim_generic_xor2 #(
+  abr_prim_xor2 #(
     .Width ( DW*2 )
   ) u_abr_prim_xor_q01 (
     .in0_i ( {t_a0b0, t_a1b1} ),

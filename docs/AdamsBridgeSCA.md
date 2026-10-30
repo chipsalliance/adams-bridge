@@ -119,6 +119,18 @@ Point-wise multiplication and the first state of inverse NTT.
 
 NTT, point-wise addition and point-wise subtraction.
 
+## ML-KEM Decapsulation Usage Model
+
+The ML-KEM side-channel countermeasures assume the **ephemeral decapsulation-key usage model** defined in [AdamsBridge_MLKEM.md — Usage Model Restriction: Decapsulation Key Reuse](./AdamsBridge_MLKEM.md#usage-model-restriction-decapsulation-key-reuse).
+
+Multi-query chosen-ciphertext side-channel attacks need many decapsulations under the same decapsulation key. These include plaintext-checking and decryption-failure oracle attacks on the Fujisaki–Okamoto re-encryption and comparison. Such attacks are **outside the threat model** covered by this document.
+
+They are mitigated by the usage model, which the integrator (firmware or protocol layer) enforces:
+- single-use decapsulation keys; or
+- bounded reuse with key rotation when a decapsulation fails.
+
+Consistent with FIPS 203 implicit rejection, the hardware neither tracks key reuse nor exposes a decapsulation-failure indication.
+
 # Attack Vectors
 
 | Attack Type | Definition & Assumptions | Targets | Countermeasures |
@@ -245,6 +257,7 @@ Although Version 1.0 includes masking countermeasures, this report does not pres
 ---
 
 ## Change Log
+- **v1.2:** Added ML‑KEM decapsulation usage‑model scope (ephemeral decapsulation keys; multi‑query chosen‑ciphertext oracle attacks out of scope, mitigated by usage model).  
 - **v1.1 (2025‑08‑19):** Added ML‑KEM/ML‑DSA PWM (PRNG OFF), masked+shuffled results (1M), INTT TVLA, and ML‑DSA excursion note.  
 - **v1.0:** Reported NTT + PWM with shuffling only.  
 

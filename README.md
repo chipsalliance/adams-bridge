@@ -79,6 +79,8 @@ Other:
 Required for simulation:<BR>
 `CALIPTRA_WORKSPACE`: Defines the absolute path to the directory where the Verilator "scratch" output directory will be created. Recommended to define as the absolute path to the directory that contains a subdirectory "chipsalliance" which, in turn, contains the Project repository root (called "adams-bridge"")<BR>
 `ADAMSBRIDGE_ROOT`: Defines the absolute path to the Project repository root (called "adams-bridge"). Recommended to define as `${CALIPTRA_WORKSPACE}/chipsalliance/caliptra-rtl/submodules/adams-bridge`.<BR>
+`ABR_PRIM_ROOT`: Set to $ADAMSBRIDGE_ROOT/src/abr_prim_generic for simulation. See [integration specification](docs/AdamsBridgeIntegrationSpecification.md) for technology specific instructions.<BR>
+`ABR_PRIM_MODULE_PREFIX`: Set to abr_prim_generic for simulation. See [integration specification](docs/AdamsBridgeIntegrationSpecification.md) for technology specific instructions.<BR>
 
 
 ## **Repository Overview** ##
@@ -90,6 +92,7 @@ adams-bridge
 |-- SECURITY.md
 |-- docs
 |   |-- AdamsBridgeHardwareSpecification.md
+|   |-- AdamsBridgeIntegrationSpecification.md
 |   |-- Side-Channel Countermeasures for Adam’s Bridge Accelerator.docx
 |   `-- images
 |-- src

@@ -283,11 +283,11 @@ module abr_top
 
   logic lfsr_enable;
   abr_lfsr_seed_t lfsr_seed;
-  logic [NTT_NUM_LFSR-1:0][NTT_LFSR_W-1:0] rand_bits;
+  logic [NTT_NUM_RAND_STREAMS-1:0][NTT_RAND_W-1:0] rand_bits;
 
   // Dedicated masked-Keccak LFSRs (independent of the NTT masking LFSRs above).
-  //  - DOM bank: free-running, full-width, zero-stall (5*161 = 805 >= 801).
-  //  - Msg LFSR: single 64b, advanced only on an accepted masked message beat.
+  //  - DOM bank: free-running, full-width, zero-stall (13*64 = 832 >= 801).
+  //  - Msg LFSR: single free-running 64-bit instance.
   // Seeds arrive inside lfsr_seed (.dom/.msg); the sequencer always seeds before
   // any masked SHA3 op, so no separate "seeded" gate is tracked here.
   logic [KECCAK_DOM_NUM_LFSR-1:0][KECCAK_DOM_LFSR_DW-1:0]  keccak_dom_lfsr_state;
@@ -382,7 +382,7 @@ module abr_top
 
   logic [1:0][ABR_MEM_DATA_WIDTH-1:0] splitter_rand;
   logic [ABR_NUM_NTT-1:0][5:0] shuffling_rand;
-  for (genvar gi = 0; gi < 2; gi++) begin : gen_rand_assign
+  for (genvar gi = 0; gi < NTT_NUM_RAND_STREAMS; gi++) begin : gen_rand_assign
     assign splitter_rand[gi]  = rand_bits[gi][ABR_MEM_DATA_WIDTH-1:0];
     if (gi < ABR_NUM_NTT) begin : gen_shuffle
       assign shuffling_rand[gi] = rand_bits[gi][ABR_MEM_DATA_WIDTH+5:ABR_MEM_DATA_WIDTH];
@@ -630,7 +630,7 @@ generate
     logic [MsgWidth-1:0] msg_masked;
     assign msg_plain     = decomp_msg_valid ? decomp_msg_data : msg_data;
 
-    abr_prim_generic_xor2 #(
+    abr_prim_xor2 #(
       .Width(MsgWidth)
     ) msg_share_xor (
       .in0_i(msg_plain),
@@ -1185,7 +1185,7 @@ decompress_top_inst
   .api_rd_data_valid(decompress_api_rd_data_valid)
 );
 
-for (genvar gi = 0; gi < 2; gi++) begin : gen_lfsr
+for (genvar gi = 0; gi < NTT_NUM_LFSR; gi++) begin : gen_lfsr
   abr_prim_lfsr
   #(
     .LfsrType("FIB_XNOR"),
@@ -1199,18 +1199,23 @@ for (genvar gi = 0; gi < 2; gi++) begin : gen_lfsr
     .seed_i(lfsr_seed.ntt[gi]),
     .lfsr_en_i(1'b1),
     .entropy_i('0),
-    .state_o(rand_bits[gi])
+    .state_o(rand_bits[gi / NTT_LFSRS_PER_STREAM]
+                      [(gi % NTT_LFSRS_PER_STREAM)*NTT_LFSR_W +: NTT_LFSR_W])
   );
+  `ABR_ASSERT(NttLfsrWidth_A, abr_prim_lfsr_inst.LfsrDw == 64, clk, !rst_b)
+  `ABR_ASSERT(NttLfsrSeedLoad_A, lfsr_enable |=>
+    rand_bits[gi / NTT_LFSRS_PER_STREAM]
+             [(gi % NTT_LFSRS_PER_STREAM)*NTT_LFSR_W +: NTT_LFSR_W] ==
+    $past(lfsr_seed.ntt[gi]), clk, !rst_b)
 end
 
 // Dedicated masked-Keccak LFSRs. Only instantiated when the masked Keccak core
 // exists (SHA3_MASKING_EN). Two independent, independently-seeded generators:
-//   * DOM bank  : free-running FIB_XNOR LFSRs (5*161=805), cross-coupled through
+//   * DOM bank  : free-running FIB_XNOR LFSRs (13*64=832), cross-coupled through
 //                 entropy_i for inter-instance diffusion. Supplies the full 800b
 //                 DOM randomness plus 1 aux bit every cycle => no permutation
 //                 stalls. Slices: [StateW/2-1:0] -> rand_data_i, [StateW/2] -> aux.
-//   * Msg LFSR  : single 64b FIB_XNOR LFSR advanced ONLY on an accepted masked
-//                 beat, so each message word is split with a distinct mask
+//   * Msg LFSR  : single free-running 64b FIB_XNOR LFSR with its own seed.
 generate
   if (SHA3_MASKING_EN) begin : gen_keccak_lfsr
     for (genvar gi = 0; gi < KECCAK_DOM_NUM_LFSR; gi++) begin : gen_keccak_dom_lfsr
@@ -1229,6 +1234,9 @@ generate
         .entropy_i(keccak_dom_lfsr_state[(gi+1) % KECCAK_DOM_NUM_LFSR][7:0]),
         .state_o(keccak_dom_lfsr_state[gi])
       );
+      `ABR_ASSERT(DomLfsrWidth_A, abr_keccak_dom_lfsr_inst.LfsrDw == 64, clk, !rst_b)
+      `ABR_ASSERT(DomLfsrSeedLoad_A, lfsr_enable |=>
+        keccak_dom_lfsr_state[gi] == $past(lfsr_seed.dom[gi]), clk, !rst_b)
     end
     assign keccak_dom_rand_bits = keccak_dom_lfsr_state;
     assign keccak_dom_rand      = keccak_dom_rand_bits[abr_sha3_pkg::StateW/2-1:0];
@@ -1248,6 +1256,9 @@ generate
       .entropy_i('0),
       .state_o(keccak_msg_rand_bits)
     );
+    `ABR_ASSERT(MsgLfsrWidth_A, abr_keccak_msg_lfsr_inst.LfsrDw == 64, clk, !rst_b)
+    `ABR_ASSERT(MsgLfsrSeedLoad_A, lfsr_enable |=>
+      keccak_msg_rand_bits == $past(lfsr_seed.msg), clk, !rst_b)
     assign keccak_msg_mask = keccak_msg_rand_bits[MsgWidth-1:0];
   end else begin : gen_no_keccak_lfsr
     assign keccak_dom_lfsr_state = '0;
