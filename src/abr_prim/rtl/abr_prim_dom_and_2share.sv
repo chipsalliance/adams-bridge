@@ -37,6 +37,7 @@ module abr_prim_dom_and_2share #(
   input [DW-1:0] b0_i, // share0 of b
   input [DW-1:0] b1_i, // share1 of b
   input          z_valid_i, // random number input validity
+  input          zeroize_i, // synchronous clear of all pipeline registers
   input [DW-1:0] z_i,  // random number
 
   output logic [DW-1:0] q0_o, // share0 of q
@@ -48,6 +49,11 @@ module abr_prim_dom_and_2share #(
   logic [DW-1:0] t_a0b0, t_a1b1;
   logic [DW-1:0] t_a0b0_d, t_a1b1_d;
   logic [DW-1:0] t_a0b1, t_a1b0;
+  logic          flop_en;
+
+  // Zeroize loads constant zero into every register bank. Each bank is cleared
+  // independently, so no cross-domain or inner-domain terms are combined.
+  assign flop_en = z_valid_i | zeroize_i;
 
   /////////////////
   // Calculation //
@@ -81,8 +87,8 @@ module abr_prim_dom_and_2share #(
   ) u_abr_prim_flop_t01 (
     .clk_i  ( clk_i        ),
     .rst_b ( rst_b       ),
-    .en_i   ( z_valid_i    ),
-    .d_i    ( {t0_d, t1_d} ),
+    .en_i   ( flop_en      ),
+    .d_i    ( zeroize_i ? '0 : {t0_d, t1_d} ),
     .q_o    ( {t0_q, t1_q} )
   );
 
@@ -102,13 +108,17 @@ module abr_prim_dom_and_2share #(
     ) u_abr_prim_flop_tab01 (
       .clk_i  ( clk_i                ),
       .rst_b ( rst_b               ),
-      .en_i   ( z_valid_i            ),
-      .d_i    ( {t_a0b0_d, t_a1b1_d} ),
+      .en_i   ( flop_en              ),
+      .d_i    ( zeroize_i ? '0 : {t_a0b0_d, t_a1b1_d} ),
       .q_o    ( {t_a0b0_q, t_a1b1_q} )
     );
 
     assign t_a0b0 = t_a0b0_q;
     assign t_a1b1 = t_a1b1_q;
+
+    `ABR_ASSERT(InnerDomainRegsZeroized_A,
+      zeroize_i |=> (t_a0b0_q == '0) && (t_a1b1_q == '0),
+      clk_i, !rst_b)
 
   end else begin : gen_no_inner_domain_regs
     // Do not add the optional pipeline registers on the inner-domain terms. This allows to save
@@ -165,8 +175,12 @@ module abr_prim_dom_and_2share #(
         $stable(a0_i) && $stable(a1_i) && $stable(b0_i) && $stable(b1_i))
   end
 
+  `ABR_ASSERT(CrossDomainRegsZeroized_A,
+    zeroize_i |=> (t0_q == '0) && (t1_q == '0),
+    clk_i, !rst_b)
+
   `ABR_ASSERT(UnmaskedAndMatched_A,
-    z_valid_i |=> (q0_o ^ q1_o) ==
+    z_valid_i && !zeroize_i |=> (q0_o ^ q1_o) ==
       (($past(a0_i) ^ $past(a1_i)) & ($past(b0_i) ^ $past(b1_i))),
     clk_i, !rst_b)
 

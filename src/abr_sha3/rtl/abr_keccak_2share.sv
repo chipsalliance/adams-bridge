@@ -36,6 +36,7 @@ module abr_keccak_2share
   input         dom_in_low_i,      // DOM multiplier input mux
   input         dom_in_rand_ext_i, // DOM multiplier input randomness mux
   input         dom_update_i,      // DOM multiplier pipeline reg write enable
+  input         zeroize_i,         // Clear DOM multiplier pipeline regs
 
   input      [Width/2-1:0] rand_i, // Randomness for remasking.
 
@@ -85,7 +86,7 @@ module abr_keccak_2share
     assign unused_rst_n = rst_b;
     assign unused_phase_sel = phase_sel_i;
     assign unused_dom_ctrl =
-        ^{dom_out_low_i, dom_in_low_i, dom_in_rand_ext_i, dom_update_i};
+        ^{dom_out_low_i, dom_in_low_i, dom_in_rand_ext_i, dom_update_i, zeroize_i};
     assign unused_rand = rand_i;
   end
 
@@ -249,6 +250,7 @@ module abr_keccak_2share
         .b0_i      (b0),
         .b1_i      (b1),
         .z_valid_i (dom_update_i),
+        .zeroize_i (zeroize_i),
         .z_i       (in_prd[x]),
         .q0_o      (q0),
         .q1_o      (q1),

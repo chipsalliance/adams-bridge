@@ -544,6 +544,7 @@ module abr_keccak_round
         .dom_in_low_i     (dom_in_low_q),
         .dom_in_rand_ext_i(dom_in_rand_ext_q),
         .dom_update_i     (dom_update),
+        .zeroize_i        (zeroize),
         .rand_i           (keccak_rand_data),
         .s_i              (storage),
         .s_o              (keccak_out)
@@ -565,6 +566,7 @@ module abr_keccak_round
         .dom_in_low_i     (dom_in_low_q),
         .dom_in_rand_ext_i(dom_in_rand_ext_q),
         .dom_update_i     (dom_update),
+        .zeroize_i        (zeroize),
         .rand_i           (keccak_rand_data),
         .s_i              (storage_datapath[inst_g]),
         .s_o              (storage_datapath[inst_g+1])
