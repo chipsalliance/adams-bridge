@@ -68,6 +68,8 @@ targets:
             - '-DVCS'
           ius:
             - '-DXCELIUM'
+          questa:
+            - '-DQUESTA'
 ---
 provides: [mldsa_mvc_lib]
 schema_version: 2.4.0
@@ -153,4 +155,3 @@ targets:
         $COMPILE_ROOT/uvmf/qvip_ahb_lite_slave_dir/uvmf/default_reset_gen.sv,
       ]
     tops: []
-

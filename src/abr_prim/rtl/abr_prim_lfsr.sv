@@ -366,8 +366,8 @@ module abr_prim_lfsr #(
     // lockup condition is all-zero
     assign lockup = ~(|lfsr_q);
 
-    // check that seed is not all-zero
-    `ABR_ASSERT_INIT(DefaultSeedNzCheck_A, |DefaultSeedLocal)
+    // Check the parameter; randomized DefaultSeedLocal may still be X at time 0.
+    `ABR_ASSERT_INIT(DefaultSeedNzCheck_A, |DefaultSeed)
 
 
   ////////////////////
@@ -391,8 +391,8 @@ module abr_prim_lfsr #(
     // lockup condition is all-ones
     assign lockup = &lfsr_q;
 
-    // check that seed is not all-ones
-    `ABR_ASSERT_INIT(DefaultSeedNzCheck_A, !(&DefaultSeedLocal))
+    // Randomized seeds separately exclude the all-ones lockup state.
+    `ABR_ASSERT_INIT(DefaultSeedNzCheck_A, !(&DefaultSeed))
 
 
   /////////////

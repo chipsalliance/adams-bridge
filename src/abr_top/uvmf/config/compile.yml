@@ -39,6 +39,17 @@ targets:
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
+    questa:
+      default:
+        - +define+ABR_ASSERT_ON
+        - +define+SIMULATION
+        - '-timescale=1ns/1ps'
+      sim:
+        - '-sv_root $QUESTA_MVC_HOME/questa_mvc_core/linux_x86_64_gcc-7.4.0'
+        - '-sv_lib libahb_IN_SystemVerilog_MTI_full'
+        - '-sv_lib libapb3_IN_SystemVerilog_MTI_full'
+        - '+QVIP_UVM_REPORTING'
+        - '+UVM_VERBOSITY=UVM_LOW'
     vcs:
       default:
         - '-assert svaext'
@@ -105,6 +116,18 @@ targets:
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
+    questa:
+      default:
+        - +define+ABR_ASSERT_ON
+        - +define+ABR_SRAM_2CLK_LATENCY
+        - +define+ABR_MASKING_DISABLED
+        - '-timescale=1ns/1ps'
+      sim:
+        - '-sv_root $QUESTA_MVC_HOME/questa_mvc_core/linux_x86_64_gcc-7.4.0'
+        - '-sv_lib libahb_IN_SystemVerilog_MTI_full'
+        - '-sv_lib libapb3_IN_SystemVerilog_MTI_full'
+        - '+QVIP_UVM_REPORTING'
+        - '+UVM_VERBOSITY=UVM_LOW'
     vcs:
       default:
         - '-assert svaext'
@@ -172,6 +195,17 @@ targets:
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
+    questa:
+      default:
+        - +define+ABR_ASSERT_ON
+        - +define+ABR_MASKING_DISABLED
+        - '-timescale=1ns/1ps'
+      sim:
+        - '-sv_root $QUESTA_MVC_HOME/questa_mvc_core/linux_x86_64_gcc-7.4.0'
+        - '-sv_lib libahb_IN_SystemVerilog_MTI_full'
+        - '-sv_lib libapb3_IN_SystemVerilog_MTI_full'
+        - '+QVIP_UVM_REPORTING'
+        - '+UVM_VERBOSITY=UVM_LOW'
     vcs:
       default:
         - '-assert svaext'
@@ -238,6 +272,17 @@ targets:
                 && cp $COMPILE_ROOT/ML_KEM_ref/ml-kem/utils.py ml-kem/'
 global:
   tool:
+    questa:
+      default:
+        - +define+ABR_ASSERT_ON
+        - +define+ABR_SRAM_2CLK_LATENCY
+        - '-timescale=1ns/1ps'
+      sim:
+        - '-sv_root $QUESTA_MVC_HOME/questa_mvc_core/linux_x86_64_gcc-7.4.0'
+        - '-sv_lib libahb_IN_SystemVerilog_MTI_full'
+        - '-sv_lib libapb3_IN_SystemVerilog_MTI_full'
+        - '+QVIP_UVM_REPORTING'
+        - '+UVM_VERBOSITY=UVM_LOW'
     vcs:
       default:
         - '-assert svaext'

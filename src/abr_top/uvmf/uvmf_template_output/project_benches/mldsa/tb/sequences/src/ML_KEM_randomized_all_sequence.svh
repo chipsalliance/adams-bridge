@@ -111,7 +111,7 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
     wait_for_done(0, "ready");
   endtask
 
-  task maybe_reset_mid_op(string from = "");
+  task maybe_reset_mid_op(bit on_the_fly_zeroize);
     if (on_the_fly_zeroize) begin
       if (!this.randomize(rand_delay) with { rand_delay >= 0 && rand_delay < 10000; }) begin
         `uvm_error("RANDOMIZE_FAIL", "Failed to randomize delay");
@@ -164,6 +164,5 @@ class ML_KEM_randomized_all_sequence extends ML_KEM_base_sequence;
 
 // pragma uvmf custom external begin
 // pragma uvmf custom external end
-
 
 
