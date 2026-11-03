@@ -292,19 +292,38 @@ mldsa_env_seq.start(top_configuration.vsqr);
     bit [31:0] reversed_word;
     string chunk;
 
-    // Calculate the number of words from the length of the hexadecimal string
+    // Calculate the number of words from the length of the hexadecimal string.
+    // A trailing partial word (e.g. a 4627-byte ML-DSA-87 signature) is kept
+    // and zero-padded in its unused most-significant bytes.
     hex_len = hex_data.len();
-    bit_length_words = hex_len / 8;
+    if (hex_len % 2 != 0) begin
+      `uvm_fatal("HEX_PARSE", $sformatf("Hex string length %0d is not a whole number of bytes", hex_len))
+    end
+    bit_length_words = (hex_len + 7) / 8;
     array = new[bit_length_words];
 
     // Parse the hexadecimal string into the array
     for (int i = 0; i < bit_length_words; i++) begin
-      chunk = hex_data.substr(8*i, 8*(i + 1)-1);
-      void'($sscanf(chunk, "%08x", word));
+      chunk = hex_data.substr(8*i, ((8*(i + 1)) < hex_len ? 8*(i + 1) : hex_len) - 1);
+      while (chunk.len() < 8) chunk = {chunk, "00"};
+      if ($sscanf(chunk, "%08x", word) != 1) begin
+        `uvm_fatal("HEX_PARSE", $sformatf("Invalid hex chunk '%s' at word %0d", chunk, i))
+      end
       reversed_word = {word[7:0], word[15:8], word[23:16], word[31:24]};
       // Reverse the order of the words as well as their bytes
       array[i] = reversed_word;
     end
+  endfunction
+
+  // Byte-enable mask of the meaningful bytes of word word_idx produced by
+  // parse_hex_to_array(hex_data, ...). Only padding bytes of a trailing
+  // partial word are cleared.
+  function bit [31:0] hex_word_mask(string hex_data, int word_idx);
+    int num_bytes = hex_data.len() / 2;
+    int valid_bytes = num_bytes - 4*word_idx;
+    if (valid_bytes >= 4) return 32'hFFFF_FFFF;
+    if (valid_bytes <= 0) return 32'h0;
+    return (32'h1 << (8*valid_bytes)) - 1;
   endfunction
 
 endclass

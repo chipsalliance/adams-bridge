@@ -210,13 +210,19 @@ class ML_DSA_ACVP_rejection_KATs_sequence extends mldsa_bench_sequence_base;
     end
     `uvm_info("ACVP_KAT", "Signing complete, validating signature", UVM_LOW);
 
-    // Read and validate SIG (use array size to avoid partial last-dword mismatch)
+    // Read and validate every signature byte, including the trailing partial
+    // dword; only its padding byte(s) are excluded from the comparison.
+    if (kat_SIG_arr.size() != reg_model.MLDSA_SIGNATURE.m_mem.get_size()) begin
+      `uvm_error("SIG_SIZE", $sformatf("KAT %0d expected SIG has %0d dwords, MLDSA_SIGNATURE has %0d",
+                 selected_kat, kat_SIG_arr.size(), reg_model.MLDSA_SIGNATURE.m_mem.get_size()));
+    end
     for (int j = 0; j < kat_SIG_arr.size(); j++) begin
+      bit [31:0] sig_mask = hex_word_mask(acvp_kats[selected_kat].expected_SIG, j);
       reg_model.MLDSA_SIGNATURE.m_mem.read(status, j, data, UVM_FRONTDOOR, reg_model.default_map, this);
       if (status != UVM_IS_OK) begin
         `uvm_error("REG_READ_FAIL", $sformatf("Failed to read MLDSA_SIGNATURE[%0d]", j));
       end
-      if (data !== kat_SIG_arr[j]) begin
+      if ((data & sig_mask) !== (kat_SIG_arr[j] & sig_mask)) begin
         `uvm_error("SIG_MISMATCH", $sformatf("KAT %0d SIG[%0d]: Expected %h, Got %h", selected_kat, j, kat_SIG_arr[j], data));
       end else begin
         `uvm_info("SIG_MATCH", $sformatf("KAT %0d SIG[%0d]: %h", selected_kat, j, data), UVM_HIGH);
