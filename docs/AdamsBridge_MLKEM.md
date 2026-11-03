@@ -1156,7 +1156,7 @@ MLKEM_COEFF_DEPTH = 64 entries per polynomial (256 coefficients / 4 per clock).
 | Offset | Entries | Name | Notes |
 |--------|---------|------|-------|
 |    0- 255 | 256 | S0..S3 | CBD output / skDecode, 4x64 |
-|  256- 447 | 192 | T0..T3 | A*s+e result (KeyGen) / pkDecode (Encaps), 4x64 |
+|  256- 511 | 256 | T0..T3 | A*s+e result (KeyGen) / pkDecode (Encaps), 4x64 |
 |  512- 767 | 256 | E0..E3 | CBD noise, 4x64 |
 |  768- 831 |  64 | MU | Decompress(msg) for Encaps |
 |  832-1087 | 256 | U0..U3 | Encaps output / Decaps input, 4x64 |
