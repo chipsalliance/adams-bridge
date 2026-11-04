@@ -32,22 +32,25 @@
 // level, yielding the undefined macro `CALIPTRA_PRIM_MODULE_PREFIX_<name>
 // (chipsalliance/adams-bridge#316).
 
+`ifndef ABR_PRIM_MODULE_PREFIX
+  `ifdef CALIPTRA
+    `include "caliptra_prim_module_name_macros.svh"
+    `define ABR_PRIM_MODULE_NAME(__name) `CALIPTRA_PRIM_MODULE_NAME(__name)
+  `else
+    // Standalone Adams Bridge build: caliptra_prim is not present.
+    `define ABR_PRIM_MODULE_PREFIX abr_prim_generic
+  `endif // CALIPTRA
+`endif // ABR_PRIM_MODULE_PREFIX
+
+// Macro to generate the full module name for abr_prim modules.
+// Usage: `ABR_PRIM_MODULE_NAME(buf)
+// This will result in abr_prim_generic_buf if ABR_PRIM_MODULE_PREFIX is not
+// defined (standalone build).
 `define ABR_PRIM_MODULE_NAME_EXPAND(prefix, name) prefix``_``name
 
 `ifdef ABR_PRIM_MODULE_PREFIX
-  // Explicit override (e.g. on the compile command line).
   `define ABR_PRIM_MODULE_NAME(__name) \
       `ABR_PRIM_MODULE_NAME_EXPAND(`ABR_PRIM_MODULE_PREFIX, __name)
-`elsif CALIPTRA
-  `include "caliptra_prim_module_name_macros.svh"
-  `define ABR_PRIM_MODULE_NAME(__name) `CALIPTRA_PRIM_MODULE_NAME(__name)
-`else
-  // Standalone Adams Bridge build: caliptra_prim is not present.
-  `define ABR_PRIM_MODULE_PREFIX abr_prim_generic
-  // Macro to generate the full module name for abr_prim modules.
-  // Usage: `ABR_PRIM_MODULE_NAME(buf) -> abr_prim_generic_buf
-  `define ABR_PRIM_MODULE_NAME(__name) \
-      `ABR_PRIM_MODULE_NAME_EXPAND(`ABR_PRIM_MODULE_PREFIX, __name)
-`endif
+`endif // ABR_PRIM_MODULE_PREFIX
 
 `endif // abr_prim_module_name_macros_SVH
