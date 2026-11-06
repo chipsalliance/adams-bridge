@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2026/11/09*_
+_*Last Update: 2026/11/06*_
 
 ### Rev 3p0-rc1 ###
 
-#### Rev 3p0-rc1 release date: 2026/11/09 ####
+#### Rev 3p0-rc1 release date: 2026/11/06 ####
 Release candidate for Rev 3p0. MLDSA_CORE_VERSION and MLKEM_CORE_VERSION report
 "3.0.0". Rev 3p0 changes the masking architecture and the integration interface
 relative to Rev 2p0. The Rev 2p0 verification statements below do not apply to
