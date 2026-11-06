@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">Adam's Bridge ML-KEM Hardware Specification</p>
 
-<p style="text-align: center;">Version 1.0</p>
+<p style="text-align: center;">Version 3.0</p>
 
 <div style="page-break-after: always"></div>
 
@@ -69,7 +69,7 @@ The ML-KEM-1024 architecture inputs and outputs are described in the f
 
 ### ​CTRL 
 
-CTRL command field contains two bits indicating:
+CTRL command field contains three bits indicating:
 
 * ​Ctrl \= 0b000 
 
@@ -108,11 +108,13 @@ Clears all internal data-path registers holding secret-derived values. See the [
 
 ### READY 
 
-​Indicates if the core is ready to process the inputs. 
+​Indicates if the core is ready to process the inputs.
+
+After a completed operation, READY remains de-asserted (with VALID asserted) until firmware issues a ZEROIZE command. Firmware must zeroize between operations before issuing the next command.
 
 ### ​VALID 
 
-​Indicates if the process is computed and the output is valid. 
+​Indicates if the process is computed and the output is valid. VALID stays asserted until a ZEROIZE command (or reset) clears it.
 
 ### ERROR
 
@@ -386,27 +388,29 @@ The Adams Bridge side-channel countermeasures (see [AdamsBridgeSCA.md](./AdamsBr
 
 The performance results for two operational frequencies, 400 MHz and 600 MHz, are presented in terms of latency (clock cycles [CCs]), time [ms], and performance [IOPS] as follows:
 
-|                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
-| ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
-| **"Unprotected"**      | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Key Generation**     | 6,640            |         0.017 | 60,241                 |     |         0.011 | 90,361                 |
-| **Encapsulation**      | 7,930            |         0.020 | 50,441                 |     |         0.013 | 75,662                 |
-| **Decapsulation**      | 11,054           |         0.028 | 36,186                 |     |         0.018 | 54,279                 |
+|                        |                       | Freq [MHz]            |           400 |                        |     |           600 |                        |
+| ---------------------- | --------------------- | --------------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Unprotected"**      | **v2.0 Latency [CC]** | **v3.0 Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Key Generation**     | 6,603                 | 6,685                 |         0.017 | 59,835                 |     |         0.011 | 89,753                 |
+| **Encapsulation**      | 7,930                 | 7,975                 |         0.020 | 50,157                 |     |         0.013 | 75,235                 |
+| **Decapsulation**      | 11,054                | 11,144                |         0.028 | 35,894                 |     |         0.019 | 53,841                 |
 
 
 **NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined inline at each unmasked consumer via the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
-Masking imposes **zero cycle overhead**. The only cost of enabling masking is area:
+Arithmetic masking (`MASKING_EN = 1`) adds at most 2 cycles; its cost is area. The masked Keccak (`SHA3_MASKING_EN = 1`, default) adds 8-11% latency. The "Protected" configuration below uses `MASKING_EN = 1` and `SHA3_MASKING_EN = 1`:
 
-|                        | Freq [MHz]       |           400 |                        |     |           600 |                        |
-| ---------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
-| **"Protected"**        | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Key Generation**     | 6,640            |         0.017 | 60,241                 |     |         0.011 | 90,361                 |
-| **Encapsulation**      | 7,930            |         0.020 | 50,441                 |     |         0.013 | 75,662                 |
-| **Decapsulation**      | 11,056           |         0.028 | 36,179                 |     |         0.018 | 54,269                 |
+|                        |                       | Freq [MHz]            |           400 |                        |     |           600 |                        |
+| ---------------------- | --------------------- | --------------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Protected"**        | **v2.0 Latency [CC]** | **v3.0 Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Key Generation**     | 6,603                 | 7,441                 |         0.019 | 53,756                 |     |         0.012 | 80,634                 |
+| **Encapsulation**      | 8,509                 | 8,815                 |         0.022 | 45,377                 |     |         0.015 | 68,066                 |
+| **Decapsulation**      | 12,117                | 11,986                |         0.030 | 33,372                 |     |         0.020 | 50,058                 |
 
 
 
+- Latency is measured in RTL simulation with `SRAM_LATENCY = 1`, from the rising to the falling edge of the core busy indication, and excludes register input loading and output readback. The "Unprotected" configuration uses `MASKING_EN = 0` and `SHA3_MASKING_EN = 0`.
+- Time and performance columns are computed from the v3.0 latency. The v2.0 columns are the Rev 2p0 published results, kept for comparison.
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-KEM-1024, and **Adams Bridge only supports ML-KEM-1024 parameter set.**
 - For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)

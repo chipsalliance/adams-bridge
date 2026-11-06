@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">Adam's Bridge Hardware Specification</p>
 
-<p style="text-align: center;">Version 1.0</p>
+<p style="text-align: center;">Version 3.0</p>
 
 <div style="page-break-after: always"></div>
 
@@ -28,6 +28,8 @@ This document shares the architectural characteristics of the proposed post-quan
 
 # Documentation
 
+For the Adams Bridge V2.0 architecture and evaluation, see "Adams Bridge (V2.0) Accelerator: Bridging the Post-Quantum Transition" \[4\].
+
 The project contains comprehensive documentation of all submodules for ML-DSA and ML-KEM:
 
 - [ML-DSA Documentation](./AdamsBridge_MLDSA.md)
@@ -52,6 +54,7 @@ The following table shows the required memory instances for Adam's Bridge:
 
 All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
+The `abr_top` parameter `SRAM_LATENCY` (default 1) sets the read latency in clock cycles; the reference wrapper `abr_mem_top.sv` adds `SRAM_LATENCY - 1` read-data pipeline stages to model it.
 Strobe width is the number of byte-enable strobe signals (data width / 8); each strobe enables 8 bits. All strobed memories are byte enabled in the design.
 
 ## Masking-protected memory (MASKING_EN = 1)
@@ -82,10 +85,19 @@ Hardware behavior:
 
 # Area Results
 
-**TODO: Area numbers predate the architectural masking refactor. Re-synth required to refresh stdcell + RAM area.**
-- The required area for the protected Adams Bridge (ML-DSA-87 + ML-KEM-1024) is 0.1096mm2 @5nm:
-    - 0.0860mm2 for stdcell
-    - 0.0236mm2 for ram area.
+The following table shows the `abr_top` area of Adams Bridge (ML-DSA-87 + ML-KEM-1024) in gate count, split into standard-cell logic and SRAM. ABR 2.x is included for comparison.
+
+| Configuration                                              | Std cell [GE] | SRAM [GE] | Total [GE] |
+| ---------------------------------------------------------- | ------------: | --------: | ---------: |
+| ABR 2.x                                                    |     2,389,140 |   587,724 |  2,976,864 |
+| ABR 3.0, `MASKING_EN = 0`, `SHA3_MASKING_EN = 0`           |       428,497 |   481,105 |    909,602 |
+| ABR 3.0, `MASKING_EN = 1`, `SHA3_MASKING_EN = 0`           |       554,624 |   749,814 |  1,304,438 |
+| ABR 3.0, `MASKING_EN = 1`, `SHA3_MASKING_EN = 1` (default) |       648,230 |   749,814 |  1,398,044 |
+
+- `MASKING_EN = 1` adds the four `_masked` SRAM instances (see [Memory requirement](#memory-requirement)) and the second NTT engine.
+- `SHA3_MASKING_EN = 1` adds the two-share masked Keccak; it does not change the SRAM requirement.
+
+Physical area at 5nm is available for the core-masking configuration (`MASKING_EN = 1`, `SHA3_MASKING_EN = 0`): `abr_top` standard-cell logic occupies 12,387 µm² and the SRAMs occupy an additional 33,500 µm², for a total Adams Bridge area of approximately 45,900 µm² (0.0459 mm²).
 
 For per-algorithm performance breakdowns, see the Performance and Area Results sections in [AdamsBridge\_MLDSA.md](AdamsBridge_MLDSA.md) and [AdamsBridge\_MLKEM.md](AdamsBridge_MLKEM.md).
 
@@ -103,3 +115,4 @@ For the environment variables, build-time macros, and worked examples needed to 
 
 [3] NIST, "FIPS 204 Module-Lattice-Based Digital Signature Standard," August 13, 2024.
 
+[4] Mojtaba Bisheh-Niasar, Emre Karabulut, Kiran Upadhyayula, Michael Norris, and Bharat Pillilli, "Adams Bridge (V2.0) Accelerator: Bridging the Post-Quantum Transition," IACR Cryptology ePrint Archive, Report 2026/256, 2026. [Online]. Available: https://eprint.iacr.org/2026/256.

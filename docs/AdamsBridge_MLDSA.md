@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">Adam's Bridge ML-DSA Hardware Specification</p>
 
-<p style="text-align: center;">Version 1.0</p>
+<p style="text-align: center;">Version 3.0</p>
 
 <div style="page-break-after: always"></div>
 
@@ -847,34 +847,37 @@ return signature;
 
 The performance results for two operational frequencies, 400 MHz and 600 MHz, are presented in terms of latency (clock cycles [CCs]), time [ms], and performance [IOPS] as follows:
 
-|                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
-| --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
-| **"Unprotected"**     | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **Keygen**            | 15,154           |         0.038 | 26,396                 |     |         0.025 | 39,594                 |
-| **Signing (1 round)** | 34,928           |         0.087 | 11,452                 |     |         0.058 | 17,179                 |
-| **Signing (Ave)**     | 134,473          |         0.336 | 2,975                  |     |         0.224 | 4,462                  |
-| **Verifying**         | 18,252           |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
+|                       |                       | Freq [MHz]            |           400 |                        |     |           600 |                        |
+| --------------------- | --------------------- | --------------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Unprotected"**     | **v2.0 Latency [CC]** | **v3.0 Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Keygen**            | 15,600                | 15,199                |         0.038 | 26,318                 |     |         0.025 | 39,476                 |
+| **Signing (1 round)** | 26,600                | 35,012                |         0.088 | 11,425                 |     |         0.058 | 17,137                 |
+| **Signing (Ave)**     | 106,400               | 115,093               |         0.288 | 3,475                  |     |         0.192 | 5,213                  |
+| **Verifying**         | 18,800                | 18,252                |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
 
 
 **NOTE:** Masking countermeasures are implemented at the architectural level: shares are produced by [`abr_splitter.sv`](../src/abr_libs/rtl/abr_splitter.sv), processed by two parallel NTT engines (`NTT[0]` on `share0`, `NTT[1]` on `share1`), and recombined inline at each unmasked consumer via the shared [`abr_recombiner.sv`](../src/abr_libs/rtl/abr_recombiner.sv) primitive. The build-time `MASKING_EN` parameter selects between the protected (`MASKING_EN=1`) and unprotected (`MASKING_EN=0`) configurations at elaboration. See [AdamsBridgeSCA.md](./AdamsBridgeSCA.md) for the side-channel countermeasure overview.
 
-Masking imposes **zero cycle overhead**. The only cost of enabling masking is area:
+Arithmetic masking (`MASKING_EN = 1`) adds no cycles; its cost is area. The masked Keccak (`SHA3_MASKING_EN = 1`, default) adds latency to operations that hash secret data (about 15% for keygen and 9-11% for signing); verification uses no masked operations and is unchanged. The "Protected" configuration below uses `MASKING_EN = 1` and `SHA3_MASKING_EN = 1`:
 
-|                       | Freq [MHz]       |           400 |                        |     |           600 |                        |
-| --------------------- | ---------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
-| **"Protected"**       | **Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
-| **keygen**            | 15,154           |         0.038 | 26,396                 |     |         0.025 | 39,594                 |
-| **Signing (1 round)** | 34,928           |         0.087 | 11,452                 |     |         0.058 | 17,179                 |
-| **Signing (Ave)**     | 134,473          |         0.336 | 2,975                  |     |         0.224 | 4,462                  |
-| **Verifying**         | 18,252           |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
+|                       |                       | Freq [MHz]            |           400 |                        |     |           600 |                        |
+| --------------------- | --------------------- | --------------------- | ------------: | ---------------------- | --- | ------------: | ---------------------- |
+| **"Protected"**       | **v2.0 Latency [CC]** | **v3.0 Latency [CC]** | **Time [ms]** | **Performance [IOPS]** |     | **Time [ms]** | **Performance [IOPS]** |
+| **Keygen**            | 15,600                | 17,428                |         0.044 | 22,952                 |     |         0.029 | 34,427                 |
+| **Signing (1 round)** | 36,700                | 38,036                |         0.095 | 10,516                 |     |         0.063 | 15,775                 |
+| **Signing (Ave)**     | 146,800               | 126,937               |         0.317 | 3,151                  |     |         0.212 | 4,727                  |
+| **Verifying**         | 18,800                | 18,252                |         0.046 | 21,915                 |     |         0.030 | 32,873                 |
 
 
 
+- Latency is measured in RTL simulation with `SRAM_LATENCY = 1`, from the rising to the falling edge of the core busy indication, and excludes register input loading and output readback. The "Unprotected" configuration uses `MASKING_EN = 0` and `SHA3_MASKING_EN = 0`.
+- Time and performance columns are computed from the v3.0 latency. The v2.0 columns are the Rev 2p0 published results, kept for comparison.
+- Signing latency depends on the number of rejection-sampling rounds (FIPS 204 average for ML-DSA-87: 3.85). For v3.0, "Signing (Ave)" is a measured 4-round signature, and "Signing (1 round)" is derived from it: each additional round adds 26,694 cycles (unprotected) or 29,634 cycles (protected). The v2.0 "Signing (Ave)" was estimated as 4 x "Signing (1 round)".
 - CNSA 2.0 only allows the highest security level (Level-5) for PQC which is ML-DSA-87, and **Adams Bridge only supports ML-DSA-87 parameter set.**
 - For total Adams Bridge area results, see the Area Results section in [AdamsBridgeHardwareSpecification.md](AdamsBridgeHardwareSpecification.md).
 - The design is converging today at 600MHz at low, med & high voltage corners. (We have noticed the design converging to 1 GHz on a latest process node.)
 
-### Signing perofrmance
+### Signing performance
 
 The signing operation is the most time-consuming part of the MLDSA algorithm. However, it is not constant-time due to the inherent nature of ML-DSA. The signing process involves a loop that continues until all validity checks are passed. The number of iterations depends on the provided privkey, message, and sign_rnd.
 

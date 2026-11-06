@@ -15,7 +15,7 @@ limitations under the License.*_<BR>
 
 # **Adam's Bridge Hands-On Guide** #
 ## **Post-Quantum Cryptography IP Core**
-_*Last Update: 2025/08/29*_
+_*Last Update: 2026/11/09*_
 
 ## **Release Consumption and Integration** ##
 Prior official releases are available at: https://github.com/chipsalliance/adams-bridge/releases<br>
@@ -34,6 +34,8 @@ Lint:
 Simulation:
  - Synopsys VCS with Verdi
    - `Version Y-2026.03-SP1`
+ - Siemens Questa Sim-64 (supported as an alternative to VCS for the UVM testbench)
+   - `Version 2025.1` (Revision 2025.01, Jan 18 2025)
  - Verilator
    - `Version 5.046`
  - Mentor Graphics QVIP
@@ -90,22 +92,34 @@ adams-bridge
 |-- README.md
 |-- Release_Notes.md
 |-- SECURITY.md
+|-- config
+|   `-- compilespecs.yml
 |-- docs
 |   |-- AdamsBridgeHardwareSpecification.md
 |   |-- AdamsBridgeIntegrationSpecification.md
-|   |-- Side-Channel Countermeasures for Adam’s Bridge Accelerator.docx
+|   |-- AdamsBridgeReleaseChecklist.md
+|   |-- AdamsBridgeSCA.md
+|   |-- AdamsBridge_MLDSA.md
+|   |-- AdamsBridge_MLKEM.md
+|   |-- AdamsBridge_TestPlan.xlsx
 |   `-- images
+|-- formal
+|   |-- ABR_v3.0_Verification_Report.md
+|   `-- fv_<block>
 |-- src
 |   |-- abr_libs
 |   |-- abr_prim
 |   |-- abr_prim_generic
+|   |-- abr_sampler_top
 |   |-- abr_sha3
+|   |-- abr_top
+|   |-- barrett_reduction
+|   |-- cbd_sampler
+|   |-- compress
 |   |-- decompose
-|   |-- embedded_top
+|   |-- decompress
 |   |-- exp_mask
 |   |-- makehint
-|   |-- abr_sampler_top
-|   |-- abr_top
 |   |-- norm_check
 |   |-- ntt_top
 |   |-- pk_decode
@@ -138,7 +152,7 @@ Verilog file lists are generated via VCS and included in the config directory fo
 `reg_gen.sh`: Wrapper used to call `reg_gen.py` for all IP cores in AdamsBridge<BR>
 `rdl_post_process.py`: Post-processing functionality to make RDL generated SystemVerilog files compatible with lint/Verilator requirements<BR>
 
-## **Simulation Flow ** ##
+## **Simulation Flow** ##
 
 Follow Caliptra simulation flow as described [here](https://github.com/chipsalliance/caliptra-rtl/tree/main?tab=readme-ov-file#simulation-flow)
 
@@ -168,12 +182,15 @@ The UVM Framework generation tool was used to create the baseline UVM testbench 
 1. Compile the Mentor Graphics UVM-Frameworks base library
 1. Compile the UVMF wrapper for AHB in src/abr_libs/uvmf
 1. Compile the `verification_ip` provided for the target testbench
-1. ALL compilation steps may be completed by using the file-list found at `src/<block>/uvmf_<name>/config/<name>.vf`
-1. NOTE: `adams-bridge/src/<block>/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/testbench/hdl_top.sv` is the top-level TB wrapper for the system
+1. ALL compilation steps may be completed by using the file-list found at `src/abr_top/uvmf/config/uvmf_mldsa.vf`. When invoking the simulator directly, also pass the options from `src/abr_top/uvmf/config/compile.yml`: selecting a variant `.vf` file alone does not change the configuration. Use `+define+ABR_SRAM_2CLK_LATENCY` for `SRAM_LATENCY = 2` and `+define+ABR_MASKING_DISABLED` for `MASKING_EN = 0` (use both for the two-cycle configuration with arithmetic masking disabled). `SHA3_MASKING_EN` remains 1 in this UVM wrapper, so these defines do not select the fully unprotected configuration used in the performance tables.
+1. NOTE: `adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/testbench/hdl_top.sv` is the top-level TB wrapper for the system
 1. Copy the test generator scripts to the run output directory:
-    - [src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5](src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test/test_dilithium5)
+    - [src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test](src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test): `test_dilithium5`, `test_dilithium5_strm_msg` and `test_dilithium5_strm_msg_debug`
         * Necessary for MLDSA87 unittest
-1. Select a test to run from the set of tests in `adams-bridge/src/abr_top/uvmf_<name>/uvmf_template_output/project_benches/<block>/tb/tests/src`
+    - [src/abr_top/uvmf/ML_KEM_ref/ml-kem](src/abr_top/uvmf/ML_KEM_ref/ml-kem) Python reference model (copied to `ml-kem/` in the run directory)
+        * Necessary for MLKEM1024 unittest
+    - `src/abr_top/uvmf/config/compile.yml` lists the exact files copied for each configuration
+1. Select a test to run from the set of tests in `adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/tests/src`
 1. Provide `+UVM_TESTNAME=<test>` argument to simulation
 
 
