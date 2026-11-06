@@ -28,6 +28,8 @@ This document shares the architectural characteristics of the proposed post-quan
 
 # Documentation
 
+For the Adams Bridge V2.0 architecture and evaluation, see "Adams Bridge (V2.0) Accelerator: Bridging the Post-Quantum Transition" \[4\].
+
 The project contains comprehensive documentation of all submodules for ML-DSA and ML-KEM:
 
 - [ML-DSA Documentation](./AdamsBridge_MLDSA.md)
@@ -113,3 +115,4 @@ For the environment variables, build-time macros, and worked examples needed to 
 
 [3] NIST, "FIPS 204 Module-Lattice-Based Digital Signature Standard," August 13, 2024.
 
+[4] Kiran Upadhyayula, Michael Norris, and Bharat Pillilli, "Adams Bridge (V2.0) Accelerator: Bridging the Post-Quantum Transition," IACR Cryptology ePrint Archive, Report 2026/256, 2026. [Online]. Available: https://eprint.iacr.org/2026/256.
