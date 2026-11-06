@@ -87,7 +87,7 @@ addrmap abr_reg {
     /* ---- MLDSA Component Status ---- */
     reg {
         name = "MLDSA component status register type definition";
-        desc = "One 3-bit register including the following flags: 
+        desc = "One 5-bit register including the following flags: 
                 [br]bit #0: READY : ​Indicates if the core is ready to take
                 [br]                a control command and process the inputs.  
                 [br]bit #1: VALID : ​Indicates if the process is done and the

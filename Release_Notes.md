@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2026/11/03*_
+_*Last Update: 2026/11/09*_
 
-### Rev 3p0 ###
+### Rev 3p0-rc1 ###
 
-#### Rev 3p0 release date: TBD (in development) ####
-MLDSA_CORE_VERSION and MLKEM_CORE_VERSION report "3.0.0". Rev 3p0 changes the
-masking architecture and the integration interface relative to Rev 2p0. The
-Rev 2p0 verification statements below do not apply to Rev 3p0; Rev 3p0
-verification status will be recorded at release sign-off per the
+#### Rev 3p0-rc1 release date: 2026/11/09 ####
+Release candidate for Rev 3p0. MLDSA_CORE_VERSION and MLKEM_CORE_VERSION report
+"3.0.0". Rev 3p0 changes the masking architecture and the integration interface
+relative to Rev 2p0. The Rev 2p0 verification statements below do not apply to
+Rev 3p0; final Rev 3p0 sign-off is pending per the
 [release checklist](docs/AdamsBridgeReleaseChecklist.md).
 - Architecture
     - Architectural-level arithmetic masking: coefficients are stored as two
@@ -44,6 +44,13 @@ verification status will be recorded at release sign-off per the
     - Key vault read-side length-mismatch handling for ML-DSA/ML-KEM (#294)
 - Documentation
     - ML-KEM decapsulation key reuse restriction (#311)
+- Verification
+    - UVM for ML-DSA-87 (including ACVP KATs) and ML-KEM-1024
+    - Questa supported for the UVM testbench alongside VCS (#314)
+    - Formal verification suite updated for Rev 3p0; see the
+      [ABR 3.0 Verification Report](formal/ABR_v3.0_Verification_Report.md) (#319)
+
+## Previous Releases ##
 
 ### Rev 2p0 ###
 
@@ -59,8 +66,6 @@ verification status will be recorded at release sign-off per the
     - UVM for ML-DSA-87 and ML-KEM 1024
     - Formal Verification sign off for ML-KEM complete
 
-## Previous Releases ##
-
 ### Rev 2p0-rc1 ###
 - AdamsBridge Hardware Specification: see docs/ folder
 - AdamsBridge SCA Specification: see docs/ folder
@@ -72,8 +77,6 @@ verification status will be recorded at release sign-off per the
     - Nightly regressions on-going
     - UVM for ML-DSA-87 and ML-KEM 1024
     - Formal Verification sign off for ML-KEM in progress
-
-## Previous Releases ##
 
 ### Rev 1p0 ###
 
