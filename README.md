@@ -182,7 +182,7 @@ The UVM Framework generation tool was used to create the baseline UVM testbench 
 1. Compile the Mentor Graphics UVM-Frameworks base library
 1. Compile the UVMF wrapper for AHB in src/abr_libs/uvmf
 1. Compile the `verification_ip` provided for the target testbench
-1. ALL compilation steps may be completed by using the file-list found at `src/abr_top/uvmf/config/uvmf_mldsa.vf` (variants for the `SRAM_LATENCY`/`MASKING_EN` configurations are provided in the same directory)
+1. ALL compilation steps may be completed by using the file-list found at `src/abr_top/uvmf/config/uvmf_mldsa.vf`. When invoking the simulator directly, also pass the options from `src/abr_top/uvmf/config/compile.yml`: selecting a variant `.vf` file alone does not change the configuration. Use `+define+ABR_SRAM_2CLK_LATENCY` for `SRAM_LATENCY = 2` and `+define+ABR_MASKING_DISABLED` for `MASKING_EN = 0` (both for the two-cycle, unmasked configuration).
 1. NOTE: `adams-bridge/src/abr_top/uvmf/uvmf_template_output/project_benches/mldsa/tb/testbench/hdl_top.sv` is the top-level TB wrapper for the system
 1. Copy the test generator scripts to the run output directory:
     - [src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test](src/abr_top/uvmf/Dilithium_ref/dilithium/ref/test): `test_dilithium5`, `test_dilithium5_strm_msg` and `test_dilithium5_strm_msg_debug`
