@@ -52,7 +52,7 @@ The following table shows the required memory instances for Adam's Bridge:
 
 All memories are modeled as 1 read 1 write port RAMs with a flopped read data.
 See abr_1r1w_ram.sv and abr_1r1w_be_ram.sv for examples.
-Strobe width describes the number of bits enabled by each strobe. All strobed memories are byte enabled in the design.
+Strobe width is the number of byte-enable strobe signals (data width / 8); each strobe enables 8 bits. All strobed memories are byte enabled in the design.
 
 ## Masking-protected memory (MASKING_EN = 1)
 

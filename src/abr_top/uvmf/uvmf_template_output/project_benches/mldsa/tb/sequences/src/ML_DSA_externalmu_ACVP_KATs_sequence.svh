@@ -171,9 +171,15 @@ class ML_DSA_externalmu_ACVP_KATs_sequence extends mldsa_bench_sequence_base;
 
       `uvm_info("KAT", $sformatf("ACVP KAT %0d: sign phase complete", selected_kat), UVM_LOW);
 
-      // Compare HW-generated signature against ACVP expected signature
+      // Compare every HW-generated signature byte against the ACVP expected
+      // signature, including the trailing partial dword (padding excluded).
+      if (kat_SIG_arr.size() != hw_sig_arr.size()) begin
+        `uvm_error("SIG_SIZE", $sformatf("ACVP KAT %0d: expected SIG has %0d dwords, MLDSA_SIGNATURE has %0d",
+                   selected_kat, kat_SIG_arr.size(), hw_sig_arr.size()));
+      end
       for(int j = 0; j < kat_SIG_arr.size(); j++) begin
-        if (hw_sig_arr[j] !== kat_SIG_arr[j]) begin
+        bit [31:0] sig_mask = hex_word_mask(acvp_kats[selected_kat].SIG, j);
+        if ((hw_sig_arr[j] & sig_mask) !== (kat_SIG_arr[j] & sig_mask)) begin
           `uvm_error("SIG_MISMATCH", $sformatf("ACVP KAT %0d: SIGNATURE[%0d] mismatch: hw=0x%08h, acvp=0x%08h", selected_kat, j, hw_sig_arr[j], kat_SIG_arr[j]));
         end else begin
           `uvm_info("SIG_MATCH", $sformatf("ACVP KAT %0d: SIGNATURE[%0d] match: 0x%08h", selected_kat, j, hw_sig_arr[j]), UVM_LOW);
