@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">Side-Channel Countermeasures for Adam’s Bridge Accelerator</p>
 
-<p style="text-align: center;">Version 2.0</p>
+<p style="text-align: center;">Version 3.0</p>
 
 <div style="page-break-after: always"></div>
 
@@ -173,7 +173,7 @@ Although Version 1.0 includes masking countermeasures, this report does not pres
 
 # Side-Channel Analysis (SCA) — TVLA Results for ML-KEM & ML-DSA
 
-## Adams Bridge 2 Evaluation
+## Adams Bridge v3.0 Evaluation
 
 ### Experimental Setup
 
@@ -318,7 +318,7 @@ The observed initial data-loading leakage is outside the scope of the targeted s
 
 ### Protected ML-KEM Evaluation
 
-The version 2.0 evaluation also includes protected-operation TVLA figures for **ML-KEM NTT, INTT, PWM, and PWA**. These measurements complement the ML-DSA results and extend coverage to the corresponding ML-KEM arithmetic datapath. The supplied protected ML-KEM plots are reproduced below. The same evaluation methodology and first-order threshold interpretation apply.
+The version 3.0 evaluation also includes protected-operation TVLA figures for **ML-KEM NTT, INTT, PWM, and PWA**. These measurements complement the ML-DSA results and extend coverage to the corresponding ML-KEM arithmetic datapath. The supplied protected ML-KEM plots are reproduced below. The same evaluation methodology and first-order threshold interpretation apply.
 
 #### NTT — Protected
 
@@ -408,7 +408,7 @@ The unprotected ML-DSA baseline exhibits pronounced first-order leakage, whereas
 - **The results are implementation- and setup-specific.** The evidence pertains to the tested FPGA configuration, clock frequency, sampling setup, input populations, and trace counts.
 - **Masking security is not formally established by TVLA.** The earlier documentation notes that the implementation is not formally proven secure under the robust probing model.
 
-### Changes in Version 2.0
+### Changes in Version 3.0
 
 Relative to the historical v1.0–v1.2 documentation, this release adds:
 
