@@ -785,10 +785,10 @@ always_comb kv_mlkem_msg_write_data = '0;
       mldsa_seed_reg[dword] = abr_reg_hwif_out.MLDSA_SEED[dword].SEED.value;
 
       `ifdef CALIPTRA
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = (pcr_sign_mode | (kv_mldsa_seed_write_en & (kv_mldsa_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = ((pcr_sign_mode & ~pcr_sign_input_invalid) | (kv_mldsa_seed_write_en & (kv_mldsa_seed_write_offset == SEED_NUM_DWORDS-1-dword))) & ~zeroize;
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.next = pcr_sign_mode   ? pcr_signing_data.pcr_mldsa_signing_seed[SEED_NUM_DWORDS-1-dword] : 
                                                       kv_mldsa_seed_write_data;
-      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | (kv_mldsa_seed_error != KV_SUCCESS);
+      abr_reg_hwif_in.MLDSA_SEED[dword].SEED.hwclr = zeroize | error_flag_reg | (mldsa_process_done & kv_mldsa_seed_data_present) | (kv_mldsa_seed_error != KV_SUCCESS);
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.swwe = abr_ready & ~kv_mldsa_seed_data_present;
       `else
       abr_reg_hwif_in.MLDSA_SEED[dword].SEED.we = '0;
@@ -801,15 +801,16 @@ always_comb kv_mlkem_msg_write_data = '0;
     for (int unsigned dword=0; dword < MLDSA_MSG_NUM_DWORDS; dword++) begin
       msg_reg[dword] = external_mu_mode? '0 : abr_reg_hwif_out.MLDSA_MSG[dword].MSG.value;
       `ifdef CALIPTRA
-      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & !external_mu & !zeroize;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = pcr_sign_mode & ~pcr_sign_input_invalid & !external_mu & !zeroize;
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = pcr_signing_data.pcr_hash[MLDSA_MSG_NUM_DWORDS-1-dword];
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
+      abr_reg_hwif_in.MLDSA_MSG[dword].MSG.swwe = (abr_ready & ~pcr_sign_mode) | stream_msg_rdy;
       `else
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.we = '0;
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.next = '0;
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.hwclr = zeroize;
-      `endif
       abr_reg_hwif_in.MLDSA_MSG[dword].MSG.swwe = abr_ready | stream_msg_rdy;
+      `endif
     end
 
     for (int unsigned dword=0; dword < MU_NUM_DWORDS; dword++) begin
@@ -1634,7 +1635,7 @@ always_comb begin
   error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
   `ifdef CALIPTRA
   //extra error condition for caliptra
-  pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  pcr_sign_input_invalid = pcr_sign_mode & ((mldsa_cmd_reg != MLDSA_KEYGEN_SIGN) | external_mu | stream_msg_mode);
   // All-zero KV seed/msg error detection
   mldsa_seed_zero_error = kv_mldsa_seed_data_present & (|mldsa_cmd_reg) & (mldsa_seed_reg == '0);
   mlkem_seed_zero_error = kv_mlkem_seed_data_present & (|mlkem_cmd_reg) & (mlkem_seed_d_reg == '0) & (abr_scratch_reg.mlkem_enc.seed_z == '0);
