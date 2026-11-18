@@ -774,7 +774,7 @@ package abr_reg_uvm;
         rand uvm_reg_field ecc_seed_dest_valid;
         rand uvm_reg_field aes_key_dest_valid;
         rand uvm_reg_field mlkem_seed_dest_valid;
-        rand uvm_reg_field mlkem_msg_dest_valid;
+        rand uvm_reg_field rsvd0;
         rand uvm_reg_field dma_data_dest_valid;
         rand uvm_reg_field rsvd;
 
@@ -801,8 +801,8 @@ package abr_reg_uvm;
             this.aes_key_dest_valid.configure(this, 1, 11, "RW", 0, 'h0, 1, 1, 0);
             this.mlkem_seed_dest_valid = new("mlkem_seed_dest_valid");
             this.mlkem_seed_dest_valid.configure(this, 1, 12, "RW", 0, 'h0, 1, 1, 0);
-            this.mlkem_msg_dest_valid = new("mlkem_msg_dest_valid");
-            this.mlkem_msg_dest_valid.configure(this, 1, 13, "RW", 0, 'h0, 1, 1, 0);
+            this.rsvd0 = new("rsvd0");
+            this.rsvd0.configure(this, 1, 13, "RO", 0, 'h0, 1, 1, 0);
             this.dma_data_dest_valid = new("dma_data_dest_valid");
             this.dma_data_dest_valid.configure(this, 1, 14, "RW", 0, 'h0, 1, 1, 0);
             this.rsvd = new("rsvd");
@@ -845,8 +845,6 @@ package abr_reg_uvm;
         rand abr_reg__MLKEM_CIPHERTEXT MLKEM_CIPHERTEXT;
         rand kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl;
         rand kv_status_reg kv_mlkem_seed_rd_status;
-        rand kv_read_ctrl_reg kv_mlkem_msg_rd_ctrl;
-        rand kv_status_reg kv_mlkem_msg_rd_status;
         rand kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl;
         rand kv_status_reg kv_mlkem_sharedkey_wr_status;
 
@@ -1040,16 +1038,6 @@ package abr_reg_uvm;
 
             this.kv_mlkem_seed_rd_status.build();
             this.default_map.add_reg(this.kv_mlkem_seed_rd_status, 'hc004);
-            this.kv_mlkem_msg_rd_ctrl = new("kv_mlkem_msg_rd_ctrl");
-            this.kv_mlkem_msg_rd_ctrl.configure(this);
-
-            this.kv_mlkem_msg_rd_ctrl.build();
-            this.default_map.add_reg(this.kv_mlkem_msg_rd_ctrl, 'hc008);
-            this.kv_mlkem_msg_rd_status = new("kv_mlkem_msg_rd_status");
-            this.kv_mlkem_msg_rd_status.configure(this);
-
-            this.kv_mlkem_msg_rd_status.build();
-            this.default_map.add_reg(this.kv_mlkem_msg_rd_status, 'hc00c);
             this.kv_mlkem_sharedkey_wr_ctrl = new("kv_mlkem_sharedkey_wr_ctrl");
             this.kv_mlkem_sharedkey_wr_ctrl.configure(this);
 

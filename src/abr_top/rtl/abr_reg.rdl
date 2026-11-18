@@ -413,7 +413,8 @@ addrmap abr_reg {
     /* ---- MLKEM Component Input Message ---- */
     external mem {
         name = "MLKEM component message register type definition";
-        desc = "256-bit message. The message can be a fixed size of 256-bit value in [0 : 2^256-1].";
+        desc = "256-bit message. The message can be a fixed size of 256-bit value in [0 : 2^256-1].
+                [br]The message is written only through this register interface; it cannot be sourced from the key vault.";
         
         sw = rw;
         mementries = 8;
@@ -453,9 +454,8 @@ addrmap abr_reg {
     //Moved down to dedicated space to keep room above for any future enhancements
     kv_read_ctrl_reg kv_mlkem_seed_rd_ctrl @0xC000;
     kv_status_reg kv_mlkem_seed_rd_status;
-    kv_read_ctrl_reg kv_mlkem_msg_rd_ctrl;
-    kv_status_reg kv_mlkem_msg_rd_status;
-    kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl;
+    // 0xC008-0xC00F reserved: ENCAPS message is API-only and cannot be sourced from the key vault
+    kv_write_ctrl_reg kv_mlkem_sharedkey_wr_ctrl @0xC010;
     kv_status_reg kv_mlkem_sharedkey_wr_status;
 
 

@@ -100,7 +100,6 @@
    assign ``hwif_name.``sig_prefix``_wr_ctrl.ecc_seed_dest_valid.swwe = '0;\
    assign ``hwif_name.``sig_prefix``_wr_ctrl.aes_key_dest_valid.swwe = '0;\
    assign ``hwif_name.``sig_prefix``_wr_ctrl.mlkem_seed_dest_valid.swwe = '0;\
-   assign ``hwif_name.``sig_prefix``_wr_ctrl.mlkem_msg_dest_valid.swwe = '0;\
    assign ``hwif_name.``sig_prefix``_wr_ctrl.dma_data_dest_valid.swwe = '0;\
    assign ``hwif_name.``sig_prefix``_wr_ctrl.rsvd.swwe = '0;
 
