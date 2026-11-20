@@ -14,7 +14,27 @@ See the License for the specific language governing permissions and<BR>
 limitations under the License.*_<BR>
 
 # **Release Notes** #
-_*Last Update: 2026/11/06*_
+_*Last Update: 2026/11/20*_
+
+### Rev 3p0-rc2 ###
+
+#### Rev 3p0-rc2 release date: 2026/11/20 ####
+Second release candidate for Rev 3p0. MLDSA_CORE_VERSION and
+MLKEM_CORE_VERSION continue to report "3.0.0". This candidate includes the
+following changes since Rev 3p0-rc1. Final Rev 3p0 sign-off remains subject to
+the [release checklist](docs/AdamsBridgeReleaseChecklist.md).
+- ML-DSA PCR signing
+    - `PCR_SIGN` must be written atomically with `CTRL = KEYGEN+SIGN`, with
+      `EXTERNAL_MU` and `STREAM_MSG` cleared (#323)
+    - Invalid combinations set `ERROR` and require ZEROIZE before another
+      command; see the [ML-DSA specification](docs/AdamsBridge_MLDSA.md)
+- ML-KEM key vault integration
+    - ENCAPS messages must be written through `MLKEM_MSG`; the message key
+      vault read client and `MLKEM_MSG` key vault destination are removed (#324)
+    - The seed key vault read and shared-key key vault write are unchanged
+    - The [ML-KEM specification](docs/AdamsBridge_MLKEM.md) also clarifies
+      rejection of an all-zero key vault seed; register-written seeds are
+      not subject to that check
 
 ### Rev 3p0-rc1 ###
 
