@@ -1634,7 +1634,10 @@ always_comb begin
   error_flag = skdecode_error_i | encaps_input_check_failure | decaps_input_check_failure;
   `ifdef CALIPTRA
   //extra error condition for caliptra
-  pcr_sign_input_invalid = (mldsa_cmd_reg inside {MLDSA_KEYGEN, MLDSA_SIGN, MLDSA_VERIFY}) & pcr_sign_mode;
+  // PCR_SIGN is only valid together with KEYGEN_SIGN over the hardware PCR digest. Any other
+  // command (including none, which would stage the PCR seed), external mu or streamed message is
+  // an error; the error holds the engine until zeroize, which clears the seed.
+  pcr_sign_input_invalid = pcr_sign_mode & ((mldsa_cmd_reg != MLDSA_KEYGEN_SIGN) | external_mu | stream_msg_mode);
   // All-zero KV seed/msg error detection
   mldsa_seed_zero_error = kv_mldsa_seed_data_present & (|mldsa_cmd_reg) & (mldsa_seed_reg == '0);
   mlkem_seed_zero_error = kv_mlkem_seed_data_present & (|mlkem_cmd_reg) & (mlkem_seed_d_reg == '0) & (abr_scratch_reg.mlkem_enc.seed_z == '0);
