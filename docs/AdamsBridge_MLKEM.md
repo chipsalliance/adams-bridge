@@ -130,11 +130,13 @@ The ML-KEM-1024 countermeasure requires several random vectors to randomize the
 
 ## seed_d
 
-Adams Bridge component seed_d register type definition 8 32-bit registers storing the 256-bit seed_d for keygen. The seed can be any 256-bit value in \[0 : 2^256-1\].
+Adams Bridge component seed_d register type definition 8 32-bit registers storing the 256-bit seed_d for keygen. The seed can be any 256-bit value in \[0 : 2^256-1\], subject to the key vault exception described under seed_z.
 
 ## seed_z
 
 Adams Bridge component seed_z register type definition 8 32-bit registers storing the 256-bit seed_z for keygen. The seed can be any 256-bit value in \[0 : 2^256-1\].
+
+Exception (Caliptra integration only): when the seed is sourced from the key vault and both seed_d and seed_z are all-zero, the operation is aborted and the ERROR status bit is set. An all-zero key vault seed is treated as a failed or invalid key vault read. Seeds written through the register interface are not subject to this check.
 
 ## message
 
