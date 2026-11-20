@@ -107,6 +107,8 @@ Clears all internal data-path registers holding secret-derived values. See the [
 
 Run PCR Signing flow: Run MLDSA KeyGen+Signing flow to sign PCRs.
 
+PCR_SIGN must be written in the same register write as CTRL = KEYGEN+SIGN, with EXTERNAL_MU and STREAM_MSG cleared. The hardware loads the PCR signing seed and the PCR digest, so the signature always covers the hardware PCR digest. Any other combination, including PCR_SIGN with no command, sets the ERROR status bit; the core then accepts no further command until it is zeroized, which clears the loaded seed.
+
 ### EXTERNAL_MU 
 
 Enable External_Mu Mode.
@@ -158,7 +160,7 @@ After a completed operation, READY remains de-asserted (with VALID asserted) unt
 
 ​Indicates if the process could not complete due to an error.
 For ML-DSA this status bit indicates an error while decoding the secret key.
-In Caliptra it could also indicate that pcr signing mode was enabled with a command other than Keygen+Signing.
+In Caliptra it could also indicate that pcr signing mode was enabled with a command other than Keygen+Signing, or with EXTERNAL_MU or STREAM_MSG set.
 
 ### VERIFY_PASS
 
