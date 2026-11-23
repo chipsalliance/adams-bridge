@@ -747,7 +747,11 @@ module abr_sha3pad
   // If `process_i` is asserted, eventually sha3pad trigger run signal
   // (unless the operation is aborted by zeroize, which forces the pad FSM to
   //  StPadIdle without ever asserting keccak_run_o).
-  `ABR_ASSERT(ProcessToRun_A, process_i |-> strong(##[2:$] keccak_run_o),
+  // A `process_i` sampled in the same cycle as zeroize is aborted as well.
+  // `disable iff` uses current values, so it misses a zeroize that is released
+  // at the sampling edge; exclude that case in the antecedent.
+  `ABR_ASSERT(ProcessToRun_A,
+    (process_i && !zeroize) |-> strong(##[2:$] keccak_run_o),
     clk_i, (!rst_b || zeroize))
 
   // If process_i asserted, completion shall be asserted shall be asserted
@@ -767,8 +771,11 @@ module abr_sha3pad
   // Keccak run triggered -> completion should come, unless the in-flight
   // operation is aborted by zeroize (line ~423 forces the pad FSM to
   // StPadIdle, so keccak_complete_i is never returned for that run).
+  // A keccak_run_o sampled in the same cycle as zeroize is dropped by the
+  // keccak round, which also returns to idle on zeroize; exclude it in the
+  // antecedent for the same reason as ProcessToRun_A.
   `ABR_ASSERT(RunThenComplete_M,
-    keccak_run_o |-> strong(##[12*Share:$] keccak_complete_i),
+    (keccak_run_o && !zeroize) |-> strong(##[12*Share:$] keccak_complete_i),
     clk_i, (!rst_b || zeroize))
 
   // No partial write is allowed for Message FIFO interface
