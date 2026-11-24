@@ -43,6 +43,7 @@ package mldsa_tests_pkg;
    `include "src/ML_DSA_randomized_reset_test.svh"
    `include "src/ML_DSA_randomized_key_gen_test.svh"
    `include "src/ML_DSA_randomized_zeroize_test.svh"
+   `include "src/ML_DSA_randomized_zeroize_mid_op_test.svh"
    `include "src/ML_DSA_randomized_early_run_test.svh"
    `include "src/ML_DSA_randomized_key_gen_and_sign_test.svh"
    `include "src/ML_DSA_randomized_sign_gen_test.svh"
