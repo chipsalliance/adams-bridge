@@ -540,10 +540,15 @@ module abr_keccak_2share
   };
 
   // iota: XOR with RC for (x,y) = (0,0)
+  // rnd can reach MaxRound on an idle unmasked lane (abr_keccak_round passes
+  // round+inst_g while the masked path steps one round per iteration). Keep the
+  // RC lookup in range and apply no constant there.
   function automatic box_t iota(box_t state, logic [RndW-1:0] rnd);
     box_t result;
     result = state;
-    result[0][0][W-1:0] = state[0][0][W-1:0] ^ RC[rnd][W-1:0];
+    if (int'(rnd) < MaxRound) begin
+      result[0][0][W-1:0] = state[0][0][W-1:0] ^ RC[rnd][W-1:0];
+    end
 
     return result;
   endfunction : iota
